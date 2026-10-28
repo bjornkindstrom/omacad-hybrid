@@ -1,0 +1,457 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 20.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "thread_2",
+      "feature_type": "thread",
+      "name": "Thread 1",
+      "diameter": 40.0,
+      "pitch": 6.5,
+      "length": 40.0,
+      "is_female": false,
+      "clearance": 0.25,
+      "profile": "round",
+      "taper_lead_in": true,
+      "taper_turns": 0.75,
+      "target_body_id": "body_cylinder_1",
+      "operation": "join",
+      "plane_origin": [
+        -2.6645352591003757e-15,
+        -4.1448326458823323e-16,
+        0.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "plane_v": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "PLANE",
+          "origin": [
+            22.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normal": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -25.000000000000007,
+              10.0
+            ],
+            "p2": [
+              29.999999999999993,
+              45.00000000000001
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              29.999999999999993,
+              45.00000000000001
+            ],
+            "p2": [
+              -30.0,
+              45.00000000000001
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -30.0,
+              45.00000000000001
+            ],
+            "p2": [
+              -25.000000000000007,
+              10.0
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_1",
+            "value": 65.19202405202648,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_2",
+            "value": 59.99999999999999,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d3",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_3",
+            "value": 35.355339059327385,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_2"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c2",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_2",
+              "line_1"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c3",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_3",
+              "line_2"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c4",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_3",
+              "line_1"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          }
+        ],
+        "face_key": null,
+        "parent_body_id": null,
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_4",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": -54.0,
+      "operation": "cut",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -8.333333333333334,
+          33.333333333333336,
+          1050.0
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "exprs": {}
+    },
+    {
+      "feature_id": "cylinder_5",
+      "feature_type": "cylinder",
+      "name": "Cylinder 2",
+      "suppressed": false,
+      "radius": 10.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": [
+        -1.0296144485473633,
+        1.1807937622070312,
+        26.660491943359375
+      ],
+      "plane_normal": [
+        1.4555479310729424e-06,
+        -0.5368744730949402,
+        0.8436621427536011
+      ],
+      "plane_u": [
+        1.0,
+        7.814464879629668e-07,
+        -1.22799065138679e-06
+      ],
+      "plane_v": [
+        0.0,
+        0.8436621427536011,
+        0.5368744730949402
+      ],
+      "exprs": {}
+    },
+    {
+      "feature_id": "combine_6",
+      "feature_type": "combine",
+      "name": "Combine (join)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_5",
+      "tool_body_id": "body_cylinder_1",
+      "operation": "join",
+      "keep_tool": false,
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "PLANE",
+        "origin": [
+          22.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "normal": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -25.000000000000007,
+            10.0
+          ],
+          "p2": [
+            29.999999999999993,
+            45.00000000000001
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            29.999999999999993,
+            45.00000000000001
+          ],
+          "p2": [
+            -30.0,
+            45.00000000000001
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -30.0,
+            45.00000000000001
+          ],
+          "p2": [
+            -25.000000000000007,
+            10.0
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_1",
+          "value": 65.19202405202648,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_2",
+          "value": 59.99999999999999,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d3",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_3",
+          "value": 35.355339059327385,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_2"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c2",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_2",
+            "line_1"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c3",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_3",
+            "line_2"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c4",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_3",
+            "line_1"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        }
+      ],
+      "face_key": null,
+      "parent_body_id": null,
+      "visible": false
+    }
+  ],
+  "construction_planes": {
+    "plane_1": {
+      "name": "Plane 1",
+      "origin": [
+        22.0,
+        0.0,
+        0.0
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "visible": false
+    }
+  },
+  "sections": {},
+  "canvases": {},
+  "curve_segments": 192
+}

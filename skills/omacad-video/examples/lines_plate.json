@@ -1,0 +1,10 @@
+[
+ "Start with a rounded rectangle. Type the width, the height and the radius.",
+ "Now a hole, with Smart Circle.",
+ "Type the diameter, then how far it sits from each wall.",
+ null,
+ null,
+ "Extrude, and the circle becomes a hole.",
+ "Chamfer the edge.",
+ "Then mirror it, and the hole with its chamfer lands in all four corners."
+]

@@ -1,0 +1,196 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 20.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "split_2",
+      "feature_type": "split_body",
+      "name": "Split Body 1",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "plane_id": "plane_1",
+      "plane_origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "new_body_name": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "offset_face_3",
+      "feature_type": "offset_face",
+      "name": "Offset Face 1",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "faces": [
+        {
+          "kind": "cylinder",
+          "origin": [
+            -4.440892098500626e-15,
+            -2.368475797647047e-16,
+            30.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "radius": 19.99999990052635,
+          "length": 10.0,
+          "internal": false
+        }
+      ],
+      "distance": -1.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "box_4",
+      "feature_type": "box",
+      "name": "Box 1",
+      "suppressed": false,
+      "length": 50.0,
+      "width": 50.0,
+      "height": 25.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "thread_5",
+      "feature_type": "thread",
+      "name": "Thread 1",
+      "diameter": 38.0,
+      "pitch": 3.5,
+      "length": 10.0,
+      "is_female": false,
+      "clearance": 0.25,
+      "profile": "trapezoidal_45",
+      "taper_lead_in": true,
+      "taper_turns": 0.75,
+      "target_body_id": "body_cylinder_1",
+      "operation": "join",
+      "plane_origin": [
+        -2.0281574768107005e-08,
+        -8.894066585440896e-06,
+        30.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "plane_v": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "anchor": "bottom",
+      "anchor_gap": 0.0,
+      "host_length": 10.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "offset_face_6",
+      "feature_type": "offset_face",
+      "name": "Offset Face 2",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "faces": [
+        {
+          "kind": "surface",
+          "point": [
+            9.102349443108496,
+            -17.45392032826811,
+            36.006686595525494
+          ],
+          "normal": [
+            0.30484487249251824,
+            -0.6484316761988517,
+            0.6975714766366009
+          ]
+        }
+      ],
+      "distance": -0.2,
+      "exprs": {}
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {
+    "plane_1": {
+      "name": "Plane 1",
+      "origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "visible": false
+    }
+  },
+  "sections": {
+    "section_1": {
+      "name": "Section 1",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "offset": 0.0,
+      "flip": false,
+      "active": false
+    }
+  },
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 192
+}

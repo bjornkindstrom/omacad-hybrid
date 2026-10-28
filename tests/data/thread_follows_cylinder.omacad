@@ -1,0 +1,6801 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Locket",
+      "suppressed": false,
+      "radius": 20.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "split_2",
+      "feature_type": "split_body",
+      "name": "Burken",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "plane_id": "plane_1",
+      "plane_origin": [
+        0.0,
+        0.0,
+        25.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "new_body_name": "Burken",
+      "exprs": {}
+    },
+    {
+      "feature_id": "split_3",
+      "feature_type": "split_body",
+      "name": "Split Body 2",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "plane_id": "plane_2",
+      "plane_origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "plane_normal": [
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "new_body_name": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "offset_face_4",
+      "feature_type": "offset_face",
+      "name": "Offset Face 1",
+      "suppressed": false,
+      "target_body_id": "body_split_3",
+      "faces": [
+        {
+          "kind": "cylinder",
+          "origin": [
+            3.552713678800501e-15,
+            -2.5121479442878446e-16,
+            25.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "radius": 19.999999917251667,
+          "length": 5.0,
+          "internal": false
+        }
+      ],
+      "distance": -2.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "combine_5",
+      "feature_type": "combine",
+      "name": "Combine (join)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "tool_body_id": "body_split_3",
+      "operation": "join",
+      "keep_tool": false,
+      "exprs": {}
+    },
+    {
+      "feature_id": "thread_6",
+      "feature_type": "thread",
+      "name": "Thread 1",
+      "diameter": 29.99,
+      "pitch": 3.5,
+      "length": 5.0,
+      "is_female": false,
+      "clearance": 0.15,
+      "profile": "round",
+      "taper_lead_in": true,
+      "taper_turns": 0.3,
+      "target_body_id": "body_cylinder_1",
+      "operation": "join",
+      "plane_origin": [
+        -1.2784370927888748e-15,
+        4.1239906218995965e-17,
+        25.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "plane_v": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "anchor": "bottom",
+      "anchor_gap": 0.0,
+      "host_length": 5.0,
+      "grow": 0.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_7",
+      "feature_type": "fillet",
+      "name": "Fillet 1",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            0.0,
+            -1.7763568394002505e-15,
+            30.0
+          ],
+          [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          19.999999917251664
+        ]
+      ],
+      "size": 2.0,
+      "kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_8",
+      "feature_type": "fillet",
+      "name": "Fillet 2",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            -1.7763568394002505e-15,
+            -3.552713678800501e-15,
+            25.0
+          ],
+          [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          19.99999991725166
+        ]
+      ],
+      "size": 2.0,
+      "kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_9",
+      "feature_type": "fillet",
+      "name": "Chamfer 3",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            -1.7763568394002505e-15,
+            -3.552713678800501e-15,
+            40.0
+          ],
+          [
+            0.0,
+            -0.0,
+            1.0
+          ],
+          19.99999991725166
+        ]
+      ],
+      "size": 2.0,
+      "kind": "chamfer",
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_10",
+      "feature_type": "fillet",
+      "name": "Chamfer 4",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            0.0,
+            -1.7763568394002505e-15,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          19.999999917251664
+        ]
+      ],
+      "size": 2.0,
+      "kind": "chamfer",
+      "exprs": {}
+    },
+    {
+      "feature_id": "move_11",
+      "feature_type": "move",
+      "name": "Move Burken (1)",
+      "suppressed": false,
+      "target_body_id": "body_split_2",
+      "dx": 0.02,
+      "dy": -0.01,
+      "dz": 5.0,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": 0.0,
+      "pivot": "center",
+      "exprs": {}
+    },
+    {
+      "feature_id": "combine_12",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_split_2",
+      "tool_body_id": "body_cylinder_1",
+      "operation": "cut",
+      "keep_tool": true,
+      "exprs": {}
+    },
+    {
+      "feature_id": "offset_face_13",
+      "feature_type": "offset_face",
+      "name": "Offset Face 2",
+      "suppressed": false,
+      "target_body_id": "body_split_2",
+      "faces": [
+        {
+          "kind": "thread",
+          "thread_id": "thread_6",
+          "sign": -1,
+          "shift": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "distance": -0.2,
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Face 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Face 1",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            -0.0,
+            25.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            -0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            -0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -15.357209205627441,
+              -1.5508248805999756
+            ],
+            "p2": [
+              -15.417237281799316,
+              -1.0369199514389038
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -15.417237281799316,
+              -1.0369199514389038
+            ],
+            "p2": [
+              -15.435684204101562,
+              -0.6129857897758484
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -15.435684204101562,
+              -0.6129857897758484
+            ],
+            "p2": [
+              -15.461350440979004,
+              -0.025324977934360504
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -15.461350440979004,
+              -0.025324977934360504
+            ],
+            "p2": [
+              -15.450767517089844,
+              0.3397350013256073
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -15.450767517089844,
+              0.3397350013256073
+            ],
+            "p2": [
+              -15.432242393493652,
+              0.9871569871902466
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              -15.432242393493652,
+              0.9871569871902466
+            ],
+            "p2": [
+              -15.40031623840332,
+              1.3022829294204712
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              -15.40031623840332,
+              1.3022829294204712
+            ],
+            "p2": [
+              -15.330544471740723,
+              1.9948920011520386
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_8",
+            "entity_type": "line",
+            "p1": [
+              -15.330544471740723,
+              1.9948920011520386
+            ],
+            "p2": [
+              -15.282734870910645,
+              2.269449234008789
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_9",
+            "entity_type": "line",
+            "p1": [
+              -15.282734870910645,
+              2.269449234008789
+            ],
+            "p2": [
+              -15.15739631652832,
+              2.9924166202545166
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_10",
+            "entity_type": "line",
+            "p1": [
+              -15.15739631652832,
+              2.9924166202545166
+            ],
+            "p2": [
+              -15.09697437286377,
+              3.2359189987182617
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_11",
+            "entity_type": "line",
+            "p1": [
+              -15.09697437286377,
+              3.2359189987182617
+            ],
+            "p2": [
+              -14.914410591125488,
+              3.9744930267333984
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_12",
+            "entity_type": "line",
+            "p1": [
+              -14.914410591125488,
+              3.9744930267333984
+            ],
+            "p2": [
+              -14.84253215789795,
+              4.196310997009277
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_13",
+            "entity_type": "line",
+            "p1": [
+              -14.84253215789795,
+              4.196310997009277
+            ],
+            "p2": [
+              -14.60363483428955,
+              4.936156749725342
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_14",
+            "entity_type": "line",
+            "p1": [
+              -14.60363483428955,
+              4.936156749725342
+            ],
+            "p2": [
+              -14.519466400146484,
+              5.145205497741699
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_15",
+            "entity_type": "line",
+            "p1": [
+              -14.519466400146484,
+              5.145205497741699
+            ],
+            "p2": [
+              -14.227500915527344,
+              5.872757434844971
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_16",
+            "entity_type": "line",
+            "p1": [
+              -14.227500915527344,
+              5.872757434844971
+            ],
+            "p2": [
+              -14.128410339355469,
+              6.077160358428955
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_17",
+            "entity_type": "line",
+            "p1": [
+              -14.128410339355469,
+              6.077160358428955
+            ],
+            "p2": [
+              -13.78877067565918,
+              6.779991626739502
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_18",
+            "entity_type": "line",
+            "p1": [
+              -13.78877067565918,
+              6.779991626739502
+            ],
+            "p2": [
+              -13.670628547668457,
+              6.9867119789123535
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_19",
+            "entity_type": "line",
+            "p1": [
+              -13.670628547668457,
+              6.9867119789123535
+            ],
+            "p2": [
+              -13.290481567382812,
+              7.653924942016602
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_20",
+            "entity_type": "line",
+            "p1": [
+              -13.290481567382812,
+              7.653924942016602
+            ],
+            "p2": [
+              -13.148091316223145,
+              7.868364334106445
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_21",
+            "entity_type": "line",
+            "p1": [
+              -13.148091316223145,
+              7.868364334106445
+            ],
+            "p2": [
+              -12.735897064208984,
+              8.491007804870605
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_22",
+            "entity_type": "line",
+            "p1": [
+              -12.735897064208984,
+              8.491007804870605
+            ],
+            "p2": [
+              -12.563621520996094,
+              8.716571807861328
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_23",
+            "entity_type": "line",
+            "p1": [
+              -12.563621520996094,
+              8.716571807861328
+            ],
+            "p2": [
+              -12.12844181060791,
+              9.28808307647705
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_24",
+            "entity_type": "line",
+            "p1": [
+              -12.12844181060791,
+              9.28808307647705
+            ],
+            "p2": [
+              -11.921088218688965,
+              9.525725364685059
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_25",
+            "entity_type": "line",
+            "p1": [
+              -11.921088218688965,
+              9.525725364685059
+            ],
+            "p2": [
+              -11.471654891967773,
+              10.042379379272461
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_26",
+            "entity_type": "line",
+            "p1": [
+              -11.471654891967773,
+              10.042379379272461
+            ],
+            "p2": [
+              -11.225688934326172,
+              10.290157318115234
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_27",
+            "entity_type": "line",
+            "p1": [
+              -11.225688934326172,
+              10.290157318115234
+            ],
+            "p2": [
+              -10.769135475158691,
+              10.751510620117188
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_28",
+            "entity_type": "line",
+            "p1": [
+              -10.769135475158691,
+              10.751510620117188
+            ],
+            "p2": [
+              -10.48428726196289,
+              11.004220008850098
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_29",
+            "entity_type": "line",
+            "p1": [
+              -10.48428726196289,
+              11.004220008850098
+            ],
+            "p2": [
+              -10.139969825744629,
+              11.310680389404297
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_30",
+            "entity_type": "line",
+            "p1": [
+              -10.139969825744629,
+              11.310680389404297
+            ],
+            "p2": [
+              -10.018759727478027,
+              11.424205780029297
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_31",
+            "entity_type": "line",
+            "p1": [
+              -10.018759727478027,
+              11.424205780029297
+            ],
+            "p2": [
+              -9.250129699707031,
+              12.055004119873047
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_32",
+            "entity_type": "line",
+            "p1": [
+              -9.250129699707031,
+              12.055004119873047
+            ],
+            "p2": [
+              -8.441889762878418,
+              12.634181022644043
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_33",
+            "entity_type": "line",
+            "p1": [
+              -8.441889762878418,
+              12.634181022644043
+            ],
+            "p2": [
+              -7.597499847412109,
+              13.159255981445312
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_34",
+            "entity_type": "line",
+            "p1": [
+              -7.597499847412109,
+              13.159255981445312
+            ],
+            "p2": [
+              -6.720576763153076,
+              13.627981185913086
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_35",
+            "entity_type": "line",
+            "p1": [
+              -6.720576763153076,
+              13.627981185913086
+            ],
+            "p2": [
+              -5.814874649047852,
+              14.038349151611328
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_36",
+            "entity_type": "line",
+            "p1": [
+              -5.814874649047852,
+              14.038349151611328
+            ],
+            "p2": [
+              -4.884272575378418,
+              14.388603210449219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_37",
+            "entity_type": "line",
+            "p1": [
+              -4.884272575378418,
+              14.388603210449219
+            ],
+            "p2": [
+              -3.932755470275879,
+              14.67724323272705
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_38",
+            "entity_type": "line",
+            "p1": [
+              -3.932755470275879,
+              14.67724323272705
+            ],
+            "p2": [
+              -2.964397430419922,
+              14.903032302856445
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_39",
+            "entity_type": "line",
+            "p1": [
+              -2.964397430419922,
+              14.903032302856445
+            ],
+            "p2": [
+              -1.9833455085754395,
+              15.065004348754883
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_40",
+            "entity_type": "line",
+            "p1": [
+              -1.9833455085754395,
+              15.065004348754883
+            ],
+            "p2": [
+              -0.9938005208969116,
+              15.162466049194336
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_41",
+            "entity_type": "line",
+            "p1": [
+              -0.9938005208969116,
+              15.162466049194336
+            ],
+            "p2": [
+              -1.278437097565401e-15,
+              15.194999694824219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_42",
+            "entity_type": "line",
+            "p1": [
+              -1.278437097565401e-15,
+              15.194999694824219
+            ],
+            "p2": [
+              0.9938005208969116,
+              15.162466049194336
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_43",
+            "entity_type": "line",
+            "p1": [
+              0.9938005208969116,
+              15.162466049194336
+            ],
+            "p2": [
+              1.9833455085754395,
+              15.065004348754883
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_44",
+            "entity_type": "line",
+            "p1": [
+              1.9833455085754395,
+              15.065004348754883
+            ],
+            "p2": [
+              2.964397430419922,
+              14.903032302856445
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_45",
+            "entity_type": "line",
+            "p1": [
+              2.964397430419922,
+              14.903032302856445
+            ],
+            "p2": [
+              3.932755470275879,
+              14.67724323272705
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_46",
+            "entity_type": "line",
+            "p1": [
+              3.932755470275879,
+              14.67724323272705
+            ],
+            "p2": [
+              4.884272575378418,
+              14.388603210449219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_47",
+            "entity_type": "line",
+            "p1": [
+              4.884272575378418,
+              14.388603210449219
+            ],
+            "p2": [
+              5.814874649047852,
+              14.038349151611328
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_48",
+            "entity_type": "line",
+            "p1": [
+              5.814874649047852,
+              14.038349151611328
+            ],
+            "p2": [
+              6.720576763153076,
+              13.627981185913086
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_49",
+            "entity_type": "line",
+            "p1": [
+              6.720576763153076,
+              13.627981185913086
+            ],
+            "p2": [
+              7.597499847412109,
+              13.159255981445312
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_50",
+            "entity_type": "line",
+            "p1": [
+              7.597499847412109,
+              13.159255981445312
+            ],
+            "p2": [
+              8.441889762878418,
+              12.634181022644043
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_51",
+            "entity_type": "line",
+            "p1": [
+              8.441889762878418,
+              12.634181022644043
+            ],
+            "p2": [
+              9.250129699707031,
+              12.055004119873047
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_52",
+            "entity_type": "line",
+            "p1": [
+              9.250129699707031,
+              12.055004119873047
+            ],
+            "p2": [
+              10.018759727478027,
+              11.424205780029297
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_53",
+            "entity_type": "line",
+            "p1": [
+              10.018759727478027,
+              11.424205780029297
+            ],
+            "p2": [
+              10.744487762451172,
+              10.744487762451172
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_54",
+            "entity_type": "line",
+            "p1": [
+              10.744487762451172,
+              10.744487762451172
+            ],
+            "p2": [
+              11.424205780029297,
+              10.018759727478027
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_55",
+            "entity_type": "line",
+            "p1": [
+              11.424205780029297,
+              10.018759727478027
+            ],
+            "p2": [
+              12.055004119873047,
+              9.250129699707031
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_56",
+            "entity_type": "line",
+            "p1": [
+              12.055004119873047,
+              9.250129699707031
+            ],
+            "p2": [
+              12.634181022644043,
+              8.441889762878418
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_57",
+            "entity_type": "line",
+            "p1": [
+              12.634181022644043,
+              8.441889762878418
+            ],
+            "p2": [
+              13.159255981445312,
+              7.597499847412109
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_58",
+            "entity_type": "line",
+            "p1": [
+              13.159255981445312,
+              7.597499847412109
+            ],
+            "p2": [
+              13.627981185913086,
+              6.720576763153076
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_59",
+            "entity_type": "line",
+            "p1": [
+              13.627981185913086,
+              6.720576763153076
+            ],
+            "p2": [
+              14.038349151611328,
+              5.814874649047852
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_60",
+            "entity_type": "line",
+            "p1": [
+              14.038349151611328,
+              5.814874649047852
+            ],
+            "p2": [
+              14.388603210449219,
+              4.884272575378418
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_61",
+            "entity_type": "line",
+            "p1": [
+              14.388603210449219,
+              4.884272575378418
+            ],
+            "p2": [
+              14.67724323272705,
+              3.932755470275879
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_62",
+            "entity_type": "line",
+            "p1": [
+              14.67724323272705,
+              3.932755470275879
+            ],
+            "p2": [
+              14.903032302856445,
+              2.964397430419922
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_63",
+            "entity_type": "line",
+            "p1": [
+              14.903032302856445,
+              2.964397430419922
+            ],
+            "p2": [
+              15.065004348754883,
+              1.9833455085754395
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_64",
+            "entity_type": "line",
+            "p1": [
+              15.065004348754883,
+              1.9833455085754395
+            ],
+            "p2": [
+              15.162466049194336,
+              0.9938005208969116
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_65",
+            "entity_type": "line",
+            "p1": [
+              15.162466049194336,
+              0.9938005208969116
+            ],
+            "p2": [
+              15.194999694824219,
+              4.12399066932764e-17
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_66",
+            "entity_type": "line",
+            "p1": [
+              15.194999694824219,
+              4.12399066932764e-17
+            ],
+            "p2": [
+              15.162466049194336,
+              -0.9938005208969116
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_67",
+            "entity_type": "line",
+            "p1": [
+              15.162466049194336,
+              -0.9938005208969116
+            ],
+            "p2": [
+              15.065004348754883,
+              -1.9833455085754395
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_68",
+            "entity_type": "line",
+            "p1": [
+              15.065004348754883,
+              -1.9833455085754395
+            ],
+            "p2": [
+              14.903032302856445,
+              -2.964397430419922
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_69",
+            "entity_type": "line",
+            "p1": [
+              14.903032302856445,
+              -2.964397430419922
+            ],
+            "p2": [
+              14.67724323272705,
+              -3.932755470275879
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_70",
+            "entity_type": "line",
+            "p1": [
+              14.67724323272705,
+              -3.932755470275879
+            ],
+            "p2": [
+              14.388603210449219,
+              -4.884272575378418
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_71",
+            "entity_type": "line",
+            "p1": [
+              14.388603210449219,
+              -4.884272575378418
+            ],
+            "p2": [
+              14.038349151611328,
+              -5.814874649047852
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_72",
+            "entity_type": "line",
+            "p1": [
+              14.038349151611328,
+              -5.814874649047852
+            ],
+            "p2": [
+              13.627981185913086,
+              -6.720576763153076
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_73",
+            "entity_type": "line",
+            "p1": [
+              13.627981185913086,
+              -6.720576763153076
+            ],
+            "p2": [
+              13.159255981445312,
+              -7.597499847412109
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_74",
+            "entity_type": "line",
+            "p1": [
+              13.159255981445312,
+              -7.597499847412109
+            ],
+            "p2": [
+              12.634181022644043,
+              -8.441889762878418
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_75",
+            "entity_type": "line",
+            "p1": [
+              12.634181022644043,
+              -8.441889762878418
+            ],
+            "p2": [
+              12.055004119873047,
+              -9.250129699707031
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_76",
+            "entity_type": "line",
+            "p1": [
+              12.055004119873047,
+              -9.250129699707031
+            ],
+            "p2": [
+              11.424205780029297,
+              -10.018759727478027
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_77",
+            "entity_type": "line",
+            "p1": [
+              11.424205780029297,
+              -10.018759727478027
+            ],
+            "p2": [
+              10.744487762451172,
+              -10.744487762451172
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_78",
+            "entity_type": "line",
+            "p1": [
+              10.744487762451172,
+              -10.744487762451172
+            ],
+            "p2": [
+              10.018759727478027,
+              -11.424205780029297
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_79",
+            "entity_type": "line",
+            "p1": [
+              10.018759727478027,
+              -11.424205780029297
+            ],
+            "p2": [
+              9.250129699707031,
+              -12.055004119873047
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_80",
+            "entity_type": "line",
+            "p1": [
+              9.250129699707031,
+              -12.055004119873047
+            ],
+            "p2": [
+              8.441889762878418,
+              -12.634181022644043
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_81",
+            "entity_type": "line",
+            "p1": [
+              8.441889762878418,
+              -12.634181022644043
+            ],
+            "p2": [
+              7.597499847412109,
+              -13.159255981445312
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_82",
+            "entity_type": "line",
+            "p1": [
+              7.597499847412109,
+              -13.159255981445312
+            ],
+            "p2": [
+              6.720576763153076,
+              -13.627981185913086
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_83",
+            "entity_type": "line",
+            "p1": [
+              6.720576763153076,
+              -13.627981185913086
+            ],
+            "p2": [
+              5.814874649047852,
+              -14.038349151611328
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_84",
+            "entity_type": "line",
+            "p1": [
+              5.814874649047852,
+              -14.038349151611328
+            ],
+            "p2": [
+              4.884272575378418,
+              -14.388603210449219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_85",
+            "entity_type": "line",
+            "p1": [
+              4.884272575378418,
+              -14.388603210449219
+            ],
+            "p2": [
+              3.932755470275879,
+              -14.67724323272705
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_86",
+            "entity_type": "line",
+            "p1": [
+              3.932755470275879,
+              -14.67724323272705
+            ],
+            "p2": [
+              2.964397430419922,
+              -14.903032302856445
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_87",
+            "entity_type": "line",
+            "p1": [
+              2.964397430419922,
+              -14.903032302856445
+            ],
+            "p2": [
+              1.9833455085754395,
+              -15.065004348754883
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_88",
+            "entity_type": "line",
+            "p1": [
+              1.9833455085754395,
+              -15.065004348754883
+            ],
+            "p2": [
+              0.9938005208969116,
+              -15.162466049194336
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_89",
+            "entity_type": "line",
+            "p1": [
+              0.9938005208969116,
+              -15.162466049194336
+            ],
+            "p2": [
+              -1.278437097565401e-15,
+              -15.194999694824219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_90",
+            "entity_type": "line",
+            "p1": [
+              -1.278437097565401e-15,
+              -15.194999694824219
+            ],
+            "p2": [
+              -0.9938005208969116,
+              -15.162466049194336
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_91",
+            "entity_type": "line",
+            "p1": [
+              -0.9938005208969116,
+              -15.162466049194336
+            ],
+            "p2": [
+              -1.9833455085754395,
+              -15.065004348754883
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_92",
+            "entity_type": "line",
+            "p1": [
+              -1.9833455085754395,
+              -15.065004348754883
+            ],
+            "p2": [
+              -2.964397430419922,
+              -14.903032302856445
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_93",
+            "entity_type": "line",
+            "p1": [
+              -2.964397430419922,
+              -14.903032302856445
+            ],
+            "p2": [
+              -3.932755470275879,
+              -14.67724323272705
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_94",
+            "entity_type": "line",
+            "p1": [
+              -3.932755470275879,
+              -14.67724323272705
+            ],
+            "p2": [
+              -4.884272575378418,
+              -14.388603210449219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_95",
+            "entity_type": "line",
+            "p1": [
+              -4.884272575378418,
+              -14.388603210449219
+            ],
+            "p2": [
+              -5.814874649047852,
+              -14.038349151611328
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_96",
+            "entity_type": "line",
+            "p1": [
+              -5.814874649047852,
+              -14.038349151611328
+            ],
+            "p2": [
+              -6.720576763153076,
+              -13.627981185913086
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_97",
+            "entity_type": "line",
+            "p1": [
+              -6.720576763153076,
+              -13.627981185913086
+            ],
+            "p2": [
+              -7.597499847412109,
+              -13.159255981445312
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_98",
+            "entity_type": "line",
+            "p1": [
+              -7.597499847412109,
+              -13.159255981445312
+            ],
+            "p2": [
+              -8.441889762878418,
+              -12.634181022644043
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_99",
+            "entity_type": "line",
+            "p1": [
+              -8.441889762878418,
+              -12.634181022644043
+            ],
+            "p2": [
+              -9.250129699707031,
+              -12.055004119873047
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_100",
+            "entity_type": "line",
+            "p1": [
+              -9.250129699707031,
+              -12.055004119873047
+            ],
+            "p2": [
+              -10.018759727478027,
+              -11.424205780029297
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_101",
+            "entity_type": "line",
+            "p1": [
+              -10.018759727478027,
+              -11.424205780029297
+            ],
+            "p2": [
+              -10.744487762451172,
+              -10.744487762451172
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_102",
+            "entity_type": "line",
+            "p1": [
+              -10.744487762451172,
+              -10.744487762451172
+            ],
+            "p2": [
+              -11.424205780029297,
+              -10.018759727478027
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_103",
+            "entity_type": "line",
+            "p1": [
+              -11.424205780029297,
+              -10.018759727478027
+            ],
+            "p2": [
+              -12.055004119873047,
+              -9.250129699707031
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_104",
+            "entity_type": "line",
+            "p1": [
+              -12.055004119873047,
+              -9.250129699707031
+            ],
+            "p2": [
+              -12.634181022644043,
+              -8.441889762878418
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_105",
+            "entity_type": "line",
+            "p1": [
+              -12.634181022644043,
+              -8.441889762878418
+            ],
+            "p2": [
+              -13.159255981445312,
+              -7.597499847412109
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_106",
+            "entity_type": "line",
+            "p1": [
+              -13.159255981445312,
+              -7.597499847412109
+            ],
+            "p2": [
+              -13.627981185913086,
+              -6.720576763153076
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_107",
+            "entity_type": "line",
+            "p1": [
+              -13.627981185913086,
+              -6.720576763153076
+            ],
+            "p2": [
+              -13.785776138305664,
+              -6.372315883636475
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_108",
+            "entity_type": "line",
+            "p1": [
+              -13.785776138305664,
+              -6.372315883636475
+            ],
+            "p2": [
+              -14.106066703796387,
+              -5.876789569854736
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_109",
+            "entity_type": "line",
+            "p1": [
+              -14.106066703796387,
+              -5.876789569854736
+            ],
+            "p2": [
+              -14.124106407165527,
+              -5.844785690307617
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_110",
+            "entity_type": "line",
+            "p1": [
+              -14.124106407165527,
+              -5.844785690307617
+            ],
+            "p2": [
+              -14.169599533081055,
+              -5.763129234313965
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_111",
+            "entity_type": "line",
+            "p1": [
+              -14.169599533081055,
+              -5.763129234313965
+            ],
+            "p2": [
+              -14.471209526062012,
+              -5.061720371246338
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_112",
+            "entity_type": "line",
+            "p1": [
+              -14.471209526062012,
+              -5.061720371246338
+            ],
+            "p2": [
+              -14.51513671875,
+              -4.959285259246826
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_113",
+            "entity_type": "line",
+            "p1": [
+              -14.51513671875,
+              -4.959285259246826
+            ],
+            "p2": [
+              -14.770970344543457,
+              -4.228003978729248
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_114",
+            "entity_type": "line",
+            "p1": [
+              -14.770970344543457,
+              -4.228003978729248
+            ],
+            "p2": [
+              -14.847450256347656,
+              -4.008787631988525
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_115",
+            "entity_type": "line",
+            "p1": [
+              -14.847450256347656,
+              -4.008787631988525
+            ],
+            "p2": [
+              -15.021363258361816,
+              -3.3627450466156006
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_116",
+            "entity_type": "line",
+            "p1": [
+              -15.021363258361816,
+              -3.3627450466156006
+            ],
+            "p2": [
+              -15.109539985656738,
+              -3.034428834915161
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_117",
+            "entity_type": "line",
+            "p1": [
+              -15.109539985656738,
+              -3.034428834915161
+            ],
+            "p2": [
+              -15.218027114868164,
+              -2.4689366817474365
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_118",
+            "entity_type": "line",
+            "p1": [
+              -15.218027114868164,
+              -2.4689366817474365
+            ],
+            "p2": [
+              -15.299812316894531,
+              -2.041884183883667
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_119",
+            "entity_type": "line",
+            "p1": [
+              -15.299812316894531,
+              -2.041884183883667
+            ],
+            "p2": [
+              -15.357209205627441,
+              -1.5508248805999756
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": [
+          0.0,
+          -0.0,
+          1.0,
+          25.0,
+          728.25,
+          -0.13,
+          -0.01
+        ],
+        "parent_body_id": "body_split_2",
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_15",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": -14.0,
+      "operation": "cut",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -0.06827028809927806,
+          0.008361368927194952,
+          728.2487021850313
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_2",
+      "feature_type": "sketch",
+      "name": "Face 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_2",
+        "name": "Face 2",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            0.0,
+            11.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -14.770999908447266,
+              -4.228000164031982
+            ],
+            "p2": [
+              -14.84749984741211,
+              -4.008800029754639
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -14.84749984741211,
+              -4.008800029754639
+            ],
+            "p2": [
+              -15.021400451660156,
+              -3.3626999855041504
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -15.021400451660156,
+              -3.3626999855041504
+            ],
+            "p2": [
+              -15.10949993133545,
+              -3.03439998626709
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -15.10949993133545,
+              -3.03439998626709
+            ],
+            "p2": [
+              -15.218000411987305,
+              -2.468899965286255
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -15.218000411987305,
+              -2.468899965286255
+            ],
+            "p2": [
+              -15.299799919128418,
+              -2.0418999195098877
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              -15.299799919128418,
+              -2.0418999195098877
+            ],
+            "p2": [
+              -15.357199668884277,
+              -1.5507999658584595
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              -15.357199668884277,
+              -1.5507999658584595
+            ],
+            "p2": [
+              -15.417200088500977,
+              -1.0369000434875488
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_8",
+            "entity_type": "line",
+            "p1": [
+              -15.417200088500977,
+              -1.0369000434875488
+            ],
+            "p2": [
+              -15.435700416564941,
+              -0.6129999756813049
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_9",
+            "entity_type": "line",
+            "p1": [
+              -15.435700416564941,
+              -0.6129999756813049
+            ],
+            "p2": [
+              -15.461400032043457,
+              -0.025300003588199615
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_10",
+            "entity_type": "line",
+            "p1": [
+              -15.461400032043457,
+              -0.025300003588199615
+            ],
+            "p2": [
+              -15.450799942016602,
+              0.33969998359680176
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_11",
+            "entity_type": "line",
+            "p1": [
+              -15.450799942016602,
+              0.33969998359680176
+            ],
+            "p2": [
+              -15.43220043182373,
+              0.9872000217437744
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_12",
+            "entity_type": "line",
+            "p1": [
+              -15.43220043182373,
+              0.9872000217437744
+            ],
+            "p2": [
+              -15.400300025939941,
+              1.302299976348877
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_13",
+            "entity_type": "line",
+            "p1": [
+              -15.400300025939941,
+              1.302299976348877
+            ],
+            "p2": [
+              -15.330499649047852,
+              1.9948999881744385
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_14",
+            "entity_type": "line",
+            "p1": [
+              -15.330499649047852,
+              1.9948999881744385
+            ],
+            "p2": [
+              -15.282699584960938,
+              2.269400119781494
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_15",
+            "entity_type": "line",
+            "p1": [
+              -15.282699584960938,
+              2.269400119781494
+            ],
+            "p2": [
+              -15.157400131225586,
+              2.9923999309539795
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_16",
+            "entity_type": "line",
+            "p1": [
+              -15.157400131225586,
+              2.9923999309539795
+            ],
+            "p2": [
+              -15.097000122070312,
+              3.2358999252319336
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_17",
+            "entity_type": "line",
+            "p1": [
+              -15.097000122070312,
+              3.2358999252319336
+            ],
+            "p2": [
+              -14.914400100708008,
+              3.9744999408721924
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_18",
+            "entity_type": "line",
+            "p1": [
+              -14.914400100708008,
+              3.9744999408721924
+            ],
+            "p2": [
+              -14.842499732971191,
+              4.196300029754639
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_19",
+            "entity_type": "line",
+            "p1": [
+              -14.842499732971191,
+              4.196300029754639
+            ],
+            "p2": [
+              -14.603599548339844,
+              4.936200141906738
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_20",
+            "entity_type": "line",
+            "p1": [
+              -14.603599548339844,
+              4.936200141906738
+            ],
+            "p2": [
+              -14.519499778747559,
+              5.145199775695801
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_21",
+            "entity_type": "line",
+            "p1": [
+              -14.519499778747559,
+              5.145199775695801
+            ],
+            "p2": [
+              -14.227499961853027,
+              5.872799873352051
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_22",
+            "entity_type": "line",
+            "p1": [
+              -14.227499961853027,
+              5.872799873352051
+            ],
+            "p2": [
+              -14.128399848937988,
+              6.077199935913086
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_23",
+            "entity_type": "line",
+            "p1": [
+              -14.128399848937988,
+              6.077199935913086
+            ],
+            "p2": [
+              -13.788800239562988,
+              6.78000020980835
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_24",
+            "entity_type": "line",
+            "p1": [
+              -13.788800239562988,
+              6.78000020980835
+            ],
+            "p2": [
+              -13.670599937438965,
+              6.986700057983398
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_25",
+            "entity_type": "line",
+            "p1": [
+              -13.670599937438965,
+              6.986700057983398
+            ],
+            "p2": [
+              -13.290499687194824,
+              7.653900146484375
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_26",
+            "entity_type": "line",
+            "p1": [
+              -13.290499687194824,
+              7.653900146484375
+            ],
+            "p2": [
+              -13.148099899291992,
+              7.8684000968933105
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_27",
+            "entity_type": "line",
+            "p1": [
+              -13.148099899291992,
+              7.8684000968933105
+            ],
+            "p2": [
+              -12.735899925231934,
+              8.491000175476074
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_28",
+            "entity_type": "line",
+            "p1": [
+              -12.735899925231934,
+              8.491000175476074
+            ],
+            "p2": [
+              -12.563599586486816,
+              8.71660041809082
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_29",
+            "entity_type": "line",
+            "p1": [
+              -12.563599586486816,
+              8.71660041809082
+            ],
+            "p2": [
+              -12.128399848937988,
+              9.288100242614746
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_30",
+            "entity_type": "line",
+            "p1": [
+              -12.128399848937988,
+              9.288100242614746
+            ],
+            "p2": [
+              -11.921099662780762,
+              9.525699615478516
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_31",
+            "entity_type": "line",
+            "p1": [
+              -11.921099662780762,
+              9.525699615478516
+            ],
+            "p2": [
+              -11.471699714660645,
+              10.042400360107422
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_32",
+            "entity_type": "line",
+            "p1": [
+              -11.471699714660645,
+              10.042400360107422
+            ],
+            "p2": [
+              -11.225700378417969,
+              10.290200233459473
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_33",
+            "entity_type": "line",
+            "p1": [
+              -11.225700378417969,
+              10.290200233459473
+            ],
+            "p2": [
+              -10.769100189208984,
+              10.751500129699707
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_34",
+            "entity_type": "line",
+            "p1": [
+              -10.769100189208984,
+              10.751500129699707
+            ],
+            "p2": [
+              -10.484299659729004,
+              11.004199981689453
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_35",
+            "entity_type": "line",
+            "p1": [
+              -10.484299659729004,
+              11.004199981689453
+            ],
+            "p2": [
+              -10.140000343322754,
+              11.310700416564941
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_36",
+            "entity_type": "line",
+            "p1": [
+              -10.140000343322754,
+              11.310700416564941
+            ],
+            "p2": [
+              -10.018799781799316,
+              11.424200057983398
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_37",
+            "entity_type": "line",
+            "p1": [
+              -10.018799781799316,
+              11.424200057983398
+            ],
+            "p2": [
+              -9.250100135803223,
+              12.055000305175781
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_38",
+            "entity_type": "line",
+            "p1": [
+              -9.250100135803223,
+              12.055000305175781
+            ],
+            "p2": [
+              -8.441900253295898,
+              12.634200096130371
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_39",
+            "entity_type": "line",
+            "p1": [
+              -8.441900253295898,
+              12.634200096130371
+            ],
+            "p2": [
+              -7.597499847412109,
+              13.159299850463867
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_40",
+            "entity_type": "line",
+            "p1": [
+              -7.597499847412109,
+              13.159299850463867
+            ],
+            "p2": [
+              -6.720600128173828,
+              13.628000259399414
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_41",
+            "entity_type": "line",
+            "p1": [
+              -6.720600128173828,
+              13.628000259399414
+            ],
+            "p2": [
+              -5.814899921417236,
+              14.038299560546875
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_42",
+            "entity_type": "line",
+            "p1": [
+              -5.814899921417236,
+              14.038299560546875
+            ],
+            "p2": [
+              -4.884300231933594,
+              14.38860034942627
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_43",
+            "entity_type": "line",
+            "p1": [
+              -4.884300231933594,
+              14.38860034942627
+            ],
+            "p2": [
+              -3.932800054550171,
+              14.677200317382812
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_44",
+            "entity_type": "line",
+            "p1": [
+              -3.932800054550171,
+              14.677200317382812
+            ],
+            "p2": [
+              -2.964400053024292,
+              14.902999877929688
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_45",
+            "entity_type": "line",
+            "p1": [
+              -2.964400053024292,
+              14.902999877929688
+            ],
+            "p2": [
+              -1.983299970626831,
+              15.0649995803833
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_46",
+            "entity_type": "line",
+            "p1": [
+              -1.983299970626831,
+              15.0649995803833
+            ],
+            "p2": [
+              -0.9937999844551086,
+              15.162500381469727
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_47",
+            "entity_type": "line",
+            "p1": [
+              -0.9937999844551086,
+              15.162500381469727
+            ],
+            "p2": [
+              0.0,
+              15.194999694824219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_48",
+            "entity_type": "line",
+            "p1": [
+              0.0,
+              15.194999694824219
+            ],
+            "p2": [
+              0.9937999844551086,
+              15.162500381469727
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_49",
+            "entity_type": "line",
+            "p1": [
+              0.9937999844551086,
+              15.162500381469727
+            ],
+            "p2": [
+              1.983299970626831,
+              15.0649995803833
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_50",
+            "entity_type": "line",
+            "p1": [
+              1.983299970626831,
+              15.0649995803833
+            ],
+            "p2": [
+              2.964400053024292,
+              14.902999877929688
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_51",
+            "entity_type": "line",
+            "p1": [
+              2.964400053024292,
+              14.902999877929688
+            ],
+            "p2": [
+              3.932800054550171,
+              14.677200317382812
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_52",
+            "entity_type": "line",
+            "p1": [
+              3.932800054550171,
+              14.677200317382812
+            ],
+            "p2": [
+              4.884300231933594,
+              14.38860034942627
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_53",
+            "entity_type": "line",
+            "p1": [
+              4.884300231933594,
+              14.38860034942627
+            ],
+            "p2": [
+              5.814899921417236,
+              14.038299560546875
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_54",
+            "entity_type": "line",
+            "p1": [
+              5.814899921417236,
+              14.038299560546875
+            ],
+            "p2": [
+              6.720600128173828,
+              13.628000259399414
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_55",
+            "entity_type": "line",
+            "p1": [
+              6.720600128173828,
+              13.628000259399414
+            ],
+            "p2": [
+              7.597499847412109,
+              13.159299850463867
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_56",
+            "entity_type": "line",
+            "p1": [
+              7.597499847412109,
+              13.159299850463867
+            ],
+            "p2": [
+              8.441900253295898,
+              12.634200096130371
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_57",
+            "entity_type": "line",
+            "p1": [
+              8.441900253295898,
+              12.634200096130371
+            ],
+            "p2": [
+              9.250100135803223,
+              12.055000305175781
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_58",
+            "entity_type": "line",
+            "p1": [
+              9.250100135803223,
+              12.055000305175781
+            ],
+            "p2": [
+              10.018799781799316,
+              11.424200057983398
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_59",
+            "entity_type": "line",
+            "p1": [
+              10.018799781799316,
+              11.424200057983398
+            ],
+            "p2": [
+              10.744500160217285,
+              10.744500160217285
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_60",
+            "entity_type": "line",
+            "p1": [
+              10.744500160217285,
+              10.744500160217285
+            ],
+            "p2": [
+              11.424200057983398,
+              10.018799781799316
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_61",
+            "entity_type": "line",
+            "p1": [
+              11.424200057983398,
+              10.018799781799316
+            ],
+            "p2": [
+              12.055000305175781,
+              9.250100135803223
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_62",
+            "entity_type": "line",
+            "p1": [
+              12.055000305175781,
+              9.250100135803223
+            ],
+            "p2": [
+              12.634200096130371,
+              8.441900253295898
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_63",
+            "entity_type": "line",
+            "p1": [
+              12.634200096130371,
+              8.441900253295898
+            ],
+            "p2": [
+              13.159299850463867,
+              7.597499847412109
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_64",
+            "entity_type": "line",
+            "p1": [
+              13.159299850463867,
+              7.597499847412109
+            ],
+            "p2": [
+              13.628000259399414,
+              6.720600128173828
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_65",
+            "entity_type": "line",
+            "p1": [
+              13.628000259399414,
+              6.720600128173828
+            ],
+            "p2": [
+              14.038299560546875,
+              5.814899921417236
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_66",
+            "entity_type": "line",
+            "p1": [
+              14.038299560546875,
+              5.814899921417236
+            ],
+            "p2": [
+              14.38860034942627,
+              4.884300231933594
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_67",
+            "entity_type": "line",
+            "p1": [
+              14.38860034942627,
+              4.884300231933594
+            ],
+            "p2": [
+              14.677200317382812,
+              3.932800054550171
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_68",
+            "entity_type": "line",
+            "p1": [
+              14.677200317382812,
+              3.932800054550171
+            ],
+            "p2": [
+              14.902999877929688,
+              2.964400053024292
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_69",
+            "entity_type": "line",
+            "p1": [
+              14.902999877929688,
+              2.964400053024292
+            ],
+            "p2": [
+              15.0649995803833,
+              1.983299970626831
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_70",
+            "entity_type": "line",
+            "p1": [
+              15.0649995803833,
+              1.983299970626831
+            ],
+            "p2": [
+              15.162500381469727,
+              0.9937999844551086
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_71",
+            "entity_type": "line",
+            "p1": [
+              15.162500381469727,
+              0.9937999844551086
+            ],
+            "p2": [
+              15.194999694824219,
+              0.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_72",
+            "entity_type": "line",
+            "p1": [
+              15.194999694824219,
+              0.0
+            ],
+            "p2": [
+              15.162500381469727,
+              -0.9937999844551086
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_73",
+            "entity_type": "line",
+            "p1": [
+              15.162500381469727,
+              -0.9937999844551086
+            ],
+            "p2": [
+              15.0649995803833,
+              -1.983299970626831
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_74",
+            "entity_type": "line",
+            "p1": [
+              15.0649995803833,
+              -1.983299970626831
+            ],
+            "p2": [
+              14.902999877929688,
+              -2.964400053024292
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_75",
+            "entity_type": "line",
+            "p1": [
+              14.902999877929688,
+              -2.964400053024292
+            ],
+            "p2": [
+              14.677200317382812,
+              -3.932800054550171
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_76",
+            "entity_type": "line",
+            "p1": [
+              14.677200317382812,
+              -3.932800054550171
+            ],
+            "p2": [
+              14.38860034942627,
+              -4.884300231933594
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_77",
+            "entity_type": "line",
+            "p1": [
+              14.38860034942627,
+              -4.884300231933594
+            ],
+            "p2": [
+              14.038299560546875,
+              -5.814899921417236
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_78",
+            "entity_type": "line",
+            "p1": [
+              14.038299560546875,
+              -5.814899921417236
+            ],
+            "p2": [
+              13.628000259399414,
+              -6.720600128173828
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_79",
+            "entity_type": "line",
+            "p1": [
+              13.628000259399414,
+              -6.720600128173828
+            ],
+            "p2": [
+              13.159299850463867,
+              -7.597499847412109
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_80",
+            "entity_type": "line",
+            "p1": [
+              13.159299850463867,
+              -7.597499847412109
+            ],
+            "p2": [
+              12.634200096130371,
+              -8.441900253295898
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_81",
+            "entity_type": "line",
+            "p1": [
+              12.634200096130371,
+              -8.441900253295898
+            ],
+            "p2": [
+              12.055000305175781,
+              -9.250100135803223
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_82",
+            "entity_type": "line",
+            "p1": [
+              12.055000305175781,
+              -9.250100135803223
+            ],
+            "p2": [
+              11.424200057983398,
+              -10.018799781799316
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_83",
+            "entity_type": "line",
+            "p1": [
+              11.424200057983398,
+              -10.018799781799316
+            ],
+            "p2": [
+              10.744500160217285,
+              -10.744500160217285
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_84",
+            "entity_type": "line",
+            "p1": [
+              10.744500160217285,
+              -10.744500160217285
+            ],
+            "p2": [
+              10.018799781799316,
+              -11.424200057983398
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_85",
+            "entity_type": "line",
+            "p1": [
+              10.018799781799316,
+              -11.424200057983398
+            ],
+            "p2": [
+              9.250100135803223,
+              -12.055000305175781
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_86",
+            "entity_type": "line",
+            "p1": [
+              9.250100135803223,
+              -12.055000305175781
+            ],
+            "p2": [
+              8.441900253295898,
+              -12.634200096130371
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_87",
+            "entity_type": "line",
+            "p1": [
+              8.441900253295898,
+              -12.634200096130371
+            ],
+            "p2": [
+              7.597499847412109,
+              -13.159299850463867
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_88",
+            "entity_type": "line",
+            "p1": [
+              7.597499847412109,
+              -13.159299850463867
+            ],
+            "p2": [
+              6.720600128173828,
+              -13.628000259399414
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_89",
+            "entity_type": "line",
+            "p1": [
+              6.720600128173828,
+              -13.628000259399414
+            ],
+            "p2": [
+              5.814899921417236,
+              -14.038299560546875
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_90",
+            "entity_type": "line",
+            "p1": [
+              5.814899921417236,
+              -14.038299560546875
+            ],
+            "p2": [
+              4.884300231933594,
+              -14.38860034942627
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_91",
+            "entity_type": "line",
+            "p1": [
+              4.884300231933594,
+              -14.38860034942627
+            ],
+            "p2": [
+              3.932800054550171,
+              -14.677200317382812
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_92",
+            "entity_type": "line",
+            "p1": [
+              3.932800054550171,
+              -14.677200317382812
+            ],
+            "p2": [
+              2.964400053024292,
+              -14.902999877929688
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_93",
+            "entity_type": "line",
+            "p1": [
+              2.964400053024292,
+              -14.902999877929688
+            ],
+            "p2": [
+              1.983299970626831,
+              -15.0649995803833
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_94",
+            "entity_type": "line",
+            "p1": [
+              1.983299970626831,
+              -15.0649995803833
+            ],
+            "p2": [
+              0.9937999844551086,
+              -15.162500381469727
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_95",
+            "entity_type": "line",
+            "p1": [
+              0.9937999844551086,
+              -15.162500381469727
+            ],
+            "p2": [
+              0.0,
+              -15.194999694824219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_96",
+            "entity_type": "line",
+            "p1": [
+              0.0,
+              -15.194999694824219
+            ],
+            "p2": [
+              -0.9937999844551086,
+              -15.162500381469727
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_97",
+            "entity_type": "line",
+            "p1": [
+              -0.9937999844551086,
+              -15.162500381469727
+            ],
+            "p2": [
+              -1.983299970626831,
+              -15.0649995803833
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_98",
+            "entity_type": "line",
+            "p1": [
+              -1.983299970626831,
+              -15.0649995803833
+            ],
+            "p2": [
+              -2.964400053024292,
+              -14.902999877929688
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_99",
+            "entity_type": "line",
+            "p1": [
+              -2.964400053024292,
+              -14.902999877929688
+            ],
+            "p2": [
+              -3.932800054550171,
+              -14.677200317382812
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_100",
+            "entity_type": "line",
+            "p1": [
+              -3.932800054550171,
+              -14.677200317382812
+            ],
+            "p2": [
+              -4.884300231933594,
+              -14.38860034942627
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_101",
+            "entity_type": "line",
+            "p1": [
+              -4.884300231933594,
+              -14.38860034942627
+            ],
+            "p2": [
+              -5.814899921417236,
+              -14.038299560546875
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_102",
+            "entity_type": "line",
+            "p1": [
+              -5.814899921417236,
+              -14.038299560546875
+            ],
+            "p2": [
+              -6.720600128173828,
+              -13.628000259399414
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_103",
+            "entity_type": "line",
+            "p1": [
+              -6.720600128173828,
+              -13.628000259399414
+            ],
+            "p2": [
+              -7.597499847412109,
+              -13.159299850463867
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_104",
+            "entity_type": "line",
+            "p1": [
+              -7.597499847412109,
+              -13.159299850463867
+            ],
+            "p2": [
+              -8.441900253295898,
+              -12.634200096130371
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_105",
+            "entity_type": "line",
+            "p1": [
+              -8.441900253295898,
+              -12.634200096130371
+            ],
+            "p2": [
+              -9.250100135803223,
+              -12.055000305175781
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_106",
+            "entity_type": "line",
+            "p1": [
+              -9.250100135803223,
+              -12.055000305175781
+            ],
+            "p2": [
+              -10.018799781799316,
+              -11.424200057983398
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_107",
+            "entity_type": "line",
+            "p1": [
+              -10.018799781799316,
+              -11.424200057983398
+            ],
+            "p2": [
+              -10.744500160217285,
+              -10.744500160217285
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_108",
+            "entity_type": "line",
+            "p1": [
+              -10.744500160217285,
+              -10.744500160217285
+            ],
+            "p2": [
+              -11.424200057983398,
+              -10.018799781799316
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_109",
+            "entity_type": "line",
+            "p1": [
+              -11.424200057983398,
+              -10.018799781799316
+            ],
+            "p2": [
+              -12.055000305175781,
+              -9.250100135803223
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_110",
+            "entity_type": "line",
+            "p1": [
+              -12.055000305175781,
+              -9.250100135803223
+            ],
+            "p2": [
+              -12.634200096130371,
+              -8.441900253295898
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_111",
+            "entity_type": "line",
+            "p1": [
+              -12.634200096130371,
+              -8.441900253295898
+            ],
+            "p2": [
+              -13.159299850463867,
+              -7.597499847412109
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_112",
+            "entity_type": "line",
+            "p1": [
+              -13.159299850463867,
+              -7.597499847412109
+            ],
+            "p2": [
+              -13.628000259399414,
+              -6.720600128173828
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_113",
+            "entity_type": "line",
+            "p1": [
+              -13.628000259399414,
+              -6.720600128173828
+            ],
+            "p2": [
+              -13.73067569732666,
+              -6.493924617767334
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_114",
+            "entity_type": "line",
+            "p1": [
+              -13.73067569732666,
+              -6.493924617767334
+            ],
+            "p2": [
+              -13.785799980163574,
+              -6.372300148010254
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_115",
+            "entity_type": "line",
+            "p1": [
+              -13.785799980163574,
+              -6.372300148010254
+            ],
+            "p2": [
+              -14.106100082397461,
+              -5.876800060272217
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_116",
+            "entity_type": "line",
+            "p1": [
+              -14.106100082397461,
+              -5.876800060272217
+            ],
+            "p2": [
+              -14.124099731445312,
+              -5.844799995422363
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_117",
+            "entity_type": "line",
+            "p1": [
+              -14.124099731445312,
+              -5.844799995422363
+            ],
+            "p2": [
+              -14.169599533081055,
+              -5.7631001472473145
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_118",
+            "entity_type": "line",
+            "p1": [
+              -14.169599533081055,
+              -5.7631001472473145
+            ],
+            "p2": [
+              -14.471199989318848,
+              -5.061699867248535
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_119",
+            "entity_type": "line",
+            "p1": [
+              -14.471199989318848,
+              -5.061699867248535
+            ],
+            "p2": [
+              -14.515100479125977,
+              -4.9593000411987305
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_120",
+            "entity_type": "line",
+            "p1": [
+              -14.515100479125977,
+              -4.9593000411987305
+            ],
+            "p2": [
+              -14.770999908447266,
+              -4.228000164031982
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": [
+          0.0,
+          0.0,
+          1.0,
+          11.0,
+          728.25,
+          -0.13,
+          0.17
+        ],
+        "parent_body_id": "body_split_2",
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_17",
+      "feature_type": "extrude",
+      "name": "Extrude 2",
+      "suppressed": false,
+      "sketch_id": "sketch_2",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": -2.9,
+      "operation": "cut",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -0.06827033101067922,
+          0.008361348370713869,
+          728.248704475
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Face 1",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          -0.0,
+          25.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          -0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -15.357209205627441,
+            -1.5508248805999756
+          ],
+          "p2": [
+            -15.417237281799316,
+            -1.0369199514389038
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -15.417237281799316,
+            -1.0369199514389038
+          ],
+          "p2": [
+            -15.435684204101562,
+            -0.6129857897758484
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -15.435684204101562,
+            -0.6129857897758484
+          ],
+          "p2": [
+            -15.461350440979004,
+            -0.025324977934360504
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -15.461350440979004,
+            -0.025324977934360504
+          ],
+          "p2": [
+            -15.450767517089844,
+            0.3397350013256073
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -15.450767517089844,
+            0.3397350013256073
+          ],
+          "p2": [
+            -15.432242393493652,
+            0.9871569871902466
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            -15.432242393493652,
+            0.9871569871902466
+          ],
+          "p2": [
+            -15.40031623840332,
+            1.3022829294204712
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            -15.40031623840332,
+            1.3022829294204712
+          ],
+          "p2": [
+            -15.330544471740723,
+            1.9948920011520386
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_8",
+          "entity_type": "line",
+          "p1": [
+            -15.330544471740723,
+            1.9948920011520386
+          ],
+          "p2": [
+            -15.282734870910645,
+            2.269449234008789
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_9",
+          "entity_type": "line",
+          "p1": [
+            -15.282734870910645,
+            2.269449234008789
+          ],
+          "p2": [
+            -15.15739631652832,
+            2.9924166202545166
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_10",
+          "entity_type": "line",
+          "p1": [
+            -15.15739631652832,
+            2.9924166202545166
+          ],
+          "p2": [
+            -15.09697437286377,
+            3.2359189987182617
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_11",
+          "entity_type": "line",
+          "p1": [
+            -15.09697437286377,
+            3.2359189987182617
+          ],
+          "p2": [
+            -14.914410591125488,
+            3.9744930267333984
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_12",
+          "entity_type": "line",
+          "p1": [
+            -14.914410591125488,
+            3.9744930267333984
+          ],
+          "p2": [
+            -14.84253215789795,
+            4.196310997009277
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_13",
+          "entity_type": "line",
+          "p1": [
+            -14.84253215789795,
+            4.196310997009277
+          ],
+          "p2": [
+            -14.60363483428955,
+            4.936156749725342
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_14",
+          "entity_type": "line",
+          "p1": [
+            -14.60363483428955,
+            4.936156749725342
+          ],
+          "p2": [
+            -14.519466400146484,
+            5.145205497741699
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_15",
+          "entity_type": "line",
+          "p1": [
+            -14.519466400146484,
+            5.145205497741699
+          ],
+          "p2": [
+            -14.227500915527344,
+            5.872757434844971
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_16",
+          "entity_type": "line",
+          "p1": [
+            -14.227500915527344,
+            5.872757434844971
+          ],
+          "p2": [
+            -14.128410339355469,
+            6.077160358428955
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_17",
+          "entity_type": "line",
+          "p1": [
+            -14.128410339355469,
+            6.077160358428955
+          ],
+          "p2": [
+            -13.78877067565918,
+            6.779991626739502
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_18",
+          "entity_type": "line",
+          "p1": [
+            -13.78877067565918,
+            6.779991626739502
+          ],
+          "p2": [
+            -13.670628547668457,
+            6.9867119789123535
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_19",
+          "entity_type": "line",
+          "p1": [
+            -13.670628547668457,
+            6.9867119789123535
+          ],
+          "p2": [
+            -13.290481567382812,
+            7.653924942016602
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_20",
+          "entity_type": "line",
+          "p1": [
+            -13.290481567382812,
+            7.653924942016602
+          ],
+          "p2": [
+            -13.148091316223145,
+            7.868364334106445
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_21",
+          "entity_type": "line",
+          "p1": [
+            -13.148091316223145,
+            7.868364334106445
+          ],
+          "p2": [
+            -12.735897064208984,
+            8.491007804870605
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_22",
+          "entity_type": "line",
+          "p1": [
+            -12.735897064208984,
+            8.491007804870605
+          ],
+          "p2": [
+            -12.563621520996094,
+            8.716571807861328
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_23",
+          "entity_type": "line",
+          "p1": [
+            -12.563621520996094,
+            8.716571807861328
+          ],
+          "p2": [
+            -12.12844181060791,
+            9.28808307647705
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_24",
+          "entity_type": "line",
+          "p1": [
+            -12.12844181060791,
+            9.28808307647705
+          ],
+          "p2": [
+            -11.921088218688965,
+            9.525725364685059
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_25",
+          "entity_type": "line",
+          "p1": [
+            -11.921088218688965,
+            9.525725364685059
+          ],
+          "p2": [
+            -11.471654891967773,
+            10.042379379272461
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_26",
+          "entity_type": "line",
+          "p1": [
+            -11.471654891967773,
+            10.042379379272461
+          ],
+          "p2": [
+            -11.225688934326172,
+            10.290157318115234
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_27",
+          "entity_type": "line",
+          "p1": [
+            -11.225688934326172,
+            10.290157318115234
+          ],
+          "p2": [
+            -10.769135475158691,
+            10.751510620117188
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_28",
+          "entity_type": "line",
+          "p1": [
+            -10.769135475158691,
+            10.751510620117188
+          ],
+          "p2": [
+            -10.48428726196289,
+            11.004220008850098
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_29",
+          "entity_type": "line",
+          "p1": [
+            -10.48428726196289,
+            11.004220008850098
+          ],
+          "p2": [
+            -10.139969825744629,
+            11.310680389404297
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_30",
+          "entity_type": "line",
+          "p1": [
+            -10.139969825744629,
+            11.310680389404297
+          ],
+          "p2": [
+            -10.018759727478027,
+            11.424205780029297
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_31",
+          "entity_type": "line",
+          "p1": [
+            -10.018759727478027,
+            11.424205780029297
+          ],
+          "p2": [
+            -9.250129699707031,
+            12.055004119873047
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_32",
+          "entity_type": "line",
+          "p1": [
+            -9.250129699707031,
+            12.055004119873047
+          ],
+          "p2": [
+            -8.441889762878418,
+            12.634181022644043
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_33",
+          "entity_type": "line",
+          "p1": [
+            -8.441889762878418,
+            12.634181022644043
+          ],
+          "p2": [
+            -7.597499847412109,
+            13.159255981445312
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_34",
+          "entity_type": "line",
+          "p1": [
+            -7.597499847412109,
+            13.159255981445312
+          ],
+          "p2": [
+            -6.720576763153076,
+            13.627981185913086
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_35",
+          "entity_type": "line",
+          "p1": [
+            -6.720576763153076,
+            13.627981185913086
+          ],
+          "p2": [
+            -5.814874649047852,
+            14.038349151611328
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_36",
+          "entity_type": "line",
+          "p1": [
+            -5.814874649047852,
+            14.038349151611328
+          ],
+          "p2": [
+            -4.884272575378418,
+            14.388603210449219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_37",
+          "entity_type": "line",
+          "p1": [
+            -4.884272575378418,
+            14.388603210449219
+          ],
+          "p2": [
+            -3.932755470275879,
+            14.67724323272705
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_38",
+          "entity_type": "line",
+          "p1": [
+            -3.932755470275879,
+            14.67724323272705
+          ],
+          "p2": [
+            -2.964397430419922,
+            14.903032302856445
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_39",
+          "entity_type": "line",
+          "p1": [
+            -2.964397430419922,
+            14.903032302856445
+          ],
+          "p2": [
+            -1.9833455085754395,
+            15.065004348754883
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_40",
+          "entity_type": "line",
+          "p1": [
+            -1.9833455085754395,
+            15.065004348754883
+          ],
+          "p2": [
+            -0.9938005208969116,
+            15.162466049194336
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_41",
+          "entity_type": "line",
+          "p1": [
+            -0.9938005208969116,
+            15.162466049194336
+          ],
+          "p2": [
+            -1.278437097565401e-15,
+            15.194999694824219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_42",
+          "entity_type": "line",
+          "p1": [
+            -1.278437097565401e-15,
+            15.194999694824219
+          ],
+          "p2": [
+            0.9938005208969116,
+            15.162466049194336
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_43",
+          "entity_type": "line",
+          "p1": [
+            0.9938005208969116,
+            15.162466049194336
+          ],
+          "p2": [
+            1.9833455085754395,
+            15.065004348754883
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_44",
+          "entity_type": "line",
+          "p1": [
+            1.9833455085754395,
+            15.065004348754883
+          ],
+          "p2": [
+            2.964397430419922,
+            14.903032302856445
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_45",
+          "entity_type": "line",
+          "p1": [
+            2.964397430419922,
+            14.903032302856445
+          ],
+          "p2": [
+            3.932755470275879,
+            14.67724323272705
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_46",
+          "entity_type": "line",
+          "p1": [
+            3.932755470275879,
+            14.67724323272705
+          ],
+          "p2": [
+            4.884272575378418,
+            14.388603210449219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_47",
+          "entity_type": "line",
+          "p1": [
+            4.884272575378418,
+            14.388603210449219
+          ],
+          "p2": [
+            5.814874649047852,
+            14.038349151611328
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_48",
+          "entity_type": "line",
+          "p1": [
+            5.814874649047852,
+            14.038349151611328
+          ],
+          "p2": [
+            6.720576763153076,
+            13.627981185913086
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_49",
+          "entity_type": "line",
+          "p1": [
+            6.720576763153076,
+            13.627981185913086
+          ],
+          "p2": [
+            7.597499847412109,
+            13.159255981445312
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_50",
+          "entity_type": "line",
+          "p1": [
+            7.597499847412109,
+            13.159255981445312
+          ],
+          "p2": [
+            8.441889762878418,
+            12.634181022644043
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_51",
+          "entity_type": "line",
+          "p1": [
+            8.441889762878418,
+            12.634181022644043
+          ],
+          "p2": [
+            9.250129699707031,
+            12.055004119873047
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_52",
+          "entity_type": "line",
+          "p1": [
+            9.250129699707031,
+            12.055004119873047
+          ],
+          "p2": [
+            10.018759727478027,
+            11.424205780029297
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_53",
+          "entity_type": "line",
+          "p1": [
+            10.018759727478027,
+            11.424205780029297
+          ],
+          "p2": [
+            10.744487762451172,
+            10.744487762451172
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_54",
+          "entity_type": "line",
+          "p1": [
+            10.744487762451172,
+            10.744487762451172
+          ],
+          "p2": [
+            11.424205780029297,
+            10.018759727478027
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_55",
+          "entity_type": "line",
+          "p1": [
+            11.424205780029297,
+            10.018759727478027
+          ],
+          "p2": [
+            12.055004119873047,
+            9.250129699707031
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_56",
+          "entity_type": "line",
+          "p1": [
+            12.055004119873047,
+            9.250129699707031
+          ],
+          "p2": [
+            12.634181022644043,
+            8.441889762878418
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_57",
+          "entity_type": "line",
+          "p1": [
+            12.634181022644043,
+            8.441889762878418
+          ],
+          "p2": [
+            13.159255981445312,
+            7.597499847412109
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_58",
+          "entity_type": "line",
+          "p1": [
+            13.159255981445312,
+            7.597499847412109
+          ],
+          "p2": [
+            13.627981185913086,
+            6.720576763153076
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_59",
+          "entity_type": "line",
+          "p1": [
+            13.627981185913086,
+            6.720576763153076
+          ],
+          "p2": [
+            14.038349151611328,
+            5.814874649047852
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_60",
+          "entity_type": "line",
+          "p1": [
+            14.038349151611328,
+            5.814874649047852
+          ],
+          "p2": [
+            14.388603210449219,
+            4.884272575378418
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_61",
+          "entity_type": "line",
+          "p1": [
+            14.388603210449219,
+            4.884272575378418
+          ],
+          "p2": [
+            14.67724323272705,
+            3.932755470275879
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_62",
+          "entity_type": "line",
+          "p1": [
+            14.67724323272705,
+            3.932755470275879
+          ],
+          "p2": [
+            14.903032302856445,
+            2.964397430419922
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_63",
+          "entity_type": "line",
+          "p1": [
+            14.903032302856445,
+            2.964397430419922
+          ],
+          "p2": [
+            15.065004348754883,
+            1.9833455085754395
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_64",
+          "entity_type": "line",
+          "p1": [
+            15.065004348754883,
+            1.9833455085754395
+          ],
+          "p2": [
+            15.162466049194336,
+            0.9938005208969116
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_65",
+          "entity_type": "line",
+          "p1": [
+            15.162466049194336,
+            0.9938005208969116
+          ],
+          "p2": [
+            15.194999694824219,
+            4.12399066932764e-17
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_66",
+          "entity_type": "line",
+          "p1": [
+            15.194999694824219,
+            4.12399066932764e-17
+          ],
+          "p2": [
+            15.162466049194336,
+            -0.9938005208969116
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_67",
+          "entity_type": "line",
+          "p1": [
+            15.162466049194336,
+            -0.9938005208969116
+          ],
+          "p2": [
+            15.065004348754883,
+            -1.9833455085754395
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_68",
+          "entity_type": "line",
+          "p1": [
+            15.065004348754883,
+            -1.9833455085754395
+          ],
+          "p2": [
+            14.903032302856445,
+            -2.964397430419922
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_69",
+          "entity_type": "line",
+          "p1": [
+            14.903032302856445,
+            -2.964397430419922
+          ],
+          "p2": [
+            14.67724323272705,
+            -3.932755470275879
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_70",
+          "entity_type": "line",
+          "p1": [
+            14.67724323272705,
+            -3.932755470275879
+          ],
+          "p2": [
+            14.388603210449219,
+            -4.884272575378418
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_71",
+          "entity_type": "line",
+          "p1": [
+            14.388603210449219,
+            -4.884272575378418
+          ],
+          "p2": [
+            14.038349151611328,
+            -5.814874649047852
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_72",
+          "entity_type": "line",
+          "p1": [
+            14.038349151611328,
+            -5.814874649047852
+          ],
+          "p2": [
+            13.627981185913086,
+            -6.720576763153076
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_73",
+          "entity_type": "line",
+          "p1": [
+            13.627981185913086,
+            -6.720576763153076
+          ],
+          "p2": [
+            13.159255981445312,
+            -7.597499847412109
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_74",
+          "entity_type": "line",
+          "p1": [
+            13.159255981445312,
+            -7.597499847412109
+          ],
+          "p2": [
+            12.634181022644043,
+            -8.441889762878418
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_75",
+          "entity_type": "line",
+          "p1": [
+            12.634181022644043,
+            -8.441889762878418
+          ],
+          "p2": [
+            12.055004119873047,
+            -9.250129699707031
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_76",
+          "entity_type": "line",
+          "p1": [
+            12.055004119873047,
+            -9.250129699707031
+          ],
+          "p2": [
+            11.424205780029297,
+            -10.018759727478027
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_77",
+          "entity_type": "line",
+          "p1": [
+            11.424205780029297,
+            -10.018759727478027
+          ],
+          "p2": [
+            10.744487762451172,
+            -10.744487762451172
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_78",
+          "entity_type": "line",
+          "p1": [
+            10.744487762451172,
+            -10.744487762451172
+          ],
+          "p2": [
+            10.018759727478027,
+            -11.424205780029297
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_79",
+          "entity_type": "line",
+          "p1": [
+            10.018759727478027,
+            -11.424205780029297
+          ],
+          "p2": [
+            9.250129699707031,
+            -12.055004119873047
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_80",
+          "entity_type": "line",
+          "p1": [
+            9.250129699707031,
+            -12.055004119873047
+          ],
+          "p2": [
+            8.441889762878418,
+            -12.634181022644043
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_81",
+          "entity_type": "line",
+          "p1": [
+            8.441889762878418,
+            -12.634181022644043
+          ],
+          "p2": [
+            7.597499847412109,
+            -13.159255981445312
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_82",
+          "entity_type": "line",
+          "p1": [
+            7.597499847412109,
+            -13.159255981445312
+          ],
+          "p2": [
+            6.720576763153076,
+            -13.627981185913086
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_83",
+          "entity_type": "line",
+          "p1": [
+            6.720576763153076,
+            -13.627981185913086
+          ],
+          "p2": [
+            5.814874649047852,
+            -14.038349151611328
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_84",
+          "entity_type": "line",
+          "p1": [
+            5.814874649047852,
+            -14.038349151611328
+          ],
+          "p2": [
+            4.884272575378418,
+            -14.388603210449219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_85",
+          "entity_type": "line",
+          "p1": [
+            4.884272575378418,
+            -14.388603210449219
+          ],
+          "p2": [
+            3.932755470275879,
+            -14.67724323272705
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_86",
+          "entity_type": "line",
+          "p1": [
+            3.932755470275879,
+            -14.67724323272705
+          ],
+          "p2": [
+            2.964397430419922,
+            -14.903032302856445
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_87",
+          "entity_type": "line",
+          "p1": [
+            2.964397430419922,
+            -14.903032302856445
+          ],
+          "p2": [
+            1.9833455085754395,
+            -15.065004348754883
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_88",
+          "entity_type": "line",
+          "p1": [
+            1.9833455085754395,
+            -15.065004348754883
+          ],
+          "p2": [
+            0.9938005208969116,
+            -15.162466049194336
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_89",
+          "entity_type": "line",
+          "p1": [
+            0.9938005208969116,
+            -15.162466049194336
+          ],
+          "p2": [
+            -1.278437097565401e-15,
+            -15.194999694824219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_90",
+          "entity_type": "line",
+          "p1": [
+            -1.278437097565401e-15,
+            -15.194999694824219
+          ],
+          "p2": [
+            -0.9938005208969116,
+            -15.162466049194336
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_91",
+          "entity_type": "line",
+          "p1": [
+            -0.9938005208969116,
+            -15.162466049194336
+          ],
+          "p2": [
+            -1.9833455085754395,
+            -15.065004348754883
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_92",
+          "entity_type": "line",
+          "p1": [
+            -1.9833455085754395,
+            -15.065004348754883
+          ],
+          "p2": [
+            -2.964397430419922,
+            -14.903032302856445
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_93",
+          "entity_type": "line",
+          "p1": [
+            -2.964397430419922,
+            -14.903032302856445
+          ],
+          "p2": [
+            -3.932755470275879,
+            -14.67724323272705
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_94",
+          "entity_type": "line",
+          "p1": [
+            -3.932755470275879,
+            -14.67724323272705
+          ],
+          "p2": [
+            -4.884272575378418,
+            -14.388603210449219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_95",
+          "entity_type": "line",
+          "p1": [
+            -4.884272575378418,
+            -14.388603210449219
+          ],
+          "p2": [
+            -5.814874649047852,
+            -14.038349151611328
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_96",
+          "entity_type": "line",
+          "p1": [
+            -5.814874649047852,
+            -14.038349151611328
+          ],
+          "p2": [
+            -6.720576763153076,
+            -13.627981185913086
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_97",
+          "entity_type": "line",
+          "p1": [
+            -6.720576763153076,
+            -13.627981185913086
+          ],
+          "p2": [
+            -7.597499847412109,
+            -13.159255981445312
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_98",
+          "entity_type": "line",
+          "p1": [
+            -7.597499847412109,
+            -13.159255981445312
+          ],
+          "p2": [
+            -8.441889762878418,
+            -12.634181022644043
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_99",
+          "entity_type": "line",
+          "p1": [
+            -8.441889762878418,
+            -12.634181022644043
+          ],
+          "p2": [
+            -9.250129699707031,
+            -12.055004119873047
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_100",
+          "entity_type": "line",
+          "p1": [
+            -9.250129699707031,
+            -12.055004119873047
+          ],
+          "p2": [
+            -10.018759727478027,
+            -11.424205780029297
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_101",
+          "entity_type": "line",
+          "p1": [
+            -10.018759727478027,
+            -11.424205780029297
+          ],
+          "p2": [
+            -10.744487762451172,
+            -10.744487762451172
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_102",
+          "entity_type": "line",
+          "p1": [
+            -10.744487762451172,
+            -10.744487762451172
+          ],
+          "p2": [
+            -11.424205780029297,
+            -10.018759727478027
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_103",
+          "entity_type": "line",
+          "p1": [
+            -11.424205780029297,
+            -10.018759727478027
+          ],
+          "p2": [
+            -12.055004119873047,
+            -9.250129699707031
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_104",
+          "entity_type": "line",
+          "p1": [
+            -12.055004119873047,
+            -9.250129699707031
+          ],
+          "p2": [
+            -12.634181022644043,
+            -8.441889762878418
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_105",
+          "entity_type": "line",
+          "p1": [
+            -12.634181022644043,
+            -8.441889762878418
+          ],
+          "p2": [
+            -13.159255981445312,
+            -7.597499847412109
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_106",
+          "entity_type": "line",
+          "p1": [
+            -13.159255981445312,
+            -7.597499847412109
+          ],
+          "p2": [
+            -13.627981185913086,
+            -6.720576763153076
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_107",
+          "entity_type": "line",
+          "p1": [
+            -13.627981185913086,
+            -6.720576763153076
+          ],
+          "p2": [
+            -13.785776138305664,
+            -6.372315883636475
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_108",
+          "entity_type": "line",
+          "p1": [
+            -13.785776138305664,
+            -6.372315883636475
+          ],
+          "p2": [
+            -14.106066703796387,
+            -5.876789569854736
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_109",
+          "entity_type": "line",
+          "p1": [
+            -14.106066703796387,
+            -5.876789569854736
+          ],
+          "p2": [
+            -14.124106407165527,
+            -5.844785690307617
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_110",
+          "entity_type": "line",
+          "p1": [
+            -14.124106407165527,
+            -5.844785690307617
+          ],
+          "p2": [
+            -14.169599533081055,
+            -5.763129234313965
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_111",
+          "entity_type": "line",
+          "p1": [
+            -14.169599533081055,
+            -5.763129234313965
+          ],
+          "p2": [
+            -14.471209526062012,
+            -5.061720371246338
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_112",
+          "entity_type": "line",
+          "p1": [
+            -14.471209526062012,
+            -5.061720371246338
+          ],
+          "p2": [
+            -14.51513671875,
+            -4.959285259246826
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_113",
+          "entity_type": "line",
+          "p1": [
+            -14.51513671875,
+            -4.959285259246826
+          ],
+          "p2": [
+            -14.770970344543457,
+            -4.228003978729248
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_114",
+          "entity_type": "line",
+          "p1": [
+            -14.770970344543457,
+            -4.228003978729248
+          ],
+          "p2": [
+            -14.847450256347656,
+            -4.008787631988525
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_115",
+          "entity_type": "line",
+          "p1": [
+            -14.847450256347656,
+            -4.008787631988525
+          ],
+          "p2": [
+            -15.021363258361816,
+            -3.3627450466156006
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_116",
+          "entity_type": "line",
+          "p1": [
+            -15.021363258361816,
+            -3.3627450466156006
+          ],
+          "p2": [
+            -15.109539985656738,
+            -3.034428834915161
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_117",
+          "entity_type": "line",
+          "p1": [
+            -15.109539985656738,
+            -3.034428834915161
+          ],
+          "p2": [
+            -15.218027114868164,
+            -2.4689366817474365
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_118",
+          "entity_type": "line",
+          "p1": [
+            -15.218027114868164,
+            -2.4689366817474365
+          ],
+          "p2": [
+            -15.299812316894531,
+            -2.041884183883667
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_119",
+          "entity_type": "line",
+          "p1": [
+            -15.299812316894531,
+            -2.041884183883667
+          ],
+          "p2": [
+            -15.357209205627441,
+            -1.5508248805999756
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": [
+        0.0,
+        -0.0,
+        1.0,
+        25.0,
+        728.25,
+        -0.13,
+        -0.01
+      ],
+      "parent_body_id": "body_split_2",
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_2",
+      "name": "Face 2",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          0.0,
+          11.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -14.770999908447266,
+            -4.228000164031982
+          ],
+          "p2": [
+            -14.84749984741211,
+            -4.008800029754639
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -14.84749984741211,
+            -4.008800029754639
+          ],
+          "p2": [
+            -15.021400451660156,
+            -3.3626999855041504
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -15.021400451660156,
+            -3.3626999855041504
+          ],
+          "p2": [
+            -15.10949993133545,
+            -3.03439998626709
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -15.10949993133545,
+            -3.03439998626709
+          ],
+          "p2": [
+            -15.218000411987305,
+            -2.468899965286255
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -15.218000411987305,
+            -2.468899965286255
+          ],
+          "p2": [
+            -15.299799919128418,
+            -2.0418999195098877
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            -15.299799919128418,
+            -2.0418999195098877
+          ],
+          "p2": [
+            -15.357199668884277,
+            -1.5507999658584595
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            -15.357199668884277,
+            -1.5507999658584595
+          ],
+          "p2": [
+            -15.417200088500977,
+            -1.0369000434875488
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_8",
+          "entity_type": "line",
+          "p1": [
+            -15.417200088500977,
+            -1.0369000434875488
+          ],
+          "p2": [
+            -15.435700416564941,
+            -0.6129999756813049
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_9",
+          "entity_type": "line",
+          "p1": [
+            -15.435700416564941,
+            -0.6129999756813049
+          ],
+          "p2": [
+            -15.461400032043457,
+            -0.025300003588199615
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_10",
+          "entity_type": "line",
+          "p1": [
+            -15.461400032043457,
+            -0.025300003588199615
+          ],
+          "p2": [
+            -15.450799942016602,
+            0.33969998359680176
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_11",
+          "entity_type": "line",
+          "p1": [
+            -15.450799942016602,
+            0.33969998359680176
+          ],
+          "p2": [
+            -15.43220043182373,
+            0.9872000217437744
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_12",
+          "entity_type": "line",
+          "p1": [
+            -15.43220043182373,
+            0.9872000217437744
+          ],
+          "p2": [
+            -15.400300025939941,
+            1.302299976348877
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_13",
+          "entity_type": "line",
+          "p1": [
+            -15.400300025939941,
+            1.302299976348877
+          ],
+          "p2": [
+            -15.330499649047852,
+            1.9948999881744385
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_14",
+          "entity_type": "line",
+          "p1": [
+            -15.330499649047852,
+            1.9948999881744385
+          ],
+          "p2": [
+            -15.282699584960938,
+            2.269400119781494
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_15",
+          "entity_type": "line",
+          "p1": [
+            -15.282699584960938,
+            2.269400119781494
+          ],
+          "p2": [
+            -15.157400131225586,
+            2.9923999309539795
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_16",
+          "entity_type": "line",
+          "p1": [
+            -15.157400131225586,
+            2.9923999309539795
+          ],
+          "p2": [
+            -15.097000122070312,
+            3.2358999252319336
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_17",
+          "entity_type": "line",
+          "p1": [
+            -15.097000122070312,
+            3.2358999252319336
+          ],
+          "p2": [
+            -14.914400100708008,
+            3.9744999408721924
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_18",
+          "entity_type": "line",
+          "p1": [
+            -14.914400100708008,
+            3.9744999408721924
+          ],
+          "p2": [
+            -14.842499732971191,
+            4.196300029754639
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_19",
+          "entity_type": "line",
+          "p1": [
+            -14.842499732971191,
+            4.196300029754639
+          ],
+          "p2": [
+            -14.603599548339844,
+            4.936200141906738
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_20",
+          "entity_type": "line",
+          "p1": [
+            -14.603599548339844,
+            4.936200141906738
+          ],
+          "p2": [
+            -14.519499778747559,
+            5.145199775695801
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_21",
+          "entity_type": "line",
+          "p1": [
+            -14.519499778747559,
+            5.145199775695801
+          ],
+          "p2": [
+            -14.227499961853027,
+            5.872799873352051
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_22",
+          "entity_type": "line",
+          "p1": [
+            -14.227499961853027,
+            5.872799873352051
+          ],
+          "p2": [
+            -14.128399848937988,
+            6.077199935913086
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_23",
+          "entity_type": "line",
+          "p1": [
+            -14.128399848937988,
+            6.077199935913086
+          ],
+          "p2": [
+            -13.788800239562988,
+            6.78000020980835
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_24",
+          "entity_type": "line",
+          "p1": [
+            -13.788800239562988,
+            6.78000020980835
+          ],
+          "p2": [
+            -13.670599937438965,
+            6.986700057983398
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_25",
+          "entity_type": "line",
+          "p1": [
+            -13.670599937438965,
+            6.986700057983398
+          ],
+          "p2": [
+            -13.290499687194824,
+            7.653900146484375
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_26",
+          "entity_type": "line",
+          "p1": [
+            -13.290499687194824,
+            7.653900146484375
+          ],
+          "p2": [
+            -13.148099899291992,
+            7.8684000968933105
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_27",
+          "entity_type": "line",
+          "p1": [
+            -13.148099899291992,
+            7.8684000968933105
+          ],
+          "p2": [
+            -12.735899925231934,
+            8.491000175476074
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_28",
+          "entity_type": "line",
+          "p1": [
+            -12.735899925231934,
+            8.491000175476074
+          ],
+          "p2": [
+            -12.563599586486816,
+            8.71660041809082
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_29",
+          "entity_type": "line",
+          "p1": [
+            -12.563599586486816,
+            8.71660041809082
+          ],
+          "p2": [
+            -12.128399848937988,
+            9.288100242614746
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_30",
+          "entity_type": "line",
+          "p1": [
+            -12.128399848937988,
+            9.288100242614746
+          ],
+          "p2": [
+            -11.921099662780762,
+            9.525699615478516
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_31",
+          "entity_type": "line",
+          "p1": [
+            -11.921099662780762,
+            9.525699615478516
+          ],
+          "p2": [
+            -11.471699714660645,
+            10.042400360107422
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_32",
+          "entity_type": "line",
+          "p1": [
+            -11.471699714660645,
+            10.042400360107422
+          ],
+          "p2": [
+            -11.225700378417969,
+            10.290200233459473
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_33",
+          "entity_type": "line",
+          "p1": [
+            -11.225700378417969,
+            10.290200233459473
+          ],
+          "p2": [
+            -10.769100189208984,
+            10.751500129699707
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_34",
+          "entity_type": "line",
+          "p1": [
+            -10.769100189208984,
+            10.751500129699707
+          ],
+          "p2": [
+            -10.484299659729004,
+            11.004199981689453
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_35",
+          "entity_type": "line",
+          "p1": [
+            -10.484299659729004,
+            11.004199981689453
+          ],
+          "p2": [
+            -10.140000343322754,
+            11.310700416564941
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_36",
+          "entity_type": "line",
+          "p1": [
+            -10.140000343322754,
+            11.310700416564941
+          ],
+          "p2": [
+            -10.018799781799316,
+            11.424200057983398
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_37",
+          "entity_type": "line",
+          "p1": [
+            -10.018799781799316,
+            11.424200057983398
+          ],
+          "p2": [
+            -9.250100135803223,
+            12.055000305175781
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_38",
+          "entity_type": "line",
+          "p1": [
+            -9.250100135803223,
+            12.055000305175781
+          ],
+          "p2": [
+            -8.441900253295898,
+            12.634200096130371
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_39",
+          "entity_type": "line",
+          "p1": [
+            -8.441900253295898,
+            12.634200096130371
+          ],
+          "p2": [
+            -7.597499847412109,
+            13.159299850463867
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_40",
+          "entity_type": "line",
+          "p1": [
+            -7.597499847412109,
+            13.159299850463867
+          ],
+          "p2": [
+            -6.720600128173828,
+            13.628000259399414
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_41",
+          "entity_type": "line",
+          "p1": [
+            -6.720600128173828,
+            13.628000259399414
+          ],
+          "p2": [
+            -5.814899921417236,
+            14.038299560546875
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_42",
+          "entity_type": "line",
+          "p1": [
+            -5.814899921417236,
+            14.038299560546875
+          ],
+          "p2": [
+            -4.884300231933594,
+            14.38860034942627
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_43",
+          "entity_type": "line",
+          "p1": [
+            -4.884300231933594,
+            14.38860034942627
+          ],
+          "p2": [
+            -3.932800054550171,
+            14.677200317382812
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_44",
+          "entity_type": "line",
+          "p1": [
+            -3.932800054550171,
+            14.677200317382812
+          ],
+          "p2": [
+            -2.964400053024292,
+            14.902999877929688
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_45",
+          "entity_type": "line",
+          "p1": [
+            -2.964400053024292,
+            14.902999877929688
+          ],
+          "p2": [
+            -1.983299970626831,
+            15.0649995803833
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_46",
+          "entity_type": "line",
+          "p1": [
+            -1.983299970626831,
+            15.0649995803833
+          ],
+          "p2": [
+            -0.9937999844551086,
+            15.162500381469727
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_47",
+          "entity_type": "line",
+          "p1": [
+            -0.9937999844551086,
+            15.162500381469727
+          ],
+          "p2": [
+            0.0,
+            15.194999694824219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_48",
+          "entity_type": "line",
+          "p1": [
+            0.0,
+            15.194999694824219
+          ],
+          "p2": [
+            0.9937999844551086,
+            15.162500381469727
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_49",
+          "entity_type": "line",
+          "p1": [
+            0.9937999844551086,
+            15.162500381469727
+          ],
+          "p2": [
+            1.983299970626831,
+            15.0649995803833
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_50",
+          "entity_type": "line",
+          "p1": [
+            1.983299970626831,
+            15.0649995803833
+          ],
+          "p2": [
+            2.964400053024292,
+            14.902999877929688
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_51",
+          "entity_type": "line",
+          "p1": [
+            2.964400053024292,
+            14.902999877929688
+          ],
+          "p2": [
+            3.932800054550171,
+            14.677200317382812
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_52",
+          "entity_type": "line",
+          "p1": [
+            3.932800054550171,
+            14.677200317382812
+          ],
+          "p2": [
+            4.884300231933594,
+            14.38860034942627
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_53",
+          "entity_type": "line",
+          "p1": [
+            4.884300231933594,
+            14.38860034942627
+          ],
+          "p2": [
+            5.814899921417236,
+            14.038299560546875
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_54",
+          "entity_type": "line",
+          "p1": [
+            5.814899921417236,
+            14.038299560546875
+          ],
+          "p2": [
+            6.720600128173828,
+            13.628000259399414
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_55",
+          "entity_type": "line",
+          "p1": [
+            6.720600128173828,
+            13.628000259399414
+          ],
+          "p2": [
+            7.597499847412109,
+            13.159299850463867
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_56",
+          "entity_type": "line",
+          "p1": [
+            7.597499847412109,
+            13.159299850463867
+          ],
+          "p2": [
+            8.441900253295898,
+            12.634200096130371
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_57",
+          "entity_type": "line",
+          "p1": [
+            8.441900253295898,
+            12.634200096130371
+          ],
+          "p2": [
+            9.250100135803223,
+            12.055000305175781
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_58",
+          "entity_type": "line",
+          "p1": [
+            9.250100135803223,
+            12.055000305175781
+          ],
+          "p2": [
+            10.018799781799316,
+            11.424200057983398
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_59",
+          "entity_type": "line",
+          "p1": [
+            10.018799781799316,
+            11.424200057983398
+          ],
+          "p2": [
+            10.744500160217285,
+            10.744500160217285
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_60",
+          "entity_type": "line",
+          "p1": [
+            10.744500160217285,
+            10.744500160217285
+          ],
+          "p2": [
+            11.424200057983398,
+            10.018799781799316
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_61",
+          "entity_type": "line",
+          "p1": [
+            11.424200057983398,
+            10.018799781799316
+          ],
+          "p2": [
+            12.055000305175781,
+            9.250100135803223
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_62",
+          "entity_type": "line",
+          "p1": [
+            12.055000305175781,
+            9.250100135803223
+          ],
+          "p2": [
+            12.634200096130371,
+            8.441900253295898
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_63",
+          "entity_type": "line",
+          "p1": [
+            12.634200096130371,
+            8.441900253295898
+          ],
+          "p2": [
+            13.159299850463867,
+            7.597499847412109
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_64",
+          "entity_type": "line",
+          "p1": [
+            13.159299850463867,
+            7.597499847412109
+          ],
+          "p2": [
+            13.628000259399414,
+            6.720600128173828
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_65",
+          "entity_type": "line",
+          "p1": [
+            13.628000259399414,
+            6.720600128173828
+          ],
+          "p2": [
+            14.038299560546875,
+            5.814899921417236
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_66",
+          "entity_type": "line",
+          "p1": [
+            14.038299560546875,
+            5.814899921417236
+          ],
+          "p2": [
+            14.38860034942627,
+            4.884300231933594
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_67",
+          "entity_type": "line",
+          "p1": [
+            14.38860034942627,
+            4.884300231933594
+          ],
+          "p2": [
+            14.677200317382812,
+            3.932800054550171
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_68",
+          "entity_type": "line",
+          "p1": [
+            14.677200317382812,
+            3.932800054550171
+          ],
+          "p2": [
+            14.902999877929688,
+            2.964400053024292
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_69",
+          "entity_type": "line",
+          "p1": [
+            14.902999877929688,
+            2.964400053024292
+          ],
+          "p2": [
+            15.0649995803833,
+            1.983299970626831
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_70",
+          "entity_type": "line",
+          "p1": [
+            15.0649995803833,
+            1.983299970626831
+          ],
+          "p2": [
+            15.162500381469727,
+            0.9937999844551086
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_71",
+          "entity_type": "line",
+          "p1": [
+            15.162500381469727,
+            0.9937999844551086
+          ],
+          "p2": [
+            15.194999694824219,
+            0.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_72",
+          "entity_type": "line",
+          "p1": [
+            15.194999694824219,
+            0.0
+          ],
+          "p2": [
+            15.162500381469727,
+            -0.9937999844551086
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_73",
+          "entity_type": "line",
+          "p1": [
+            15.162500381469727,
+            -0.9937999844551086
+          ],
+          "p2": [
+            15.0649995803833,
+            -1.983299970626831
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_74",
+          "entity_type": "line",
+          "p1": [
+            15.0649995803833,
+            -1.983299970626831
+          ],
+          "p2": [
+            14.902999877929688,
+            -2.964400053024292
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_75",
+          "entity_type": "line",
+          "p1": [
+            14.902999877929688,
+            -2.964400053024292
+          ],
+          "p2": [
+            14.677200317382812,
+            -3.932800054550171
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_76",
+          "entity_type": "line",
+          "p1": [
+            14.677200317382812,
+            -3.932800054550171
+          ],
+          "p2": [
+            14.38860034942627,
+            -4.884300231933594
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_77",
+          "entity_type": "line",
+          "p1": [
+            14.38860034942627,
+            -4.884300231933594
+          ],
+          "p2": [
+            14.038299560546875,
+            -5.814899921417236
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_78",
+          "entity_type": "line",
+          "p1": [
+            14.038299560546875,
+            -5.814899921417236
+          ],
+          "p2": [
+            13.628000259399414,
+            -6.720600128173828
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_79",
+          "entity_type": "line",
+          "p1": [
+            13.628000259399414,
+            -6.720600128173828
+          ],
+          "p2": [
+            13.159299850463867,
+            -7.597499847412109
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_80",
+          "entity_type": "line",
+          "p1": [
+            13.159299850463867,
+            -7.597499847412109
+          ],
+          "p2": [
+            12.634200096130371,
+            -8.441900253295898
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_81",
+          "entity_type": "line",
+          "p1": [
+            12.634200096130371,
+            -8.441900253295898
+          ],
+          "p2": [
+            12.055000305175781,
+            -9.250100135803223
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_82",
+          "entity_type": "line",
+          "p1": [
+            12.055000305175781,
+            -9.250100135803223
+          ],
+          "p2": [
+            11.424200057983398,
+            -10.018799781799316
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_83",
+          "entity_type": "line",
+          "p1": [
+            11.424200057983398,
+            -10.018799781799316
+          ],
+          "p2": [
+            10.744500160217285,
+            -10.744500160217285
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_84",
+          "entity_type": "line",
+          "p1": [
+            10.744500160217285,
+            -10.744500160217285
+          ],
+          "p2": [
+            10.018799781799316,
+            -11.424200057983398
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_85",
+          "entity_type": "line",
+          "p1": [
+            10.018799781799316,
+            -11.424200057983398
+          ],
+          "p2": [
+            9.250100135803223,
+            -12.055000305175781
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_86",
+          "entity_type": "line",
+          "p1": [
+            9.250100135803223,
+            -12.055000305175781
+          ],
+          "p2": [
+            8.441900253295898,
+            -12.634200096130371
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_87",
+          "entity_type": "line",
+          "p1": [
+            8.441900253295898,
+            -12.634200096130371
+          ],
+          "p2": [
+            7.597499847412109,
+            -13.159299850463867
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_88",
+          "entity_type": "line",
+          "p1": [
+            7.597499847412109,
+            -13.159299850463867
+          ],
+          "p2": [
+            6.720600128173828,
+            -13.628000259399414
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_89",
+          "entity_type": "line",
+          "p1": [
+            6.720600128173828,
+            -13.628000259399414
+          ],
+          "p2": [
+            5.814899921417236,
+            -14.038299560546875
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_90",
+          "entity_type": "line",
+          "p1": [
+            5.814899921417236,
+            -14.038299560546875
+          ],
+          "p2": [
+            4.884300231933594,
+            -14.38860034942627
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_91",
+          "entity_type": "line",
+          "p1": [
+            4.884300231933594,
+            -14.38860034942627
+          ],
+          "p2": [
+            3.932800054550171,
+            -14.677200317382812
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_92",
+          "entity_type": "line",
+          "p1": [
+            3.932800054550171,
+            -14.677200317382812
+          ],
+          "p2": [
+            2.964400053024292,
+            -14.902999877929688
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_93",
+          "entity_type": "line",
+          "p1": [
+            2.964400053024292,
+            -14.902999877929688
+          ],
+          "p2": [
+            1.983299970626831,
+            -15.0649995803833
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_94",
+          "entity_type": "line",
+          "p1": [
+            1.983299970626831,
+            -15.0649995803833
+          ],
+          "p2": [
+            0.9937999844551086,
+            -15.162500381469727
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_95",
+          "entity_type": "line",
+          "p1": [
+            0.9937999844551086,
+            -15.162500381469727
+          ],
+          "p2": [
+            0.0,
+            -15.194999694824219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_96",
+          "entity_type": "line",
+          "p1": [
+            0.0,
+            -15.194999694824219
+          ],
+          "p2": [
+            -0.9937999844551086,
+            -15.162500381469727
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_97",
+          "entity_type": "line",
+          "p1": [
+            -0.9937999844551086,
+            -15.162500381469727
+          ],
+          "p2": [
+            -1.983299970626831,
+            -15.0649995803833
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_98",
+          "entity_type": "line",
+          "p1": [
+            -1.983299970626831,
+            -15.0649995803833
+          ],
+          "p2": [
+            -2.964400053024292,
+            -14.902999877929688
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_99",
+          "entity_type": "line",
+          "p1": [
+            -2.964400053024292,
+            -14.902999877929688
+          ],
+          "p2": [
+            -3.932800054550171,
+            -14.677200317382812
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_100",
+          "entity_type": "line",
+          "p1": [
+            -3.932800054550171,
+            -14.677200317382812
+          ],
+          "p2": [
+            -4.884300231933594,
+            -14.38860034942627
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_101",
+          "entity_type": "line",
+          "p1": [
+            -4.884300231933594,
+            -14.38860034942627
+          ],
+          "p2": [
+            -5.814899921417236,
+            -14.038299560546875
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_102",
+          "entity_type": "line",
+          "p1": [
+            -5.814899921417236,
+            -14.038299560546875
+          ],
+          "p2": [
+            -6.720600128173828,
+            -13.628000259399414
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_103",
+          "entity_type": "line",
+          "p1": [
+            -6.720600128173828,
+            -13.628000259399414
+          ],
+          "p2": [
+            -7.597499847412109,
+            -13.159299850463867
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_104",
+          "entity_type": "line",
+          "p1": [
+            -7.597499847412109,
+            -13.159299850463867
+          ],
+          "p2": [
+            -8.441900253295898,
+            -12.634200096130371
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_105",
+          "entity_type": "line",
+          "p1": [
+            -8.441900253295898,
+            -12.634200096130371
+          ],
+          "p2": [
+            -9.250100135803223,
+            -12.055000305175781
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_106",
+          "entity_type": "line",
+          "p1": [
+            -9.250100135803223,
+            -12.055000305175781
+          ],
+          "p2": [
+            -10.018799781799316,
+            -11.424200057983398
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_107",
+          "entity_type": "line",
+          "p1": [
+            -10.018799781799316,
+            -11.424200057983398
+          ],
+          "p2": [
+            -10.744500160217285,
+            -10.744500160217285
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_108",
+          "entity_type": "line",
+          "p1": [
+            -10.744500160217285,
+            -10.744500160217285
+          ],
+          "p2": [
+            -11.424200057983398,
+            -10.018799781799316
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_109",
+          "entity_type": "line",
+          "p1": [
+            -11.424200057983398,
+            -10.018799781799316
+          ],
+          "p2": [
+            -12.055000305175781,
+            -9.250100135803223
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_110",
+          "entity_type": "line",
+          "p1": [
+            -12.055000305175781,
+            -9.250100135803223
+          ],
+          "p2": [
+            -12.634200096130371,
+            -8.441900253295898
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_111",
+          "entity_type": "line",
+          "p1": [
+            -12.634200096130371,
+            -8.441900253295898
+          ],
+          "p2": [
+            -13.159299850463867,
+            -7.597499847412109
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_112",
+          "entity_type": "line",
+          "p1": [
+            -13.159299850463867,
+            -7.597499847412109
+          ],
+          "p2": [
+            -13.628000259399414,
+            -6.720600128173828
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_113",
+          "entity_type": "line",
+          "p1": [
+            -13.628000259399414,
+            -6.720600128173828
+          ],
+          "p2": [
+            -13.73067569732666,
+            -6.493924617767334
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_114",
+          "entity_type": "line",
+          "p1": [
+            -13.73067569732666,
+            -6.493924617767334
+          ],
+          "p2": [
+            -13.785799980163574,
+            -6.372300148010254
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_115",
+          "entity_type": "line",
+          "p1": [
+            -13.785799980163574,
+            -6.372300148010254
+          ],
+          "p2": [
+            -14.106100082397461,
+            -5.876800060272217
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_116",
+          "entity_type": "line",
+          "p1": [
+            -14.106100082397461,
+            -5.876800060272217
+          ],
+          "p2": [
+            -14.124099731445312,
+            -5.844799995422363
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_117",
+          "entity_type": "line",
+          "p1": [
+            -14.124099731445312,
+            -5.844799995422363
+          ],
+          "p2": [
+            -14.169599533081055,
+            -5.7631001472473145
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_118",
+          "entity_type": "line",
+          "p1": [
+            -14.169599533081055,
+            -5.7631001472473145
+          ],
+          "p2": [
+            -14.471199989318848,
+            -5.061699867248535
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_119",
+          "entity_type": "line",
+          "p1": [
+            -14.471199989318848,
+            -5.061699867248535
+          ],
+          "p2": [
+            -14.515100479125977,
+            -4.9593000411987305
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_120",
+          "entity_type": "line",
+          "p1": [
+            -14.515100479125977,
+            -4.9593000411987305
+          ],
+          "p2": [
+            -14.770999908447266,
+            -4.228000164031982
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": [
+        0.0,
+        0.0,
+        1.0,
+        11.0,
+        728.25,
+        -0.13,
+        0.17
+      ],
+      "parent_body_id": "body_split_2",
+      "visible": false
+    }
+  ],
+  "construction_planes": {
+    "plane_1": {
+      "name": "Plane 1",
+      "origin": [
+        0.0,
+        0.0,
+        25.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "visible": false
+    },
+    "plane_2": {
+      "name": "Plane 2",
+      "origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "normal": [
+        0.0,
+        -0.0,
+        1.0
+      ],
+      "visible": false
+    }
+  },
+  "sections": {
+    "section_1": {
+      "name": "Section 1",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "offset": 0.01,
+      "flip": false,
+      "active": true
+    }
+  },
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

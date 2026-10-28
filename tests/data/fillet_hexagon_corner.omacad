@@ -1,0 +1,160 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "prism_1",
+      "feature_type": "prism",
+      "name": "Hexagon 1",
+      "suppressed": false,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 3.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "across_flats": 163.0,
+      "sides": 6,
+      "exprs": {}
+    },
+    {
+      "feature_id": "honeycomb_2",
+      "feature_type": "honeycomb",
+      "name": "Honeycomb 1",
+      "suppressed": false,
+      "target_body_id": "body_prism_1",
+      "faces": [
+        {
+          "kind": "plane",
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "origin": [
+            0.0,
+            -90.64398956298828,
+            3.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            0.9999999999999999,
+            0.0,
+            -0.0
+          ],
+          "origin": [
+            81.5,
+            -47.054046630859375,
+            0.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            0.49999999754461777,
+            -0.8660254052020543,
+            0.0
+          ],
+          "origin": [
+            0.0,
+            -94.10809326171875,
+            0.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            -0.49999999754461777,
+            -0.8660254052020543,
+            -0.0
+          ],
+          "origin": [
+            0.0,
+            -94.10809326171875,
+            0.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            -0.9999999999999999,
+            0.0,
+            0.0
+          ],
+          "origin": [
+            -81.5,
+            -47.054046630859375,
+            0.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            -0.49999999754461777,
+            0.8660254052020543,
+            0.0
+          ],
+          "origin": [
+            -81.5,
+            47.054046630859375,
+            0.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            0.49999999754461777,
+            0.8660254052020543,
+            0.0
+          ],
+          "origin": [
+            81.5,
+            47.054046630859375,
+            0.0
+          ]
+        }
+      ],
+      "shape": "hexagon",
+      "size": 9.0,
+      "wall": 1.5,
+      "margin": 6.0,
+      "depth": 1.0,
+      "through": true,
+      "angle": 0.0,
+      "partial": true,
+      "exprs": {}
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

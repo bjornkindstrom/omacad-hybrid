@@ -1,0 +1,2243 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "feat_sketch_1": "object_feat_sketch_1",
+      "extrude_2": "object_feat_sketch_1",
+      "fillet_3": "object_feat_sketch_1",
+      "pattern_4": "object_feat_sketch_1",
+      "shell_5": "object_feat_sketch_1",
+      "feat_sketch_2": "object_feat_sketch_1",
+      "feat_sketch_3": "object_feat_sketch_1"
+    },
+    "names": {
+      "object_feat_sketch_1": "L\u00e5dan botten"
+    },
+    "outputs": {
+      "extrude_2": [
+        "body_extrude_2"
+      ],
+      "fillet_3": [
+        "body_extrude_2"
+      ],
+      "pattern_4": [
+        "body_extrude_2"
+      ],
+      "shell_5": [
+        "body_extrude_2"
+      ]
+    },
+    "dependencies": {
+      "feat_sketch_1": [],
+      "extrude_2": [
+        "feat_sketch_1"
+      ],
+      "fillet_3": [
+        "extrude_2"
+      ],
+      "pattern_4": [
+        "fillet_3",
+        "feat_sketch_1",
+        "extrude_2"
+      ],
+      "shell_5": [
+        "pattern_4"
+      ],
+      "feat_sketch_2": [
+        "shell_5"
+      ],
+      "feat_sketch_3": [
+        "shell_5",
+        "feat_sketch_2"
+      ]
+    },
+    "markers": {},
+    "active_id": "object_feat_sketch_1"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "XY",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -26.95975111067353,
+              -19.927833768967812
+            ],
+            "p2": [
+              26.471477527021776,
+              -19.927833768967812
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              31.471477527021786,
+              -14.927833768967801
+            ],
+            "p2": [
+              31.47147752702179,
+              45.07216623103222
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              26.47147752702181,
+              50.0721662310322
+            ],
+            "p2": [
+              -26.959751110673665,
+              50.07216623103219
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -31.959751110673515,
+              45.07216623103234
+            ],
+            "p2": [
+              -31.959751110673512,
+              -14.92783376896783
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "arc_5",
+            "entity_type": "arc",
+            "p_start": [
+              26.471477527021776,
+              -19.927833768967812
+            ],
+            "p_mid": [
+              30.00701143295452,
+              -18.463367674900546
+            ],
+            "p_end": [
+              31.471477527021786,
+              -14.927833768967801
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_1",
+              "line_b": "line_2",
+              "corner": [
+                31.471477527021786,
+                -19.927833768967812
+              ],
+              "end_a": "p2",
+              "end_b": "p1",
+              "guides": [
+                "line_6",
+                "line_7"
+              ]
+            }
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              26.471477527021776,
+              -19.927833768967812
+            ],
+            "p2": [
+              31.471477527021786,
+              -19.927833768967812
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              31.471477527021786,
+              -14.927833768967801
+            ],
+            "p2": [
+              31.471477527021786,
+              -19.927833768967812
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "arc_8",
+            "entity_type": "arc",
+            "p_start": [
+              -26.95975111067353,
+              -19.927833768967812
+            ],
+            "p_mid": [
+              -30.495285016606253,
+              -18.463367674900553
+            ],
+            "p_end": [
+              -31.959751110673512,
+              -14.92783376896783
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_1",
+              "line_b": "line_4",
+              "corner": [
+                -31.959751110673512,
+                -19.927833768967812
+              ],
+              "end_a": "p1",
+              "end_b": "p2",
+              "guides": [
+                "line_9",
+                "line_10"
+              ]
+            }
+          },
+          {
+            "entity_id": "line_9",
+            "entity_type": "line",
+            "p1": [
+              -26.95975111067353,
+              -19.927833768967812
+            ],
+            "p2": [
+              -31.959751110673512,
+              -19.927833768967812
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "line_10",
+            "entity_type": "line",
+            "p1": [
+              -31.959751110673512,
+              -14.92783376896783
+            ],
+            "p2": [
+              -31.959751110673512,
+              -19.927833768967812
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "arc_11",
+            "entity_type": "arc",
+            "p_start": [
+              31.47147752702179,
+              45.07216623103222
+            ],
+            "p_mid": [
+              30.007011432954535,
+              48.607700136964944
+            ],
+            "p_end": [
+              26.47147752702181,
+              50.0721662310322
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_2",
+              "line_b": "line_3",
+              "corner": [
+                31.47147752702179,
+                50.0721662310322
+              ],
+              "end_a": "p2",
+              "end_b": "p1",
+              "guides": [
+                "line_12",
+                "line_13"
+              ]
+            }
+          },
+          {
+            "entity_id": "line_12",
+            "entity_type": "line",
+            "p1": [
+              31.47147752702179,
+              45.07216623103222
+            ],
+            "p2": [
+              31.47147752702179,
+              50.0721662310322
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "line_13",
+            "entity_type": "line",
+            "p1": [
+              26.47147752702181,
+              50.0721662310322
+            ],
+            "p2": [
+              31.47147752702179,
+              50.0721662310322
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "arc_14",
+            "entity_type": "arc",
+            "p_start": [
+              -26.959751110673665,
+              50.07216623103219
+            ],
+            "p_mid": [
+              -30.495285016606296,
+              48.60770013696497
+            ],
+            "p_end": [
+              -31.959751110673515,
+              45.07216623103234
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_3",
+              "line_b": "line_4",
+              "corner": [
+                -31.959751110673515,
+                50.07216623103219
+              ],
+              "end_a": "p2",
+              "end_b": "p1",
+              "guides": [
+                "line_15",
+                "line_16"
+              ]
+            }
+          },
+          {
+            "entity_id": "line_15",
+            "entity_type": "line",
+            "p1": [
+              -26.959751110673665,
+              50.07216623103219
+            ],
+            "p2": [
+              -31.959751110673515,
+              50.07216623103219
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "line_16",
+            "entity_type": "line",
+            "p1": [
+              -31.959751110673515,
+              45.07216623103234
+            ],
+            "p2": [
+              -31.959751110673515,
+              50.07216623103219
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "circle_17",
+            "entity_type": "circle",
+            "center": [
+              -26.959751110673512,
+              45.07216623103219
+            ],
+            "radius": 2.5,
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d3",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_5",
+            "value": 5.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d4",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_8",
+            "value": 5.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d5",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_11",
+            "value": 5.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d6",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_14",
+            "value": 5.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d7",
+            "name": "Width",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "line_2",
+            "value": 63.4312286376953,
+            "offset_distance": 23.0,
+            "refs": [
+              "line_4"
+            ],
+            "pts": [
+              "p1"
+            ],
+            "expr": null
+          },
+          {
+            "dim_id": "d8",
+            "name": "Height",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "line_3",
+            "value": 70.0,
+            "offset_distance": 23.0,
+            "refs": [
+              "line_1"
+            ],
+            "pts": [
+              "p1"
+            ],
+            "expr": null
+          },
+          {
+            "dim_id": "d9",
+            "name": "Diameter",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "circle_17",
+            "value": 5.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d10",
+            "name": "Dim 10",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "circle_17",
+            "value": 5.0,
+            "offset_distance": 12.0,
+            "refs": [
+              "line_4"
+            ],
+            "pts": [
+              "center"
+            ],
+            "expr": null
+          },
+          {
+            "dim_id": "d11",
+            "name": "Dim 11",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "circle_17",
+            "value": 2.5,
+            "offset_distance": 12.0,
+            "refs": [
+              "line_15"
+            ],
+            "pts": [
+              "center"
+            ],
+            "expr": null
+          },
+          {
+            "dim_id": "d12",
+            "name": "Dim 12",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "circle_17",
+            "value": 2.5,
+            "offset_distance": 12.0,
+            "refs": [
+              "line_3"
+            ],
+            "pts": [
+              "edge_near"
+            ],
+            "expr": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_1"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c2",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_2"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c3",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_3"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c4",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_4"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c9",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_1",
+              "arc_5"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c10",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_2",
+              "arc_5"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c11",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_1",
+              "arc_8"
+            ],
+            "pts": [
+              "p1",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c12",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_4",
+              "arc_8"
+            ],
+            "pts": [
+              "p2",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c13",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_2",
+              "arc_11"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c14",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_3",
+              "arc_11"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c15",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_3",
+              "arc_14"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c16",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_4",
+              "arc_14"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          }
+        ],
+        "face_key": null,
+        "parent_body_id": null,
+        "face_center": null,
+        "visible": false
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "extrude_2",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": 25.0,
+      "operation": "new_body",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "twist": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -0.1267985018133381,
+          13.188912236392223,
+          4383.603397059998
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "follows_text": false,
+      "exprs": {},
+      "target_body_ids": []
+    },
+    {
+      "feature_id": "fillet_3",
+      "feature_type": "fillet",
+      "name": "Chamfer 1",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            -26.92705946733103,
+            43.284388438361475,
+            25.0
+          ],
+          [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          2.5000021938220423
+        ]
+      ],
+      "size": 1.5,
+      "kind": "chamfer",
+      "chamfer_type": "equal",
+      "size2": 2.0,
+      "angle": 45.0,
+      "flip": false,
+      "exprs": {},
+      "target_body_ids": [
+        "body_extrude_2"
+      ]
+    },
+    {
+      "feature_id": "pattern_4",
+      "feature_type": "pattern",
+      "name": "Mirror 1",
+      "suppressed": false,
+      "source_ids": [
+        "feat_sketch_1",
+        "extrude_2",
+        "fillet_3"
+      ],
+      "kind": "mirror",
+      "axis1": "x",
+      "count1": 3.0,
+      "spacing1": 25.0,
+      "axis2": "y",
+      "count2": 1.0,
+      "spacing2": 20.0,
+      "mirror_mode": "auto",
+      "about": "body",
+      "angle": 360.0,
+      "rotation_axis": "z",
+      "axis_origin": null,
+      "axis_direction": null,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "shell_5",
+      "feature_type": "shell",
+      "name": "Shell 1",
+      "suppressed": false,
+      "target_body_id": "body_extrude_2",
+      "thickness": 4.0,
+      "direction": "inside",
+      "thickness2": 2.0,
+      "open_faces": [
+        {
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "origin": [
+            -30.495300002396107,
+            -18.46339999884367,
+            25.0
+          ],
+          "body_id": "body_extrude_2"
+        }
+      ],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "feat_sketch_2",
+      "feature_type": "sketch",
+      "name": "Sketch 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_2",
+        "name": "Sketch 2",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            -0.24414999783039093,
+            15.072199821472168,
+            25.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -31.715650722384453,
+              -30.0
+            ],
+            "p2": [
+              -31.715650722384453,
+              30.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_2",
+            "entity_type": "arc",
+            "p_start": [
+              -31.715650722384453,
+              30.000000953674316
+            ],
+            "p_mid": [
+              -30.25115029513836,
+              33.53550052642822
+            ],
+            "p_end": [
+              -26.715650722384453,
+              35.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -26.715650722384453,
+              35.000000953674316
+            ],
+            "p2": [
+              26.715650394558907,
+              35.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_4",
+            "entity_type": "arc",
+            "p_start": [
+              26.715650394558907,
+              35.000000953674316
+            ],
+            "p_mid": [
+              30.251149967312813,
+              33.53550052642822
+            ],
+            "p_end": [
+              31.715650394558907,
+              30.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              31.715650394558907,
+              30.000000953674316
+            ],
+            "p2": [
+              31.715650394558907,
+              -30.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_6",
+            "entity_type": "arc",
+            "p_start": [
+              31.715650394558907,
+              -30.0
+            ],
+            "p_mid": [
+              30.251149967312813,
+              -33.53559970855713
+            ],
+            "p_end": [
+              26.715650394558907,
+              -34.999999046325684
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              26.715650394558907,
+              -34.999999046325684
+            ],
+            "p2": [
+              -26.715650722384453,
+              -34.999999046325684
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_8",
+            "entity_type": "arc",
+            "p_start": [
+              -26.715650722384453,
+              -34.999999046325684
+            ],
+            "p_mid": [
+              -30.25115029513836,
+              -33.53559970855713
+            ],
+            "p_end": [
+              -31.715650722384453,
+              -30.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "circle_9",
+            "entity_type": "circle",
+            "center": [
+              -26.71560553266495,
+              29.999969771260705
+            ],
+            "radius": 3.999995885964653,
+            "is_construction": false,
+            "projected": true
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": "body_extrude_2",
+        "face_center": [
+          0.020309750666634763,
+          -0.022823160667268638
+        ],
+        "visible": true
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "feat_sketch_3",
+      "feature_type": "sketch",
+      "name": "Sketch 3",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_3",
+        "name": "Sketch 3",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            -0.24414999783039093,
+            15.072199821472168,
+            25.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -31.715650722384453,
+              -30.0
+            ],
+            "p2": [
+              -31.715650722384453,
+              30.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_2",
+            "entity_type": "arc",
+            "p_start": [
+              -31.715650722384453,
+              30.000000953674316
+            ],
+            "p_mid": [
+              -30.25115029513836,
+              33.53550052642822
+            ],
+            "p_end": [
+              -26.715650722384453,
+              35.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -26.715650722384453,
+              35.000000953674316
+            ],
+            "p2": [
+              26.715650394558907,
+              35.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_4",
+            "entity_type": "arc",
+            "p_start": [
+              26.715650394558907,
+              35.000000953674316
+            ],
+            "p_mid": [
+              30.251149967312813,
+              33.53550052642822
+            ],
+            "p_end": [
+              31.715650394558907,
+              30.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              31.715650394558907,
+              30.000000953674316
+            ],
+            "p2": [
+              31.715650394558907,
+              -30.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_6",
+            "entity_type": "arc",
+            "p_start": [
+              31.715650394558907,
+              -30.0
+            ],
+            "p_mid": [
+              30.251149967312813,
+              -33.53559970855713
+            ],
+            "p_end": [
+              26.715650394558907,
+              -34.999999046325684
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              26.715650394558907,
+              -34.999999046325684
+            ],
+            "p2": [
+              -26.715650722384453,
+              -34.999999046325684
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_8",
+            "entity_type": "arc",
+            "p_start": [
+              -26.715650722384453,
+              -34.999999046325684
+            ],
+            "p_mid": [
+              -30.25115029513836,
+              -33.53559970855713
+            ],
+            "p_end": [
+              -31.715650722384453,
+              -30.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_9",
+            "entity_type": "arc",
+            "p_start": [
+              -31.715650722384453,
+              30.000000953674316
+            ],
+            "p_mid": [
+              -30.25115029513836,
+              33.53550052642822
+            ],
+            "p_end": [
+              -26.715650722384453,
+              35.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_10",
+            "entity_type": "arc",
+            "p_start": [
+              26.715650394558907,
+              35.000000953674316
+            ],
+            "p_mid": [
+              30.251149967312813,
+              33.53550052642822
+            ],
+            "p_end": [
+              31.715650394558907,
+              30.000000953674316
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_11",
+            "entity_type": "arc",
+            "p_start": [
+              31.715650394558907,
+              -30.0
+            ],
+            "p_mid": [
+              30.251149967312813,
+              -33.53559970855713
+            ],
+            "p_end": [
+              26.715650394558907,
+              -34.999999046325684
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_12",
+            "entity_type": "arc",
+            "p_start": [
+              -26.715650722384453,
+              -34.999999046325684
+            ],
+            "p_mid": [
+              -30.25115029513836,
+              -33.53559970855713
+            ],
+            "p_end": [
+              -31.715650722384453,
+              -30.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "circle_13",
+            "entity_type": "circle",
+            "center": [
+              -26.71560553266495,
+              29.999969771260705
+            ],
+            "radius": 3.999995885964653,
+            "is_construction": false,
+            "projected": true
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": "body_extrude_2",
+        "face_center": [
+          0.020309750666634763,
+          -0.022823160667268638
+        ],
+        "visible": true
+      },
+      "exprs": {},
+      "target_body_ids": null
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "XY",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -26.95975111067353,
+            -19.927833768967812
+          ],
+          "p2": [
+            26.471477527021776,
+            -19.927833768967812
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            31.471477527021786,
+            -14.927833768967801
+          ],
+          "p2": [
+            31.47147752702179,
+            45.07216623103222
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            26.47147752702181,
+            50.0721662310322
+          ],
+          "p2": [
+            -26.959751110673665,
+            50.07216623103219
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -31.959751110673515,
+            45.07216623103234
+          ],
+          "p2": [
+            -31.959751110673512,
+            -14.92783376896783
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "arc_5",
+          "entity_type": "arc",
+          "p_start": [
+            26.471477527021776,
+            -19.927833768967812
+          ],
+          "p_mid": [
+            30.00701143295452,
+            -18.463367674900546
+          ],
+          "p_end": [
+            31.471477527021786,
+            -14.927833768967801
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_1",
+            "line_b": "line_2",
+            "corner": [
+              31.471477527021786,
+              -19.927833768967812
+            ],
+            "end_a": "p2",
+            "end_b": "p1",
+            "guides": [
+              "line_6",
+              "line_7"
+            ]
+          }
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            26.471477527021776,
+            -19.927833768967812
+          ],
+          "p2": [
+            31.471477527021786,
+            -19.927833768967812
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            31.471477527021786,
+            -14.927833768967801
+          ],
+          "p2": [
+            31.471477527021786,
+            -19.927833768967812
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "arc_8",
+          "entity_type": "arc",
+          "p_start": [
+            -26.95975111067353,
+            -19.927833768967812
+          ],
+          "p_mid": [
+            -30.495285016606253,
+            -18.463367674900553
+          ],
+          "p_end": [
+            -31.959751110673512,
+            -14.92783376896783
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_1",
+            "line_b": "line_4",
+            "corner": [
+              -31.959751110673512,
+              -19.927833768967812
+            ],
+            "end_a": "p1",
+            "end_b": "p2",
+            "guides": [
+              "line_9",
+              "line_10"
+            ]
+          }
+        },
+        {
+          "entity_id": "line_9",
+          "entity_type": "line",
+          "p1": [
+            -26.95975111067353,
+            -19.927833768967812
+          ],
+          "p2": [
+            -31.959751110673512,
+            -19.927833768967812
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "line_10",
+          "entity_type": "line",
+          "p1": [
+            -31.959751110673512,
+            -14.92783376896783
+          ],
+          "p2": [
+            -31.959751110673512,
+            -19.927833768967812
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "arc_11",
+          "entity_type": "arc",
+          "p_start": [
+            31.47147752702179,
+            45.07216623103222
+          ],
+          "p_mid": [
+            30.007011432954535,
+            48.607700136964944
+          ],
+          "p_end": [
+            26.47147752702181,
+            50.0721662310322
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_2",
+            "line_b": "line_3",
+            "corner": [
+              31.47147752702179,
+              50.0721662310322
+            ],
+            "end_a": "p2",
+            "end_b": "p1",
+            "guides": [
+              "line_12",
+              "line_13"
+            ]
+          }
+        },
+        {
+          "entity_id": "line_12",
+          "entity_type": "line",
+          "p1": [
+            31.47147752702179,
+            45.07216623103222
+          ],
+          "p2": [
+            31.47147752702179,
+            50.0721662310322
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "line_13",
+          "entity_type": "line",
+          "p1": [
+            26.47147752702181,
+            50.0721662310322
+          ],
+          "p2": [
+            31.47147752702179,
+            50.0721662310322
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "arc_14",
+          "entity_type": "arc",
+          "p_start": [
+            -26.959751110673665,
+            50.07216623103219
+          ],
+          "p_mid": [
+            -30.495285016606296,
+            48.60770013696497
+          ],
+          "p_end": [
+            -31.959751110673515,
+            45.07216623103234
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_3",
+            "line_b": "line_4",
+            "corner": [
+              -31.959751110673515,
+              50.07216623103219
+            ],
+            "end_a": "p2",
+            "end_b": "p1",
+            "guides": [
+              "line_15",
+              "line_16"
+            ]
+          }
+        },
+        {
+          "entity_id": "line_15",
+          "entity_type": "line",
+          "p1": [
+            -26.959751110673665,
+            50.07216623103219
+          ],
+          "p2": [
+            -31.959751110673515,
+            50.07216623103219
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "line_16",
+          "entity_type": "line",
+          "p1": [
+            -31.959751110673515,
+            45.07216623103234
+          ],
+          "p2": [
+            -31.959751110673515,
+            50.07216623103219
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "circle_17",
+          "entity_type": "circle",
+          "center": [
+            -26.959751110673512,
+            45.07216623103219
+          ],
+          "radius": 2.5,
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d3",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_5",
+          "value": 5.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d4",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_8",
+          "value": 5.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d5",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_11",
+          "value": 5.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d6",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_14",
+          "value": 5.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d7",
+          "name": "Width",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "line_2",
+          "value": 63.4312286376953,
+          "offset_distance": 23.0,
+          "refs": [
+            "line_4"
+          ],
+          "pts": [
+            "p1"
+          ],
+          "expr": null
+        },
+        {
+          "dim_id": "d8",
+          "name": "Height",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "line_3",
+          "value": 70.0,
+          "offset_distance": 23.0,
+          "refs": [
+            "line_1"
+          ],
+          "pts": [
+            "p1"
+          ],
+          "expr": null
+        },
+        {
+          "dim_id": "d9",
+          "name": "Diameter",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "circle_17",
+          "value": 5.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d10",
+          "name": "Dim 10",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "circle_17",
+          "value": 5.0,
+          "offset_distance": 12.0,
+          "refs": [
+            "line_4"
+          ],
+          "pts": [
+            "center"
+          ],
+          "expr": null
+        },
+        {
+          "dim_id": "d11",
+          "name": "Dim 11",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "circle_17",
+          "value": 2.5,
+          "offset_distance": 12.0,
+          "refs": [
+            "line_15"
+          ],
+          "pts": [
+            "center"
+          ],
+          "expr": null
+        },
+        {
+          "dim_id": "d12",
+          "name": "Dim 12",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "circle_17",
+          "value": 2.5,
+          "offset_distance": 12.0,
+          "refs": [
+            "line_3"
+          ],
+          "pts": [
+            "edge_near"
+          ],
+          "expr": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_1"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c2",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_2"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c3",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_3"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c4",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_4"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c9",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_1",
+            "arc_5"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c10",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_2",
+            "arc_5"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c11",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_1",
+            "arc_8"
+          ],
+          "pts": [
+            "p1",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c12",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_4",
+            "arc_8"
+          ],
+          "pts": [
+            "p2",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c13",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_2",
+            "arc_11"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c14",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_3",
+            "arc_11"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c15",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_3",
+            "arc_14"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c16",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_4",
+            "arc_14"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        }
+      ],
+      "face_key": null,
+      "parent_body_id": null,
+      "face_center": null,
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_2",
+      "name": "Sketch 2",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          -0.24414999783039093,
+          15.072199821472168,
+          25.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -31.715650722384453,
+            -30.0
+          ],
+          "p2": [
+            -31.715650722384453,
+            30.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_2",
+          "entity_type": "arc",
+          "p_start": [
+            -31.715650722384453,
+            30.000000953674316
+          ],
+          "p_mid": [
+            -30.25115029513836,
+            33.53550052642822
+          ],
+          "p_end": [
+            -26.715650722384453,
+            35.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -26.715650722384453,
+            35.000000953674316
+          ],
+          "p2": [
+            26.715650394558907,
+            35.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_4",
+          "entity_type": "arc",
+          "p_start": [
+            26.715650394558907,
+            35.000000953674316
+          ],
+          "p_mid": [
+            30.251149967312813,
+            33.53550052642822
+          ],
+          "p_end": [
+            31.715650394558907,
+            30.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            31.715650394558907,
+            30.000000953674316
+          ],
+          "p2": [
+            31.715650394558907,
+            -30.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_6",
+          "entity_type": "arc",
+          "p_start": [
+            31.715650394558907,
+            -30.0
+          ],
+          "p_mid": [
+            30.251149967312813,
+            -33.53559970855713
+          ],
+          "p_end": [
+            26.715650394558907,
+            -34.999999046325684
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            26.715650394558907,
+            -34.999999046325684
+          ],
+          "p2": [
+            -26.715650722384453,
+            -34.999999046325684
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_8",
+          "entity_type": "arc",
+          "p_start": [
+            -26.715650722384453,
+            -34.999999046325684
+          ],
+          "p_mid": [
+            -30.25115029513836,
+            -33.53559970855713
+          ],
+          "p_end": [
+            -31.715650722384453,
+            -30.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "circle_9",
+          "entity_type": "circle",
+          "center": [
+            -26.71560553266495,
+            29.999969771260705
+          ],
+          "radius": 3.999995885964653,
+          "is_construction": false,
+          "projected": true
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": "body_extrude_2",
+      "face_center": [
+        0.020309750666634763,
+        -0.022823160667268638
+      ],
+      "visible": true
+    },
+    {
+      "sketch_id": "sketch_3",
+      "name": "Sketch 3",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          -0.24414999783039093,
+          15.072199821472168,
+          25.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -31.715650722384453,
+            -30.0
+          ],
+          "p2": [
+            -31.715650722384453,
+            30.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_2",
+          "entity_type": "arc",
+          "p_start": [
+            -31.715650722384453,
+            30.000000953674316
+          ],
+          "p_mid": [
+            -30.25115029513836,
+            33.53550052642822
+          ],
+          "p_end": [
+            -26.715650722384453,
+            35.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -26.715650722384453,
+            35.000000953674316
+          ],
+          "p2": [
+            26.715650394558907,
+            35.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_4",
+          "entity_type": "arc",
+          "p_start": [
+            26.715650394558907,
+            35.000000953674316
+          ],
+          "p_mid": [
+            30.251149967312813,
+            33.53550052642822
+          ],
+          "p_end": [
+            31.715650394558907,
+            30.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            31.715650394558907,
+            30.000000953674316
+          ],
+          "p2": [
+            31.715650394558907,
+            -30.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_6",
+          "entity_type": "arc",
+          "p_start": [
+            31.715650394558907,
+            -30.0
+          ],
+          "p_mid": [
+            30.251149967312813,
+            -33.53559970855713
+          ],
+          "p_end": [
+            26.715650394558907,
+            -34.999999046325684
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            26.715650394558907,
+            -34.999999046325684
+          ],
+          "p2": [
+            -26.715650722384453,
+            -34.999999046325684
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_8",
+          "entity_type": "arc",
+          "p_start": [
+            -26.715650722384453,
+            -34.999999046325684
+          ],
+          "p_mid": [
+            -30.25115029513836,
+            -33.53559970855713
+          ],
+          "p_end": [
+            -31.715650722384453,
+            -30.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_9",
+          "entity_type": "arc",
+          "p_start": [
+            -31.715650722384453,
+            30.000000953674316
+          ],
+          "p_mid": [
+            -30.25115029513836,
+            33.53550052642822
+          ],
+          "p_end": [
+            -26.715650722384453,
+            35.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_10",
+          "entity_type": "arc",
+          "p_start": [
+            26.715650394558907,
+            35.000000953674316
+          ],
+          "p_mid": [
+            30.251149967312813,
+            33.53550052642822
+          ],
+          "p_end": [
+            31.715650394558907,
+            30.000000953674316
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_11",
+          "entity_type": "arc",
+          "p_start": [
+            31.715650394558907,
+            -30.0
+          ],
+          "p_mid": [
+            30.251149967312813,
+            -33.53559970855713
+          ],
+          "p_end": [
+            26.715650394558907,
+            -34.999999046325684
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_12",
+          "entity_type": "arc",
+          "p_start": [
+            -26.715650722384453,
+            -34.999999046325684
+          ],
+          "p_mid": [
+            -30.25115029513836,
+            -33.53559970855713
+          ],
+          "p_end": [
+            -31.715650722384453,
+            -30.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "circle_13",
+          "entity_type": "circle",
+          "center": [
+            -26.71560553266495,
+            29.999969771260705
+          ],
+          "radius": 3.999995885964653,
+          "is_construction": false,
+          "projected": true
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": "body_extrude_2",
+      "face_center": [
+        0.020309750666634763,
+        -0.022823160667268638
+      ],
+      "visible": true
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

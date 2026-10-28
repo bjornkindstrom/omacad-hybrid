@@ -1,0 +1,252 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Locket",
+      "suppressed": false,
+      "radius": 12.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "split_2",
+      "feature_type": "split_body",
+      "name": "Burk",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "plane_id": "plane_1",
+      "plane_origin": [
+        0.0,
+        0.0,
+        20.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "new_body_name": "Burk",
+      "exprs": {}
+    },
+    {
+      "feature_id": "split_3",
+      "feature_type": "split_body",
+      "name": "G\u00e4nga",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "plane_id": "plane_2",
+      "plane_origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "new_body_name": "G\u00e4nga",
+      "exprs": {}
+    },
+    {
+      "feature_id": "offset_face_4",
+      "feature_type": "offset_face",
+      "name": "Offset Face 1",
+      "suppressed": false,
+      "target_body_id": "body_split_3",
+      "faces": [
+        {
+          "kind": "cylinder",
+          "origin": [
+            2.220446049250313e-16,
+            1.4802973739242458e-16,
+            20.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "radius": 11.999999937115037,
+          "length": 10.0,
+          "internal": false
+        }
+      ],
+      "distance": -2.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "thread_5",
+      "feature_type": "thread",
+      "name": "Thread 1",
+      "diameter": 20.0,
+      "pitch": 2.5,
+      "length": 10.0,
+      "is_female": false,
+      "clearance": 0.25,
+      "profile": "round",
+      "taper_lead_in": true,
+      "taper_turns": 0.75,
+      "target_body_id": "body_split_3",
+      "operation": "join",
+      "plane_origin": [
+        4.185742661568402e-13,
+        4.15680345140979e-13,
+        20.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "plane_v": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "anchor": "bottom",
+      "anchor_gap": 0.0,
+      "host_length": 10.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "combine_6",
+      "feature_type": "combine",
+      "name": "Combine (join)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "tool_body_id": "body_split_3",
+      "operation": "join",
+      "keep_tool": false,
+      "exprs": {}
+    },
+    {
+      "feature_id": "move_7",
+      "feature_type": "move",
+      "name": "Move Locket (1)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "dx": 0.0,
+      "dy": 0.0,
+      "dz": -10.0,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": 0.0,
+      "pivot": "center",
+      "exprs": {}
+    },
+    {
+      "feature_id": "combine_8",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_split_2",
+      "tool_body_id": "body_cylinder_1",
+      "operation": "cut",
+      "keep_tool": true,
+      "exprs": {}
+    },
+    {
+      "feature_id": "offset_face_9",
+      "feature_type": "offset_face",
+      "name": "Offset Face 2",
+      "suppressed": false,
+      "target_body_id": "body_split_2",
+      "faces": [
+        {
+          "kind": "surface",
+          "point": [
+            8.453172305760468,
+            -6.038443639549058,
+            16.891985636324762
+          ],
+          "normal": [
+            -0.8115816939140676,
+            0.5680646851919622,
+            -0.136519843031441
+          ]
+        }
+      ],
+      "distance": -0.2,
+      "exprs": {}
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {
+    "plane_1": {
+      "name": "Plane 1",
+      "origin": [
+        0.0,
+        0.0,
+        20.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "visible": false
+    },
+    "plane_2": {
+      "name": "Plane 2",
+      "origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "visible": false
+    }
+  },
+  "sections": {
+    "section_1": {
+      "name": "Section 1",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "offset": 0.0,
+      "flip": true,
+      "active": true
+    }
+  },
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 192
+}

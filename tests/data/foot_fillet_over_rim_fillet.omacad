@@ -1,0 +1,2111 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "XY",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -17.0,
+              40.0
+            ],
+            "p2": [
+              22.0,
+              40.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              25.0,
+              37.0
+            ],
+            "p2": [
+              25.0,
+              -17.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              22.0,
+              -20.0
+            ],
+            "p2": [
+              -17.0,
+              -20.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -20.0,
+              -17.0
+            ],
+            "p2": [
+              -20.0,
+              37.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "arc_5",
+            "entity_type": "arc",
+            "p_start": [
+              22.0,
+              40.0
+            ],
+            "p_mid": [
+              24.121320343559642,
+              39.121320343559645
+            ],
+            "p_end": [
+              25.0,
+              37.0
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_1",
+              "line_b": "line_2",
+              "corner": [
+                25.0,
+                40.0
+              ],
+              "end_a": "p2",
+              "end_b": "p1"
+            }
+          },
+          {
+            "entity_id": "arc_6",
+            "entity_type": "arc",
+            "p_start": [
+              -17.0,
+              40.0
+            ],
+            "p_mid": [
+              -19.121320343559642,
+              39.121320343559645
+            ],
+            "p_end": [
+              -20.0,
+              37.0
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_1",
+              "line_b": "line_4",
+              "corner": [
+                -20.0,
+                40.0
+              ],
+              "end_a": "p1",
+              "end_b": "p2"
+            }
+          },
+          {
+            "entity_id": "arc_7",
+            "entity_type": "arc",
+            "p_start": [
+              25.0,
+              -17.0
+            ],
+            "p_mid": [
+              24.121320343559642,
+              -19.121320343559642
+            ],
+            "p_end": [
+              22.0,
+              -20.0
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_2",
+              "line_b": "line_3",
+              "corner": [
+                25.0,
+                -20.0
+              ],
+              "end_a": "p2",
+              "end_b": "p1"
+            }
+          },
+          {
+            "entity_id": "arc_8",
+            "entity_type": "arc",
+            "p_start": [
+              -17.0,
+              -20.0
+            ],
+            "p_mid": [
+              -19.121320343559642,
+              -19.121320343559642
+            ],
+            "p_end": [
+              -20.0,
+              -17.0
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_3",
+              "line_b": "line_4",
+              "corner": [
+                -20.0,
+                -20.0
+              ],
+              "end_a": "p2",
+              "end_b": "p1"
+            }
+          },
+          {
+            "entity_id": "line_9",
+            "entity_type": "line",
+            "p1": [
+              -15.0,
+              -15.0
+            ],
+            "p2": [
+              -15.0,
+              35.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_10",
+            "entity_type": "line",
+            "p1": [
+              -15.0,
+              35.0
+            ],
+            "p2": [
+              20.0,
+              35.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_11",
+            "entity_type": "line",
+            "p1": [
+              20.0,
+              35.0
+            ],
+            "p2": [
+              20.0,
+              -15.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_12",
+            "entity_type": "line",
+            "p1": [
+              20.0,
+              -15.0
+            ],
+            "p2": [
+              -15.0,
+              -15.0
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Width",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_1",
+            "value": 39.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Height",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_2",
+            "value": 54.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d3",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_5",
+            "value": 3.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d4",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_6",
+            "value": 3.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d5",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_7",
+            "value": 3.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d6",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_8",
+            "value": 3.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_1"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c2",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_2"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c3",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_3"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c4",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_4"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c9",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_1",
+              "arc_5"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c10",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_2",
+              "arc_5"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c11",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_1",
+              "arc_6"
+            ],
+            "pts": [
+              "p1",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c12",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_4",
+              "arc_6"
+            ],
+            "pts": [
+              "p2",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c13",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_2",
+              "arc_7"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c14",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_3",
+              "arc_7"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c15",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_3",
+              "arc_8"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c16",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_4",
+              "arc_8"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          }
+        ],
+        "face_key": null,
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_2",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 1,
+      "extra_profiles": [
+        0
+      ],
+      "distance": -10.0,
+      "operation": "new_body",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_3",
+      "feature_type": "extrude",
+      "name": "Extrude 2",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 1,
+      "extra_profiles": [],
+      "distance": 10.0,
+      "operation": "join",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_2",
+      "feature_type": "sketch",
+      "name": "Sketch 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_2",
+        "name": "Sketch 2",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            -0.0,
+            10.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            -0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            -0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -15.0,
+              -15.0
+            ],
+            "p2": [
+              -15.0,
+              35.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -15.0,
+              35.0
+            ],
+            "p2": [
+              20.0,
+              35.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              20.0,
+              35.0
+            ],
+            "p2": [
+              20.0,
+              -15.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              20.0,
+              -15.0
+            ],
+            "p2": [
+              -15.0,
+              -15.0
+            ],
+            "is_construction": false,
+            "projected": true
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": null,
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_3",
+      "feature_type": "sketch",
+      "name": "Sketch 3",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_3",
+        "name": "Sketch 3",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            2.5,
+            10.0,
+            10.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            -0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            -0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -17.5,
+              -25.0
+            ],
+            "p2": [
+              -17.5,
+              25.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -17.5,
+              25.0
+            ],
+            "p2": [
+              17.5,
+              25.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              17.5,
+              25.0
+            ],
+            "p2": [
+              17.5,
+              -25.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              17.5,
+              -25.0
+            ],
+            "p2": [
+              -17.5,
+              -25.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -12.0,
+              -22.5
+            ],
+            "p2": [
+              12.0,
+              -22.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              15.0,
+              -19.5
+            ],
+            "p2": [
+              15.0,
+              19.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              12.0,
+              22.5
+            ],
+            "p2": [
+              -12.0,
+              22.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_8",
+            "entity_type": "line",
+            "p1": [
+              -15.0,
+              19.5
+            ],
+            "p2": [
+              -15.0,
+              -19.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "arc_9",
+            "entity_type": "arc",
+            "p_start": [
+              12.0,
+              -22.5
+            ],
+            "p_mid": [
+              14.121320343559642,
+              -21.621320343559642
+            ],
+            "p_end": [
+              15.0,
+              -19.5
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_5",
+              "line_b": "line_6",
+              "corner": [
+                15.0,
+                -22.5
+              ],
+              "end_a": "p2",
+              "end_b": "p1"
+            }
+          },
+          {
+            "entity_id": "arc_10",
+            "entity_type": "arc",
+            "p_start": [
+              -12.0,
+              -22.5
+            ],
+            "p_mid": [
+              -14.121320343559642,
+              -21.621320343559642
+            ],
+            "p_end": [
+              -15.0,
+              -19.5
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_5",
+              "line_b": "line_8",
+              "corner": [
+                -15.0,
+                -22.5
+              ],
+              "end_a": "p1",
+              "end_b": "p2"
+            }
+          },
+          {
+            "entity_id": "arc_11",
+            "entity_type": "arc",
+            "p_start": [
+              15.0,
+              19.5
+            ],
+            "p_mid": [
+              14.121320343559642,
+              21.621320343559642
+            ],
+            "p_end": [
+              12.0,
+              22.5
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_6",
+              "line_b": "line_7",
+              "corner": [
+                15.0,
+                22.5
+              ],
+              "end_a": "p2",
+              "end_b": "p1"
+            }
+          },
+          {
+            "entity_id": "arc_12",
+            "entity_type": "arc",
+            "p_start": [
+              -12.0,
+              22.5
+            ],
+            "p_mid": [
+              -14.121320343559642,
+              21.621320343559642
+            ],
+            "p_end": [
+              -15.0,
+              19.5
+            ],
+            "is_construction": false,
+            "fillet_info": {
+              "line_a": "line_7",
+              "line_b": "line_8",
+              "corner": [
+                -15.0,
+                22.5
+              ],
+              "end_a": "p2",
+              "end_b": "p1"
+            }
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Width",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_5",
+            "value": 24.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Height",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_6",
+            "value": 39.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d3",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_9",
+            "value": 3.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d4",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_10",
+            "value": 3.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d5",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_11",
+            "value": 3.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d6",
+            "name": "Fillet",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_12",
+            "value": 3.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_5"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c2",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_6"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c3",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_7"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c4",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_8"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c9",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_5",
+              "arc_9"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c10",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_6",
+              "arc_9"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c11",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_5",
+              "arc_10"
+            ],
+            "pts": [
+              "p1",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c12",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_8",
+              "arc_10"
+            ],
+            "pts": [
+              "p2",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c13",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_6",
+              "arc_11"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c14",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_7",
+              "arc_11"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          },
+          {
+            "cid": "c15",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_7",
+              "arc_12"
+            ],
+            "pts": [
+              "p2",
+              "p_start"
+            ]
+          },
+          {
+            "cid": "c16",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_8",
+              "arc_12"
+            ],
+            "pts": [
+              "p1",
+              "p_end"
+            ]
+          }
+        ],
+        "face_key": null,
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_6",
+      "feature_type": "extrude",
+      "name": "Extrude 3",
+      "suppressed": false,
+      "sketch_id": "sketch_3",
+      "profile_idx": 1,
+      "extra_profiles": [],
+      "distance": 18.5,
+      "operation": "join",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_7",
+      "feature_type": "fillet",
+      "name": "Fillet 1",
+      "suppressed": false,
+      "edges": [
+        [
+          [
+            20.0,
+            -15.0,
+            10.0
+          ],
+          [
+            20.0,
+            35.0,
+            10.0
+          ]
+        ],
+        [
+          [
+            -15.0,
+            -15.0,
+            10.0
+          ],
+          [
+            20.0,
+            -15.0,
+            10.0
+          ]
+        ],
+        [
+          [
+            -15.0,
+            35.0,
+            10.0
+          ],
+          [
+            20.0,
+            35.0,
+            10.0
+          ]
+        ],
+        [
+          [
+            -15.0,
+            -15.0,
+            10.0
+          ],
+          [
+            -15.0,
+            35.0,
+            10.0
+          ]
+        ]
+      ],
+      "size": 2.0,
+      "kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_8",
+      "feature_type": "fillet",
+      "name": "Fillet 2",
+      "suppressed": false,
+      "edges": [
+        [
+          "loop",
+          [
+            2.500000014449611,
+            10.0,
+            10.0
+          ],
+          [
+            -0.0,
+            0.0,
+            0.9999999999999999
+          ],
+          144.8477117580019
+        ]
+      ],
+      "size": 2.0,
+      "kind": "fillet",
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "XY",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -17.0,
+            40.0
+          ],
+          "p2": [
+            22.0,
+            40.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            25.0,
+            37.0
+          ],
+          "p2": [
+            25.0,
+            -17.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            22.0,
+            -20.0
+          ],
+          "p2": [
+            -17.0,
+            -20.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -20.0,
+            -17.0
+          ],
+          "p2": [
+            -20.0,
+            37.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "arc_5",
+          "entity_type": "arc",
+          "p_start": [
+            22.0,
+            40.0
+          ],
+          "p_mid": [
+            24.121320343559642,
+            39.121320343559645
+          ],
+          "p_end": [
+            25.0,
+            37.0
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_1",
+            "line_b": "line_2",
+            "corner": [
+              25.0,
+              40.0
+            ],
+            "end_a": "p2",
+            "end_b": "p1"
+          }
+        },
+        {
+          "entity_id": "arc_6",
+          "entity_type": "arc",
+          "p_start": [
+            -17.0,
+            40.0
+          ],
+          "p_mid": [
+            -19.121320343559642,
+            39.121320343559645
+          ],
+          "p_end": [
+            -20.0,
+            37.0
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_1",
+            "line_b": "line_4",
+            "corner": [
+              -20.0,
+              40.0
+            ],
+            "end_a": "p1",
+            "end_b": "p2"
+          }
+        },
+        {
+          "entity_id": "arc_7",
+          "entity_type": "arc",
+          "p_start": [
+            25.0,
+            -17.0
+          ],
+          "p_mid": [
+            24.121320343559642,
+            -19.121320343559642
+          ],
+          "p_end": [
+            22.0,
+            -20.0
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_2",
+            "line_b": "line_3",
+            "corner": [
+              25.0,
+              -20.0
+            ],
+            "end_a": "p2",
+            "end_b": "p1"
+          }
+        },
+        {
+          "entity_id": "arc_8",
+          "entity_type": "arc",
+          "p_start": [
+            -17.0,
+            -20.0
+          ],
+          "p_mid": [
+            -19.121320343559642,
+            -19.121320343559642
+          ],
+          "p_end": [
+            -20.0,
+            -17.0
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_3",
+            "line_b": "line_4",
+            "corner": [
+              -20.0,
+              -20.0
+            ],
+            "end_a": "p2",
+            "end_b": "p1"
+          }
+        },
+        {
+          "entity_id": "line_9",
+          "entity_type": "line",
+          "p1": [
+            -15.0,
+            -15.0
+          ],
+          "p2": [
+            -15.0,
+            35.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_10",
+          "entity_type": "line",
+          "p1": [
+            -15.0,
+            35.0
+          ],
+          "p2": [
+            20.0,
+            35.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_11",
+          "entity_type": "line",
+          "p1": [
+            20.0,
+            35.0
+          ],
+          "p2": [
+            20.0,
+            -15.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_12",
+          "entity_type": "line",
+          "p1": [
+            20.0,
+            -15.0
+          ],
+          "p2": [
+            -15.0,
+            -15.0
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Width",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_1",
+          "value": 39.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Height",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_2",
+          "value": 54.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d3",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_5",
+          "value": 3.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d4",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_6",
+          "value": 3.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d5",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_7",
+          "value": 3.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d6",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_8",
+          "value": 3.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_1"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c2",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_2"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c3",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_3"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c4",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_4"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c9",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_1",
+            "arc_5"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c10",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_2",
+            "arc_5"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c11",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_1",
+            "arc_6"
+          ],
+          "pts": [
+            "p1",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c12",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_4",
+            "arc_6"
+          ],
+          "pts": [
+            "p2",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c13",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_2",
+            "arc_7"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c14",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_3",
+            "arc_7"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c15",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_3",
+            "arc_8"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c16",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_4",
+            "arc_8"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        }
+      ],
+      "face_key": null,
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_2",
+      "name": "Sketch 2",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          -0.0,
+          10.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          -0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -15.0,
+            -15.0
+          ],
+          "p2": [
+            -15.0,
+            35.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -15.0,
+            35.0
+          ],
+          "p2": [
+            20.0,
+            35.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            20.0,
+            35.0
+          ],
+          "p2": [
+            20.0,
+            -15.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            20.0,
+            -15.0
+          ],
+          "p2": [
+            -15.0,
+            -15.0
+          ],
+          "is_construction": false,
+          "projected": true
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": null,
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_3",
+      "name": "Sketch 3",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          2.5,
+          10.0,
+          10.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          -0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -17.5,
+            -25.0
+          ],
+          "p2": [
+            -17.5,
+            25.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -17.5,
+            25.0
+          ],
+          "p2": [
+            17.5,
+            25.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            17.5,
+            25.0
+          ],
+          "p2": [
+            17.5,
+            -25.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            17.5,
+            -25.0
+          ],
+          "p2": [
+            -17.5,
+            -25.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -12.0,
+            -22.5
+          ],
+          "p2": [
+            12.0,
+            -22.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            15.0,
+            -19.5
+          ],
+          "p2": [
+            15.0,
+            19.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            12.0,
+            22.5
+          ],
+          "p2": [
+            -12.0,
+            22.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_8",
+          "entity_type": "line",
+          "p1": [
+            -15.0,
+            19.5
+          ],
+          "p2": [
+            -15.0,
+            -19.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "arc_9",
+          "entity_type": "arc",
+          "p_start": [
+            12.0,
+            -22.5
+          ],
+          "p_mid": [
+            14.121320343559642,
+            -21.621320343559642
+          ],
+          "p_end": [
+            15.0,
+            -19.5
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_5",
+            "line_b": "line_6",
+            "corner": [
+              15.0,
+              -22.5
+            ],
+            "end_a": "p2",
+            "end_b": "p1"
+          }
+        },
+        {
+          "entity_id": "arc_10",
+          "entity_type": "arc",
+          "p_start": [
+            -12.0,
+            -22.5
+          ],
+          "p_mid": [
+            -14.121320343559642,
+            -21.621320343559642
+          ],
+          "p_end": [
+            -15.0,
+            -19.5
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_5",
+            "line_b": "line_8",
+            "corner": [
+              -15.0,
+              -22.5
+            ],
+            "end_a": "p1",
+            "end_b": "p2"
+          }
+        },
+        {
+          "entity_id": "arc_11",
+          "entity_type": "arc",
+          "p_start": [
+            15.0,
+            19.5
+          ],
+          "p_mid": [
+            14.121320343559642,
+            21.621320343559642
+          ],
+          "p_end": [
+            12.0,
+            22.5
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_6",
+            "line_b": "line_7",
+            "corner": [
+              15.0,
+              22.5
+            ],
+            "end_a": "p2",
+            "end_b": "p1"
+          }
+        },
+        {
+          "entity_id": "arc_12",
+          "entity_type": "arc",
+          "p_start": [
+            -12.0,
+            22.5
+          ],
+          "p_mid": [
+            -14.121320343559642,
+            21.621320343559642
+          ],
+          "p_end": [
+            -15.0,
+            19.5
+          ],
+          "is_construction": false,
+          "fillet_info": {
+            "line_a": "line_7",
+            "line_b": "line_8",
+            "corner": [
+              -15.0,
+              22.5
+            ],
+            "end_a": "p2",
+            "end_b": "p1"
+          }
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Width",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_5",
+          "value": 24.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Height",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_6",
+          "value": 39.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d3",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_9",
+          "value": 3.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d4",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_10",
+          "value": 3.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d5",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_11",
+          "value": 3.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d6",
+          "name": "Fillet",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_12",
+          "value": 3.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_5"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c2",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_6"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c3",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_7"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c4",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_8"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c9",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_5",
+            "arc_9"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c10",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_6",
+            "arc_9"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c11",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_5",
+            "arc_10"
+          ],
+          "pts": [
+            "p1",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c12",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_8",
+            "arc_10"
+          ],
+          "pts": [
+            "p2",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c13",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_6",
+            "arc_11"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c14",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_7",
+            "arc_11"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        },
+        {
+          "cid": "c15",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_7",
+            "arc_12"
+          ],
+          "pts": [
+            "p2",
+            "p_start"
+          ]
+        },
+        {
+          "cid": "c16",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_8",
+            "arc_12"
+          ],
+          "pts": [
+            "p1",
+            "p_end"
+          ]
+        }
+      ],
+      "face_key": null,
+      "visible": false
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "canvases": {}
+}

@@ -1,0 +1,42 @@
+mode = "light"
+
+# Omacad Atelier: warm, airy, the model in focus (design/appearance-proposals, proposal 3)
+font = "Noto Sans"
+accent = "#39735D"
+selection = "#E1EBDF"
+muted = "#6D7970"
+radius = 14
+
+# surfaces by role (see theme.Palette._studio_neutral)
+window = "#E7E4DC"
+surface = "#FAF9F5"
+field = "#F0EEE7"
+border = "#D9DDD2"
+
+background = "#FAF9F5"
+dark_background = "#F0EEE7"
+darker_background = "#E7E4DC"
+lighter_background = "#D9DDD2"
+
+canvas = "#E9E6DF"
+grid = "#D3CFC5"
+highlight = "#39735D"
+
+foreground = "#303D35"
+dark_foreground = "#6D7970"
+light_foreground = "#303D35"
+bright_foreground = "#1C2620"
+
+red = "#B3261E"
+yellow = "#A15C07"
+green = "#39735D"
+cyan = "#2A7A86"
+blue = "#3F6FA8"
+magenta = "#8A4F8C"
+
+bright_red = "#D2453B"
+bright_yellow = "#C47A12"
+bright_green = "#4E9377"
+bright_cyan = "#3B98A6"
+bright_blue = "#5B8CC6"
+bright_magenta = "#A86AAA"

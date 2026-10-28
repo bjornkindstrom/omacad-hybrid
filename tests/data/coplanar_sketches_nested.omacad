@@ -1,0 +1,1473 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "XY",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "arc_1",
+            "entity_type": "arc",
+            "p_start": [
+              0.0,
+              0.0
+            ],
+            "p_mid": [
+              -10.0,
+              20.0
+            ],
+            "p_end": [
+              -30.0,
+              30.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "arc_2",
+            "entity_type": "arc",
+            "p_start": [
+              -30.0,
+              30.0
+            ],
+            "p_mid": [
+              -65.0,
+              25.0
+            ],
+            "p_end": [
+              -60.0,
+              0.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "arc_3",
+            "entity_type": "arc",
+            "p_start": [
+              -60.0,
+              0.0
+            ],
+            "p_mid": [
+              -20.0,
+              -10.0
+            ],
+            "p_end": [
+              0.0,
+              0.0
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Radius",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_1",
+            "value": 35.35533905932738,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Radius",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_2",
+            "value": 21.24591463996994,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d3",
+            "name": "Radius",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_3",
+            "value": 46.09772228646444,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [],
+        "face_key": null,
+        "visible": true
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_2",
+      "feature_type": "sketch",
+      "name": "Sketch 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_2",
+        "name": "Sketch 2",
+        "plane": {
+          "name": "XY",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "circle_1",
+            "entity_type": "circle",
+            "center": [
+              -35.0,
+              10.0
+            ],
+            "radius": 10.0,
+            "is_construction": true,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -35.0,
+              20.0
+            ],
+            "p2": [
+              -42.071067811865476,
+              17.071067811865476
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -42.071067811865476,
+              17.071067811865476
+            ],
+            "p2": [
+              -45.0,
+              10.000000000000002
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -45.0,
+              10.000000000000002
+            ],
+            "p2": [
+              -42.071067811865476,
+              2.9289321881345254
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -42.071067811865476,
+              2.9289321881345254
+            ],
+            "p2": [
+              -35.0,
+              0.0
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              -35.0,
+              0.0
+            ],
+            "p2": [
+              -27.928932188134524,
+              2.9289321881345227
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              -27.928932188134524,
+              2.9289321881345227
+            ],
+            "p2": [
+              -25.0,
+              9.999999999999998
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_8",
+            "entity_type": "line",
+            "p1": [
+              -25.0,
+              9.999999999999998
+            ],
+            "p2": [
+              -27.928932188134524,
+              17.071067811865476
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_9",
+            "entity_type": "line",
+            "p1": [
+              -27.928932188134524,
+              17.071067811865476
+            ],
+            "p2": [
+              -35.0,
+              20.0
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Side",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_2",
+            "value": 7.653668647301796,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_2",
+              "line_3"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c2",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_2"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c3",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_3",
+              "line_4"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c4",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_3"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c5",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_3"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c6",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_4",
+              "line_5"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c7",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_4"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c8",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_4"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c9",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_5",
+              "line_6"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c10",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_5"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c11",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_5"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c12",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_6",
+              "line_7"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c13",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_6"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c14",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_6"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c15",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_7",
+              "line_8"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c16",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_7"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c17",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_7"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c18",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_8",
+              "line_9"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c19",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_8"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c20",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_8"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c21",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_9",
+              "line_2"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c22",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_9"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c23",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_9"
+            ],
+            "pts": []
+          }
+        ],
+        "face_key": null,
+        "visible": true
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_3",
+      "feature_type": "sketch",
+      "name": "Sketch 3",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_3",
+        "name": "Sketch 3",
+        "plane": {
+          "name": "XY",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "circle_1",
+            "entity_type": "circle",
+            "center": [
+              -50.0,
+              20.0
+            ],
+            "radius": 5.0,
+            "is_construction": true,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -50.0,
+              25.0
+            ],
+            "p2": [
+              -54.3301270189222,
+              17.5
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -54.3301270189222,
+              17.5
+            ],
+            "p2": [
+              -45.66987298107781,
+              17.499999999999996
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -45.66987298107781,
+              17.499999999999996
+            ],
+            "p2": [
+              -50.0,
+              25.0
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Side",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_2",
+            "value": 8.660254037844389,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_2",
+              "line_3"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c2",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_2"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c3",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_3",
+              "line_4"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c4",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_3"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c5",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_3"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c6",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_4",
+              "line_2"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c7",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_1",
+              "line_4"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c8",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_2",
+              "line_4"
+            ],
+            "pts": []
+          }
+        ],
+        "face_key": null,
+        "visible": true
+      },
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "XY",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "arc_1",
+          "entity_type": "arc",
+          "p_start": [
+            0.0,
+            0.0
+          ],
+          "p_mid": [
+            -10.0,
+            20.0
+          ],
+          "p_end": [
+            -30.0,
+            30.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "arc_2",
+          "entity_type": "arc",
+          "p_start": [
+            -30.0,
+            30.0
+          ],
+          "p_mid": [
+            -65.0,
+            25.0
+          ],
+          "p_end": [
+            -60.0,
+            0.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "arc_3",
+          "entity_type": "arc",
+          "p_start": [
+            -60.0,
+            0.0
+          ],
+          "p_mid": [
+            -20.0,
+            -10.0
+          ],
+          "p_end": [
+            0.0,
+            0.0
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Radius",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_1",
+          "value": 35.35533905932738,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Radius",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_2",
+          "value": 21.24591463996994,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d3",
+          "name": "Radius",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_3",
+          "value": 46.09772228646444,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [],
+      "face_key": null,
+      "visible": true
+    },
+    {
+      "sketch_id": "sketch_2",
+      "name": "Sketch 2",
+      "plane": {
+        "name": "XY",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "circle_1",
+          "entity_type": "circle",
+          "center": [
+            -35.0,
+            10.0
+          ],
+          "radius": 10.0,
+          "is_construction": true,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -35.0,
+            20.0
+          ],
+          "p2": [
+            -42.071067811865476,
+            17.071067811865476
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -42.071067811865476,
+            17.071067811865476
+          ],
+          "p2": [
+            -45.0,
+            10.000000000000002
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -45.0,
+            10.000000000000002
+          ],
+          "p2": [
+            -42.071067811865476,
+            2.9289321881345254
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -42.071067811865476,
+            2.9289321881345254
+          ],
+          "p2": [
+            -35.0,
+            0.0
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            -35.0,
+            0.0
+          ],
+          "p2": [
+            -27.928932188134524,
+            2.9289321881345227
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            -27.928932188134524,
+            2.9289321881345227
+          ],
+          "p2": [
+            -25.0,
+            9.999999999999998
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_8",
+          "entity_type": "line",
+          "p1": [
+            -25.0,
+            9.999999999999998
+          ],
+          "p2": [
+            -27.928932188134524,
+            17.071067811865476
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_9",
+          "entity_type": "line",
+          "p1": [
+            -27.928932188134524,
+            17.071067811865476
+          ],
+          "p2": [
+            -35.0,
+            20.0
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Side",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_2",
+          "value": 7.653668647301796,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_2",
+            "line_3"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c2",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_2"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c3",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_3",
+            "line_4"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c4",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_3"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c5",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_3"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c6",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_4",
+            "line_5"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c7",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_4"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c8",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_4"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c9",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_5",
+            "line_6"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c10",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_5"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c11",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_5"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c12",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_6",
+            "line_7"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c13",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_6"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c14",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_6"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c15",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_7",
+            "line_8"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c16",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_7"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c17",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_7"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c18",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_8",
+            "line_9"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c19",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_8"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c20",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_8"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c21",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_9",
+            "line_2"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c22",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_9"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c23",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_9"
+          ],
+          "pts": []
+        }
+      ],
+      "face_key": null,
+      "visible": true
+    },
+    {
+      "sketch_id": "sketch_3",
+      "name": "Sketch 3",
+      "plane": {
+        "name": "XY",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "circle_1",
+          "entity_type": "circle",
+          "center": [
+            -50.0,
+            20.0
+          ],
+          "radius": 5.0,
+          "is_construction": true,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -50.0,
+            25.0
+          ],
+          "p2": [
+            -54.3301270189222,
+            17.5
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -54.3301270189222,
+            17.5
+          ],
+          "p2": [
+            -45.66987298107781,
+            17.499999999999996
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -45.66987298107781,
+            17.499999999999996
+          ],
+          "p2": [
+            -50.0,
+            25.0
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Side",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_2",
+          "value": 8.660254037844389,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_2",
+            "line_3"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c2",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_2"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c3",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_3",
+            "line_4"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c4",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_3"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c5",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_3"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c6",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_4",
+            "line_2"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c7",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_1",
+            "line_4"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c8",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_2",
+            "line_4"
+          ],
+          "pts": []
+        }
+      ],
+      "face_key": null,
+      "visible": true
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "canvases": {}
+}

@@ -1,0 +1,35 @@
+mode = "light"
+
+# Autodesk Fusion inspired theme: fuskion420
+accent = "#0696D7"
+selection = "#0696D7"
+muted = "#7A828E"
+
+background = "#F5F5F5"
+dark_background = "#EAEAEA"
+darker_background = "#DFDFDF"
+lighter_background = "#FFFFFF"
+
+# Canvas and grid specifically sampled from Fusion screenshot
+canvas = "#F7F7F7"
+grid = "#D8DDE3"
+highlight = "#0696D7"
+
+foreground = "#262626"
+dark_foreground = "#5A5A5A"
+light_foreground = "#1A1A1A"
+bright_foreground = "#000000"
+
+red = "#D32F2F"
+yellow = "#E65100"
+green = "#2E7D32"
+cyan = "#0288D1"
+blue = "#1565C0"
+magenta = "#7B1FA2"
+
+bright_red = "#E53935"
+bright_yellow = "#F57C00"
+bright_green = "#43A047"
+bright_cyan = "#039BE5"
+bright_blue = "#1E88E5"
+bright_magenta = "#8E24AA"

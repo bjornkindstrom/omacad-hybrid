@@ -1,0 +1,132 @@
+{
+ "name": "Ring edge pick test",
+ "units": "mm",
+ "parameters": [],
+ "timeline": [
+  {
+   "feature_id": "cylinder_1",
+   "feature_type": "cylinder",
+   "name": "Cylinder 1",
+   "suppressed": false,
+   "radius": 20.0,
+   "height": 40.0,
+   "center": "bottom_center",
+   "plane_origin": null,
+   "plane_normal": null,
+   "plane_u": null,
+   "plane_v": null,
+   "translation": [0.0, 0.0, 0.0],
+   "taper_angle": 0.0,
+   "wall_thickness": 0.0,
+   "outer_round": 0.0,
+   "outer_round_kind": "fillet",
+   "inner_round": 0.0,
+   "inner_round_kind": "fillet",
+   "exprs": {}
+  },
+  {
+   "feature_id": "feat_sketch_1",
+   "feature_type": "sketch",
+   "name": "Sketch 1",
+   "suppressed": false,
+   "sketch": {
+    "sketch_id": "sketch_1",
+    "name": "Sketch 1",
+    "plane": {
+     "name": "FACE",
+     "origin": [0.0, 0.0, 40.0],
+     "u_axis": [1.0, 0.0, 0.0],
+     "v_axis": [0.0, 1.0, 0.0],
+     "normal": [0.0, 0.0, 1.0]
+    },
+    "entities": [
+     {
+      "entity_id": "circle_1",
+      "entity_type": "circle",
+      "center": [0.0, 0.0],
+      "radius": 20.0,
+      "is_construction": false,
+      "projected": true
+     },
+     {
+      "entity_id": "circle_2",
+      "entity_type": "circle",
+      "center": [0.0, 0.0],
+      "radius": 10.0,
+      "is_construction": false
+     }
+    ],
+    "dimensions": [],
+    "constraints": [],
+    "face_key": null,
+    "parent_body_id": "body_cylinder_1",
+    "face_center": [0.0, 0.0],
+    "visible": false
+   },
+   "exprs": {}
+  },
+  {
+   "feature_id": "extrude_1",
+   "feature_type": "extrude",
+   "name": "Extrude 1",
+   "suppressed": false,
+   "sketch_id": "sketch_1",
+   "profile_idx": 0,
+   "extra_profiles": [],
+   "distance": -10.0,
+   "operation": "cut",
+   "direction": "one_side",
+   "distance2": 10.0,
+   "start_offset": 0.0,
+   "extra_refs": [],
+   "holes": [],
+   "profile_sigs": [[0.0, 0.0, 942.5]],
+   "profile_sigs_for": [0, []],
+   "follows_text": false,
+   "exprs": {}
+  }
+ ],
+ "marker_index": 3,
+ "sketches": [
+  {
+   "sketch_id": "sketch_1",
+   "name": "Sketch 1",
+   "plane": {
+    "name": "FACE",
+    "origin": [0.0, 0.0, 40.0],
+    "u_axis": [1.0, 0.0, 0.0],
+    "v_axis": [0.0, 1.0, 0.0],
+    "normal": [0.0, 0.0, 1.0]
+   },
+   "entities": [
+    {
+     "entity_id": "circle_1",
+     "entity_type": "circle",
+     "center": [0.0, 0.0],
+     "radius": 20.0,
+     "is_construction": false,
+     "projected": true
+    },
+    {
+     "entity_id": "circle_2",
+     "entity_type": "circle",
+     "center": [0.0, 0.0],
+     "radius": 10.0,
+     "is_construction": false
+    }
+   ],
+   "dimensions": [],
+   "constraints": [],
+   "face_key": null,
+   "parent_body_id": "body_cylinder_1",
+   "face_center": [0.0, 0.0],
+   "visible": false
+  }
+ ],
+ "active_sketch": null,
+ "construction_planes": {},
+ "sections": {},
+ "origin_vis": {"all": true, "axes": {"X": true, "Y": true, "Z": true}, "planes": {"XY": false, "XZ": false, "YZ": false}},
+ "canvases": {},
+ "curve_segments": 360
+}

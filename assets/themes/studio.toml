@@ -1,0 +1,41 @@
+mode = "light"
+
+# Omacad Studio: light, calm and precise (design/appearance-proposals, proposal 1)
+font = "Noto Sans"
+accent = "#2863D9"
+selection = "#E8F0FF"
+muted = "#64748B"
+
+# Studio surfaces by role (see theme.Palette._studio_neutral)
+window = "#E9EDF2"
+surface = "#FFFFFF"
+field = "#F2F5F9"
+border = "#D7DFEA"
+
+background = "#FFFFFF"
+dark_background = "#F2F5F9"
+darker_background = "#E9EDF2"
+lighter_background = "#D7DFEA"
+
+canvas = "#F2F4F8"
+grid = "#BAC5D4"
+highlight = "#1D4ED8"
+
+foreground = "#253247"
+dark_foreground = "#64748B"
+light_foreground = "#253247"
+bright_foreground = "#101828"
+
+red = "#C62828"
+yellow = "#B45309"
+green = "#2E7D32"
+cyan = "#0E7490"
+blue = "#2863D9"
+magenta = "#7E22CE"
+
+bright_red = "#DC2626"
+bright_yellow = "#D97706"
+bright_green = "#16A34A"
+bright_cyan = "#0891B2"
+bright_blue = "#3B82F6"
+bright_magenta = "#9333EA"

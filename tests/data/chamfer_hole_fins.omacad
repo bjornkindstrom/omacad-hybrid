@@ -1,0 +1,1908 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "XY",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "slot_1",
+            "entity_type": "slot",
+            "center1": [
+              0.0,
+              0.0
+            ],
+            "center2": [
+              150.0,
+              0.0
+            ],
+            "radius": 60.0,
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "slot_1",
+            "value": 150.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Width",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "slot_1",
+            "value": 120.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": null,
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_2",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": 15.0,
+      "operation": "new_body",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          75.0,
+          -8.08793571933566e-16,
+          29237.20349256
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_2",
+      "feature_type": "sketch",
+      "name": "Sketch 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_2",
+        "name": "Sketch 2",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            75.0,
+            0.0,
+            15.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -108.33420181274414,
+              -49.88819885253906
+            ],
+            "p2": [
+              -117.42639923095703,
+              -42.42639923095703
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -117.42639923095703,
+              -42.42639923095703
+            ],
+            "p2": [
+              -124.88819885253906,
+              -33.33420181274414
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -124.88819885253906,
+              -33.33420181274414
+            ],
+            "p2": [
+              -130.43280029296875,
+              -22.961000442504883
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -130.43280029296875,
+              -22.961000442504883
+            ],
+            "p2": [
+              -133.84709930419922,
+              -11.705400466918945
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -133.84709930419922,
+              -11.705400466918945
+            ],
+            "p2": [
+              -135.0,
+              0.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              -135.0,
+              0.0
+            ],
+            "p2": [
+              -133.84709930419922,
+              11.705400466918945
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              -133.84709930419922,
+              11.705400466918945
+            ],
+            "p2": [
+              -130.43280029296875,
+              22.961000442504883
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_8",
+            "entity_type": "line",
+            "p1": [
+              -130.43280029296875,
+              22.961000442504883
+            ],
+            "p2": [
+              -124.88819885253906,
+              33.33420181274414
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_9",
+            "entity_type": "line",
+            "p1": [
+              -124.88819885253906,
+              33.33420181274414
+            ],
+            "p2": [
+              -117.42639923095703,
+              42.42639923095703
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_10",
+            "entity_type": "line",
+            "p1": [
+              -117.42639923095703,
+              42.42639923095703
+            ],
+            "p2": [
+              -108.33420181274414,
+              49.88819885253906
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_11",
+            "entity_type": "line",
+            "p1": [
+              -108.33420181274414,
+              49.88819885253906
+            ],
+            "p2": [
+              -97.96100044250488,
+              55.43280029296875
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_12",
+            "entity_type": "line",
+            "p1": [
+              -97.96100044250488,
+              55.43280029296875
+            ],
+            "p2": [
+              -86.70540046691895,
+              58.84709930419922
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_13",
+            "entity_type": "line",
+            "p1": [
+              -86.70540046691895,
+              58.84709930419922
+            ],
+            "p2": [
+              -75.0,
+              60.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_14",
+            "entity_type": "line",
+            "p1": [
+              -75.0,
+              60.0
+            ],
+            "p2": [
+              75.0,
+              60.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_15",
+            "entity_type": "line",
+            "p1": [
+              75.0,
+              60.0
+            ],
+            "p2": [
+              86.70539855957031,
+              58.84709930419922
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_16",
+            "entity_type": "line",
+            "p1": [
+              86.70539855957031,
+              58.84709930419922
+            ],
+            "p2": [
+              97.96099853515625,
+              55.43280029296875
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_17",
+            "entity_type": "line",
+            "p1": [
+              97.96099853515625,
+              55.43280029296875
+            ],
+            "p2": [
+              108.33419799804688,
+              49.88819885253906
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_18",
+            "entity_type": "line",
+            "p1": [
+              108.33419799804688,
+              49.88819885253906
+            ],
+            "p2": [
+              117.42640686035156,
+              42.42639923095703
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_19",
+            "entity_type": "line",
+            "p1": [
+              117.42640686035156,
+              42.42639923095703
+            ],
+            "p2": [
+              124.88819885253906,
+              33.33420181274414
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_20",
+            "entity_type": "line",
+            "p1": [
+              124.88819885253906,
+              33.33420181274414
+            ],
+            "p2": [
+              130.43280029296875,
+              22.961000442504883
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_21",
+            "entity_type": "line",
+            "p1": [
+              130.43280029296875,
+              22.961000442504883
+            ],
+            "p2": [
+              133.84710693359375,
+              11.705400466918945
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_22",
+            "entity_type": "line",
+            "p1": [
+              133.84710693359375,
+              11.705400466918945
+            ],
+            "p2": [
+              135.0,
+              0.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_23",
+            "entity_type": "line",
+            "p1": [
+              135.0,
+              0.0
+            ],
+            "p2": [
+              133.84710693359375,
+              -11.705400466918945
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_24",
+            "entity_type": "line",
+            "p1": [
+              133.84710693359375,
+              -11.705400466918945
+            ],
+            "p2": [
+              130.43280029296875,
+              -22.961000442504883
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_25",
+            "entity_type": "line",
+            "p1": [
+              130.43280029296875,
+              -22.961000442504883
+            ],
+            "p2": [
+              124.88819885253906,
+              -33.33420181274414
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_26",
+            "entity_type": "line",
+            "p1": [
+              124.88819885253906,
+              -33.33420181274414
+            ],
+            "p2": [
+              117.42640686035156,
+              -42.42639923095703
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_27",
+            "entity_type": "line",
+            "p1": [
+              117.42640686035156,
+              -42.42639923095703
+            ],
+            "p2": [
+              108.33419799804688,
+              -49.88819885253906
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_28",
+            "entity_type": "line",
+            "p1": [
+              108.33419799804688,
+              -49.88819885253906
+            ],
+            "p2": [
+              97.96099853515625,
+              -55.43280029296875
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_29",
+            "entity_type": "line",
+            "p1": [
+              97.96099853515625,
+              -55.43280029296875
+            ],
+            "p2": [
+              86.70539855957031,
+              -58.84709930419922
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_30",
+            "entity_type": "line",
+            "p1": [
+              86.70539855957031,
+              -58.84709930419922
+            ],
+            "p2": [
+              75.0,
+              -60.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_31",
+            "entity_type": "line",
+            "p1": [
+              75.0,
+              -60.0
+            ],
+            "p2": [
+              -75.0,
+              -60.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_32",
+            "entity_type": "line",
+            "p1": [
+              -75.0,
+              -60.0
+            ],
+            "p2": [
+              -86.70540046691895,
+              -58.84709930419922
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_33",
+            "entity_type": "line",
+            "p1": [
+              -86.70540046691895,
+              -58.84709930419922
+            ],
+            "p2": [
+              -97.96100044250488,
+              -55.43280029296875
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_34",
+            "entity_type": "line",
+            "p1": [
+              -97.96100044250488,
+              -55.43280029296875
+            ],
+            "p2": [
+              -108.33420181274414,
+              -49.88819885253906
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "circle_35",
+            "entity_type": "circle",
+            "center": [
+              0.0,
+              0.0
+            ],
+            "radius": 5.0,
+            "is_construction": true,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_36",
+            "entity_type": "line",
+            "p1": [
+              3.061616997868383e-16,
+              5.0
+            ],
+            "p2": [
+              -4.330127018922193,
+              2.5000000000000018
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_37",
+            "entity_type": "line",
+            "p1": [
+              -4.330127018922193,
+              2.5000000000000018
+            ],
+            "p2": [
+              -4.3301270189221945,
+              -2.4999999999999987
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_38",
+            "entity_type": "line",
+            "p1": [
+              -4.3301270189221945,
+              -2.4999999999999987
+            ],
+            "p2": [
+              -9.184850993605148e-16,
+              -5.0
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_39",
+            "entity_type": "line",
+            "p1": [
+              -9.184850993605148e-16,
+              -5.0
+            ],
+            "p2": [
+              4.330127018922192,
+              -2.500000000000002
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_40",
+            "entity_type": "line",
+            "p1": [
+              4.330127018922192,
+              -2.500000000000002
+            ],
+            "p2": [
+              4.330127018922193,
+              2.5
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          },
+          {
+            "entity_id": "line_41",
+            "entity_type": "line",
+            "p1": [
+              4.330127018922193,
+              2.5
+            ],
+            "p2": [
+              3.061616997868383e-16,
+              5.0
+            ],
+            "is_construction": false,
+            "group": "poly_1"
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Side",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_36",
+            "value": 4.999999999999999,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_36",
+              "line_37"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c2",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_35",
+              "line_36"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c3",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_37",
+              "line_38"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c4",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_35",
+              "line_37"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c5",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_36",
+              "line_37"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c6",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_38",
+              "line_39"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c7",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_35",
+              "line_38"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c8",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_36",
+              "line_38"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c9",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_39",
+              "line_40"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c10",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_35",
+              "line_39"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c11",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_36",
+              "line_39"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c12",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_40",
+              "line_41"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c13",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_35",
+              "line_40"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c14",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_36",
+              "line_40"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c15",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_41",
+              "line_36"
+            ],
+            "pts": [
+              "p2",
+              "p1"
+            ]
+          },
+          {
+            "cid": "c16",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_35",
+              "line_41"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c17",
+            "ctype": "EQUAL",
+            "refs": [
+              "line_36",
+              "line_41"
+            ],
+            "pts": []
+          }
+        ],
+        "face_key": null,
+        "parent_body_id": "body_extrude_2",
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_4",
+      "feature_type": "extrude",
+      "name": "Extrude 2",
+      "suppressed": false,
+      "sketch_id": "sketch_2",
+      "profile_idx": 1,
+      "extra_profiles": [],
+      "distance": -20.0,
+      "operation": "cut",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -0.0,
+          1.4586119094197982e-16,
+          64.9515
+        ]
+      ],
+      "profile_sigs_for": [
+        1,
+        []
+      ],
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_5",
+      "feature_type": "fillet",
+      "name": "Chamfer 1",
+      "suppressed": false,
+      "edges": [
+        [
+          [
+            79.3301010131836,
+            2.5,
+            15.0
+          ],
+          [
+            75.0,
+            5.0,
+            15.0
+          ]
+        ],
+        [
+          [
+            70.6698989868164,
+            2.5,
+            15.0
+          ],
+          [
+            75.0,
+            5.0,
+            15.0
+          ]
+        ],
+        [
+          [
+            70.6698989868164,
+            -2.5,
+            15.0
+          ],
+          [
+            70.6698989868164,
+            2.5,
+            15.0
+          ]
+        ],
+        [
+          [
+            79.3301010131836,
+            -2.5,
+            15.0
+          ],
+          [
+            79.3301010131836,
+            2.5,
+            15.0
+          ]
+        ],
+        [
+          [
+            75.0,
+            -5.0,
+            15.0
+          ],
+          [
+            79.3301010131836,
+            -2.5,
+            15.0
+          ]
+        ],
+        [
+          [
+            70.6698989868164,
+            -2.5,
+            15.0
+          ],
+          [
+            75.0,
+            -5.0,
+            15.0
+          ]
+        ]
+      ],
+      "size": 2.0,
+      "kind": "chamfer",
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "XY",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "slot_1",
+          "entity_type": "slot",
+          "center1": [
+            0.0,
+            0.0
+          ],
+          "center2": [
+            150.0,
+            0.0
+          ],
+          "radius": 60.0,
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "slot_1",
+          "value": 150.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Width",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "slot_1",
+          "value": 120.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": null,
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_2",
+      "name": "Sketch 2",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          75.0,
+          0.0,
+          15.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -108.33420181274414,
+            -49.88819885253906
+          ],
+          "p2": [
+            -117.42639923095703,
+            -42.42639923095703
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -117.42639923095703,
+            -42.42639923095703
+          ],
+          "p2": [
+            -124.88819885253906,
+            -33.33420181274414
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -124.88819885253906,
+            -33.33420181274414
+          ],
+          "p2": [
+            -130.43280029296875,
+            -22.961000442504883
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -130.43280029296875,
+            -22.961000442504883
+          ],
+          "p2": [
+            -133.84709930419922,
+            -11.705400466918945
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -133.84709930419922,
+            -11.705400466918945
+          ],
+          "p2": [
+            -135.0,
+            0.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            -135.0,
+            0.0
+          ],
+          "p2": [
+            -133.84709930419922,
+            11.705400466918945
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            -133.84709930419922,
+            11.705400466918945
+          ],
+          "p2": [
+            -130.43280029296875,
+            22.961000442504883
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_8",
+          "entity_type": "line",
+          "p1": [
+            -130.43280029296875,
+            22.961000442504883
+          ],
+          "p2": [
+            -124.88819885253906,
+            33.33420181274414
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_9",
+          "entity_type": "line",
+          "p1": [
+            -124.88819885253906,
+            33.33420181274414
+          ],
+          "p2": [
+            -117.42639923095703,
+            42.42639923095703
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_10",
+          "entity_type": "line",
+          "p1": [
+            -117.42639923095703,
+            42.42639923095703
+          ],
+          "p2": [
+            -108.33420181274414,
+            49.88819885253906
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_11",
+          "entity_type": "line",
+          "p1": [
+            -108.33420181274414,
+            49.88819885253906
+          ],
+          "p2": [
+            -97.96100044250488,
+            55.43280029296875
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_12",
+          "entity_type": "line",
+          "p1": [
+            -97.96100044250488,
+            55.43280029296875
+          ],
+          "p2": [
+            -86.70540046691895,
+            58.84709930419922
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_13",
+          "entity_type": "line",
+          "p1": [
+            -86.70540046691895,
+            58.84709930419922
+          ],
+          "p2": [
+            -75.0,
+            60.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_14",
+          "entity_type": "line",
+          "p1": [
+            -75.0,
+            60.0
+          ],
+          "p2": [
+            75.0,
+            60.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_15",
+          "entity_type": "line",
+          "p1": [
+            75.0,
+            60.0
+          ],
+          "p2": [
+            86.70539855957031,
+            58.84709930419922
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_16",
+          "entity_type": "line",
+          "p1": [
+            86.70539855957031,
+            58.84709930419922
+          ],
+          "p2": [
+            97.96099853515625,
+            55.43280029296875
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_17",
+          "entity_type": "line",
+          "p1": [
+            97.96099853515625,
+            55.43280029296875
+          ],
+          "p2": [
+            108.33419799804688,
+            49.88819885253906
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_18",
+          "entity_type": "line",
+          "p1": [
+            108.33419799804688,
+            49.88819885253906
+          ],
+          "p2": [
+            117.42640686035156,
+            42.42639923095703
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_19",
+          "entity_type": "line",
+          "p1": [
+            117.42640686035156,
+            42.42639923095703
+          ],
+          "p2": [
+            124.88819885253906,
+            33.33420181274414
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_20",
+          "entity_type": "line",
+          "p1": [
+            124.88819885253906,
+            33.33420181274414
+          ],
+          "p2": [
+            130.43280029296875,
+            22.961000442504883
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_21",
+          "entity_type": "line",
+          "p1": [
+            130.43280029296875,
+            22.961000442504883
+          ],
+          "p2": [
+            133.84710693359375,
+            11.705400466918945
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_22",
+          "entity_type": "line",
+          "p1": [
+            133.84710693359375,
+            11.705400466918945
+          ],
+          "p2": [
+            135.0,
+            0.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_23",
+          "entity_type": "line",
+          "p1": [
+            135.0,
+            0.0
+          ],
+          "p2": [
+            133.84710693359375,
+            -11.705400466918945
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_24",
+          "entity_type": "line",
+          "p1": [
+            133.84710693359375,
+            -11.705400466918945
+          ],
+          "p2": [
+            130.43280029296875,
+            -22.961000442504883
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_25",
+          "entity_type": "line",
+          "p1": [
+            130.43280029296875,
+            -22.961000442504883
+          ],
+          "p2": [
+            124.88819885253906,
+            -33.33420181274414
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_26",
+          "entity_type": "line",
+          "p1": [
+            124.88819885253906,
+            -33.33420181274414
+          ],
+          "p2": [
+            117.42640686035156,
+            -42.42639923095703
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_27",
+          "entity_type": "line",
+          "p1": [
+            117.42640686035156,
+            -42.42639923095703
+          ],
+          "p2": [
+            108.33419799804688,
+            -49.88819885253906
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_28",
+          "entity_type": "line",
+          "p1": [
+            108.33419799804688,
+            -49.88819885253906
+          ],
+          "p2": [
+            97.96099853515625,
+            -55.43280029296875
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_29",
+          "entity_type": "line",
+          "p1": [
+            97.96099853515625,
+            -55.43280029296875
+          ],
+          "p2": [
+            86.70539855957031,
+            -58.84709930419922
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_30",
+          "entity_type": "line",
+          "p1": [
+            86.70539855957031,
+            -58.84709930419922
+          ],
+          "p2": [
+            75.0,
+            -60.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_31",
+          "entity_type": "line",
+          "p1": [
+            75.0,
+            -60.0
+          ],
+          "p2": [
+            -75.0,
+            -60.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_32",
+          "entity_type": "line",
+          "p1": [
+            -75.0,
+            -60.0
+          ],
+          "p2": [
+            -86.70540046691895,
+            -58.84709930419922
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_33",
+          "entity_type": "line",
+          "p1": [
+            -86.70540046691895,
+            -58.84709930419922
+          ],
+          "p2": [
+            -97.96100044250488,
+            -55.43280029296875
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_34",
+          "entity_type": "line",
+          "p1": [
+            -97.96100044250488,
+            -55.43280029296875
+          ],
+          "p2": [
+            -108.33420181274414,
+            -49.88819885253906
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "circle_35",
+          "entity_type": "circle",
+          "center": [
+            0.0,
+            0.0
+          ],
+          "radius": 5.0,
+          "is_construction": true,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_36",
+          "entity_type": "line",
+          "p1": [
+            3.061616997868383e-16,
+            5.0
+          ],
+          "p2": [
+            -4.330127018922193,
+            2.5000000000000018
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_37",
+          "entity_type": "line",
+          "p1": [
+            -4.330127018922193,
+            2.5000000000000018
+          ],
+          "p2": [
+            -4.3301270189221945,
+            -2.4999999999999987
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_38",
+          "entity_type": "line",
+          "p1": [
+            -4.3301270189221945,
+            -2.4999999999999987
+          ],
+          "p2": [
+            -9.184850993605148e-16,
+            -5.0
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_39",
+          "entity_type": "line",
+          "p1": [
+            -9.184850993605148e-16,
+            -5.0
+          ],
+          "p2": [
+            4.330127018922192,
+            -2.500000000000002
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_40",
+          "entity_type": "line",
+          "p1": [
+            4.330127018922192,
+            -2.500000000000002
+          ],
+          "p2": [
+            4.330127018922193,
+            2.5
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        },
+        {
+          "entity_id": "line_41",
+          "entity_type": "line",
+          "p1": [
+            4.330127018922193,
+            2.5
+          ],
+          "p2": [
+            3.061616997868383e-16,
+            5.0
+          ],
+          "is_construction": false,
+          "group": "poly_1"
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Side",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_36",
+          "value": 4.999999999999999,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_36",
+            "line_37"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c2",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_35",
+            "line_36"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c3",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_37",
+            "line_38"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c4",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_35",
+            "line_37"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c5",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_36",
+            "line_37"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c6",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_38",
+            "line_39"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c7",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_35",
+            "line_38"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c8",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_36",
+            "line_38"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c9",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_39",
+            "line_40"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c10",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_35",
+            "line_39"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c11",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_36",
+            "line_39"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c12",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_40",
+            "line_41"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c13",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_35",
+            "line_40"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c14",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_36",
+            "line_40"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c15",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_41",
+            "line_36"
+          ],
+          "pts": [
+            "p2",
+            "p1"
+          ]
+        },
+        {
+          "cid": "c16",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_35",
+            "line_41"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c17",
+          "ctype": "EQUAL",
+          "refs": [
+            "line_36",
+            "line_41"
+          ],
+          "pts": []
+        }
+      ],
+      "face_key": null,
+      "parent_body_id": "body_extrude_2",
+      "visible": false
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "canvases": {},
+  "curve_segments": 64
+}

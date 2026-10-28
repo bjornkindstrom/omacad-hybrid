@@ -1,0 +1,205 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 20.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "circle_1",
+            "entity_type": "circle",
+            "center": [
+              2.1184291448688873e-16,
+              8.881784197001252e-16
+            ],
+            "radius": 19.99999999278194,
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "circle_2",
+            "entity_type": "circle",
+            "center": [
+              2.1184291448688873e-16,
+              8.881784197001252e-16
+            ],
+            "radius": 9.999999992781941,
+            "is_construction": false
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": "body_cylinder_1",
+        "face_center": [
+          -2.8273032576814355e-16,
+          4.5943677937323326e-17
+        ],
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_3",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": -10.0,
+      "operation": "cut",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          1.844658311950091e-15,
+          4.47654387843057e-15,
+          942.429942479999
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "follows_text": false,
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          0.0,
+          40.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "circle_1",
+          "entity_type": "circle",
+          "center": [
+            2.1184291448688873e-16,
+            8.881784197001252e-16
+          ],
+          "radius": 19.99999999278194,
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "circle_2",
+          "entity_type": "circle",
+          "center": [
+            2.1184291448688873e-16,
+            8.881784197001252e-16
+          ],
+          "radius": 9.999999992781941,
+          "is_construction": false
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": "body_cylinder_1",
+      "face_center": [
+        -2.8273032576814355e-16,
+        4.5943677937323326e-17
+      ],
+      "visible": false
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 360
+}

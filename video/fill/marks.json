@@ -1,0 +1,30 @@
+{
+ "fps": 30,
+ "frames": 684,
+ "marks": [
+  {
+   "frame": 0,
+   "text": "A big plate with a cylinder standing on it"
+  },
+  {
+   "frame": 90,
+   "text": "Sketch one hexagon on the face"
+  },
+  {
+   "frame": 224,
+   "text": "Cut it through the plate"
+  },
+  {
+   "frame": 294,
+   "text": "Fill the face: exact gaps, and a margin at the edge"
+  },
+  {
+   "frame": 364,
+   "text": "It keeps clear of the cylinder"
+  },
+  {
+   "frame": 474,
+   "text": "Change the polygon to a pentagon: the pattern packs itself again"
+  }
+ ]
+}

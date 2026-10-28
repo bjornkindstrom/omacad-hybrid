@@ -1,0 +1,477 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "XY",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "circle_1",
+            "entity_type": "circle",
+            "center": [
+              0.0,
+              0.0
+            ],
+            "radius": 10.0,
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              0.06070303172776243,
+              -9.999470252667614
+            ],
+            "p2": [
+              0.06070303172776243,
+              40.000529747332386
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "circle_3",
+            "entity_type": "circle",
+            "center": [
+              0.06070303172776243,
+              40.000529747332386
+            ],
+            "radius": 5.0,
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -9.999993998992844,
+              -0.0006876473094987521
+            ],
+            "p2": [
+              9.999882798612644,
+              -0.013429948770669498
+            ],
+            "is_construction": true
+          },
+          {
+            "entity_id": "arc_5",
+            "entity_type": "arc",
+            "p_start": [
+              -4.939239782540417,
+              39.99397691151651
+            ],
+            "p_mid": [
+              -4.939239782540417,
+              10.0
+            ],
+            "p_end": [
+              -9.999993998992844,
+              -0.0006876473094987521
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "arc_6",
+            "entity_type": "arc",
+            "p_start": [
+              5.060645845995942,
+              39.99397691151651
+            ],
+            "p_mid": [
+              5.060645845995942,
+              10.0
+            ],
+            "p_end": [
+              10.12140006244837,
+              -0.0006876473095001269
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Diameter",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "circle_1",
+            "value": 20.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_2",
+            "value": 50.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d3",
+            "name": "Diameter",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "circle_3",
+            "value": 10.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d4",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_4",
+            "value": 19.999880856786245,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d5",
+            "name": "Radius",
+            "dim_type": "RADIUS",
+            "target_entity_id": "arc_5",
+            "value": 44.6420468621903,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_2"
+            ],
+            "pts": []
+          }
+        ],
+        "face_key": null,
+        "parent_body_id": null,
+        "face_center": null,
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_2",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [
+        1,
+        3,
+        2,
+        4
+      ],
+      "distance": 10.0,
+      "operation": "new_body",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          0.02546577904820355,
+          -0.24703853866367384,
+          297.1914113125994
+        ],
+        [
+          8.181079923699208,
+          4.341185877808063,
+          7.9819017231658105
+        ],
+        [
+          -8.123180656089447,
+          4.3216010419903474,
+          8.970474724234643
+        ],
+        [
+          0.06577415329192976,
+          21.483950595909327,
+          162.69009437404677
+        ],
+        [
+          0.060704067233079154,
+          40.00053455107805,
+          78.53581180000006
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        [
+          1,
+          3,
+          2,
+          4
+        ]
+      ],
+      "follows_text": false,
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_3",
+      "feature_type": "fillet",
+      "name": "Fillet 1",
+      "suppressed": false,
+      "edges": [
+        [
+          "loop",
+          [
+            0.023299276649951933,
+            18.715692295384407,
+            10.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ],
+          131.53845267828694
+        ]
+      ],
+      "size": 2.0,
+      "kind": "fillet",
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "XY",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "circle_1",
+          "entity_type": "circle",
+          "center": [
+            0.0,
+            0.0
+          ],
+          "radius": 10.0,
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            0.06070303172776243,
+            -9.999470252667614
+          ],
+          "p2": [
+            0.06070303172776243,
+            40.000529747332386
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "circle_3",
+          "entity_type": "circle",
+          "center": [
+            0.06070303172776243,
+            40.000529747332386
+          ],
+          "radius": 5.0,
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -9.999993998992844,
+            -0.0006876473094987521
+          ],
+          "p2": [
+            9.999882798612644,
+            -0.013429948770669498
+          ],
+          "is_construction": true
+        },
+        {
+          "entity_id": "arc_5",
+          "entity_type": "arc",
+          "p_start": [
+            -4.939239782540417,
+            39.99397691151651
+          ],
+          "p_mid": [
+            -4.939239782540417,
+            10.0
+          ],
+          "p_end": [
+            -9.999993998992844,
+            -0.0006876473094987521
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "arc_6",
+          "entity_type": "arc",
+          "p_start": [
+            5.060645845995942,
+            39.99397691151651
+          ],
+          "p_mid": [
+            5.060645845995942,
+            10.0
+          ],
+          "p_end": [
+            10.12140006244837,
+            -0.0006876473095001269
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Diameter",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "circle_1",
+          "value": 20.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_2",
+          "value": 50.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d3",
+          "name": "Diameter",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "circle_3",
+          "value": 10.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d4",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_4",
+          "value": 19.999880856786245,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d5",
+          "name": "Radius",
+          "dim_type": "RADIUS",
+          "target_entity_id": "arc_5",
+          "value": 44.6420468621903,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_2"
+          ],
+          "pts": []
+        }
+      ],
+      "face_key": null,
+      "parent_body_id": null,
+      "face_center": null,
+      "visible": false
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 360
+}

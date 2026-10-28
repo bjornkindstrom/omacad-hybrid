@@ -1,0 +1,38 @@
+{
+ "fps": 30,
+ "frames": 738,
+ "marks": [
+  {
+   "frame": 20,
+   "text": "Rounded rectangle: width, height, radius"
+  },
+  {
+   "frame": 186,
+   "text": "Smart Circle: diameter, then distance to a wall each way"
+  },
+  {
+   "frame": 210,
+   "text": "Type the diameter: 6 mm, Enter"
+  },
+  {
+   "frame": 251,
+   "text": "Move next to a vertical line, type the distance, Enter"
+  },
+  {
+   "frame": 318,
+   "text": "Same to a horizontal line"
+  },
+  {
+   "frame": 413,
+   "text": "Extrude: the circle becomes a hole"
+  },
+  {
+   "frame": 483,
+   "text": "Chamfer the edge of the hole"
+  },
+  {
+   "frame": 563,
+   "text": "Mirror: the hole and its chamfer, copied to all four corners"
+  }
+ ]
+}

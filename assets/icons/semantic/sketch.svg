@@ -1,0 +1,5 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 36L12 30L30 12L36 18L18 36H12Z" fill="#00C8FF"/>
+        <polygon points="12,36 8,40 16,38" fill="#E26D28"/>
+        <rect x="31" y="7" width="8" height="6" rx="1" transform="rotate(45 35 10)" fill="#00C8FF" opacity="0.6"/>
+    </svg>

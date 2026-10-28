@@ -1,0 +1,256 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 5.0,
+      "height": 60.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "taper_angle": 0.0,
+      "wall_thickness": 2.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "PLANE",
+          "origin": [
+            0.0,
+            -10.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "slot_1",
+            "entity_type": "slot",
+            "center1": [
+              0.0,
+              55.0
+            ],
+            "center2": [
+              0.0,
+              5.0
+            ],
+            "radius": 2.148233413696289,
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "slot_1",
+            "value": 50.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Width",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "slot_1",
+            "value": 4.296466827392578,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": null,
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "emboss_3",
+      "feature_type": "emboss",
+      "name": "Emboss 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "extra_refs": [],
+      "depth": -1.0,
+      "flip": false,
+      "dx": 0.0,
+      "dy": 0.0,
+      "rotation": 0.0,
+      "wrap": true,
+      "profile_sigs": [
+        [
+          9.04096143886541e-18,
+          30.0,
+          229.22521312
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "follows_text": false,
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "PLANE",
+        "origin": [
+          0.0,
+          -10.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          -0.0,
+          0.0,
+          1.0
+        ],
+        "normal": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "slot_1",
+          "entity_type": "slot",
+          "center1": [
+            0.0,
+            55.0
+          ],
+          "center2": [
+            0.0,
+            5.0
+          ],
+          "radius": 2.148233413696289,
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "slot_1",
+          "value": 50.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Width",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "slot_1",
+          "value": 4.296466827392578,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": null,
+      "visible": false
+    }
+  ],
+  "construction_planes": {
+    "plane_1": {
+      "name": "Plane 1",
+      "origin": [
+        0.0,
+        -10.0,
+        0.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "visible": true
+    }
+  },
+  "sections": {
+    "section_1": {
+      "name": "Section 1",
+      "origin": [
+        0.0,
+        0.0,
+        60.0
+      ],
+      "normal": [
+        -0.0,
+        -0.0,
+        1.0
+      ],
+      "offset": -30.0,
+      "flip": false,
+      "active": true
+    }
+  },
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

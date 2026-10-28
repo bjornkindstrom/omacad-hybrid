@@ -1,0 +1,84 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 20.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 2.0,
+      "outer_round": 2.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 5.33,
+      "inner_round_kind": "chamfer",
+      "exprs": {}
+    },
+    {
+      "feature_id": "honeycomb_2",
+      "feature_type": "honeycomb",
+      "name": "Honeycomb 1",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "faces": [
+        {
+          "kind": "cylinder",
+          "origin": [
+            0.13536612904803885,
+            -0.06134461905097813,
+            1.798061775485582
+          ],
+          "axis": [
+            -0.009270217131028607,
+            0.004200448707965085,
+            0.9999482083113082
+          ],
+          "radius": 20.02571797986382,
+          "length": 38.40491254408382,
+          "internal": false
+        }
+      ],
+      "shape": "hexagon",
+      "size": 6.0,
+      "wall": 1.5,
+      "margin": 3.0,
+      "depth": 1.0,
+      "through": true,
+      "angle": 0.0,
+      "partial": false,
+      "exprs": {}
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

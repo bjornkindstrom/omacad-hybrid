@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#282C34"/>
+      <stop offset="100%" stop-color="#191B1F"/>
+    </linearGradient>
+    <linearGradient id="orangeTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF9343"/>
+      <stop offset="100%" stop-color="#E26D28"/>
+    </linearGradient>
+    <linearGradient id="orangeLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E26D28"/>
+      <stop offset="100%" stop-color="#B84F14"/>
+    </linearGradient>
+    <linearGradient id="orangeRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C95918"/>
+      <stop offset="100%" stop-color="#8C3507"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect x="12" y="12" width="232" height="232" rx="48" fill="url(#bg)" stroke="#3D4450" stroke-width="3"/>
+
+  <!-- 3D Isometric CAD Cube -->
+  <!-- Top Face -->
+  <polygon points="128,48 196,87 128,126 60,87" fill="url(#orangeTop)" stroke="#FFB074" stroke-width="2"/>
+
+  <!-- Left Face -->
+  <polygon points="60,87 128,126 128,204 60,165" fill="url(#orangeLeft)" stroke="#E26D28" stroke-width="2"/>
+
+  <!-- Right Face -->
+  <polygon points="128,126 196,87 196,165 128,204" fill="url(#orangeRight)" stroke="#B84F14" stroke-width="2"/>
+
+  <!-- CAD Feature Cut / 360 Orbit Arc in Cyan -->
+  <path d="M 44,128 A 92,92 0 1,0 212,128" fill="none" stroke="url(#glow)" stroke-width="7" stroke-linecap="round" stroke-dasharray="14 10"/>
+
+  <!-- Central Origin Point -->
+  <circle cx="128" cy="126" r="6" fill="#FFFFFF"/>
+</svg>

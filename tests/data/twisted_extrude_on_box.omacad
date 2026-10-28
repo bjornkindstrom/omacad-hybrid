@@ -1,0 +1,285 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "box_1",
+      "feature_type": "box",
+      "name": "Box 1",
+      "suppressed": false,
+      "length": 50.0,
+      "width": 50.0,
+      "height": 25.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Face 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Face 1",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            -0.0,
+            0.0,
+            25.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "normal": [
+            -0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -25.0,
+              -25.0
+            ],
+            "p2": [
+              -25.0,
+              25.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -25.0,
+              25.0
+            ],
+            "p2": [
+              25.0,
+              25.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              25.0,
+              25.0
+            ],
+            "p2": [
+              25.0,
+              -25.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              25.0,
+              -25.0
+            ],
+            "p2": [
+              -25.0,
+              -25.0
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": [
+          -0.0,
+          0.0,
+          1.0,
+          25.0,
+          2500.0,
+          0.0,
+          0.0
+        ],
+        "parent_body_id": "body_box_1",
+        "face_center": [
+          0.0,
+          0.0
+        ],
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_3",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": 42.5,
+      "operation": "join",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "twist": 190.8,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -0.0,
+          -0.0,
+          2500.0
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "follows_text": false,
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Face 1",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          -0.0,
+          0.0,
+          25.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          -0.0
+        ],
+        "normal": [
+          -0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -25.0,
+            -25.0
+          ],
+          "p2": [
+            -25.0,
+            25.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -25.0,
+            25.0
+          ],
+          "p2": [
+            25.0,
+            25.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            25.0,
+            25.0
+          ],
+          "p2": [
+            25.0,
+            -25.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            25.0,
+            -25.0
+          ],
+          "p2": [
+            -25.0,
+            -25.0
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": [
+        -0.0,
+        0.0,
+        1.0,
+        25.0,
+        2500.0,
+        0.0,
+        0.0
+      ],
+      "parent_body_id": "body_box_1",
+      "face_center": [
+        0.0,
+        0.0
+      ],
+      "visible": false
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

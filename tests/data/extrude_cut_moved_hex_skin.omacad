@@ -1,0 +1,466 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "prism_1",
+      "feature_type": "prism",
+      "name": "Hexagon 1",
+      "suppressed": false,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "across_flats": 20.0,
+      "sides": 6,
+      "exprs": {}
+    },
+    {
+      "feature_id": "box_2",
+      "feature_type": "box",
+      "name": "Box 1",
+      "suppressed": false,
+      "length": 50.0,
+      "width": 50.0,
+      "height": 25.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        -104.60414437905092,
+        -2.404576396217635,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "move_3",
+      "feature_type": "move",
+      "name": "Move Hexagon 1 (1)",
+      "suppressed": false,
+      "target_body_id": "body_prism_1",
+      "copy_body": false,
+      "dx": -69.6,
+      "dy": -2.4,
+      "dz": -7.5,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": -60.0,
+      "pivot": "center",
+      "from_point": null,
+      "to_point": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "move_4",
+      "feature_type": "move",
+      "name": "Move Hexagon 1 (2)",
+      "suppressed": false,
+      "target_body_id": "body_prism_1",
+      "copy_body": false,
+      "dx": 0.0,
+      "dy": 0.0,
+      "dz": 0.0,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": 0.0,
+      "pivot": "point",
+      "from_point": {
+        "body": "body_prism_1",
+        "kind": "end",
+        "xyz": [
+          -69.5999984741211,
+          9.147005081176758,
+          -7.5
+        ]
+      },
+      "to_point": {
+        "body": "body_box_2",
+        "kind": "end",
+        "xyz": [
+          -79.60414123535156,
+          -27.404577255249023,
+          0.0
+        ]
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "move_5",
+      "feature_type": "move",
+      "name": "Move Hexagon 1 (3)",
+      "suppressed": false,
+      "target_body_id": "body_prism_1",
+      "copy_body": false,
+      "dx": -25.0,
+      "dy": 1.55,
+      "dz": -7.5,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": -30.0,
+      "pivot": "center",
+      "from_point": null,
+      "to_point": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "move_6",
+      "feature_type": "move",
+      "name": "Move Hexagon 1 (4)",
+      "suppressed": false,
+      "target_body_id": "body_prism_1",
+      "copy_body": false,
+      "dx": 0.0,
+      "dy": 0.0,
+      "dz": 0.0,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": 0.0,
+      "pivot": "point",
+      "from_point": {
+        "body": "body_prism_1",
+        "kind": "end",
+        "xyz": [
+          -110.37764739990234,
+          -27.401580810546875,
+          -7.5
+        ]
+      },
+      "to_point": {
+        "body": "body_box_2",
+        "kind": "end",
+        "xyz": [
+          -129.60414123535156,
+          -27.404577255249023,
+          0.0
+        ]
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Face 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Face 1",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -118.05713653564453,
+              -47.404579162597656
+            ],
+            "p2": [
+              -129.60414123535156,
+              -47.404579162597656
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -129.60414123535156,
+              -47.404579162597656
+            ],
+            "p2": [
+              -135.3776397705078,
+              -37.404579162597656
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -135.3776397705078,
+              -37.404579162597656
+            ],
+            "p2": [
+              -129.60414123535156,
+              -27.404577255249023
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -129.60414123535156,
+              -27.404577255249023
+            ],
+            "p2": [
+              -118.05713653564453,
+              -27.404577255249023
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -118.05713653564453,
+              -27.404577255249023
+            ],
+            "p2": [
+              -112.28363037109375,
+              -37.404579162597656
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              -112.28363037109375,
+              -37.404579162597656
+            ],
+            "p2": [
+              -118.05713653564453,
+              -47.404579162597656
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": [
+          0.0,
+          0.0,
+          1.0,
+          40.0,
+          346.41,
+          -123.83,
+          -32.4
+        ],
+        "parent_body_id": "body_prism_1",
+        "face_center": [
+          -123.83063676622179,
+          -37.404578314887154
+        ],
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_8",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": -15.0,
+      "operation": "cut",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -123.83060000000002,
+          -37.40460000000001,
+          346.4099999999998
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "follows_text": false,
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Face 1",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          0.0,
+          40.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -118.05713653564453,
+            -47.404579162597656
+          ],
+          "p2": [
+            -129.60414123535156,
+            -47.404579162597656
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -129.60414123535156,
+            -47.404579162597656
+          ],
+          "p2": [
+            -135.3776397705078,
+            -37.404579162597656
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -135.3776397705078,
+            -37.404579162597656
+          ],
+          "p2": [
+            -129.60414123535156,
+            -27.404577255249023
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -129.60414123535156,
+            -27.404577255249023
+          ],
+          "p2": [
+            -118.05713653564453,
+            -27.404577255249023
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -118.05713653564453,
+            -27.404577255249023
+          ],
+          "p2": [
+            -112.28363037109375,
+            -37.404579162597656
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            -112.28363037109375,
+            -37.404579162597656
+          ],
+          "p2": [
+            -118.05713653564453,
+            -47.404579162597656
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": [
+        0.0,
+        0.0,
+        1.0,
+        40.0,
+        346.41,
+        -123.83,
+        -32.4
+      ],
+      "parent_body_id": "body_prism_1",
+      "face_center": [
+        -123.83063676622179,
+        -37.404578314887154
+      ],
+      "visible": false
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

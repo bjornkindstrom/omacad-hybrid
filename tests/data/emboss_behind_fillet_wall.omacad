@@ -1,0 +1,408 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 20.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "circle_1",
+            "entity_type": "circle",
+            "center": [
+              0.0,
+              -2.0511602072956398e-16
+            ],
+            "radius": 19.99999991725166,
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "circle_2",
+            "entity_type": "circle",
+            "center": [
+              0.0,
+              0.0
+            ],
+            "radius": 10.0,
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Diameter",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "circle_2",
+            "value": 20.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null
+          }
+        ],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": "body_cylinder_1",
+        "face_center": [
+          -5.318856880741645e-16,
+          8.48753757565156e-18
+        ],
+        "visible": false
+      },
+      "exprs": {}
+    },
+    {
+      "feature_id": "extrude_3",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 0,
+      "extra_profiles": [],
+      "distance": -10.0,
+      "operation": "cut",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -1.046167473032508e-15,
+          -7.421879218238437e-16,
+          941.8051624800003
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        []
+      ],
+      "follows_text": false,
+      "exprs": {}
+    },
+    {
+      "feature_id": "fillet_4",
+      "feature_type": "fillet",
+      "name": "Fillet 1",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            -2.6645352591003757e-15,
+            8.881784197001252e-16,
+            40.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ],
+          9.999026380319274
+        ],
+        [
+          "circle",
+          [
+            2.817427766643732e-07,
+            5.8957958515293285e-09,
+            29.999019622802734
+          ],
+          [
+            0.0,
+            0.0,
+            0.9999999999999999
+          ],
+          19.99999938466043
+        ]
+      ],
+      "size": 5.0,
+      "kind": "fillet",
+      "exprs": {}
+    },
+    {
+      "feature_id": "feat_sketch_2",
+      "feature_type": "sketch",
+      "name": "Sketch 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_2",
+        "name": "Sketch 2",
+        "plane": {
+          "name": "PLANE",
+          "origin": [
+            36.0,
+            0.0,
+            20.0
+          ],
+          "u_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normal": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "text_1",
+            "entity_type": "text",
+            "is_construction": false,
+            "text": "Text",
+            "font": "Adwaita Mono",
+            "height": 10.0,
+            "bold": false,
+            "italic": false,
+            "spacing": 0.0,
+            "h_align": "left",
+            "v_align": "bottom",
+            "flip_h": false,
+            "flip_v": false,
+            "angle": 0.0,
+            "anchor": [
+              -16.7900390625,
+              -6.050537109375
+            ],
+            "path_id": null,
+            "placement": "above",
+            "fit": false,
+            "box": null
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": null,
+        "face_center": null,
+        "visible": true
+      },
+      "exprs": {}
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          0.0,
+          40.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "circle_1",
+          "entity_type": "circle",
+          "center": [
+            0.0,
+            -2.0511602072956398e-16
+          ],
+          "radius": 19.99999991725166,
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "circle_2",
+          "entity_type": "circle",
+          "center": [
+            0.0,
+            0.0
+          ],
+          "radius": 10.0,
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Diameter",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "circle_2",
+          "value": 20.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null
+        }
+      ],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": "body_cylinder_1",
+      "face_center": [
+        -5.318856880741645e-16,
+        8.48753757565156e-18
+      ],
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_2",
+      "name": "Sketch 2",
+      "plane": {
+        "name": "PLANE",
+        "origin": [
+          36.0,
+          0.0,
+          20.0
+        ],
+        "u_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "normal": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "text_1",
+          "entity_type": "text",
+          "is_construction": false,
+          "text": "Text",
+          "font": "Adwaita Mono",
+          "height": 10.0,
+          "bold": false,
+          "italic": false,
+          "spacing": 0.0,
+          "h_align": "left",
+          "v_align": "bottom",
+          "flip_h": false,
+          "flip_v": false,
+          "angle": 0.0,
+          "anchor": [
+            -16.7900390625,
+            -6.050537109375
+          ],
+          "path_id": null,
+          "placement": "above",
+          "fit": false,
+          "box": null
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": null,
+      "face_center": null,
+      "visible": true
+    }
+  ],
+  "construction_planes": {
+    "plane_1": {
+      "name": "Plane 1",
+      "origin": [
+        36.0,
+        0.0,
+        20.0
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "visible": true
+    }
+  },
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

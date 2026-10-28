@@ -1,0 +1,8 @@
+{
+  "intro": "Welcome to Omacad. Here are the major features and interface enhancements developed over the last forty-eight hours.",
+  "ui": "The user interface is completely reimagined. Bulky docked panels and the bottom status bar are gone, replaced by transparent floating overlays and an in-viewport heads-up display.",
+  "move": "With the new Move Face to Face tool, you can assemble parts by simply clicking two faces, choosing Touch, Flush, or Slide with automatic centering.",
+  "section": "Section View now features technical diagonal hatching with individual body tints, making complex assemblies effortless to inspect.",
+  "thread": "Offset Face now natively supports curved surfaces and threads, letting you add precise clearance for friction-free 3D printed threads.",
+  "outro": "Omacad delivers native speed, clean geometry, and parametric precision for Omarchy Linux. Thank you for watching."
+}

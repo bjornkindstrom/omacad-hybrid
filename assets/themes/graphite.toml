@@ -1,0 +1,43 @@
+mode = "dark"
+
+# Omacad Graphite: dark, compact, close to the tools (design/appearance-proposals, proposal 2)
+font = "Noto Sans"
+accent = "#F2B35E"
+on_accent = "#1A1408"
+selection = "#3D3326"
+muted = "#9AAAC0"
+radius = 3
+
+# surfaces by role (see theme.Palette._studio_neutral)
+window = "#12171F"
+surface = "#1D2531"
+field = "#141C27"
+border = "#354252"
+
+background = "#1D2531"
+dark_background = "#141C27"
+darker_background = "#12171F"
+lighter_background = "#354252"
+
+canvas = "#171F2B"
+grid = "#2C3949"
+highlight = "#F2B35E"
+
+foreground = "#E6EDF7"
+dark_foreground = "#9AAAC0"
+light_foreground = "#E6EDF7"
+bright_foreground = "#FFFFFF"
+
+red = "#F87171"
+yellow = "#F2B35E"
+green = "#4ADE80"
+cyan = "#38BDF8"
+blue = "#60A5FA"
+magenta = "#C084FC"
+
+bright_red = "#FCA5A5"
+bright_yellow = "#FCD34D"
+bright_green = "#86EFAC"
+bright_cyan = "#7DD3FC"
+bright_blue = "#93C5FD"
+bright_magenta = "#D8B4FE"

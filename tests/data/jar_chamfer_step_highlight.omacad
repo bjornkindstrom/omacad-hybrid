@@ -1,0 +1,886 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "cylinder_1": "object_cylinder_1",
+      "fillet_2": "object_cylinder_1",
+      "fillet_3": "object_cylinder_1",
+      "cylinder_4": "object_cylinder_4",
+      "cylinder_5": "object_cylinder_5",
+      "combine_6": "object_cylinder_4",
+      "shell_7": "object_cylinder_4",
+      "thread_8": "object_cylinder_4",
+      "fillet_9": "object_cylinder_1",
+      "cylinder_10": "object_cylinder_10",
+      "combine_11": "object_cylinder_10",
+      "cylinder_12": "object_cylinder_12",
+      "combine_13": "object_cylinder_10",
+      "offset_face_14": "object_cylinder_10",
+      "cylinder_15": "object_cylinder_15",
+      "cylinder_16": "object_cylinder_16",
+      "combine_17": "object_cylinder_15",
+      "combine_18": "object_cylinder_4",
+      "cylinder_19": "object_cylinder_19",
+      "combine_20": "object_cylinder_10",
+      "move_21": "object_cylinder_10",
+      "fillet_22": "object_cylinder_4",
+      "fillet_23": "object_cylinder_4"
+    },
+    "names": {
+      "object_cylinder_10": "Lid",
+      "object_cylinder_4": "Jar"
+    },
+    "outputs": {
+      "cylinder_1": [
+        "body_cylinder_1"
+      ],
+      "fillet_2": [
+        "body_cylinder_1"
+      ],
+      "fillet_3": [
+        "body_cylinder_1"
+      ],
+      "cylinder_4": [
+        "body_cylinder_4"
+      ],
+      "cylinder_5": [
+        "body_cylinder_5"
+      ],
+      "combine_6": [
+        "body_cylinder_4",
+        "body_cylinder_5"
+      ],
+      "shell_7": [
+        "body_cylinder_4"
+      ],
+      "thread_8": [
+        "body_cylinder_4"
+      ],
+      "cylinder_10": [
+        "body_cylinder_10"
+      ],
+      "combine_11": [
+        "body_cylinder_10"
+      ],
+      "cylinder_12": [
+        "body_cylinder_12"
+      ],
+      "combine_13": [
+        "body_cylinder_10",
+        "body_cylinder_12"
+      ],
+      "offset_face_14": [
+        "body_cylinder_10"
+      ],
+      "cylinder_15": [
+        "body_cylinder_15"
+      ],
+      "cylinder_16": [
+        "body_cylinder_16"
+      ],
+      "combine_17": [
+        "body_cylinder_15",
+        "body_cylinder_16"
+      ],
+      "combine_18": [
+        "body_cylinder_4",
+        "body_cylinder_15"
+      ],
+      "cylinder_19": [
+        "body_cylinder_19"
+      ],
+      "combine_20": [
+        "body_cylinder_10",
+        "body_cylinder_19"
+      ],
+      "move_21": [
+        "body_cylinder_10"
+      ],
+      "fillet_22": [
+        "body_cylinder_4"
+      ],
+      "fillet_23": [
+        "body_cylinder_4"
+      ]
+    },
+    "dependencies": {
+      "cylinder_1": [],
+      "fillet_2": [
+        "cylinder_1"
+      ],
+      "fillet_3": [
+        "fillet_2"
+      ],
+      "cylinder_4": [],
+      "cylinder_5": [],
+      "combine_6": [
+        "cylinder_4",
+        "cylinder_5"
+      ],
+      "shell_7": [
+        "combine_6"
+      ],
+      "thread_8": [
+        "shell_7"
+      ],
+      "fillet_9": [
+        "fillet_3"
+      ],
+      "cylinder_10": [],
+      "combine_11": [
+        "cylinder_10",
+        "thread_8"
+      ],
+      "cylinder_12": [],
+      "combine_13": [
+        "combine_11",
+        "cylinder_12"
+      ],
+      "offset_face_14": [
+        "combine_13"
+      ],
+      "cylinder_15": [],
+      "cylinder_16": [],
+      "combine_17": [
+        "cylinder_15",
+        "cylinder_16"
+      ],
+      "combine_18": [
+        "thread_8",
+        "combine_17"
+      ],
+      "cylinder_19": [],
+      "combine_20": [
+        "offset_face_14",
+        "cylinder_19"
+      ],
+      "move_21": [
+        "combine_20"
+      ],
+      "fillet_22": [
+        "combine_18"
+      ],
+      "fillet_23": [
+        "fillet_22"
+      ]
+    },
+    "markers": {},
+    "active_id": "object_cylinder_4"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 20.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 3.0,
+      "outer_round": 3.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "fillet_2",
+      "feature_type": "fillet",
+      "name": "Fillet 1",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            -1.7763568394002505e-15,
+            -3.552713678800501e-15,
+            40.0
+          ],
+          [
+            0.0,
+            -0.0,
+            1.0
+          ],
+          19.99999991725166
+        ],
+        [
+          "circle",
+          [
+            -1.7763568394002505e-15,
+            1.4210854715202004e-14,
+            40.0
+          ],
+          [
+            0.0,
+            -0.0,
+            1.0
+          ],
+          16.999999930965753
+        ]
+      ],
+      "size": 2.0,
+      "kind": "fillet",
+      "chamfer_type": "equal",
+      "size2": 2.0,
+      "angle": 45.0,
+      "flip": false,
+      "exprs": {},
+      "target_body_ids": [
+        "body_cylinder_1"
+      ]
+    },
+    {
+      "feature_id": "fillet_3",
+      "feature_type": "fillet",
+      "name": "Chamfer 2",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            -3.552713678800501e-15,
+            1.4210854715202004e-14,
+            3.0
+          ],
+          [
+            -0.0,
+            0.0,
+            0.9999999999999999
+          ],
+          16.999999930965757
+        ]
+      ],
+      "size": 7.0,
+      "kind": "chamfer",
+      "chamfer_type": "equal",
+      "size2": 2.0,
+      "angle": 45.0,
+      "flip": false,
+      "exprs": {},
+      "target_body_ids": [
+        "body_cylinder_1"
+      ]
+    },
+    {
+      "feature_id": "cylinder_4",
+      "feature_type": "cylinder",
+      "name": "Jar",
+      "suppressed": false,
+      "radius": 25.5,
+      "height": 30.0,
+      "center": false,
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 2.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "cylinder_5",
+      "feature_type": "cylinder",
+      "name": "Neck",
+      "suppressed": false,
+      "radius": 20.5,
+      "height": 10.0,
+      "center": false,
+      "plane_origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "plane_v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_6",
+      "feature_type": "combine",
+      "name": "Combine (join)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_4",
+      "tool_body_id": "body_cylinder_5",
+      "operation": "join",
+      "keep_tool": false,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "shell_7",
+      "feature_type": "shell",
+      "name": "Shell 1",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_4",
+      "thickness": 3.0,
+      "direction": "inside",
+      "thickness2": 2.0,
+      "open_faces": [
+        {
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "origin": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "body_id": "body_cylinder_4"
+        }
+      ],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "thread_8",
+      "feature_type": "thread",
+      "name": "Jar thread",
+      "suppressed": false,
+      "exprs": {},
+      "diameter": 41.0,
+      "pitch": 4.0,
+      "length": 10.0,
+      "is_female": false,
+      "clearance": 0.0,
+      "profile": "round",
+      "taper_lead_in": true,
+      "taper_turns": 0.75,
+      "target_body_id": "body_cylinder_4",
+      "operation": "join",
+      "plane_origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "plane_v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "anchor": "bottom",
+      "anchor_gap": 0.0,
+      "host_length": 10.0,
+      "grow": 0.0,
+      "follow_host": false,
+      "host_offset": 0.0,
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "fillet_9",
+      "feature_type": "fillet",
+      "name": "Chamfer 3",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            -7.105427357601002e-15,
+            0.0,
+            2.0
+          ],
+          [
+            -0.0,
+            -0.0,
+            1.0
+          ],
+          23.49892874431959
+        ],
+        [
+          "circle",
+          [
+            -7.105427357601002e-15,
+            3.552713678800501e-15,
+            28.0
+          ],
+          [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          23.49892874431959
+        ]
+      ],
+      "size": 4.0,
+      "kind": "chamfer",
+      "chamfer_type": "equal",
+      "size2": 0.0,
+      "angle": 45.0,
+      "flip": false,
+      "exprs": {},
+      "target_body_ids": [
+        "body_cylinder_1"
+      ]
+    },
+    {
+      "feature_id": "cylinder_10",
+      "feature_type": "cylinder",
+      "name": "Lid",
+      "suppressed": false,
+      "radius": 25.5,
+      "height": 12.0,
+      "center": false,
+      "plane_origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "plane_v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_11",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_10",
+      "tool_body_id": "body_cylinder_4",
+      "operation": "cut",
+      "keep_tool": true,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "cylinder_12",
+      "feature_type": "cylinder",
+      "name": "Lid bore",
+      "suppressed": false,
+      "radius": 19.5,
+      "height": 10.0,
+      "center": false,
+      "plane_origin": [
+        0.0,
+        0.0,
+        30.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "plane_v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_13",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_10",
+      "tool_body_id": "body_cylinder_12",
+      "operation": "cut",
+      "keep_tool": false,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "offset_face_14",
+      "feature_type": "offset_face",
+      "name": "Offset Face 1",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_10",
+      "faces": [
+        {
+          "kind": "thread",
+          "thread_id": "thread_8",
+          "sign": -1,
+          "shift": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "distance": -0.2,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "cylinder_15",
+      "feature_type": "cylinder",
+      "name": "Thread chamfer",
+      "suppressed": false,
+      "radius": 23.3799991607666,
+      "height": 3.8799991607666016,
+      "center": false,
+      "plane_origin": [
+        0.0,
+        0.0,
+        37.1200008392334
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "plane_v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "cylinder_16",
+      "feature_type": "cylinder",
+      "name": "Thread chamfer cone",
+      "suppressed": false,
+      "radius": 22.3799991607666,
+      "height": 3.8799991607666016,
+      "center": false,
+      "plane_origin": [
+        0.0,
+        0.0,
+        37.1200008392334
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "plane_v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 45.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_17",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_15",
+      "tool_body_id": "body_cylinder_16",
+      "operation": "cut",
+      "keep_tool": false,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_18",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_4",
+      "tool_body_id": "body_cylinder_15",
+      "operation": "cut",
+      "keep_tool": false,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "cylinder_19",
+      "feature_type": "cylinder",
+      "name": "Lid mouth chamfer",
+      "suppressed": false,
+      "radius": 23.3799991607666,
+      "height": 4.379999160766602,
+      "center": false,
+      "plane_origin": [
+        0.0,
+        0.0,
+        29.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "plane_v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 45.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_20",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_10",
+      "tool_body_id": "body_cylinder_19",
+      "operation": "cut",
+      "keep_tool": false,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "move_21",
+      "feature_type": "move",
+      "name": "Move Lid (1)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_10",
+      "copy_body": false,
+      "dx": 61.0,
+      "dy": 0.0,
+      "dz": -30.0,
+      "rx": 180.0,
+      "ry": 0.0,
+      "rz": 0.0,
+      "pivot": "center",
+      "from_point": null,
+      "to_point": null,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "fillet_22",
+      "feature_type": "fillet",
+      "name": "Chamfer 4",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            0.0,
+            1.7763568394002505e-15,
+            3.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ],
+          22.49839300620705
+        ]
+      ],
+      "size": 6.0,
+      "kind": "chamfer",
+      "chamfer_type": "equal",
+      "size2": 2.0,
+      "angle": 45.0,
+      "flip": false,
+      "exprs": {},
+      "target_body_ids": [
+        "body_cylinder_4"
+      ]
+    },
+    {
+      "feature_id": "fillet_23",
+      "feature_type": "fillet",
+      "name": "Chamfer 5",
+      "suppressed": false,
+      "edges": [
+        [
+          "circle",
+          [
+            0.0,
+            1.7763568394002505e-15,
+            27.0
+          ],
+          [
+            0.0,
+            -0.0,
+            -1.0
+          ],
+          22.49839300620705
+        ]
+      ],
+      "size": 3.0,
+      "kind": "chamfer",
+      "chamfer_type": "equal",
+      "size2": 2.0,
+      "angle": 45.0,
+      "flip": false,
+      "exprs": {},
+      "target_body_ids": [
+        "body_cylinder_4"
+      ]
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {
+    "section_1": {
+      "name": "Section 1",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "offset": 0.0,
+      "flip": false,
+      "active": true
+    }
+  },
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 96
+}

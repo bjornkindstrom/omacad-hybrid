@@ -1,0 +1,120 @@
+{
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 20.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "cylinder_2",
+      "feature_type": "cylinder",
+      "name": "Cylinder 2",
+      "suppressed": false,
+      "radius": 27.0,
+      "height": 47.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "exprs": {}
+    },
+    {
+      "feature_id": "thread_3",
+      "feature_type": "thread",
+      "name": "Thread 1",
+      "diameter": 40.0,
+      "pitch": 3.5,
+      "length": 40.0,
+      "is_female": false,
+      "clearance": 0.25,
+      "profile": "trapezoidal_45",
+      "taper_lead_in": true,
+      "taper_turns": 0.75,
+      "target_body_id": "body_cylinder_1",
+      "operation": "join",
+      "plane_origin": [
+        -2.6645352591003757e-15,
+        -4.1448326458823323e-16,
+        0.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "plane_u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "plane_v": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "anchor": "bottom",
+      "anchor_gap": 0.0,
+      "host_length": 40.0,
+      "exprs": {}
+    },
+    {
+      "feature_id": "combine_4",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_2",
+      "tool_body_id": "body_cylinder_1",
+      "operation": "cut",
+      "keep_tool": true,
+      "exprs": {}
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {
+    "section_1": {
+      "name": "Section 1",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "offset": 0.0,
+      "flip": true,
+      "active": true
+    }
+  },
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "canvases": {},
+  "curve_segments": 192
+}
