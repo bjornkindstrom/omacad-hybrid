@@ -1,3 +1,9 @@
+## Hybrid launcher — 2026-10-28
+
+Version 0.9.9.80.71 adds `tools/install_launcher.py`: an independent per-user
+`omacad-hybrid.desktop`, command and H-badged SVG icon. The launcher selects
+`--backend rust`; original Omacad launchers and file associations are untouched.
+
 ## Hybrid experiment — 2026-10-28
 
 Version 0.9.9.80.70 adds an optional PyO3 triangle BVH to the existing viewport's

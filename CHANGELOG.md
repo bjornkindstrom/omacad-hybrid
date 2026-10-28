@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.71
+
+- Add a per-user Omacad Hybrid app-menu entry and command that starts the Rust backend.
+- Add a distinct H-badged icon and a repeatable launcher installer.
+
 # Hybrid experiment — 0.9.9.80.70
 
 - Add optional Rust/PyO3 BVH picking behind the original Python/Qt viewport.

@@ -27,6 +27,14 @@ På den här maskinen är miljön och Rust-modulen redan byggda. För jämförel
 ./run.sh --backend auto
 ```
 
+Starta också via **Omacad Hybrid** i appmenyn, eller kommandot `omacad-hybrid`.
+Menyikonen har ett blått **H** och startar Rust-läget. Installera om menyknappen
+på en annan maskin med:
+
+```bash
+.venv/bin/python tools/install_launcher.py
+```
+
 Statusfältet visar den backend som faktiskt används. `auto` faller tillbaka till
 Python om modulen saknas; `rust` kräver en fungerande modul. Bygg om Rust separat:
 
