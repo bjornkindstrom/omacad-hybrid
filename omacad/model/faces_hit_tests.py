@@ -4,6 +4,7 @@ from typing import Optional
 import math
 import numpy as np
 from omacad.model.faces_types import PlanarFace
+from omacad import viewport_accel
 
 RADIAL_TOLERANCE_DEG = 10.0      # how far a cylinder's face normal may tilt from the radius through its centre
 
@@ -40,12 +41,21 @@ def ray_hit_faces(faces, ray_origin: np.ndarray, ray_dir: np.ndarray, bary_tol: 
     thousands of faces stays fast."""
     hit = _FACE_STACKS.get(id(faces))
     if hit is None or hit[0] is not faces:
-        if len(_FACE_STACKS) > 64:
-            _FACE_STACKS.clear()
         tris = [np.asarray(f.tris, dtype=np.float64).reshape(-1, 3, 3) for f in faces]
         owner = np.repeat(np.arange(len(tris)), [len(t) for t in tris]).astype(int)
-        hit = _FACE_STACKS[id(faces)] = (faces, np.concatenate(tris) if tris else np.zeros((0, 3, 3)), owner)
-    _, tris, owner = hit
+        stacked = np.concatenate(tris) if tris else np.zeros((0, 3, 3))
+        native = viewport_accel.build_index(stacked, owner, len(faces))
+        hit = _FACE_STACKS[id(faces)] = (faces, stacked, owner, native)
+        # Bound both Python stacks and native BVHs across repeated model edits.
+        # Retain at least the current body, even if it alone exceeds this budget.
+        while len(_FACE_STACKS) > 1 and (len(_FACE_STACKS) > 64 or sum(len(v[1]) for v in _FACE_STACKS.values()) > 1_000_000):
+            _FACE_STACKS.pop(next(iter(_FACE_STACKS)))
+    else:
+        _FACE_STACKS.pop(id(faces))
+        _FACE_STACKS[id(faces)] = hit  # least-recently-used order
+    _, tris, owner, native = hit
+    if native is not None:
+        return viewport_accel.face_hits(native, ray_origin, ray_dir, bary_tol)
     out = np.full(len(faces), np.inf)
     if len(tris):
         np.minimum.at(out, owner, _ray_triangles(tris, ray_origin, ray_dir, bary_tol))
@@ -103,6 +113,8 @@ def _coplanar_face_outlines(body, o, n, ua, va, tol) -> list:
 
 def ray_mesh_hit(mesh, ray_origin, ray_dir):
     """Nearest hit of a ray with a RenderMesh (unrolled triangles). Returns (t, triangle index) or None."""
+    if viewport_accel.backend_name() == "rust":
+        return viewport_accel.mesh_hit(mesh, ray_origin, ray_dir)
     tri = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3, 3)
     o, d = np.asarray(ray_origin, dtype=np.float64), np.asarray(ray_dir, dtype=np.float64)
     v0, e1, e2 = tri[:, 0], tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]

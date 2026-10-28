@@ -1,3 +1,11 @@
+# Hybrid experiment roadmap
+
+Implemented first experiment: optional Rust BVH picking in the original Omacad
+UI, selectable NumPy fallback, parity/regression tests and a repeatable benchmark.
+Next candidate work is determined by profiling actual models; GPU-loop migration
+and native wheel distribution are not yet verified. See `docs/HYBRID.md`.
+The roadmap below is imported upstream context.
+
 # Omacad – progress and roadmap
 
 - Sketch Offset supports open and closed splines with independent sampled copies, preview and undo (0.9.9.80.69).

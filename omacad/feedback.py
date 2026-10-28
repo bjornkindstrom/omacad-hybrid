@@ -10,7 +10,8 @@ from typing import Dict, Optional
 
 from omacad import __version__, applog
 
-FEEDBACK_DIR = Path.home() / ".local" / "share" / "omacad" / "feedback"
+from omacad.hybrid_paths import DATA_DIR
+FEEDBACK_DIR = DATA_DIR / "feedback"
 
 
 def repo_root() -> Path:

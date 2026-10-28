@@ -1,3 +1,11 @@
+# Omacad Hybrid experiment
+
+This is an independent experimental fork. Read `docs/HYBRID.md` for the Python/Rust
+boundary and `README.md` for build/test commands. Never edit the sibling `omacad`
+or `omacad-rs` repositories as part of work here. Preserve the NumPy fallback and
+parity tests. Keep private state, binaries and virtualenvs out of Git. Upstream
+application workflows remain Python/Qt; optimize measured viewport hot paths.
+
 # Agents — Omacad Rules & Token Efficiency
 
 1. **Architecture & Rules**: Read `omacad.md` (~70 lines) first for architecture, patterns, and recent fixes.

@@ -9,3 +9,11 @@ build/
 omacad/_rfc_secret.py
 video/timeline_hot/
 
+
+# Hybrid experiment
+.state/
+native/target/
+*.so
+*.pyd
+*.whl
+benchmark-local.json

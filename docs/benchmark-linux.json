@@ -1,0 +1,80 @@
+{
+  "python": "3.14.8",
+  "platform": "Linux-7.2.8-9-omarchy-x86_64-with-glibc2.44",
+  "numpy": "2.5.4",
+  "description": "CPU picking only, warm query medians; includes Python-to-Rust calls. No FPS or GPU claim.",
+  "scenes": {
+    "sphere_medium": {
+      "triangles": 8192,
+      "face_groups": 1000,
+      "rays": 120,
+      "backends": {
+        "python": {
+          "mesh": {
+            "cold_first_ms": 0.731452,
+            "median_ms": 0.5694195,
+            "p95_ms": 0.596539
+          },
+          "faces": {
+            "cold_first_ms": 1.217062,
+            "median_ms": 0.5784635,
+            "p95_ms": 0.6176872
+          }
+        },
+        "rust": {
+          "mesh": {
+            "cold_first_ms": 1.896064,
+            "median_ms": 0.005169,
+            "p95_ms": 0.0066385
+          },
+          "faces": {
+            "cold_first_ms": 2.437477,
+            "median_ms": 0.007613,
+            "p95_ms": 0.00859
+          }
+        }
+      },
+      "matches_numpy": true,
+      "warm_speedup": {
+        "mesh": 110.1604759141033,
+        "faces": 75.9836463943255
+      }
+    },
+    "sphere_dense": {
+      "triangles": 131072,
+      "face_groups": 1000,
+      "rays": 120,
+      "backends": {
+        "python": {
+          "mesh": {
+            "cold_first_ms": 17.50192,
+            "median_ms": 12.439651000000001,
+            "p95_ms": 13.3796581
+          },
+          "faces": {
+            "cold_first_ms": 13.633177,
+            "median_ms": 11.202124999999999,
+            "p95_ms": 12.174982049999999
+          }
+        },
+        "rust": {
+          "mesh": {
+            "cold_first_ms": 40.059752,
+            "median_ms": 0.005797,
+            "p95_ms": 0.0080355
+          },
+          "faces": {
+            "cold_first_ms": 42.119385,
+            "median_ms": 0.009429,
+            "p95_ms": 0.01180745
+          }
+        }
+      },
+      "matches_numpy": true,
+      "warm_speedup": {
+        "mesh": 2145.8773503536313,
+        "faces": 1188.0501643864673
+      }
+    }
+  }
+}

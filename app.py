@@ -68,9 +68,9 @@ def main():
     app = QApplication(sys.argv)
     from omacad.ui.theme import BigIconStyle
     app.setStyle(BigIconStyle("Fusion"))  # larger menu/tree/tool icons
-    app.setApplicationName("Omacad")
-    app.setOrganizationName("Omarchy")
-    app.setDesktopFileName("omacad")
+    app.setApplicationName("Omacad Hybrid")
+    app.setOrganizationName("Omacad Hybrid")
+    app.setDesktopFileName("omacad-hybrid")
 
     from omacad.ui import theme as _theme
     _theme.apply_saved_choice()   # a theme picked by hand in Settings, before any widget is styled
@@ -82,11 +82,10 @@ def main():
     from omacad import session
     if session.RESUME_FLAG in sys.argv:
         window.restore_session()
-    window.start_restart_watch()
-    import threading
-    from omacad import rfc
-    from PySide6.QtCore import QTimer
-    QTimer.singleShot(8000, lambda: threading.Thread(target=rfc.send_pending, daemon=True).start())   # requests saved while offline
+    from PySide6.QtWidgets import QLabel
+    from omacad.viewport_accel import backend_name
+    window.statusBar().addPermanentWidget(QLabel(f"Viewport picking: {backend_name().upper()}"))
+    # The experiment has its own repo/profile and no automatic restart or request sender.
 
     sys.exit(app.exec())
 

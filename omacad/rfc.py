@@ -29,9 +29,8 @@ SENT_MARK = "sent.json"
 
 
 def requests_dir() -> Path:
-    base = os.environ.get("LOCALAPPDATA")          # Windows
-    root = Path(base) / "omacad" if base else Path.home() / ".local" / "share" / "omacad"
-    return root / "requests"
+    from omacad.hybrid_paths import DATA_DIR
+    return DATA_DIR / "requests"
 
 
 def token() -> str:

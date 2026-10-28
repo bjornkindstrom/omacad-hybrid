@@ -64,7 +64,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
-        self.setWindowTitle(f"Omacad {__import__('omacad').__version__} - Native CAD for Omarchy")
+        self.setWindowTitle(f"Omacad Hybrid {__import__('omacad').__version__} - Native CAD for Omarchy")
         self.resize(1340, 860)
 
         import os

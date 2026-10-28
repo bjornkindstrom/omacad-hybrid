@@ -141,7 +141,7 @@ class FileSessionMixin:
     def update_window_title(self):
         name = Path(self.current_path).name if getattr(self, "current_path", None) else (getattr(self.doc, "name", "Untitled") or "Untitled")
         from omacad import __version__
-        self.setWindowTitle(f"{name} - Omacad {__version__}")
+        self.setWindowTitle(f"{name} - Omacad Hybrid {__version__}")
         if hasattr(self, "lbl_doc_title") and self.lbl_doc_title:
             doc_display = f"📄  {name}" if getattr(self, "current_path", None) else f"📄  {name}*"
             self.lbl_doc_title.setText(doc_display)

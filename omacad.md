@@ -1,3 +1,13 @@
+## Hybrid experiment — 2026-10-28
+
+Version 0.9.9.80.70 adds an optional PyO3 triangle BVH to the existing viewport's
+`ray_hit_faces` and `ray_mesh_hit`. `docs/HYBRID.md` is the experiment guide.
+NumPy remains selectable, face/triangle identities are unchanged, native geometry
+is owned and immutable, and indices follow geometry-snapshot replacement. State
+is isolated in `.state/`. Regression tests: `test_viewport_native.py`,
+`test_hover_after_move.py`, `test_fillet_face_pick.py`, `test_loop_edge_pick.py`.
+This fork does not publish Omacad releases or send requests in the background.
+
 # Omacad: guide för AI-agenter
 
 ## Senaste lösningar

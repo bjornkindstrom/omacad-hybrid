@@ -31,7 +31,8 @@ NAME_FILE = STATE_DIR / "theme.name"
 # Bundled themes (the Omarchy ones, copied into assets/themes so they also exist where Omarchy does not, e.g. Windows).
 THEMES_DIR = Path(__file__).resolve().parents[2] / "assets" / "themes"
 BUILTIN = "builtin"          # the original Omacad dark palette
-CUSTOM_DIR = Path.home() / ".config" / "omacad" / "themes"   # themes made in the Settings theme editor
+from omacad.hybrid_paths import CONFIG_DIR as HYBRID_CONFIG_DIR, STATE_DIR as HYBRID_STATE_DIR
+CUSTOM_DIR = HYBRID_CONFIG_DIR / "themes"   # themes made in the Settings theme editor
 CUSTOM_PREFIX = "user:"      # FIXED_THEME / theme_name of a custom theme: "user:<name>"
 PREVIEW: Optional[dict] = None   # unsaved colours from the theme editor, shown live
 FIXED_THEME: Optional[str] = None
@@ -350,7 +351,7 @@ def palette() -> Palette:
     return _palette
 
 
-_ARROW_DIR = Path.home() / ".cache/omacad/arrows"
+_ARROW_DIR = HYBRID_STATE_DIR / "cache" / "arrows"
 
 
 def _arrow_png(direction: str) -> str:

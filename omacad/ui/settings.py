@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Tuple
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QColor
 
-CONFIG_DIR = Path.home() / ".config" / "omacad"
+from omacad.hybrid_paths import CONFIG_DIR
 SETTINGS_FILE = CONFIG_DIR / "settings.json"
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
@@ -54,7 +54,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "theme_mode": "omarchy",            # "omarchy" = follow the Omarchy theme live, "fixed" = theme_name
     "theme_name": "studio",             # "studio", "graphite", "atelier" or "user:<name>" when theme_mode is "fixed"
     "icon_theme": "solid",              # "solid", "blueprint", "semantic"
-    "auto_restart": True,               # restart the app (work saved and restored) when a new version is committed
+    "auto_restart": False,               # restart the app (work saved and restored) when a new version is committed
 }
 
 

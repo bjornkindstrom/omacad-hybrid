@@ -1,3 +1,11 @@
+# Hybrid experiment plan
+
+The current experiment replaces triangle ray testing with a Rust BVH behind the
+existing Omacad viewport. See `docs/HYBRID.md` for the complete boundary and test
+plan. Measure warm queries and cold index build separately; compare results with
+NumPy. Further viewport changes require profiling, with Python/Qt retained.
+The plan below is imported upstream context, not a separate work order.
+
 # Omacad – färdplan
 
 Genomfört 0.9.9.80.69: Offset av öppna och slutna splines, med förhandsvisning och ångra.

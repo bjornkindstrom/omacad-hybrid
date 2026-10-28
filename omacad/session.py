@@ -9,7 +9,8 @@ from typing import Optional
 
 from omacad import applog
 
-SESSION_FILE = Path.home() / ".local" / "share" / "omacad" / "session.json"
+from omacad.hybrid_paths import DATA_DIR
+SESSION_FILE = DATA_DIR / "session.json"
 RESUME_FLAG = "--resume"
 
 

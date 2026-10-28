@@ -1,3 +1,10 @@
+# Hybrid experiment — 0.9.9.80.70
+
+- Add optional Rust/PyO3 BVH picking behind the original Python/Qt viewport.
+- Preserve the NumPy backend for A/B comparison and fallback.
+- Isolate experiment state and disable inherited automatic release/restart behavior.
+- Add native/parity/Qt regression tests and cold/warm CPU picking benchmarks.
+
 # Changelog
 
 ## 0.9.9.80.70 - 2026-10-28
