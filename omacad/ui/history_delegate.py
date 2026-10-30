@@ -15,10 +15,10 @@ def label_prefix(text: str) -> str:
 
 
 def value_ref(data):
-    """(kind, ids) of a value row: a parameter or sketch dimension, or a starred one (also "text"); else None."""
+    """(kind, ids) of a value row: a parameter or sketch dimension, polygon sides, or a starred one (also "text"); else None."""
     if not data:
         return None
-    if data[0] in ('parameter', 'dimension'):
+    if data[0] in ('parameter', 'dimension', 'polygon_sides'):
         return data
     if data[0] == 'fav':
         kind, a, b = data[1]
@@ -121,6 +121,13 @@ class HistoryDelegate(QStyledItemDelegate):
                     return
                 feature = doc.timeline.features[pos]
                 value = feature.exprs.get(key, str(getattr(feature, key)))
+            elif kind == 'polygon_sides':
+                sid, gid = ids
+                sketch = doc.sketches.get(sid)
+                polys = sketch.polygon_groups() if sketch and hasattr(sketch, "polygon_groups") else {}
+                if gid not in polys:
+                    return
+                value = str(polys[gid]["sides"])
             else:
                 sid, did = ids
                 sketch = doc.sketches.get(sid)
@@ -164,6 +171,15 @@ class HistoryDelegate(QStyledItemDelegate):
 def apply_dimension(doc, kind, ids, text):
     if kind == 'parameter':
         return doc.edit_feature_dimension(*ids, text)
+    if kind == 'polygon_sides':
+        sid, gid = ids
+        try:
+            val = int(round(float(expr.evaluate(text, doc.parameter_values()))))
+        except Exception:
+            val = int(text.strip())
+        if not doc.set_polygon_sides(sid, gid, val):
+            raise ValueError('Could not update polygon sides')
+        return True
     if kind == 'text':
         if not doc.set_sketch_text(*ids, text):
             raise ValueError('Type some text')

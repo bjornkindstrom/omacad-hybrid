@@ -20,7 +20,7 @@ _ERROR = None
 if _MODE != "python":
     try:
         _NATIVE = importlib.import_module("_viewport_native")
-        if _NATIVE.API_VERSION != 1:
+        if _NATIVE.API_VERSION != 2:
             raise ImportError("native picking API version mismatch; rebuild the extension")
     except ImportError as error:
         _NATIVE = None
@@ -61,3 +61,38 @@ def mesh_hit(mesh, origin, direction):
         cached = (vertices, build_index(triangles, np.zeros(len(triangles), dtype=np.uint32), 1))
         mesh._native_pick_index = cached
     return cached[1].nearest(tuple(map(float, origin)), tuple(map(float, direction)))
+
+
+def flat_patch_mask(count, coplanar, sharp, directions):
+    """Exact-order native flat-patch pass; None retains the Python reference path."""
+    if _NATIVE is None:
+        return None
+    data = _NATIVE.flat_patch_mask(int(count), np.ascontiguousarray(coplanar,dtype="<u8").tobytes(),
+                                  np.ascontiguousarray(sharp,dtype="<u8").tobytes(),
+                                  np.ascontiguousarray(directions,dtype="<f8").tobytes(), np.asarray(directions).dtype == np.float32)
+    return np.frombuffer(data,dtype=np.bool_).copy()
+
+
+def coplanar_roots(v, f, normals, areas, adjacency, tolerance):
+    """Batch the old coplanarity/union pass; root identities and face order are preserved."""
+    if _NATIVE is None:
+        return None
+    data = _NATIVE.coplanar_roots(np.ascontiguousarray(v[f],dtype="<f8").tobytes(),
+                                 np.ascontiguousarray(normals,dtype="<f8").tobytes(),
+                                 np.ascontiguousarray(areas,dtype="<f8").tobytes(),
+                                 np.ascontiguousarray(adjacency,dtype="<u8").tobytes(),float(tolerance))
+    return np.frombuffer(data,dtype="<u8").astype(np.int64)
+
+
+def snap_and_clean_segments(v, segments, snap_tol):
+    """Native snap-vertex pass: returns (cleaned_segments, original_indices)."""
+    if _NATIVE is None:
+        return None
+    seg_arr = np.ascontiguousarray(segments, dtype="<u8")
+    data = _NATIVE.snap_and_clean_segments(
+        np.ascontiguousarray(v, dtype="<f8").tobytes(),
+        seg_arr.tobytes(),
+        float(snap_tol)
+    )
+    res = np.frombuffer(data, dtype="<u8").reshape(-1, 3)
+    return res

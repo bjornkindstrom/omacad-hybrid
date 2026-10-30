@@ -177,11 +177,15 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             dlg.spn_twist.set_expression(feat.exprs["twist"])
         dlg.cmb_op.setCurrentIndex([k for k, _ in LOFT_OPS].index(feat.operation))
 
+        if hasattr(dlg, "chk_smooth") and hasattr(feat, "smooth"):
+            dlg.chk_smooth.setChecked(bool(feat.smooth))
+
         def sections():
             return [LoftFeature.section_ref(doc, s, i) for s, i in dlg.profiles]
 
         def preview_loft():
-            solid = LoftFeature("preview", feat.name, sections(), dlg.operation(), dlg.spn_twist.value()).build_solid(doc)
+            smooth = getattr(dlg, "chk_smooth", None) and dlg.chk_smooth.isChecked()
+            solid = LoftFeature("preview", feat.name, sections(), dlg.operation(), dlg.spn_twist.value(), smooth=smooth).build_solid(doc)
             vp.set_preview(solid, dlg.operation())
 
         shown = {sid: sk.visible for sid, sk in doc.sketches.items()}
@@ -210,8 +214,9 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
                 doc.sketches[sid].visible = visible
         if not accepted:
             return False
+        smooth = getattr(dlg, "chk_smooth", None) and dlg.chk_smooth.isChecked()
         return commit(sections=sections(), operation=dlg.operation(), twist=dlg.spn_twist.value(),
-                      exprs=dlg.get_expressions())
+                      smooth=smooth, exprs=dlg.get_expressions())
 
     if t == "extrude":
         from omacad.model.timeline import ExtrudeFeature

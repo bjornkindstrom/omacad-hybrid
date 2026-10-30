@@ -1,4 +1,5 @@
 mod bvh;
+mod topology;
 use bvh::{Bvh, Triangle};
 use pyo3::{exceptions::PyValueError, prelude::*, types::PyBytes};
 
@@ -81,6 +82,9 @@ impl TriangleIndex {
 #[pymodule]
 fn _viewport_native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<TriangleIndex>()?;
-    module.add("API_VERSION", 1)?;
+    module.add("API_VERSION", 2)?;
+    module.add_function(wrap_pyfunction!(topology::flat_patch_mask, module)?)?;
+    module.add_function(wrap_pyfunction!(topology::coplanar_roots, module)?)?;
+    module.add_function(wrap_pyfunction!(topology::snap_and_clean_segments, module)?)?;
     Ok(())
 }

@@ -457,11 +457,11 @@ class BrowserTree(QWidget):
         item_type, item_id = data
         # a dimension row lights up what it measures in the view (Björn #94); any other row clears that
         self.dimension_selected.emit(*(item_id if item_type == "dimension" else ("", "")))
-        if column == 1 and item_type in ("parameter", "dimension", "fav"):       # the pencil
+        if column == 1 and item_type in ("parameter", "dimension", "polygon_sides", "fav"):       # the pencil
             from omacad.ui.object_browser import edit_parameter
             edit_parameter(self, item_type, item_id)
             return
-        if item_type == "dimension":
+        if item_type in ("dimension", "polygon_sides"):
             return
         from omacad.ui.object_browser import FEATURE_ROLE
         fid = item.data(0, FEATURE_ROLE)
@@ -503,7 +503,7 @@ class BrowserTree(QWidget):
             return
 
         item_type, item_id = data
-        if item_type in ("parameter", "dimension", "fav"):
+        if item_type in ("parameter", "dimension", "polygon_sides", "fav"):
             from omacad.ui.object_browser import edit_parameter
             edit_parameter(self, item_type, item_id)
         elif item_type == "feature":
@@ -616,10 +616,11 @@ class BrowserTree(QWidget):
             rename()
             add("Show complete object", lambda: self.doc.object_fast_forward(item_id))
             show_hide()
-        elif item_type in ("parameter", "dimension"):
+        elif item_type in ("parameter", "dimension", "polygon_sides"):
             from omacad.ui.object_browser import edit_parameter
             add("Edit value…", lambda: edit_parameter(self, item_type, item_id))
-            self._favorite_menu(menu, [item_type, *item_id])
+            if item_type in ("parameter", "dimension"):
+                self._favorite_menu(menu, [item_type, *item_id])
             if item_type == "dimension":
                 menu.addSeparator()
                 add("🗑️ Delete dimension", lambda: self.doc.remove_dimension(*item_id))

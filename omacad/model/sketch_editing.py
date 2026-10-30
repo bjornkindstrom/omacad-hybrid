@@ -424,6 +424,70 @@ class SketchEditingMixin:
         self.solve_profiles()
         return lines
 
+    def polygon_groups(self) -> dict:
+        """Finds regular polygons defined in the sketch: group_id -> {'circle': SketchCircle, 'lines': [SketchLine], 'sides': int}."""
+        groups = {}
+        for e in self.entities:
+            g = getattr(e, "group", None)
+            if g and g.startswith("poly_"):
+                groups.setdefault(g, []).append(e)
+        res = {}
+        for gid, ents in groups.items():
+            circle = next((e for e in ents if getattr(e, "entity_type", "") == "circle"), None)
+            lines = [e for e in ents if getattr(e, "entity_type", "") == "line"]
+            if circle and lines:
+                res[gid] = {"circle": circle, "lines": lines, "sides": len(lines)}
+        return res
+
+    def set_polygon_sides(self, group_id: str, sides: int) -> bool:
+        """Reconstruct a polygon's lines and constraints with a new side count while preserving centre and size."""
+        n = max(3, min(200, int(sides)))
+        polys = self.polygon_groups()
+        if group_id not in polys:
+            return False
+        poly = polys[group_id]
+        circle = poly["circle"]
+        lines = poly["lines"]
+        if len(lines) == n:
+            return True
+
+        line_ids = {l.entity_id for l in lines}
+        side_dim = next((d for d in self.dimensions if d.target_entity_id in line_ids and d.name == "Side"), None)
+        if side_dim is None:
+            side_dim = next((d for d in self.dimensions if d.target_entity_id in line_ids), None)
+
+        center = circle.center
+        v0 = lines[0].p1
+        pts = self.polygon_points(center, v0, n)
+        is_const = lines[0].is_construction
+
+        self.entities = [e for e in self.entities if e.entity_id not in line_ids]
+        self.constraints = [c for c in self.constraints if not any(eid in line_ids for eid in getattr(c, "refs", []))]
+
+        new_lines = []
+        for i, a in enumerate(pts):
+            b = pts[(i + 1) % n]
+            line = SketchLine(self._new_entity_id("line"), a, b, is_construction=is_const)
+            line.group = group_id
+            self.entities.append(line)
+            new_lines.append(line)
+
+        from omacad.model.sketch_types import SketchConstraint
+        for i, ln in enumerate(new_lines):
+            nxt = new_lines[(i + 1) % n]
+            self.constraints.append(SketchConstraint(self.new_constraint_id(), "COINCIDENT", [ln.entity_id, nxt.entity_id], ["p2", "p1"]))
+            self.constraints.append(SketchConstraint(self.new_constraint_id(), "POINT_ON_CIRCLE", [circle.entity_id, ln.entity_id], ["p1"]))
+            if i:
+                self.constraints.append(SketchConstraint(self.new_constraint_id(), "EQUAL", [new_lines[0].entity_id, ln.entity_id]))
+
+        if side_dim is not None:
+            side_dim.target_entity_id = new_lines[0].entity_id
+            new_side = math.hypot(new_lines[0].p2[0] - new_lines[0].p1[0], new_lines[0].p2[1] - new_lines[0].p1[1])
+            side_dim.value = new_side
+
+        self.solve_profiles()
+        return True
+
     def _new_group_id(self) -> str:
         used = {getattr(e, "group", None) for e in self.entities}
         n = 1

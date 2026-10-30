@@ -75,6 +75,12 @@ class SweepLoftDialog(BaseFeatureDialog):
             form.addRow("Wall:", self.spn_thick)
         if mode in ("sweep", "loft"):
             form.addRow("Twist:", self.spn_twist)
+        if mode == "loft":
+            from PySide6.QtWidgets import QCheckBox
+            self.chk_smooth = QCheckBox("Smooth transition / Mjuk övergång")
+            self.chk_smooth.setToolTip("Smooth spline transition between profiles instead of straight ruling")
+            self.chk_smooth.stateChanged.connect(lambda *_: self.changed.emit())
+            form.addRow("Transition:", self.chk_smooth)
         self.cmb_op = QComboBox()
         for _key, label in OPERATIONS:
             self.cmb_op.addItem(label)

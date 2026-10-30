@@ -103,8 +103,9 @@ class SweepPromptsMixin:
                                     [i for _s, i in dlg.profiles[1:]])
             if len(dlg.profiles) < 2:
                 return None
+            smooth = getattr(dlg, "chk_smooth", None) and dlg.chk_smooth.isChecked()
             return LoftFeature("preview", title, [LoftFeature.section_ref(self.doc, s, i) for s, i in dlg.profiles],
-                               dlg.operation(), dlg.spn_twist.value())
+                               dlg.operation(), dlg.spn_twist.value(), smooth=smooth)
 
         def sync_profiles():
             self.doc.selected_profile = dlg.profiles[0] if dlg.profiles else None
@@ -155,7 +156,8 @@ class SweepPromptsMixin:
                     elif mode == "sweep" and dlg.profiles:
                         feat = self.doc.add_sweep(*dlg.profiles[0], path, op, dlg.spn_twist.value(), [i for _s, i in dlg.profiles[1:]])
                     elif mode == "loft" and len(dlg.profiles) >= 2:
-                        feat = self.doc.add_loft(dlg.profiles, op, dlg.spn_twist.value())
+                        smooth = getattr(dlg, "chk_smooth", None) and dlg.chk_smooth.isChecked()
+                        feat = self.doc.add_loft(dlg.profiles, op, dlg.spn_twist.value(), smooth=smooth)
                     else:
                         self.status_label.setText(f"{title}: pick the profile(s) first.")
                         return

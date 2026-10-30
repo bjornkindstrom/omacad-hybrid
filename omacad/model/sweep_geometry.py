@@ -220,11 +220,59 @@ def _between_rings(rings: List[np.ndarray], twists: Sequence[float] = ()) -> Lis
     return out
 
 
-def loft_solid(rings3d: Sequence[np.ndarray], caps2d: Sequence[np.ndarray], n: int = 128, twist_deg: float = 0.0) -> m3d.Manifold:
+def _smooth_between_rings(rings: List[np.ndarray], twists: Sequence[float] = (), steps_per_segment: int = 16) -> List[np.ndarray]:
+    """Smooth spline interpolation (Catmull-Rom across >=3 sections or cubic Hermite S-curve for 2 sections)
+    to create a soft, continuous transition between loft sections."""
+    twists = list(twists) or [0.0] * len(rings)
+    K = len(rings)
+    if K < 2:
+        return rings
+    
+    def catmull_rom(p0, p1, p2, p3, t):
+        return 0.5 * (
+            (2.0 * p1) +
+            (-p0 + p2) * t +
+            (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * (t ** 2) +
+            (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * (t ** 3)
+        )
+
+    out = [rings[0]]
+    if K == 2:
+        a, b = rings[0], rings[1]
+        axis = _unit(b.mean(axis=0) - a.mean(axis=0))
+        dt = twists[1] - twists[0]
+        for i in range(1, steps_per_segment + 1):
+            t = i / steps_per_segment
+            s = 3.0 * (t ** 2) - 2.0 * (t ** 3)  # cubic Hermite S-curve
+            ring = a * (1.0 - s) + b * s
+            tw = twists[0] + dt * s
+            out.append(_turned(ring, axis, tw) if tw else ring)
+        return out
+
+    extended = [2.0 * rings[0] - rings[1]] + list(rings) + [2.0 * rings[-1] - rings[-2]]
+    for seg in range(K - 1):
+        p0 = extended[seg]
+        p1 = extended[seg + 1]
+        p2 = extended[seg + 2]
+        p3 = extended[seg + 3]
+        axis = _unit(p2.mean(axis=0) - p1.mean(axis=0))
+        t_start, t_end = twists[seg], twists[seg + 1]
+        dt = t_end - t_start
+        for i in range(1, steps_per_segment + 1):
+            t = i / steps_per_segment
+            ring = catmull_rom(p0, p1, p2, p3, t)
+            tw = t_start + dt * t
+            out.append(_turned(ring, axis, tw) if tw else ring)
+    return out
+
+
+def loft_solid(rings3d: Sequence[np.ndarray], caps2d: Sequence[np.ndarray], n: int = 128, twist_deg: float = 0.0,
+               smooth: bool = False) -> m3d.Manifold:
     """A skin through closed 3D rings in order (`caps2d[0]` / `caps2d[-1]` are the first and last ring in their own
     plane coordinates, used for the end caps). The rings are resampled to `n` points, turned the same way round
     the loft direction, and each one's start is turned to line up with the one before. `twist_deg` turns the last
-    profile that much against the first, in proportion to the distance along the loft."""
+    profile that much against the first, in proportion to the distance along the loft. `smooth` applies cubic
+    spline interpolation along the cross sections for a soft, continuous transition."""
     if len(rings3d) < 2:
         raise ValueError("A loft needs at least two profiles.")
     corners = [ring_corners(r) for r in rings3d]
@@ -253,7 +301,11 @@ def loft_solid(rings3d: Sequence[np.ndarray], caps2d: Sequence[np.ndarray], n: i
         out.append(ring)
     gaps = np.linalg.norm(np.diff(np.array(cents), axis=0), axis=1)
     share = np.concatenate([[0.0], np.cumsum(gaps)]) / (gaps.sum() or 1.0)
-    out = _between_rings(out, [twist_deg * x for x in share] if twist_deg else ())
+    twists = [twist_deg * x for x in share] if twist_deg else ()
+    if smooth:
+        out = _smooth_between_rings(out, twists)
+    else:
+        out = _between_rings(out, twists)
     # the caps' 2D rings must run counter-clockwise for the triangulation; their index order matches the 3D rings
     for i in (0, 1):
         if signed_area(caps[i]) < 0:

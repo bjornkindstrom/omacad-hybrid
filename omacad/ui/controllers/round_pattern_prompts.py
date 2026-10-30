@@ -130,12 +130,14 @@ class RoundPatternPromptsMixin:
             try:
                 tmp.execute(_TmpDoc)
             except Exception as ex:
+                self.viewport.fillet_rail_offset = 0.0
                 self.viewport.set_display_override(None)
                 self.status_label.setText(f"Fillet/Chamfer: {ex or 'these edges cannot be rounded with that size.'}")
                 update_arrow()
                 return
             changed = {bid: t.manifold for bid, t in tmp_bodies.items()
                        if t.manifold is not self.doc.bodies[bid].manifold}
+            self.viewport.fillet_rail_offset = max(0.0, float(v["size"]))
             self.viewport.set_display_override(changed)
             if tmp.skipped:
                 self.status_label.setText(f"Fillet/Chamfer: {tmp.skipped} edge(s) cannot be rounded with that size.")
@@ -150,6 +152,7 @@ class RoundPatternPromptsMixin:
             dlg.reject()
 
         def on_finished(result):
+            self.viewport.fillet_rail_offset = 0.0
             self.viewport.edges_selection_changed.disconnect(preview)
             self.viewport.edge_pick_cancelled.disconnect(on_cancel_pick)
             try:

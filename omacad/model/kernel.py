@@ -707,6 +707,14 @@ class CadKernel:
         dark fans on the flat wall. A strip of a cylinder wall has sharp edges in one direction only (its rim)."""
         tm = trimesh.Trimesh(vertices=v, faces=f, process=False)
         angles, adj = tm.face_adjacency_angles, tm.face_adjacency
+        from omacad import viewport_accel
+        if viewport_accel.backend_name() == "rust":
+            sharp = angles >= np.radians(smooth_below_deg)
+            edges = tm.face_adjacency_edges[sharp]
+            diffs = v[edges[:, 1]] - v[edges[:, 0]]
+            norms = np.linalg.norm(diffs, axis=1, keepdims=True)
+            norms[norms == 0] = 1.0
+            return viewport_accel.flat_patch_mask(len(f), adj[angles < np.radians(coplanar_deg)], adj[sharp], diffs / norms)
         parent = np.arange(len(f))
 
         def root(i):

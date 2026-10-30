@@ -86,8 +86,10 @@ def build_jar(doc, spec: JarSpec) -> Dict[str, str]:
     doc.combine_bodies(jar.body_id, neck.body_id, "join")
     doc.add_shell(jar.body_id, spec.wall, open_faces=[{"normal": [0.0, 0.0, 1.0], "origin": [0.0, 0.0, top],
                                                      "body_id": jar.body_id}])
-    doc.add_thread(spec.neck_diameter, spec.pitch, spec.neck_height, profile=spec.profile, clearance=0.0, target_body_id=jar.body_id,
-                   operation="join", name="Jar thread", plane_origin=[0.0, 0.0, h], host_length=spec.neck_height, **UP)
+    gap = 0.5
+    thread_len = max(0.5, spec.neck_height - gap)
+    doc.add_thread(spec.neck_diameter, spec.pitch, thread_len, profile=spec.profile, clearance=0.0, target_body_id=jar.body_id,
+                   operation="join", name="Jar thread", plane_origin=[0.0, 0.0, h], host_length=spec.neck_height, anchor_gap=gap, **UP)
     thread = doc.timeline.last_added
     chamfer = min(spec.inside_chamfer, spec.shoulder())
     if chamfer > 1e-3:   # the inside corners at the bottom and under the shoulder: hidden from outside, so made here

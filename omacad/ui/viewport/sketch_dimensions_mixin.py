@@ -317,6 +317,7 @@ class SketchDimensionsMixin:
         poly_line = next((m for m in members if isinstance(m, SketchLine)), None)
         if poly_circle is not None and poly_line is not None:
             heading("Polygon - set a dimension")
+            add("p_sides", "🔢 Number of sides…", "Change how many sides this polygon has.")
             add("p_side", "📏 Side length…", "Type how long each side should be (all sides stay equal).")
             add("p_dia", "Ø Circle through the corners…", "Type the diameter of the circle the corners lie on (corner to corner across the centre).")
             add("p_centre", "◎ Distance from the centre to…", "Then click a point, a line or a face edge to measure from the middle of the polygon.")
@@ -407,6 +408,16 @@ class SketchDimensionsMixin:
             return
         if key == "slot_width":
             self._dim_slot_width(ent)
+            return
+        if key == "p_sides":
+            gid = getattr(poly_line, "group", None)
+            if gid:
+                cur_sides = len([m for m in members if isinstance(m, SketchLine)])
+                res = self.prompt_dimension_value("Polygon sides", "Number of sides (3..200):", cur_sides, lo=3.0, hi=200.0, suffix="", inline=True)
+                val = res[0] if res is not None else None
+                if val is not None:
+                    self.doc.set_polygon_sides(sk.sketch_id, gid, int(round(val)))
+                    self.update()
             return
         if key == "p_side":
             self._dim_length(poly_line)

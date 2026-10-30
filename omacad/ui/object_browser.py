@@ -56,7 +56,7 @@ def _pencil(row):
 
 
 def _add_sketch_rows(node, sketch):
-    """A sketch's dimensions (editable) and texts (double-click edits the text)."""
+    """A sketch's dimensions (editable), polygon sides (editable), and texts (double-click edits the text)."""
     for dim in sketch.dimensions:
         unit = '°' if dim.dim_type == 'ANGLE' else 'mm'
         row = QTreeWidgetItem(node, [f'{dim.name or dim.dim_type}: {dim.expr or f"{dim.value:g}"} {unit}', ''])
@@ -64,6 +64,14 @@ def _add_sketch_rows(node, sketch):
         row.setFlags(row.flags() | Qt.ItemFlag.ItemIsEditable)
         row.setToolTip(0, f'{dim.value:g} — double-click or click the pencil to edit')
         _pencil(row)
+    if hasattr(sketch, "polygon_groups"):
+        for gid, pdata in sketch.polygon_groups().items():
+            sides = pdata["sides"]
+            row = QTreeWidgetItem(node, [f'Polygon sides: {sides}', ''])
+            row.setData(0, ROLE, ('polygon_sides', (sketch.sketch_id, gid)))
+            row.setFlags(row.flags() | Qt.ItemFlag.ItemIsEditable)
+            row.setToolTip(0, f'{sides} sides — double-click or click the pencil to edit')
+            _pencil(row)
     from omacad.model.sketch import SketchText
     for entity in sketch.entities:
         if isinstance(entity, SketchText):
@@ -168,8 +176,11 @@ def edit_parameter(browser, kind, item_id):
     from PySide6.QtCore import QTimer
 
     def open_editor():
-        tree = browser.tree
-        if tree.state() == tree.State.EditingState:
+        try:
+            tree = browser.tree
+            if tree is None or tree.state() == tree.State.EditingState:
+                return
+        except RuntimeError:
             return
         for item, _ in browser._walk():
             if item.data(0, ROLE) == (kind, item_id):

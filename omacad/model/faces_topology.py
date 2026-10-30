@@ -47,9 +47,24 @@ def _coplanar(a_idx, b_idx, normals, v, f, areas, tol) -> bool:
 def _sliver_roots(v, f, tm, groups) -> set:
     """Groups that are leftovers of boolean operations: almost no area, or hair-thin (< SLIVER_MIN_WIDTH wide)."""
     out = set()
+    areas = tm.area_faces
     for r, ids in groups.items():
-        if float(tm.area_faces[ids].sum()) < SLIVER_AREA or _group_min_width(v, f, tm, ids) < SLIVER_MIN_WIDTH:
-            out.add(r)
+        if len(ids) == 1:
+            tid = ids[0]
+            area = float(areas[tid])
+            if area < SLIVER_AREA:
+                out.add(r)
+                continue
+            tri = f[tid]
+            p0, p1, p2 = v[tri[0]], v[tri[1]], v[tri[2]]
+            e0 = float(np.linalg.norm(p1 - p0))
+            e1 = float(np.linalg.norm(p2 - p1))
+            e2 = float(np.linalg.norm(p0 - p2))
+            if float(2.0 * area / max(e0, e1, e2, 1e-12)) < SLIVER_MIN_WIDTH:
+                out.add(r)
+        else:
+            if float(areas[ids].sum()) < SLIVER_AREA or _group_min_width(v, f, tm, ids) < SLIVER_MIN_WIDTH:
+                out.add(r)
     return out
 
 def _curved_roots(v, f, tm, find, groups, adj, angles) -> set:
@@ -94,17 +109,27 @@ def _curved_roots(v, f, tm, find, groups, adj, angles) -> set:
                     shallow.setdefault(x, set()).add(y)
     points = {}
 
+    def get_points(r):
+        pts = points.get(r)
+        if pts is None:
+            pts = v[np.unique(f[np.array(groups[r])].ravel())]
+            points[r] = pts
+        return pts
+
     def width_across(r, other):
         # Measure perpendicular to the seam, not along the group's shortest principal axis.
         # A long flat chamfer is narrow across its band, but wide towards the curved corner at its end.
         n, nb = normal_of[r], normal_of[other]
-        across = nb - float(nb @ n) * n
-        length = np.linalg.norm(across)
+        dot_nb_n = nb[0] * n[0] + nb[1] * n[1] + nb[2] * n[2]
+        ax = nb[0] - dot_nb_n * n[0]
+        ay = nb[1] - dot_nb_n * n[1]
+        az = nb[2] - dot_nb_n * n[2]
+        length = (ax * ax + ay * ay + az * az) ** 0.5
         if length < 1e-6:
             return 0.0  # coplanar patches separated by a sliver do not establish curvature
-        if r not in points:
-            points[r] = v[np.unique(f[np.array(groups[r])].ravel())]
-        return float(np.ptp(points[r] @ (across / length)))
+        u = np.array([ax / length, ay / length, az / length])
+        projs = get_points(r) @ u
+        return float(projs.max() - projs.min())
 
     curved = set()
     for r, neighbours in shallow.items():
@@ -114,10 +139,12 @@ def _curved_roots(v, f, tm, find, groups, adj, angles) -> set:
         for n in neighbours:
             if n in sliver:
                 continue
-            wr, wn = width_across(r, n), width_across(n, r)
-            if wr > 0 and wn >= wr * 0.25:
-                similar += 1
-                if similar >= 2:
-                    curved.add(r)
-                    break
+            wr = width_across(r, n)
+            if wr > 0:
+                wn = width_across(n, r)
+                if wn >= wr * 0.25:
+                    similar += 1
+                    if similar >= 2:
+                        curved.add(r)
+                        break
     return curved

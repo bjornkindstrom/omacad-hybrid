@@ -193,11 +193,16 @@ def _planar_edges_from(mesh, manifold) -> list:
 
     tol = 1e-6 * max(1.0, float(np.ptp(v, axis=0).max()))
     areas = tm.area_faces
-    for a_idx, b_idx in adj:
-        if _coplanar(a_idx, b_idx, normals, v, f, areas, tol):
-            ra, rb = find(int(a_idx)), find(int(b_idx))
-            if ra != rb:
-                parent[rb] = ra
+    from omacad import viewport_accel
+    native_roots = viewport_accel.coplanar_roots(v, f, normals, areas, adj, tol)
+    if native_roots is not None:
+        parent = native_roots
+    else:
+        for a_idx, b_idx in adj:
+            if _coplanar(a_idx, b_idx, normals, v, f, areas, tol):
+                ra, rb = find(int(a_idx)), find(int(b_idx))
+                if ra != rb:
+                    parent[rb] = ra
     groups: dict = {}
     for i in range(len(f)):
         groups.setdefault(find(i), []).append(i)
@@ -304,26 +309,31 @@ def _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, plan
         # circular boundary. Snap this boundary graph before checking its degree; otherwise a
         # microscopic spur turns a closed circle into a branched, unpickable contour.
         snap_tol = 1e-5 * max(1.0, float(np.ptp(v, axis=0).max()))
-        representatives = []
-        cleaned, seen = [], set()
+        from omacad import viewport_accel
+        native_cleaned = viewport_accel.snap_and_clean_segments(v, [[s[0], s[1]] for s in segs], snap_tol)
+        if native_cleaned is not None:
+            cleaned = [(int(a), int(b), *segs[orig][2:]) for orig, a, b in native_cleaned]
+        else:
+            representatives = []
+            cleaned, seen = [], set()
 
-        def snap_vertex(index):
-            point = v[index]
-            for candidate in representatives:
-                if np.linalg.norm(v[candidate] - point) <= snap_tol:
-                    return candidate
-            representatives.append(index)
-            return index
+            def snap_vertex(index):
+                point = v[index]
+                for candidate in representatives:
+                    if np.linalg.norm(v[candidate] - point) <= snap_tol:
+                        return candidate
+                representatives.append(index)
+                return index
 
-        for seg in segs:
-            a, b = snap_vertex(seg[0]), snap_vertex(seg[1])
-            if a == b:
-                continue
-            key = (min(a, b), max(a, b))
-            if key in seen:
-                continue
-            seen.add(key)
-            cleaned.append((a, b, *seg[2:]))
+            for seg in segs:
+                a, b = snap_vertex(seg[0]), snap_vertex(seg[1])
+                if a == b:
+                    continue
+                key = (min(a, b), max(a, b))
+                if key in seen:
+                    continue
+                seen.add(key)
+                cleaned.append((a, b, *seg[2:]))
         segs = cleaned
         comp = {}
 

@@ -71,6 +71,7 @@ class PickerMixin:
         self.hover_edge = None
         self.hover_face = self.hover_surface = None
         self.selected_edges = []
+        self.fillet_rail_offset = 0.0
         if cancelled:
             self.edge_pick_cancelled.emit()
         self.update()
@@ -364,7 +365,11 @@ class PickerMixin:
         def flat(edges):
             out = []
             for e in edges:
-                pts = e.polyline()
+                offset_r = getattr(self, "fillet_rail_offset", 0.0)
+                if offset_r > 0.0:
+                    pts = self._offset_edge_polyline(e, offset_r)
+                else:
+                    pts = e.polyline()
                 for i in range(len(pts) - 1):
                     out += [*pts[i], *pts[i + 1]]
             return out
@@ -382,6 +387,30 @@ class PickerMixin:
     def set_step_edges(self, edges):
         self.step_edges = list(edges or [])
         self.update()
+
+    def _offset_edge_polyline(self, edge, offset: float) -> np.ndarray:
+        """Offset the edge highlight line along the bottom / lower boundary of the fillet/chamfer."""
+        if abs(offset) < 1e-4:
+            return edge.polyline()
+        kind = getattr(edge, "kind", "")
+        if kind == "line":
+            d1, d2 = getattr(edge, "d1", None), getattr(edge, "d2", None)
+            if d1 is not None and d2 is not None:
+                # Wall is the direction with the lower Z component (pointing downwards)
+                if d1[2] < d2[2] - 1e-4:
+                    d_wall = d1
+                elif d2[2] < d1[2] - 1e-4:
+                    d_wall = d2
+                else:
+                    d_wall = d1
+                return np.array([edge.p0 + offset * d_wall, edge.p1 + offset * d_wall])
+        elif kind == "circle":
+            wall_dir = -np.asarray(edge.axis) * getattr(edge, "s2", 1.0)
+            return edge.polyline() + offset * wall_dir
+        elif kind == "loop":
+            n = getattr(edge, "n", np.array([0.0, 0.0, 1.0]))
+            return edge.polyline() - offset * n
+        return edge.polyline()
 
     def render_step_edges(self, mvp: np.ndarray):
         """The edges of the Fillet/Chamfer step chosen in the timeline (or open for editing), in dark blue and

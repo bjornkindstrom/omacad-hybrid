@@ -417,11 +417,11 @@ class Document:
                                                operation))
 
     @undoable("Loft")
-    def add_loft(self, profiles, operation: str = "new_body", twist: float = 0.0):
+    def add_loft(self, profiles, operation: str = "new_body", twist: float = 0.0, smooth: bool = False):
         """Loft through profiles [(sketch id, profile index), ...] in that order."""
         sections = [LoftFeature.section_ref(self, sid, idx) for sid, idx in profiles]
         n = len([f for f in self.timeline.features if f.feature_type == "loft"]) + 1
-        return self._add_body_step(LoftFeature(self._feature_id("loft"), f"Loft {n}", sections, operation, twist))
+        return self._add_body_step(LoftFeature(self._feature_id("loft"), f"Loft {n}", sections, operation, twist, smooth=smooth))
 
     @undoable("Sphere")
     def add_sphere(self, radius: float, name: Optional[str] = None, translation: Any = None) -> Body:
@@ -1072,6 +1072,19 @@ class Document:
             self.notify_changed()
         return True
 
+    def set_polygon_sides(self, sketch_id: str, group_id: str, sides: int) -> bool:
+        """Change the number of sides of a regular polygon in a sketch. One undo step."""
+        sketch = self.sketches.get(sketch_id)
+        if not sketch:
+            return False
+        before = sketch.to_dict()
+        if not sketch.set_polygon_sides(group_id, sides):
+            return False
+        if self.record_sketch_change(sketch, before):
+            self.timeline.recompute(self)
+            self.notify_changed()
+        return True
+
     @undoable("Rename object")
     def rename_object(self, object_id: str, name: str):
         if object_id not in self.object_history.objects or not name.strip():
@@ -1121,7 +1134,7 @@ class Document:
                  "wall_thickness"),
         "sweep": ("sketch_id", "profile_idx", "extra_profiles", "path", "operation", "twist"),
         "pipe": ("path", "diameter", "thickness", "operation"),
-        "loft": ("sections", "operation", "twist"),
+        "loft": ("sections", "operation", "twist", "smooth"),
         "extrude": ("sketch_id", "profile_idx", "distance", "direction", "distance2", "start_offset", "operation", "twist"),
         "emboss": ("sketch_id", "profile_idx", "depth", "flip", "dx", "dy", "rotation", "wrap"),
         "revolve": ("sketch_id", "profile_idx", "segments", "operation", "axis", "angle", "direction", "angle2", "extra_profiles"),

@@ -202,9 +202,11 @@ class LoftFeature(Feature):
     """Fusion's Loft: a skin through two or more profiles, in the order they were picked. Each profile is
     remembered as (sketch id, index, signature) and found again when the sketch changes. Inner contours are lofted and subtracted to preserve hollow profiles."""
 
-    def __init__(self, feature_id: str, name: str, sections, operation: str = "new_body", twist: float = 0.0):
+    def __init__(self, feature_id: str, name: str, sections, operation: str = "new_body", twist: float = 0.0,
+                 smooth: bool = False):
         super().__init__(feature_id, "loft", name)
         self.twist = float(twist)
+        self.smooth = bool(smooth)
         self.sections = [(str(s[0]), int(s[1]), tuple(float(x) for x in s[2])) for s in sections]
         self.operation = operation
 
@@ -227,11 +229,11 @@ class LoftFeature(Feature):
             caps.append(np.asarray(prof.exterior_pts, dtype=float))
         if len({len(h) for h in holes}) != 1:
             raise ValueError("All loft profiles must have the same number of holes.")
-        solid = loft_solid(rings, [caps[0], caps[-1]], twist_deg=self.twist)
+        solid = loft_solid(rings, [caps[0], caps[-1]], twist_deg=self.twist, smooth=self.smooth)
         for i in range(len(holes[0])):
             cavity = loft_solid([h[i] for h in holes],
                                 [np.asarray(hole_caps[0][i]), np.asarray(hole_caps[-1][i])],
-                                twist_deg=self.twist)
+                                twist_deg=self.twist, smooth=self.smooth)
             solid = solid - cavity
         return solid if not solid.is_empty() else None
 
@@ -243,4 +245,4 @@ class LoftFeature(Feature):
     def to_dict(self) -> Dict[str, Any]:
         return {"feature_id": self.feature_id, "feature_type": self.feature_type, "name": self.name,
                 "suppressed": self.suppressed, "sections": [[s, i, list(sig)] for s, i, sig in self.sections],
-                "operation": self.operation, "twist": self.twist}
+                "operation": self.operation, "twist": self.twist, "smooth": self.smooth}

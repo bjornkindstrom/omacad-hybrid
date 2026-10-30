@@ -29,11 +29,16 @@ def _face_groups(v, f, tm):
     adj = tm.face_adjacency
     tol = 1e-6 * max(1.0, float(np.ptp(v, axis=0).max()))
     areas = tm.area_faces
-    for a_idx, b_idx in adj:
-        if _coplanar(a_idx, b_idx, normals, v, f, areas, tol):
-            ra, rb = find(int(a_idx)), find(int(b_idx))
-            if ra != rb:
-                parent[rb] = ra
+    from omacad import viewport_accel
+    native_roots = viewport_accel.coplanar_roots(v, f, normals, areas, adj, tol)
+    if native_roots is not None:
+        parent = native_roots
+    else:
+        for a_idx, b_idx in adj:
+            if _coplanar(a_idx, b_idx, normals, v, f, areas, tol):
+                ra, rb = find(int(a_idx)), find(int(b_idx))
+                if ra != rb:
+                    parent[rb] = ra
 
     groups: dict = {}
     for i in range(len(f)):

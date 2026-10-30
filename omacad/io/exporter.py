@@ -508,7 +508,7 @@ class Exporter:
                 doc.timeline.add_feature(feat)
             elif ft == "loft":
                 feat = LoftFeature(fid, fname, f_data["sections"], f_data.get("operation", "new_body"),
-                                 f_data.get("twist", 0.0))
+                                 f_data.get("twist", 0.0), smooth=f_data.get("smooth", False))
                 doc.timeline.add_feature(feat)
             elif ft == "sketch":
                 sk = Sketch.from_dict(f_data["sketch"])

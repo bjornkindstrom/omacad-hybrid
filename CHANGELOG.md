@@ -1,4 +1,10 @@
-# Hybrid experiment — Unreleased — 2026-10-29
+# Hybrid experiment — 0.9.9.80.73
+
+### Features & Fixes
+- **Jar with Lid shoulder thread flap (#134)**: Prevented thread helical lead-in from slicing into or creating sliver flaps at the neck shoulder ($z = 30$). Adjusted `gap = 0.5` and `anchor_gap = 0.5` in `omacad/model/jar.py`, ensuring a clean, unbroken 360° circular boundary at the neck shoulder base while maintaining lid fit.
+- **Fillet interactive guide line (#135)**: Updated `picker_mixin.py` and `round_pattern_prompts.py` so the blue edge highlight (`selected_edges`) follows the bottom rail of the fillet preview (`fillet_rail_offset` offset along the wall vector) rather than remaining stationary on the original edge.
+- **Editable polygon sides in tree and sketch (#136)**: Enabled regular polygon side counts to be edited after finishing a sketch. Exposed `Polygon sides: <n>` in the object browser under the sketch for inline editing (fixed pencil click inline trigger in `browser.py`), added `"🔢 Number of sides…"` to the sketch right-click context menu, and integrated `set_polygon_sides` with full undo/redo and feature recalculation.
+- **Smooth transition option in Loft**: Added an optional smooth tangency transition (`smooth=True/False`, checkbox "Smooth transition / Mjuk övergång" in Loft dialog). Smooth lofts interpolate between cross-sections using a 3D Catmull-Rom spline (or cubic Hermite curves for 2 sections) instead of linear ruled segment surfaces. Fully serialized across `.omacad` projects.
 
 ### Performance
 - Accelerate edge boundary graph snapping and segment cleaning (`snap_and_clean_segments` in `topology.rs` / `faces_edges.py`) natively in Rust. Profiling showed `snap_vertex` in Python took over 70% of edge analysis time on cylinders and curved features; the native pass reduces `_circular_edges` runtime by ~70% (from 14.3s down to 4.1s in repeated runs) while maintaining identical tolerances and deduplication logic.
