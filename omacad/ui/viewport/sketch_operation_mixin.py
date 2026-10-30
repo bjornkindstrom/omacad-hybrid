@@ -27,12 +27,18 @@ class SketchOperationMixin:
         if self._move:
             self._end_move(False)
         self.rotation_panel.hide()
+        if hasattr(self, "scale_panel"):
+            self.scale_panel.hide()
         if getattr(self, "_pattern", None):
             self._pattern_finish(False)     # leaving Pattern without OK puts the sketch back
         self._rotate_drag = None
+        self._scale_drag = None
         self._move_phase = "base" if (tool_name == "MOVE" and self.selected_entities) else "pick"
         if tool_name == "ROTATE" and not self.selected_entities:
             self.status_message.emit("Rotate: select sketch elements first (click, Ctrl+click, or double-click for a whole figure).")
+            tool_name = "NONE"
+        if tool_name == "SCALE" and not self.selected_entities:
+            self.status_message.emit("Scale: select sketch elements first (click, Ctrl+click, or double-click for a whole figure).")
             tool_name = "NONE"
         self.sketch_tool = tool_name
         self.dyn.reset()
@@ -48,6 +54,8 @@ class SketchOperationMixin:
         self.sketch_current_uv = None
         if tool_name == "ROTATE" and not self._rotate_begin():
             self.sketch_tool = tool_name = "NONE"
+        if tool_name == "SCALE" and not self._scale_begin():
+            self.sketch_tool = tool_name = "NONE"
         if tool_name == "PATTERN" and not self._pattern_begin():
             self.sketch_tool = tool_name = "NONE"
         self.sketch_palette.set_tool(tool_name)
@@ -55,6 +63,9 @@ class SketchOperationMixin:
         self.sketch_tool_changed.emit(tool_name)
         if tool_name == "ROTATE":
             self.status_message.emit("Rotate: " + ROTATE_INFO)
+        if tool_name == "SCALE":
+            from omacad.ui.viewport.sketch_scale_mixin import SCALE_INFO
+            self.status_message.emit("Scale: " + SCALE_INFO)
         if tool_name == "MOVE":
             self._move_status()
         if tool_name == "OFFSET":

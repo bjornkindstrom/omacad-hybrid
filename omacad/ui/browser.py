@@ -42,6 +42,7 @@ class BrowserTree(QWidget):
     move_body_requested = Signal(str)
     named_view_requested = Signal(str)
     extrude_sketch_requested = Signal(str)
+    copy_sketch_to_plane_requested = Signal(str)
     offset_plane_requested = Signal(str, str)    # what was right-clicked: ("plane" | "cplane" | "sketch", id)
     find_in_window_requested = Signal(str, str)      # kind ("body"/"sketch"), id
     find_in_timeline_requested = Signal(str, str)
@@ -688,6 +689,7 @@ class BrowserTree(QWidget):
         elif item_type == "sketch":
             add("⬆️ Extrude\tE", lambda: self.extrude_sketch_requested.emit(item_id))
             add("📐 Offset Plane…", lambda: self.offset_plane_requested.emit("sketch", item_id))
+            add("📄 Copy to Plane…", lambda: self.copy_sketch_to_plane_requested.emit(item_id))
             add("✏️ Edit Sketch", lambda: self.edit_sketch_requested.emit(item_id))
             add("📄 Duplicate", lambda: self.doc.duplicate_sketch(item_id))
             sk = self.doc.sketches.get(item_id)

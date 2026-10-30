@@ -515,6 +515,13 @@ class Exporter:
                 doc.sketches[sk.sketch_id] = sk
                 feat = SketchFeature(fid, fname, sk, f_data.get("reference_bodies"))
                 doc.timeline.add_feature(feat)
+            elif ft == "linked_sketch":
+                from omacad.model.features.linked_sketch import LinkedSketchFeature
+                feat = LinkedSketchFeature(
+                    fid, fname, f_data["source_sketch_id"], f_data["target_sketch_id"],
+                    f_data["target_plane_spec"], f_data.get("scale", 1.0)
+                )
+                doc.timeline.add_feature(feat)
             elif ft == "extrude":
                 feat = ExtrudeFeature(
                     fid, fname, f_data["sketch_id"], f_data["profile_idx"], f_data["distance"], f_data["operation"],

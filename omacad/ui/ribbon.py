@@ -404,7 +404,7 @@ class Ribbon(QWidget):
             "line": "btn_line", "polygon": "btn_polygon", "arc": "btn_arc", "spline": "btn_spline", "slot": "btn_slot", "text": "btn_text",
             "offset_sketch": "btn_offset_sk", "mirror_sketch": "btn_mirror_sk", "project": "btn_project_sk",
             "dimension": "btn_dim", "fillet_sketch": "btn_fillet_sk", "trim": "btn_trim_sk", "move_sketch": "btn_move",
-            "rotate_sketch": "btn_rotate_sk", "construction": "btn_construct",
+            "rotate_sketch": "btn_rotate_sk", "scale_sketch": "btn_scale_sk", "construction": "btn_construct",
         }
         h_layout = QHBoxLayout(self.sketch_tab)
         h_layout.setContentsMargins(4, 1, 4, 1)
@@ -568,6 +568,8 @@ class Ribbon(QWidget):
         self.btn_dim.setChecked(tool_name == "DIMENSION")
         self.btn_move.setChecked(tool_name == "MOVE")
         self.btn_rotate_sk.setChecked(tool_name == "ROTATE")
+        if hasattr(self, "btn_scale_sk"):
+            self.btn_scale_sk.setChecked(tool_name == "SCALE")
         self.sketch_tool_selected.emit(tool_name)
 
     def selection_context(self) -> str:
@@ -615,7 +617,8 @@ class Ribbon(QWidget):
                 self.btn_line, self.btn_rect, self.btn_circle, self.btn_arc,
                 self.btn_slot, self.btn_polygon, self.btn_text, self.btn_fillet_sk,
                 self.btn_trim_sk, self.btn_mirror_sk, self.btn_offset_sk,
-                self.btn_dim, self.btn_move, self.btn_rotate_sk,
+                self.btn_dim, self.btn_move, self.btn_rotate_sk, getattr(self, "btn_scale_sk", None),
             ):
-                btn.setChecked(False)
+                if btn is not None:
+                    btn.setChecked(False)
 

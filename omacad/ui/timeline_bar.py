@@ -50,6 +50,7 @@ class FeatureNodeWidget(QFrame):
         "split_body": "🪚",
         "move": "🧭",
         "import_mesh": "📥",
+        "linked_sketch": "📄",
     }
 
     def __init__(self, index: int, feature: Feature, is_active: bool, parent: Optional[QWidget] = None,

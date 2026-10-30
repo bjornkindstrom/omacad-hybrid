@@ -667,6 +667,42 @@ def rotate_point(pt: Tuple[float, float], angle_deg: float, origin: Tuple[float,
     ox, oy = origin
     x, y = pt[0] - ox, pt[1] - oy
     return (ox + x * cos_a - y * sin_a, oy + x * sin_a + y * cos_a)
+def scale_point(pt: Tuple[float, float], scale: float, origin: Tuple[float, float] = (0.0, 0.0)) -> Tuple[float, float]:
+    """Scales a 2D point relative to an origin by scale factor."""
+    ox, oy = origin
+    return (ox + (pt[0] - ox) * scale, oy + (pt[1] - oy) * scale)
+
+
+def scale_entity(ent: "SketchEntity", scale: float, origin: Tuple[float, float] = (0.0, 0.0)) -> None:
+    """Scales an entity in place relative to origin."""
+    s = float(scale)
+    if isinstance(ent, (SketchLine, SketchRect)):
+        ent.p1 = scale_point(ent.p1, s, origin)
+        ent.p2 = scale_point(ent.p2, s, origin)
+    elif isinstance(ent, SketchCenterRect):
+        ent.center = scale_point(ent.center, s, origin)
+        ent.corner = scale_point(ent.corner, s, origin)
+    elif isinstance(ent, SketchCircle):
+        ent.center = scale_point(ent.center, s, origin)
+        ent.radius *= abs(s)
+    elif isinstance(ent, SketchArc):
+        ent.p_start = scale_point(ent.p_start, s, origin)
+        ent.p_mid = scale_point(ent.p_mid, s, origin)
+        ent.p_end = scale_point(ent.p_end, s, origin)
+    elif isinstance(ent, SketchSlot):
+        ent.center1 = scale_point(ent.center1, s, origin)
+        ent.center2 = scale_point(ent.center2, s, origin)
+        ent.radius *= abs(s)
+    elif isinstance(ent, SketchText):
+        ent.anchor = scale_point(ent.anchor, s, origin)
+        ent.height *= abs(s)
+        if getattr(ent, "box", None):
+            ent.box = (ent.box[0] * abs(s), ent.box[1] * abs(s))
+    elif isinstance(ent, SketchSpline):
+        ent.points = [scale_point(p, s, origin) for p in ent.points]
+        ent.tangents = {k: (v[0] * s, v[1] * s) for k, v in ent.tangents.items()}
+
+
 def move_entity(ent: "SketchEntity", du: float, dv: float) -> None:
     """Translates an entity in place."""
     if isinstance(ent, (SketchLine, SketchRect)):

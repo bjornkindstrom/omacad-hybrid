@@ -646,6 +646,38 @@ class Document:
         self.notify_changed()
         return sketch
 
+    @undoable("Copy Sketch to Plane")
+    def add_linked_sketch(self, source_sketch_id: str, target_plane_spec: Any, scale: float = 1.0, name: Optional[str] = None) -> Optional[Sketch]:
+        """Creates an associative / parametric copy of a sketch on another plane with optional scale."""
+        src = self.sketches.get(source_sketch_id)
+        if src is None:
+            return None
+        from omacad.model.features.linked_sketch import LinkedSketchFeature
+        new_id, n = self._sketch_id()
+        feat_id = self._feature_id("linked_sk")
+        feat_name = name or f"{src.name} (linked copy)"
+        feat = LinkedSketchFeature(feat_id, feat_name, source_sketch_id, new_id, target_plane_spec, scale=scale)
+        self.timeline.add_feature(feat)
+        self.timeline.recompute(self)
+        self.notify_changed()
+        return self.sketches.get(new_id)
+
+    @undoable("Scale Sketch")
+    def scale_sketch(self, sketch_id: str, scale: float, pivot=(0.0, 0.0), entity_ids=None) -> bool:
+        """Scales sketch entities and dimensions in place."""
+        sketch = self.sketches.get(sketch_id)
+        if not sketch:
+            return False
+        from omacad.model.sketch_scale import scale_sketch_entities
+        ids = entity_ids if entity_ids is not None else [e.entity_id for e in sketch.entities]
+        before = sketch.to_dict()
+        scale_sketch_entities(sketch, ids, scale, pivot)
+        if self.record_sketch_change(sketch, before):
+            self.timeline.recompute(self)
+            self.notify_changed()
+            return True
+        return False
+
     def edit_sketch(self, sketch_id: str) -> Optional[Sketch]:
         sketch = self.sketches.get(sketch_id)
         if sketch:
@@ -1104,6 +1136,7 @@ class Document:
         "honeycomb": HoneycombFeature.PARAMS,
         "hole": ("points", "hole_type", "diameter", "depth", "through", "cb_diameter", "cb_depth", "cs_diameter", "cs_angle", "tip", "tip_angle", "chamfer", "chamfer_angle", "chamfer_depth"),
         "move": ("target_body_id", "dx", "dy", "dz", "rx", "ry", "rz", "pivot", "from_point", "to_point", "copy_body"),
+        "linked_sketch": ("scale",),
     }
 
     @undoable("Edit Feature")
@@ -1179,8 +1212,9 @@ class Document:
             other = feats[j]
             sketch_refs = [r[0] for r in list(getattr(other, "extra_refs", None) or []) + list(getattr(other, "holes", None) or [])]
             sketch_refs += self._sketches_used_by(other)
-            uses_sketch = (isinstance(feat, SketchFeature)
-                           and feat.sketch.sketch_id in [getattr(other, "sketch_id", None)] + sketch_refs)
+            feat_sketch_id = getattr(feat, "target_sketch_id", None) or (feat.sketch.sketch_id if isinstance(feat, SketchFeature) else None)
+            uses_sketch = (feat_sketch_id is not None
+                           and feat_sketch_id in [getattr(other, "sketch_id", None), getattr(other, "source_sketch_id", None)] + sketch_refs)
             uses_body = (
                 getattr(other, "target_body_id", None) in body_ids
                 or getattr(other, "tool_body_id", None) in body_ids
@@ -1714,6 +1748,8 @@ class Document:
         """The timeline step that made a sketch or body (for "Find in Timeline"), or None."""
         for i, f in enumerate(self.timeline.features):
             if kind == "sketch" and f.feature_type == "sketch" and f.sketch.sketch_id == item_id:
+                return i
+            if kind == "sketch" and f.feature_type == "linked_sketch" and getattr(f, "target_sketch_id", None) == item_id:
                 return i
             if kind == "body" and (f.feature_id == item_id[5:] or getattr(f, "body_id", None) == item_id):
                 return i

@@ -354,6 +354,8 @@ class OverlayMixin:
         self.draw_dyn_fields(painter)  # on top of everything else
         self.draw_smart_circle(painter)
         self._draw_rotation_pivot(painter)
+        if hasattr(self, "_draw_scale_pivot"):
+            self._draw_scale_pivot(painter)
 
         # (no sketch-mode banner: it covered the drawing; the sketch name and its solve status are in the status bar)
 

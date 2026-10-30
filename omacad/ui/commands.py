@@ -119,6 +119,8 @@ _ALL = [
        "MOVE", ("sketch",)),
     _c("rotate_sketch", "Rotate", "↻", "Rotate the selected elements about a centre or a picked point", "Shift+R",
        "sketch_tool_selected", "ROTATE", ("sketch",)),
+    _c("scale_sketch", "Scale", "↗️", "Scale the selected sketch elements up or down around a pivot", "",
+       "sketch_tool_selected", "SCALE", ("sketch",)),
     _c("pattern_sketch", "Pattern", "⁘", "Copies of the selected elements in rows and columns or around a centre",
        "", "sketch_tool_selected", "PATTERN", ("sketch",)),
     _c("construction", "Construction", "┄", "Dashed helper lines (axes for Revolve and Mirror; Extrude ignores them); "
@@ -152,7 +154,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
 SKETCH_GROUPS: List[Tuple[str, list]] = [
     ("CREATE", ["line", "rect", "circle", "arc", "spline", "polygon", "slot", "text", "offset_sketch", "mirror_sketch", "project",
                 "dimension"]),
-    ("MODIFY", ["fillet_sketch", "trim", "move_sketch", "rotate_sketch", "pattern_sketch", "construction", "fix_sketch"]),
+    ("MODIFY", ["fillet_sketch", "trim", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
     ("CONSTRAINTS", ["constraints"]),
     ("INSPECT", ["measure"]),
 ]

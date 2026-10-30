@@ -81,6 +81,7 @@ COMMAND_ICONS = {
     "line": "line", "spline": "spline", "smart_circle": "smart_circle", "pattern_linear": "pattern_linear",
     "pattern_circular": "pattern_circular", "pattern_fill": "pattern_fill", "offset_face": "offset_face",
     "section": "section", "finish_sketch": "finish", "move_sketch": "move", "modify_body": "move",
+    "scale_sketch": "scale",
 }
 
 STUDIO_ICONS = "studio"   # line icons in one colour (the text), blue while the tool is active

@@ -45,7 +45,7 @@ class ObjectHistory:
 
     @staticmethod
     def sketch_inputs(feature):
-        refs = [getattr(feature, 'sketch_id', None)]
+        refs = [getattr(feature, 'sketch_id', None), getattr(feature, 'source_sketch_id', None)]
         for key in ('extra_refs', 'holes', 'extra_profiles', 'sections'):
             for value in getattr(feature, key, None) or []:
                 if isinstance(value, (list, tuple)) and value:
@@ -146,6 +146,8 @@ class ObjectHistory:
             self.dependencies[fid] = list(dict.fromkeys(d for d in deps if d != fid))
             if feat.feature_type == 'sketch':
                 sketches[feat.sketch.sketch_id] = fid
+            elif feat.feature_type == 'linked_sketch':
+                sketches[feat.target_sketch_id] = fid
             tool = bodies.get(getattr(feat, 'tool_body_id', None))
             if (feat.feature_type == 'combine' and not feat.keep_tool and not feat.suppressed
                     and tool in objects and tool != owner and not self._is_ancestor(objects, tool, owner)):

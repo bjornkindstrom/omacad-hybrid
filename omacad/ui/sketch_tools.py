@@ -39,6 +39,7 @@ SKETCH_TOOLS = [
     _entry("TRIM", "trim", "Modify"),
     _entry("MOVE", "move_sketch", "Modify"),
     _entry("ROTATE", "rotate_sketch", "Modify"),
+    _entry("SCALE", "scale_sketch", "Modify"),
 ]
 # tool names the viewport uses that are not menu entries
 NON_MENU_TOOLS = {"NONE"}

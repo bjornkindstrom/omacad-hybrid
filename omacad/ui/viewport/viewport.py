@@ -9,6 +9,7 @@ from omacad.ui.viewport.picker_mixin import PickerMixin
 from omacad.ui.viewport.overlay_mixin import OverlayMixin
 from omacad.ui.viewport.text_mixin import TextToolMixin
 from omacad.ui.viewport.sketch_rotate_mixin import SketchRotateMixin
+from omacad.ui.viewport.sketch_scale_mixin import SketchScaleMixin
 from omacad.ui.viewport.sketch_pattern_mixin import SketchPatternMixin
 from omacad.ui.viewport.point_pick_mixin import PointPickMixin
 from omacad.ui.viewport.events_mixin import ViewportEventsMixin
@@ -70,7 +71,7 @@ from omacad.ui.constraint_help import GUIDE_STEPS
 from omacad.ui import theme
 from omacad.ui.theme import qcolor
 
-class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, ContextMenuMixin, SketchToolsMixin, PointerMixin, ProfileMixin, SketchMoveMixin, SketchDimensionsMixin, SketchOperationMixin, QOpenGLWidget, RenderGLMixin, GizmoMixin, PickerMixin, OverlayMixin, TextToolMixin, SketchRotateMixin,
+class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, ContextMenuMixin, SketchToolsMixin, PointerMixin, ProfileMixin, SketchMoveMixin, SketchDimensionsMixin, SketchOperationMixin, QOpenGLWidget, RenderGLMixin, GizmoMixin, PickerMixin, OverlayMixin, TextToolMixin, SketchRotateMixin, SketchScaleMixin,
                  PointPickMixin, SketchPatternMixin):
     """Modern OpenGL 3D CAD canvas with Fusion 360 look and feel."""
 
@@ -251,6 +252,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         # Floating Sketch Palette
         self.sketch_palette = SketchPalette(self)
         self._init_sketch_rotation()
+        self._init_sketch_scale()
         self._init_tool_panel()
         self._init_sketch_pattern()
         self.sketch_palette.finish_clicked.connect(self.finish_sketch_requested)

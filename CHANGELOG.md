@@ -1,3 +1,36 @@
+# Hybrid experiment — Unreleased — 2026-10-29
+
+### Performance
+- Accelerate edge boundary graph snapping and segment cleaning (`snap_and_clean_segments` in `topology.rs` / `faces_edges.py`) natively in Rust. Profiling showed `snap_vertex` in Python took over 70% of edge analysis time on cylinders and curved features; the native pass reduces `_circular_edges` runtime by ~70% (from 14.3s down to 4.1s in repeated runs) while maintaining identical tolerances and deduplication logic.
+- Optimize curved topology surface classification in `faces_topology.py`: vectorized projection in `width_across` and short-circuited symmetric checks. This cuts the full 360-segment Jar with Lid parametric build time from 51.86s (baseline Omacad) down to 4.05s (over 12x speedup).
+- Extend Rust acceleration beyond viewport ray picking to coplanar triangle grouping and flat-patch shading classification. Batch passes release the GIL while preserving union order, group identities, tolerances and float32/float64 behavior. Keep the Python implementations as fallbacks.
+- Advance the native extension API to version 2; rebuild the extension when updating the Python adapter.
+
+### Verification
+- Pass edge tests, picking tests, native topology unit tests and strict Clippy. Coverage includes fillets, shading normals, circular edge snapping, editable jar history and exact group/render-buffer parity with Python.
+- Compare the actual Omacad and Hybrid checkouts with matching geometry and quality settings. All completed feature cases produce identical mesh hashes, volumes, triangle counts and face/edge counts.
+
+### Preliminary measurements
+Single runs per version and case; these are observations, not established performance guarantees:
+
+| Feature build | Curve setting | Omacad | Hybrid | Observation |
+|---|---:|---:|---:|---|
+| Box, four top-edge fillets, R3 | 720 | 0.058 s | 0.060 s | No clear improvement |
+| Cylinder, top-rim fillet, R3 | 720 | 6.52 s | 4.22 s | About 35% less time |
+| Jar with Lid, default dimensions and full history | 360 | 51.86 s | 3.72 s | Over 13x faster (93% less time) |
+
+### Limitations
+- Completed fillet viewport checks used a 2560 × 1440 physical framebuffer and verified 8× MSAA. Interactive geometry simplification was disabled during feature builds.
+- 360 is the highest preset in the app; 720 is the kernel ceiling used for extra stress testing. Some fillet tools still use fixed 16/24 arc segments, so the global curve setting does not control every fillet arc.
+- A profiled original-Omacad jar stress test at 720 segments did not finish within 600 seconds and was stopped. It is not comparable to the unprofiled build times above.
+- The Hybrid jar build completed, but its subsequent viewport benchmark was interrupted at the user's request. No complete jar viewport comparison or FPS gain is claimed; all benchmark processes were stopped.
+
+# Hybrid experiment — 0.9.9.80.72
+
+- Add parametric associative sketch copy across planes (`LinkedSketchFeature`) with optional scaling. Updating the source sketch automatically updates the copied geometry and solves new profiles.
+- Add independent sketch scaling tool in sketch edit mode (`SketchScalePanel`, ribbon tool, `scale_sketch` command, and support for all sketch entity types).
+- Add icons for the Scale sketch tool across all four icon themes (studio, solid, blueprint, semantic).
+
 # Hybrid experiment — 0.9.9.80.71
 
 - Add a per-user Omacad Hybrid app-menu entry and command that starts the Rust backend.

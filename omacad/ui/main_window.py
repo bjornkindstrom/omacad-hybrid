@@ -249,6 +249,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.viewport.extrude_sketch_requested.connect(self.on_extrude_sketch)
         self.browser.named_view_requested.connect(self.viewport.set_view)
         self.browser.extrude_sketch_requested.connect(self.on_extrude_sketch)
+        self.browser.copy_sketch_to_plane_requested.connect(self.prompt_copy_sketch_to_plane)
         self.browser.offset_plane_requested.connect(self.on_browser_offset_plane)
         self.browser.find_in_window_requested.connect(self.find_in_window)
         self.browser.find_in_timeline_requested.connect(self.find_in_timeline)
@@ -564,6 +565,29 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.doc.notify_changed()
         self.viewport.update()
 
+    def prompt_copy_sketch_to_plane(self, sketch_id: str):
+        """Right-click sketch > Copy to Plane: prompts for target plane then creates linked copy."""
+        sk = self.doc.sketches.get(sketch_id)
+        if not sk:
+            return
+        if self.doc.active_sketch:
+            self.on_finish_sketch()
+
+        def on_plane(plane):
+            try:
+                self.viewport.plane_picked.disconnect(on_plane)
+            except Exception:
+                pass
+            from PySide6.QtWidgets import QInputDialog
+            scale, ok = QInputDialog.getDouble(self, "Copy Sketch to Plane", "Scale factor:", 1.0, 0.001, 1000.0, 3)
+            if ok:
+                self.doc.add_linked_sketch(sketch_id, plane, scale=scale)
+                self.status_label.setText(f"Linked sketch copy created on {plane.name} (scale {scale:g}x).")
+
+        self.viewport.plane_picked.connect(on_plane)
+        self.viewport.begin_plane_pick("sketch")
+        self.status_label.setText("Copy Sketch: click a plane (XY, XZ, YZ, construction plane) or flat face (Esc cancels).")
+
     def on_browser_offset_plane(self, kind: str, item_id: str):
         """Browser > Offset Plane: start from the plane or sketch that was right-clicked (it used to ask for a pick)."""
         if kind == "plane":
@@ -621,7 +645,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         if tool_name == "TEXT":
             self.prompt_text()
             return
-        if tool_name != "ROTATE":
+        if tool_name not in ("ROTATE", "SCALE"):
             self.status_label.setText(f"Sketch Tool: {tool_name}. Click on grid plane to place points.")
 
     def _sync_construction_button(self, val=None):
@@ -651,6 +675,8 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.btn_dim.setChecked(tool_name == "DIMENSION")
         self.ribbon.btn_move.setChecked(tool_name == "MOVE")
         self.ribbon.btn_rotate_sk.setChecked(tool_name == "ROTATE")
+        if hasattr(self.ribbon, "btn_scale_sk"):
+            self.ribbon.btn_scale_sk.setChecked(tool_name == "SCALE")
         if tool_name != "NONE":
             self.status_label.setText(f"Sketch Tool: {tool_name}. Click on grid plane to place points.")
         else:
