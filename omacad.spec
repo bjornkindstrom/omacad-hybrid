@@ -8,6 +8,7 @@ datas = [
 ]
 
 hiddenimports = [
+    '_viewport_native',
     'manifold3d',
     'trimesh',
     'OpenGL',

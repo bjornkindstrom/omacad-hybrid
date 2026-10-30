@@ -30,7 +30,7 @@ jobs:
           pip install PySide6 numpy manifold3d trimesh PyOpenGL Pillow shapely python-solvespace maturin pytest pytest-xdist
       - name: Build native Rust acceleration extension
         run: |
-          maturin develop --manifest-path native/Cargo.toml --release
+          pip install ./native --no-build-isolation
       - name: Run tests
         env:
           QT_QPA_PLATFORM: offscreen
@@ -61,7 +61,7 @@ jobs:
 
       - name: Build native Rust extension for Windows
         run: |
-          maturin develop --manifest-path native/Cargo.toml --release
+          pip install ./native --no-build-isolation
 
       - name: Write the request-for-change token into the build (secret RFC_TOKEN, may be empty)
         shell: bash
