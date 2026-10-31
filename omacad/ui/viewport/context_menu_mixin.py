@@ -1,5 +1,6 @@
 """Viewport context menus and their command dispatch."""
 
+from typing import Optional, List, Dict, Any
 import numpy as np
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtWidgets import QMenu
