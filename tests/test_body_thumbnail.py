@@ -137,6 +137,7 @@ def test_resting_the_mouse_on_the_row_shows_a_big_picture_drawn_once_until_the_b
 def test_big_picture_is_drawn_in_idle_time_after_the_small_ones(monkeypatch):
     doc = Exporter.load_project(DATA)
     browser = BrowserTree(doc)
+    browser.thumbnails.timer.stop()
     (oid,) = doc.object_history.objects
     drawn = []
     real = body_thumbnails.render_thumbnail
