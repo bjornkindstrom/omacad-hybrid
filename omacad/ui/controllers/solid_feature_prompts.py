@@ -57,6 +57,24 @@ class SolidFeaturePromptsMixin:
                 self.viewport.setFocus(Qt.FocusReason.OtherFocusReason)
                 self.status_label.setText("Hole: click to place hole centers on the selected plane. Esc pauses placement.")
 
+        def apply_all_corners():
+            if dlg.plane is None:
+                return
+            # If user hasn't specified chamfer yet, enable a 1.0 mm 45 deg chamfer by default
+            if dlg.spn_chamfer_depth.value() <= 0:
+                dlg.spn_chamfer_depth.setValue(1.0)
+            corner_pts = self.viewport.hole_corner_points(dlg.plane)
+            if not corner_pts:
+                self.status_label.setText("Hole: no square corners detected on this surface.")
+                return
+            points.clear()
+            for pt in corner_pts:
+                points.append(pt)
+            dlg.set_points(points)
+            self.viewport.hole_place_points = [q["origin"] for q in points]
+            refresh_preview()
+            self.status_label.setText(f"Hole: {len(points)} corner holes created with chamfer.")
+
         def point_picked(hit):
             if isinstance(hit, dict):
                 p = np.asarray(hit["origin"], dtype=float)
@@ -114,6 +132,7 @@ class SolidFeaturePromptsMixin:
 
         dlg.pick_requested.connect(pick_plane)
         dlg.place_requested.connect(start_placing)
+        dlg.all_corners_requested.connect(apply_all_corners)
         self._connect_debounced_preview(dlg, refresh_preview, interval_ms=50)
         self.viewport.hole_plane_picked.connect(plane_picked)
         self.viewport.hole_point_picked.connect(point_picked)

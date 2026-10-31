@@ -226,3 +226,34 @@ def test_hole_prompt_does_not_create_sketch(win):
     # We must NOT be in sketch mode!
     assert win.doc.active_sketch is None
     assert win.viewport.hole_place_mode is True
+
+
+def test_hole_in_all_corners_with_chamfer(win):
+    """Clicking 'Holes in all corners' places matching holes in all 4 corners with chamfer enabled."""
+    body = win.doc.add_box(40.0, 30.0, 20.0)
+    win.prompt_hole()
+
+    # Pick top face
+    plane = SketchPlane.from_face([0.0, 0.0, 1.0], [0.0, 0.0, 20.0])
+    win.viewport.hole_plane_picked.emit(plane)
+
+    # Get active dialog from inspector
+    dlg = win.inspector.current_tool_dlg
+    assert dlg is not None
+    assert dlg.btn_all_corners.isEnabled() is True
+
+    # Click the button
+    dlg.btn_all_corners.click()
+
+    # 4 points should now be placed
+    assert len(dlg.points) == 4
+    # Chamfer depth should be set (>= 1.0)
+    assert dlg.spn_chamfer_depth.value() >= 1.0
+
+    # Points should correspond to the 4 corners with offsets
+    xs = [p["origin"][0] for p in dlg.points]
+    ys = [p["origin"][1] for p in dlg.points]
+    assert min(xs) == pytest.approx(5.0)
+    assert max(xs) == pytest.approx(35.0)
+    assert min(ys) == pytest.approx(5.0)
+    assert max(ys) == pytest.approx(25.0)

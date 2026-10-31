@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.82
+
+### Features & Fixes
+- **Hål i alla hörn med fasning (Holes in all corners) (#138)**: Lagt till knappen "Holes in all corners" / "All corners" i Hole-dialogen. När man valt en plan yta placeras automatiskt motsvarande hål i samtliga hörn på ytan med samma kantavstånd som första hålet/valda mått, och aktiverar fasning (`chamfer_depth` 1.0 mm vid 45°) med liveförhandsvisning och fullt stöd vid editering. Test: `test_hole_smart_placement.py`.
+
 # Hybrid experiment — 0.9.9.80.81
 
 ### Features & Fixes

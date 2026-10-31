@@ -87,6 +87,115 @@ class PointPickMixin:
                 out.append((p1, p2, None))
         return out
 
+    def hole_corner_points(self, plane, default_dist1=5.0, default_dist2=5.0):
+        """Compute matching hole placement points at all corners of the planar face."""
+        segs = self._hole_reference_segments(plane)
+        if not segs:
+            return []
+        straight_segs = [s for s in segs if np.hypot(s[1][0] - s[0][0], s[1][1] - s[0][1]) >= 1.0]
+        corners = []
+        for i in range(len(straight_segs)):
+            p1, p2, _ = straight_segs[i]
+            v1 = np.array(p2) - np.array(p1)
+            len1 = np.linalg.norm(v1)
+            if len1 < 1e-4:
+                continue
+            d1 = v1 / len1
+            for j in range(i + 1, len(straight_segs)):
+                p3, p4, _ = straight_segs[j]
+                v2 = np.array(p4) - np.array(p3)
+                len2 = np.linalg.norm(v2)
+                if len2 < 1e-4:
+                    continue
+                d2 = v2 / len2
+                if abs(d1 @ d2) > 0.95:
+                    continue
+                A = np.column_stack([d1, -d2])
+                b = np.array(p3) - np.array(p1)
+                try:
+                    t, s = np.linalg.solve(A, b)
+                    pt_int = np.array(p1) + t * d1
+                    dist1 = min(np.linalg.norm(pt_int - p1), np.linalg.norm(pt_int - p2))
+                    dist2 = min(np.linalg.norm(pt_int - p3), np.linalg.norm(pt_int - p4))
+                    if dist1 < 0.2 and dist2 < 0.2:
+                        far1 = p2 if np.linalg.norm(pt_int - p1) < np.linalg.norm(pt_int - p2) else p1
+                        dir1 = (np.array(far1) - pt_int) / np.linalg.norm(np.array(far1) - pt_int)
+                        far2 = p4 if np.linalg.norm(pt_int - p3) < np.linalg.norm(pt_int - p4) else p3
+                        dir2 = (np.array(far2) - pt_int) / np.linalg.norm(np.array(far2) - pt_int)
+                        if not any(np.linalg.norm(pt_int - c[0]) < 1e-3 for c in corners):
+                            corners.append((pt_int, straight_segs[i], straight_segs[j], dir1, dir2))
+                except Exception:
+                    pass
+
+        if not corners:
+            return []
+
+        # Check existing points or hover for user's desired offsets
+        dx_dist = float(default_dist1)
+        dy_dist = float(default_dist2)
+        pts_placed = getattr(self, "hole_place_points", [])
+        if pts_placed:
+            last = pts_placed[-1]
+            if isinstance(last, dict) and "refs" in last and len(last["refs"]) >= 2:
+                r1 = last["refs"][0]
+                r2 = last["refs"][1]
+                v_seg1 = np.array(r1["p2"]) - np.array(r1["p1"])
+                if abs(v_seg1[0]) >= abs(v_seg1[1]):
+                    dy_dist = float(r1["dist"])
+                    dx_dist = float(r2["dist"])
+                else:
+                    dx_dist = float(r1["dist"])
+                    dy_dist = float(r2["dist"])
+
+        results = []
+        plane_info = {
+            "origin": [float(x) for x in plane.origin],
+            "normal": [float(x) for x in plane.normal],
+            "u_axis": [float(x) for x in getattr(plane, "u_axis", [1, 0, 0])],
+            "v_axis": [float(x) for x in getattr(plane, "v_axis", [0, 1, 0])],
+        }
+
+        for c, s1, s2, dir1, dir2 in corners:
+            if abs(dir1[0]) >= abs(dir1[1]):
+                dist_s1 = dy_dist
+                dist_s2 = dx_dist
+            else:
+                dist_s1 = dx_dist
+                dist_s2 = dy_dist
+
+            n1 = np.array([-dir1[1], dir1[0]])
+            if n1 @ dir2 < 0:
+                n1 = -n1
+            n2 = np.array([-dir2[1], dir2[0]])
+            if n2 @ dir1 < 0:
+                n2 = -n2
+
+            A = np.vstack([n1, n2])
+            b = np.array([c @ n1 + dist_s1, c @ n2 + dist_s2])
+            try:
+                final_uv = np.linalg.solve(A, b)
+                if hasattr(plane, "uv_to_world"):
+                    w = plane.uv_to_world(float(final_uv[0]), float(final_uv[1]))
+                else:
+                    w = (np.asarray(plane.origin, dtype=float) + np.asarray(plane.u_axis, dtype=float) * float(final_uv[0])
+                         + np.asarray(plane.v_axis, dtype=float) * float(final_uv[1]))
+                final_world = np.asarray(w, dtype=float).tolist()
+                refs = [
+                    {"p1": [float(s1[0][0]), float(s1[0][1])], "p2": [float(s1[1][0]), float(s1[1][1])], "dist": float(dist_s1), "expr": None},
+                    {"p1": [float(s2[0][0]), float(s2[0][1])], "p2": [float(s2[1][0]), float(s2[1][1])], "dist": float(dist_s2), "expr": None},
+                ]
+                results.append({
+                    "origin": final_world,
+                    "normal": [float(x) for x in plane.normal],
+                    "plane": plane_info,
+                    "refs": refs,
+                    "final_uv": (float(final_uv[0]), float(final_uv[1])),
+                })
+            except Exception:
+                pass
+
+        return results
+
     def _hole_place_at(self, x, y):
         proj, view, _ = self.get_matrices()
         origin, direction = ray_from_screen(x, y, self.width(), self.height(), view, proj)

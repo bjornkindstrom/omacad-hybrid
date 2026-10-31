@@ -479,6 +479,21 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             dlg.set_placing(True)
             vp.setFocus(Qt.FocusReason.OtherFocusReason)
 
+        def apply_all_corners():
+            if plane is None:
+                return
+            if dlg.spn_chamfer_depth.value() <= 0:
+                dlg.spn_chamfer_depth.setValue(1.0)
+            corner_pts = vp.hole_corner_points(plane)
+            if not corner_pts:
+                return
+            points.clear()
+            for pt in corner_pts:
+                points.append(pt)
+            dlg.set_points(points)
+            vp.hole_place_points = [q["origin"] for q in points]
+            preview_hole()
+
         def place_points():
             if plane is not None:
                 vp.begin_hole_place(plane, [p["origin"] for p in points])
@@ -521,6 +536,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         accepted = _exec_with_preview(win, doc, dlg, preview_hole, target_ids,
                                       wiring=((dlg.pick_requested, pick_hole_plane),
                                               (dlg.place_requested, place_points),
+                                              (dlg.all_corners_requested, apply_all_corners),
                                               (vp.hole_plane_picked, plane_picked),
                                               (vp.hole_point_picked, point_picked)))
         if vp.plane_pick_mode and vp.plane_pick_purpose == "hole_plane":

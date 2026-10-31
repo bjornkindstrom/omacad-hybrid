@@ -11,6 +11,7 @@ class HoleDialog(BaseFeatureDialog):
     changed = Signal()
     pick_requested = Signal()
     place_requested = Signal()
+    all_corners_requested = Signal()
 
     def __init__(self, parent=None, values=None, editing=False, embedded=False):
         super().__init__("Hole", parent, embedded)
@@ -26,6 +27,11 @@ class HoleDialog(BaseFeatureDialog):
         self.btn_place.clicked.connect(self.place_requested.emit)
         self.btn_place.setEnabled(False)
         self._row(form, "Place centers", "🎯", self.btn_place)
+        self.btn_all_corners = QPushButton("Holes in all corners")
+        self.btn_all_corners.setToolTip("Place matching holes at all corners of the surface with chamfer")
+        self.btn_all_corners.clicked.connect(self.all_corners_requested.emit)
+        self.btn_all_corners.setEnabled(False)
+        self._row(form, "All corners", "🔳", self.btn_all_corners)
         self._row(form, "Placed points", "🔵", self.lbl_points)
         self.cmb_type = QComboBox()
         self.cmb_type.addItem(tool_icon("🕳️", 18), "Simple", "simple")
@@ -120,6 +126,7 @@ class HoleDialog(BaseFeatureDialog):
     def set_plane(self, plane):
         self.plane = plane
         self.btn_place.setEnabled(plane is not None)
+        self.btn_all_corners.setEnabled(plane is not None)
         if plane is not None:
             self.lbl_points.setText(f"Plane: {plane.name}; {len(self.points)} point(s) selected")
 
