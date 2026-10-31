@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.79
+
+### Features & Fixes
+- **Hole öppnar inte skissläge vid val av yta (#138)**: När man startar Hole och klickar på en yta eller ett plan skapades tidigare oavsiktligt en ny skiss (`on_plane_picked`) eftersom signalen `plane_picked` delades med "Create Sketch". `hole_plane` har nu en dedikerad signal `hole_plane_picked` och startar direkt med val av yta och placering av hålpunkter utan att användaren någonsin hamnar i skissläge eller behöver trycka på "Finish Sketch".
+
 # Hybrid experiment — 0.9.9.80.78
 
 ### Features & Fixes

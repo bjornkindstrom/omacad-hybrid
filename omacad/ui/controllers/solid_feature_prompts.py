@@ -98,7 +98,7 @@ class SolidFeaturePromptsMixin:
             if self.viewport.plane_pick_mode and self.viewport.plane_pick_purpose == "hole_plane":
                 self.viewport.end_plane_pick()
             self.viewport.end_hole_place()
-            self.viewport.plane_picked.disconnect(plane_picked)
+            self.viewport.hole_plane_picked.disconnect(plane_picked)
             self.viewport.hole_point_picked.disconnect(point_picked)
             self.viewport.set_display_override(None)
             self.viewport.clear_hole_place()
@@ -115,9 +115,10 @@ class SolidFeaturePromptsMixin:
         dlg.pick_requested.connect(pick_plane)
         dlg.place_requested.connect(start_placing)
         self._connect_debounced_preview(dlg, refresh_preview, interval_ms=50)
-        self.viewport.plane_picked.connect(plane_picked)
+        self.viewport.hole_plane_picked.connect(plane_picked)
         self.viewport.hole_point_picked.connect(point_picked)
         dlg.finished.connect(finished)
+        pick_plane()
 
     @leaves_sketch
     def prompt_extrude(self, default_distance=None):

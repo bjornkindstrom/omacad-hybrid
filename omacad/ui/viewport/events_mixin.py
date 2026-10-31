@@ -557,6 +557,8 @@ class ViewportEventsMixin:
                     self.target_plane_picked.emit(plane)
                 elif purpose == "primitive_face":
                     self.primitive_face_picked.emit(plane)
+                elif purpose == "hole_plane":
+                    self.hole_plane_picked.emit(plane)
                 elif purpose == "shell_face":
                     self.shell_face_picked.emit(plane)
                 elif purpose == "move_body":

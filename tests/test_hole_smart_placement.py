@@ -207,3 +207,22 @@ def test_hole_preview_moves_with_typed_dimensions_and_badge_focus(win):
 
     # Focus should have shifted to that badge index
     assert vp.hole_dyn_focus == idx
+
+
+def test_hole_prompt_does_not_create_sketch(win):
+    """Picking a face for Hole must not enter sketch mode (no Finish Sketch required)."""
+    body = win.doc.add_box(40.0, 30.0, 20.0)
+    win.prompt_hole()
+
+    # There should be an active hole dialog and viewport should be picking hole_plane
+    assert win.viewport.plane_pick_mode is True
+    assert win.viewport.plane_pick_purpose == "hole_plane"
+    assert win.doc.active_sketch is None
+
+    # Simulate picking the top face
+    plane = SketchPlane.from_face([0.0, 0.0, 1.0], [0.0, 0.0, 20.0])
+    win.viewport.hole_plane_picked.emit(plane)
+
+    # We must NOT be in sketch mode!
+    assert win.doc.active_sketch is None
+    assert win.viewport.hole_place_mode is True

@@ -92,6 +92,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     surface_picked = Signal(object)       # dict(point, patch) of any body surface (planar or curved)
     target_plane_picked = Signal(object)  # plane chosen as an extrude target (distance to face)
     primitive_face_picked = Signal(object)  # plane chosen as origin/face for box or cylinder
+    hole_plane_picked = Signal(object)      # plane chosen for hole placement
     cylinder_picked = Signal(object)        # dict with cylinder parameters (radius, length, axis, origin, is_internal)
     shell_face_picked = Signal(object)   # plane/face chosen for hollow shell open face
     move_body_picked = Signal(object)    # plane/face chosen for move body selection

@@ -521,7 +521,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         accepted = _exec_with_preview(win, doc, dlg, preview_hole, target_ids,
                                       wiring=((dlg.pick_requested, pick_hole_plane),
                                               (dlg.place_requested, place_points),
-                                              (vp.plane_picked, plane_picked),
+                                              (vp.hole_plane_picked, plane_picked),
                                               (vp.hole_point_picked, point_picked)))
         if vp.plane_pick_mode and vp.plane_pick_purpose == "hole_plane":
             vp.end_plane_pick()
