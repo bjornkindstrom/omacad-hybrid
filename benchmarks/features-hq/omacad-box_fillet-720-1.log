@@ -1,0 +1,23 @@
+Applying box_fillet R=3mm at 720 segments
+{"case": "box_fillet", "operation_seconds": 0.05844724300550297, "triangles": 204, "render_mesh_update_seconds": 0.04150158999254927}
+{"case": "box_fillet", "active_msaa": 8, "format_samples": 0, "framebuffer_pixels": [2560, 1440], "hover_cpu": {"median_ms": 0.346414, "p95_ms": 0.7440947999999998, "samples": 58}, "hover_plus_frame": {"median_ms": 11.265266, "p95_ms": 23.44561325, "samples": 20}, "orbit_frame": {"median_ms": 10.526587, "p95_ms": 10.88382655, "samples": 20}}
+nanobind: leaked 2 instances!
+ - leaked instance 0x7f943d247798 of type "manifold3d.Manifold"
+ - leaked instance 0x7f943d4b30a8 of type "manifold3d.Mesh64"
+nanobind: leaked 2 types!
+ - leaked type "manifold3d.Manifold"
+ - leaked type "manifold3d.Mesh64"
+nanobind: leaked 76 functions!
+ - leaked function "__xor__"
+ - leaked function "calculate_normals"
+ - leaked function "__init__"
+ - leaked function "split"
+ - leaked function "refine"
+ - leaked function "slice"
+ - leaked function "volume"
+ - leaked function ""
+ - leaked function "set_tolerance"
+ - leaked function ""
+ - ... skipped remainder
+nanobind: this is likely caused by a reference counting issue in the binding code.
+See https://nanobind.readthedocs.io/en/latest/refleaks.html

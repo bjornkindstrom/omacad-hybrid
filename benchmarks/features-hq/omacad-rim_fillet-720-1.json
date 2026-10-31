@@ -1,0 +1,382 @@
+{
+  "root": "/home/kindstrom/Work/omacad",
+  "revision": "fdf4331b00d014521de916ce65bb2863d06ee444",
+  "version": "0.9.9.80.69",
+  "case": "rim_fillet",
+  "segments": 720,
+  "interactive_simplification": false,
+  "profiled": false,
+  "base_build_seconds": 2.266676715022186,
+  "operation_seconds": 6.5212113249872345,
+  "render_mesh_updates": [
+    {
+      "body": "Cylinder 1",
+      "seconds": 2.255918812006712
+    },
+    {
+      "body": "Cylinder 1",
+      "seconds": 6.451314119010931
+    }
+  ],
+  "render_mesh_update_seconds": 8.707232931017643,
+  "quality_after_build": 720,
+  "bodies": [
+    {
+      "id": "body_cylinder_1",
+      "name": "Cylinder 1",
+      "volume": 50029.67103661546,
+      "triangles": 37436,
+      "faces": 2,
+      "edges": 1,
+      "mesh_sha256": "206afe1760fbeb7f0cc21ead490871963b7705d18d35cc8f22f8546d3a3fdc59"
+    }
+  ],
+  "triangles": 37436,
+  "requested_msaa": 8,
+  "active_msaa": 8,
+  "gpu": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+  "framebuffer_pixels": [
+    2560,
+    1440
+  ],
+  "format_samples": 0,
+  "body_pick": {
+    "median_ms": 0.221467,
+    "p95_ms": 9.8952895,
+    "samples": 51
+  },
+  "body_hits": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    "body_cylinder_1",
+    "body_cylinder_1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    "body_cylinder_1",
+    "body_cylinder_1",
+    null,
+    "body_cylinder_1",
+    null,
+    null,
+    null,
+    null,
+    "body_cylinder_1",
+    null,
+    null,
+    null,
+    null,
+    "body_cylinder_1",
+    "body_cylinder_1",
+    null,
+    "body_cylinder_1",
+    null,
+    null,
+    null,
+    null,
+    "body_cylinder_1",
+    null,
+    null,
+    null,
+    null,
+    "body_cylinder_1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "body_cylinder_1",
+    null,
+    "body_cylinder_1",
+    null,
+    "body_cylinder_1"
+  ],
+  "hover_cpu": {
+    "median_ms": 0.540225,
+    "p95_ms": 10.5907015,
+    "samples": 51
+  },
+  "hover_hits": [
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      [
+        "body_cylinder_1",
+        1
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      "circle",
+      null
+    ],
+    [
+      [
+        "body_cylinder_1",
+        1
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_cylinder_1",
+        1
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_cylinder_1"
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      "circle",
+      null
+    ]
+  ],
+  "hover_plus_frame": {
+    "median_ms": 27.326481,
+    "p95_ms": 35.8246287,
+    "samples": 20
+  },
+  "orbit_frame": {
+    "median_ms": 26.1122855,
+    "p95_ms": 30.2082308,
+    "samples": 20
+  }
+}

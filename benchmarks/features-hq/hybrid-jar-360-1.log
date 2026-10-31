@@ -1,0 +1,20 @@
+Building full Jar with Lid at 360 segments
+Render/topology: Jar: 0.58s
+Render/topology: Neck: 0.58s
+Render/topology: Jar: 1.64s
+Render/topology: Jar: 4.91s
+Render/topology: Jar: 6.02s
+Render/topology: Jar: 5.54s
+Render/topology: Lid: 0.59s
+Render/topology: Lid: 5.08s
+Render/topology: Lid bore: 0.58s
+Render/topology: Lid: 3.07s
+Render/topology: Lid: 3.46s
+Render/topology: Thread chamfer: 0.59s
+Render/topology: Thread chamfer cone: 0.58s
+Render/topology: Thread chamfer: 2.08s
+Render/topology: Jar: 4.83s
+Render/topology: Lid mouth chamfer: 0.57s
+Render/topology: Lid: 2.95s
+Render/topology: Lid: 2.96s
+{"case": "jar", "operation_seconds": 50.339444235985866, "triangles": 51432, "render_mesh_update_seconds": 46.63755344206584}

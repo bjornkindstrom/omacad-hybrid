@@ -1,0 +1,49 @@
+Building full Jar with Lid at 360 segments
+Render/topology: Jar: 0.68s
+Render/topology: Neck: 0.72s
+Render/topology: Jar: 2.02s
+Render/topology: Jar: 5.98s
+Render/topology: Jar: 7.33s
+Render/topology: Jar: 6.82s
+Render/topology: Lid: 0.65s
+Render/topology: Lid: 6.27s
+Render/topology: Lid bore: 0.67s
+Render/topology: Lid: 3.98s
+Render/topology: Lid: 4.41s
+Render/topology: Thread chamfer: 0.62s
+Render/topology: Thread chamfer cone: 0.70s
+Render/topology: Thread chamfer: 2.51s
+Render/topology: Jar: 6.01s
+Render/topology: Lid mouth chamfer: 0.70s
+Render/topology: Lid: 3.88s
+Render/topology: Lid: 3.20s
+{"case": "jar", "operation_seconds": 61.6211843409983, "triangles": 51432, "render_mesh_update_seconds": 57.20906444097636}
+{"case": "jar", "active_msaa": 8, "format_samples": 0, "framebuffer_pixels": [2560, 1440], "hover_cpu": {"median_ms": 0.9359815, "p95_ms": 3.3499454999999996, "samples": 74}, "hover_plus_frame": {"median_ms": 14.0030195, "p95_ms": 18.4379326, "samples": 20}, "orbit_frame": {"median_ms": 14.0712545, "p95_ms": 14.3596164, "samples": 20}}
+nanobind: leaked 10 instances!
+ - leaked instance 0x7fac8437f9a8 of type "manifold3d.Mesh64"
+ - leaked instance 0x7fac45a180e8 of type "manifold3d.Manifold"
+ - leaked instance 0x7fac84103fb8 of type "manifold3d.Manifold"
+ - leaked instance 0x7fac840e0168 of type "manifold3d.Mesh64"
+ - leaked instance 0x7fac8437ed48 of type "manifold3d.Mesh64"
+ - leaked instance 0x7fac8040e898 of type "manifold3d.Manifold"
+ - leaked instance 0x7fac45ae3608 of type "manifold3d.Manifold"
+ - leaked instance 0x7fac840e1128 of type "manifold3d.Mesh64"
+ - leaked instance 0x7fac840e1a28 of type "manifold3d.Mesh64"
+ - leaked instance 0x7fac803ac408 of type "manifold3d.Manifold"
+nanobind: leaked 2 types!
+ - leaked type "manifold3d.Manifold"
+ - leaked type "manifold3d.Mesh64"
+nanobind: leaked 76 functions!
+ - leaked function ""
+ - leaked function "reserve_ids"
+ - leaked function "num_edge"
+ - leaked function "extrude"
+ - leaked function "refine"
+ - leaked function "num_vert"
+ - leaked function "smooth"
+ - leaked function "has_normals"
+ - leaked function "__xor__"
+ - leaked function "calculate_curvature"
+ - ... skipped remainder
+nanobind: this is likely caused by a reference counting issue in the binding code.
+See https://nanobind.readthedocs.io/en/latest/refleaks.html

@@ -1,0 +1,2304 @@
+[
+  {
+    "root": "/home/kindstrom/Work/omacad",
+    "revision": "fdf4331b00d014521de916ce65bb2863d06ee444",
+    "version": "0.9.9.80.69",
+    "case": "box_fillet",
+    "segments": 720,
+    "interactive_simplification": false,
+    "profiled": false,
+    "base_build_seconds": 0.024010824010474607,
+    "operation_seconds": 0.05844724300550297,
+    "render_mesh_updates": [
+      {
+        "body": "Box 1",
+        "seconds": 0.007175520004238933
+      },
+      {
+        "body": "Box 1",
+        "seconds": 0.03432606998831034
+      }
+    ],
+    "render_mesh_update_seconds": 0.04150158999254927,
+    "quality_after_build": 720,
+    "bodies": [
+      {
+        "id": "body_box_1",
+        "name": "Box 1",
+        "volume": 47623.10560167222,
+        "triangles": 204,
+        "faces": 6,
+        "edges": 8,
+        "mesh_sha256": "5d5b13b47e2b23607d5b07033445d8a48e2994d6e51016ab0ce4bcda2723093e"
+      }
+    ],
+    "triangles": 204,
+    "requested_msaa": 8,
+    "active_msaa": 8,
+    "gpu": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+    "framebuffer_pixels": [
+      2560,
+      1440
+    ],
+    "format_samples": 0,
+    "body_pick": {
+      "median_ms": 0.091807,
+      "p95_ms": 0.35767639999999995,
+      "samples": 58
+    },
+    "body_hits": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      "body_box_1",
+      "body_box_1",
+      null,
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      null,
+      "body_box_1",
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      "body_box_1",
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      null,
+      null
+    ],
+    "hover_cpu": {
+      "median_ms": 0.346414,
+      "p95_ms": 0.7440947999999998,
+      "samples": 58
+    },
+    "hover_hits": [
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_box_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ]
+    ],
+    "hover_plus_frame": {
+      "median_ms": 11.265266,
+      "p95_ms": 23.44561325,
+      "samples": 20
+    },
+    "orbit_frame": {
+      "median_ms": 10.526587,
+      "p95_ms": 10.88382655,
+      "samples": 20
+    },
+    "status": "completed",
+    "label": "omacad",
+    "round": 1
+  },
+  {
+    "root": "/home/kindstrom/Work/omacad-hybrid",
+    "revision": "9cd3697f98a2b2d7ac3bbece69822a3a01427139",
+    "version": "0.9.9.80.71",
+    "case": "box_fillet",
+    "segments": 720,
+    "interactive_simplification": false,
+    "profiled": false,
+    "base_build_seconds": 0.02534828899661079,
+    "operation_seconds": 0.05960724098258652,
+    "render_mesh_updates": [
+      {
+        "body": "Box 1",
+        "seconds": 0.007113220985047519
+      },
+      {
+        "body": "Box 1",
+        "seconds": 0.034111238026525825
+      }
+    ],
+    "render_mesh_update_seconds": 0.041224459011573344,
+    "quality_after_build": 720,
+    "bodies": [
+      {
+        "id": "body_box_1",
+        "name": "Box 1",
+        "volume": 47623.10560167222,
+        "triangles": 204,
+        "faces": 6,
+        "edges": 8,
+        "mesh_sha256": "5d5b13b47e2b23607d5b07033445d8a48e2994d6e51016ab0ce4bcda2723093e"
+      }
+    ],
+    "triangles": 204,
+    "requested_msaa": 8,
+    "active_msaa": 8,
+    "gpu": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+    "framebuffer_pixels": [
+      2560,
+      1440
+    ],
+    "format_samples": 0,
+    "body_pick": {
+      "median_ms": 0.081959,
+      "p95_ms": 0.12697194999999997,
+      "samples": 58
+    },
+    "body_hits": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      "body_box_1",
+      "body_box_1",
+      null,
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      null,
+      "body_box_1",
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      "body_box_1",
+      "body_box_1",
+      "body_box_1",
+      null,
+      "body_box_1",
+      null,
+      null,
+      null
+    ],
+    "hover_cpu": {
+      "median_ms": 0.329268,
+      "p95_ms": 0.6963305499999999,
+      "samples": 58
+    },
+    "hover_hits": [
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_box_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          0
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        [
+          "body_box_1",
+          5
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ]
+    ],
+    "hover_plus_frame": {
+      "median_ms": 23.4367255,
+      "p95_ms": 25.600392550000002,
+      "samples": 20
+    },
+    "orbit_frame": {
+      "median_ms": 23.1041755,
+      "p95_ms": 28.6596305,
+      "samples": 20
+    },
+    "status": "completed",
+    "label": "hybrid",
+    "round": 1
+  },
+  {
+    "root": "/home/kindstrom/Work/omacad",
+    "revision": "fdf4331b00d014521de916ce65bb2863d06ee444",
+    "version": "0.9.9.80.69",
+    "case": "rim_fillet",
+    "segments": 720,
+    "interactive_simplification": false,
+    "profiled": false,
+    "base_build_seconds": 2.266676715022186,
+    "operation_seconds": 6.5212113249872345,
+    "render_mesh_updates": [
+      {
+        "body": "Cylinder 1",
+        "seconds": 2.255918812006712
+      },
+      {
+        "body": "Cylinder 1",
+        "seconds": 6.451314119010931
+      }
+    ],
+    "render_mesh_update_seconds": 8.707232931017643,
+    "quality_after_build": 720,
+    "bodies": [
+      {
+        "id": "body_cylinder_1",
+        "name": "Cylinder 1",
+        "volume": 50029.67103661546,
+        "triangles": 37436,
+        "faces": 2,
+        "edges": 1,
+        "mesh_sha256": "206afe1760fbeb7f0cc21ead490871963b7705d18d35cc8f22f8546d3a3fdc59"
+      }
+    ],
+    "triangles": 37436,
+    "requested_msaa": 8,
+    "active_msaa": 8,
+    "gpu": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+    "framebuffer_pixels": [
+      2560,
+      1440
+    ],
+    "format_samples": 0,
+    "body_pick": {
+      "median_ms": 0.221467,
+      "p95_ms": 9.8952895,
+      "samples": 51
+    },
+    "body_hits": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1"
+    ],
+    "hover_cpu": {
+      "median_ms": 0.540225,
+      "p95_ms": 10.5907015,
+      "samples": 51
+    },
+    "hover_hits": [
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        [
+          "body_cylinder_1",
+          1
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "circle",
+        null
+      ],
+      [
+        [
+          "body_cylinder_1",
+          1
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_cylinder_1",
+          1
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "circle",
+        null
+      ]
+    ],
+    "hover_plus_frame": {
+      "median_ms": 27.326481,
+      "p95_ms": 35.8246287,
+      "samples": 20
+    },
+    "orbit_frame": {
+      "median_ms": 26.1122855,
+      "p95_ms": 30.2082308,
+      "samples": 20
+    },
+    "status": "completed",
+    "label": "omacad",
+    "round": 1
+  },
+  {
+    "root": "/home/kindstrom/Work/omacad-hybrid",
+    "revision": "9cd3697f98a2b2d7ac3bbece69822a3a01427139",
+    "version": "0.9.9.80.71",
+    "case": "rim_fillet",
+    "segments": 720,
+    "interactive_simplification": false,
+    "profiled": false,
+    "base_build_seconds": 2.4624015600129496,
+    "operation_seconds": 6.105452242016327,
+    "render_mesh_updates": [
+      {
+        "body": "Cylinder 1",
+        "seconds": 2.4460410389874596
+      },
+      {
+        "body": "Cylinder 1",
+        "seconds": 6.0337191129801795
+      }
+    ],
+    "render_mesh_update_seconds": 8.479760151967639,
+    "quality_after_build": 720,
+    "bodies": [
+      {
+        "id": "body_cylinder_1",
+        "name": "Cylinder 1",
+        "volume": 50029.67103661546,
+        "triangles": 37436,
+        "faces": 2,
+        "edges": 1,
+        "mesh_sha256": "206afe1760fbeb7f0cc21ead490871963b7705d18d35cc8f22f8546d3a3fdc59"
+      }
+    ],
+    "triangles": 37436,
+    "requested_msaa": 8,
+    "active_msaa": 8,
+    "gpu": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+    "framebuffer_pixels": [
+      2560,
+      1440
+    ],
+    "format_samples": 0,
+    "body_pick": {
+      "median_ms": 0.076896,
+      "p95_ms": 0.10266700000000001,
+      "samples": 51
+    },
+    "body_hits": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1"
+    ],
+    "hover_cpu": {
+      "median_ms": 0.325811,
+      "p95_ms": 1.276145,
+      "samples": 51
+    },
+    "hover_hits": [
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        [
+          "body_cylinder_1",
+          1
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "circle",
+        null
+      ],
+      [
+        [
+          "body_cylinder_1",
+          1
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        [
+          "body_cylinder_1",
+          1
+        ],
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "circle",
+        null
+      ]
+    ],
+    "hover_plus_frame": {
+      "median_ms": 24.4655965,
+      "p95_ms": 28.36445605,
+      "samples": 20
+    },
+    "orbit_frame": {
+      "median_ms": 23.202617,
+      "p95_ms": 29.1349789,
+      "samples": 20
+    },
+    "status": "completed",
+    "label": "hybrid",
+    "round": 1
+  },
+  {
+    "root": "/home/kindstrom/Work/omacad",
+    "revision": "fdf4331b00d014521de916ce65bb2863d06ee444",
+    "version": "0.9.9.80.69",
+    "case": "jar",
+    "segments": 360,
+    "interactive_simplification": false,
+    "profiled": false,
+    "spec": {
+      "diameter": 40.0,
+      "height": 40.0,
+      "wall": 2.0,
+      "inside_chamfer": 4.0,
+      "neck_diameter": 32.0,
+      "neck_height": 10.0,
+      "pitch": 4.0,
+      "profile": "trapezoidal_45",
+      "tolerance": -0.2,
+      "thread_chamfer": 1.0,
+      "lid_top": 2.0,
+      "lid_beside": true
+    },
+    "operation_seconds": 61.6211843409983,
+    "render_mesh_updates": [
+      {
+        "body": "Jar",
+        "seconds": 0.6833679870178457
+      },
+      {
+        "body": "Neck",
+        "seconds": 0.7163257219945081
+      },
+      {
+        "body": "Jar",
+        "seconds": 2.0214679519995116
+      },
+      {
+        "body": "Jar",
+        "seconds": 0.01193473199964501
+      },
+      {
+        "body": "Neck",
+        "seconds": 0.012297348992433399
+      },
+      {
+        "body": "Jar",
+        "seconds": 0.03740412701154128
+      },
+      {
+        "body": "Jar",
+        "seconds": 5.9823095239989925
+      },
+      {
+        "body": "Jar",
+        "seconds": 7.3304800820187666
+      },
+      {
+        "body": "Jar",
+        "seconds": 6.820875546982279
+      },
+      {
+        "body": "Lid",
+        "seconds": 0.6514319649722893
+      },
+      {
+        "body": "Lid",
+        "seconds": 6.274115031003021
+      },
+      {
+        "body": "Lid bore",
+        "seconds": 0.6696365819952916
+      },
+      {
+        "body": "Lid",
+        "seconds": 3.979364250000799
+      },
+      {
+        "body": "Lid",
+        "seconds": 4.410290403990075
+      },
+      {
+        "body": "Thread chamfer",
+        "seconds": 0.6155576480086893
+      },
+      {
+        "body": "Thread chamfer cone",
+        "seconds": 0.6975328999978956
+      },
+      {
+        "body": "Thread chamfer",
+        "seconds": 2.5064029920031317
+      },
+      {
+        "body": "Jar",
+        "seconds": 6.010150812013308
+      },
+      {
+        "body": "Lid mouth chamfer",
+        "seconds": 0.6982562489865813
+      },
+      {
+        "body": "Lid",
+        "seconds": 3.8792299889901187
+      },
+      {
+        "body": "Lid",
+        "seconds": 3.2006325969996396
+      }
+    ],
+    "render_mesh_update_seconds": 57.20906444097636,
+    "quality_after_build": 360,
+    "bodies": [
+      {
+        "id": "body_cylinder_1",
+        "name": "Jar",
+        "volume": 16238.21561287711,
+        "triangles": 30098,
+        "faces": 135,
+        "edges": 98,
+        "mesh_sha256": "8008c0e56e73f519e91e5b6d68db5d2cb54aebb16a7fcc0f25978eaa53a84a42"
+      },
+      {
+        "id": "body_cylinder_7",
+        "name": "Lid",
+        "volume": 6171.779304944283,
+        "triangles": 21334,
+        "faces": 27,
+        "edges": 30,
+        "mesh_sha256": "14801887be96f0c3abcc7a66646b44da9bc0df5fd6421233379a96631b6b868a"
+      }
+    ],
+    "triangles": 51432,
+    "requested_msaa": 8,
+    "active_msaa": 8,
+    "gpu": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+    "framebuffer_pixels": [
+      2560,
+      1440
+    ],
+    "format_samples": 0,
+    "body_pick": {
+      "median_ms": 1.057086,
+      "p95_ms": 2.5241780499999997,
+      "samples": 74
+    },
+    "body_hits": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_7",
+      null,
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "body_cylinder_1",
+      null,
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_1",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7",
+      "body_cylinder_7"
+    ],
+    "hover_cpu": {
+      "median_ms": 0.9359815,
+      "p95_ms": 3.3499454999999996,
+      "samples": 74
+    },
+    "hover_hits": [
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "curve",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "body_cylinder_1"
+      ],
+      [
+        null,
+        "circle",
+        null
+      ],
+      [
+        null,
+        "curve",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "curve",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "curve",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "circle",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "curve",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "curve",
+        null
+      ],
+      [
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "curve",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ],
+      [
+        null,
+        "line",
+        null
+      ]
+    ],
+    "hover_plus_frame": {
+      "median_ms": 14.0030195,
+      "p95_ms": 18.4379326,
+      "samples": 20
+    },
+    "orbit_frame": {
+      "median_ms": 14.0712545,
+      "p95_ms": 14.3596164,
+      "samples": 20
+    },
+    "status": "completed",
+    "label": "omacad",
+    "round": 1
+  }
+]

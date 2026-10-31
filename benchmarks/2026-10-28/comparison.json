@@ -1,0 +1,320 @@
+{
+  "date": "2026-10-28 21:18:40 +0100",
+  "method": "Actual independent checkouts, one process at a time, alternating order. Fixed geometry, rays, viewport, camera, settings and one BLAS thread. Frame times include GPU framebuffer readback, not display FPS.",
+  "rounds": 3,
+  "parity": true,
+  "roots": {
+    "omacad": {
+      "root": "/home/kindstrom/Work/omacad",
+      "revision": "fdf4331b00d014521de916ce65bb2863d06ee444",
+      "version": "0.9.9.80.69",
+      "python": "3.14.8",
+      "numpy": "2.5.4",
+      "pid": 1255533,
+      "backend": "original-numpy",
+      "gpu_renderer": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+      "gpu_vendor": "AMD"
+    },
+    "hybrid": {
+      "root": "/home/kindstrom/Work/omacad-hybrid",
+      "revision": "9cd3697f98a2b2d7ac3bbece69822a3a01427139",
+      "version": "0.9.9.80.71",
+      "python": "3.14.8",
+      "numpy": "2.5.4",
+      "pid": 1264249,
+      "backend": "rust",
+      "gpu_renderer": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+      "gpu_vendor": "AMD"
+    }
+  },
+  "scenes": {
+    "bracket_holes": {
+      "triangles": 788,
+      "faces": 6,
+      "edges": 16,
+      "metrics": {
+        "mesh_pick": {
+          "omacad_ms": 0.1262035,
+          "hybrid_ms": 0.0060765,
+          "speedup": 20.769110507693572,
+          "run_medians": {
+            "omacad": [
+              0.1257145,
+              0.1262035,
+              0.12627349999999998
+            ],
+            "hybrid": [
+              0.006111,
+              0.0060765,
+              0.0057965
+            ]
+          }
+        },
+        "body_pick": {
+          "omacad_ms": 0.0772445,
+          "hybrid_ms": 0.0742415,
+          "speedup": 1.0404490749782802,
+          "run_medians": {
+            "omacad": [
+              0.078711,
+              0.0772445,
+              0.0765465
+            ],
+            "hybrid": [
+              0.0800385,
+              0.0742415,
+              0.0720765
+            ]
+          }
+        },
+        "hover_cpu": {
+          "omacad_ms": 0.3671915,
+          "hybrid_ms": 0.332725,
+          "speedup": 1.1035885491021113,
+          "run_medians": {
+            "omacad": [
+              0.377179,
+              0.3671915,
+              0.3649215
+            ],
+            "hybrid": [
+              0.332725,
+              0.342399,
+              0.330979
+            ]
+          }
+        },
+        "hover_plus_frame_readback": {
+          "omacad_ms": 8.5182605,
+          "hybrid_ms": 8.747236000000001,
+          "speedup": 0.9738231025206133,
+          "run_medians": {
+            "omacad": [
+              8.5182605,
+              8.4535175,
+              8.880668
+            ],
+            "hybrid": [
+              8.771576,
+              8.701874499999999,
+              8.747236000000001
+            ]
+          }
+        },
+        "orbit_frame_readback": {
+          "omacad_ms": 8.356717,
+          "hybrid_ms": 8.092402,
+          "speedup": 1.0326621193559093,
+          "run_medians": {
+            "omacad": [
+              8.356717,
+              8.4902895,
+              8.1929385
+            ],
+            "hybrid": [
+              8.092402,
+              7.706457,
+              8.611848
+            ]
+          }
+        }
+      },
+      "cold_mesh_query_ms": {
+        "omacad": 0.186966,
+        "hybrid": 0.178376
+      }
+    },
+    "sphere_8192": {
+      "triangles": 8192,
+      "faces": 0,
+      "edges": 0,
+      "metrics": {
+        "mesh_pick": {
+          "omacad_ms": 0.570396,
+          "hybrid_ms": 0.005308,
+          "speedup": 107.45968349660889,
+          "run_medians": {
+            "omacad": [
+              0.585238,
+              0.569174,
+              0.570396
+            ],
+            "hybrid": [
+              0.005587,
+              0.005308,
+              0.005308
+            ]
+          }
+        },
+        "body_pick": {
+          "omacad_ms": 0.6711425,
+          "hybrid_ms": 0.070854,
+          "speedup": 9.47218929065402,
+          "run_medians": {
+            "omacad": [
+              0.7021865,
+              0.659898,
+              0.6711425
+            ],
+            "hybrid": [
+              0.071727,
+              0.070854,
+              0.070156
+            ]
+          }
+        },
+        "hover_cpu": {
+          "omacad_ms": 0.800314,
+          "hybrid_ms": 0.194788,
+          "speedup": 4.108641189395651,
+          "run_medians": {
+            "omacad": [
+              0.8532895,
+              0.7976955,
+              0.800314
+            ],
+            "hybrid": [
+              0.194788,
+              0.2026105,
+              0.1925535
+            ]
+          }
+        },
+        "hover_plus_frame_readback": {
+          "omacad_ms": 8.582968000000001,
+          "hybrid_ms": 8.538584499999999,
+          "speedup": 1.00519799271179,
+          "run_medians": {
+            "omacad": [
+              9.220937,
+              8.1957325,
+              8.582968000000001
+            ],
+            "hybrid": [
+              8.538584499999999,
+              8.296409,
+              8.558105
+            ]
+          }
+        },
+        "orbit_frame_readback": {
+          "omacad_ms": 8.054233,
+          "hybrid_ms": 7.68533,
+          "speedup": 1.0480009316450951,
+          "run_medians": {
+            "omacad": [
+              7.5487905,
+              8.054233,
+              8.0869185
+            ],
+            "hybrid": [
+              7.4148335,
+              7.68533,
+              8.085452499999999
+            ]
+          }
+        }
+      },
+      "cold_mesh_query_ms": {
+        "omacad": 0.738575,
+        "hybrid": 1.934751
+      }
+    },
+    "sphere_131072": {
+      "triangles": 131072,
+      "faces": 0,
+      "edges": 0,
+      "metrics": {
+        "mesh_pick": {
+          "omacad_ms": 11.6127305,
+          "hybrid_ms": 0.006216,
+          "speedup": 1868.1998873873872,
+          "run_medians": {
+            "omacad": [
+              12.146111,
+              11.5407935,
+              11.6127305
+            ],
+            "hybrid": [
+              0.0062505,
+              0.006216,
+              0.006216
+            ]
+          }
+        },
+        "body_pick": {
+          "omacad_ms": 11.3665035,
+          "hybrid_ms": 0.07120399999999999,
+          "speedup": 159.6329349474749,
+          "run_medians": {
+            "omacad": [
+              11.3213865,
+              11.9450015,
+              11.3665035
+            ],
+            "hybrid": [
+              0.07211100000000001,
+              0.0705395,
+              0.07120399999999999
+            ]
+          }
+        },
+        "hover_cpu": {
+          "omacad_ms": 11.461139,
+          "hybrid_ms": 0.25024250000000003,
+          "speedup": 45.80012987402219,
+          "run_medians": {
+            "omacad": [
+              11.4404665,
+              12.579023,
+              11.461139
+            ],
+            "hybrid": [
+              0.23857899999999999,
+              0.25136000000000003,
+              0.25024250000000003
+            ]
+          }
+        },
+        "hover_plus_frame_readback": {
+          "omacad_ms": 20.548609,
+          "hybrid_ms": 8.937379499999999,
+          "speedup": 2.2991760616185095,
+          "run_medians": {
+            "omacad": [
+              20.7360285,
+              20.548609,
+              20.461271
+            ],
+            "hybrid": [
+              9.040780000000002,
+              8.937379499999999,
+              8.8928905
+            ]
+          }
+        },
+        "orbit_frame_readback": {
+          "omacad_ms": 8.41039,
+          "hybrid_ms": 8.5941085,
+          "speedup": 0.9786227390543183,
+          "run_medians": {
+            "omacad": [
+              8.8251095,
+              8.0277285,
+              8.41039
+            ],
+            "hybrid": [
+              8.601372,
+              8.5941085,
+              8.559292
+            ]
+          }
+        }
+      },
+      "cold_mesh_query_ms": {
+        "omacad": 11.426218,
+        "hybrid": 39.672657
+      }
+    }
+  }
+}

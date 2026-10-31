@@ -1,0 +1,25 @@
+Render/topology: Cylinder 1: 2.26s
+Applying rim_fillet R=3mm at 720 segments
+Render/topology: Cylinder 1: 6.45s
+{"case": "rim_fillet", "operation_seconds": 6.5212113249872345, "triangles": 37436, "render_mesh_update_seconds": 8.707232931017643}
+{"case": "rim_fillet", "active_msaa": 8, "format_samples": 0, "framebuffer_pixels": [2560, 1440], "hover_cpu": {"median_ms": 0.540225, "p95_ms": 10.5907015, "samples": 51}, "hover_plus_frame": {"median_ms": 27.326481, "p95_ms": 35.8246287, "samples": 20}, "orbit_frame": {"median_ms": 26.1122855, "p95_ms": 30.2082308, "samples": 20}}
+nanobind: leaked 2 instances!
+ - leaked instance 0x7f0c8c27e708 of type "manifold3d.Manifold"
+ - leaked instance 0x7f0c8fa93d08 of type "manifold3d.Mesh64"
+nanobind: leaked 2 types!
+ - leaked type "manifold3d.Manifold"
+ - leaked type "manifold3d.Mesh64"
+nanobind: leaked 76 functions!
+ - leaked function "smooth_out"
+ - leaked function "set_properties"
+ - leaked function "as_original"
+ - leaked function "smooth_by_normals"
+ - leaked function "rotate"
+ - leaked function ""
+ - leaked function "decompose"
+ - leaked function "compose"
+ - leaked function "project"
+ - leaked function "calculate_normals"
+ - ... skipped remainder
+nanobind: this is likely caused by a reference counting issue in the binding code.
+See https://nanobind.readthedocs.io/en/latest/refleaks.html

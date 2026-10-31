@@ -1,0 +1,133 @@
+{
+  "root": "/home/kindstrom/Work/omacad-hybrid",
+  "revision": "9cd3697f98a2b2d7ac3bbece69822a3a01427139",
+  "version": "0.9.9.80.71",
+  "case": "jar",
+  "segments": 360,
+  "interactive_simplification": false,
+  "profiled": false,
+  "spec": {
+    "diameter": 40.0,
+    "height": 40.0,
+    "wall": 2.0,
+    "inside_chamfer": 4.0,
+    "neck_diameter": 32.0,
+    "neck_height": 10.0,
+    "pitch": 4.0,
+    "profile": "trapezoidal_45",
+    "tolerance": -0.2,
+    "thread_chamfer": 1.0,
+    "lid_top": 2.0,
+    "lid_beside": true
+  },
+  "operation_seconds": 50.339444235985866,
+  "render_mesh_updates": [
+    {
+      "body": "Jar",
+      "seconds": 0.5780185869953129
+    },
+    {
+      "body": "Neck",
+      "seconds": 0.5771695940056816
+    },
+    {
+      "body": "Jar",
+      "seconds": 1.6391322370036505
+    },
+    {
+      "body": "Jar",
+      "seconds": 0.004039424995426089
+    },
+    {
+      "body": "Neck",
+      "seconds": 0.004363140003988519
+    },
+    {
+      "body": "Jar",
+      "seconds": 0.01441089401487261
+    },
+    {
+      "body": "Jar",
+      "seconds": 4.910466127010295
+    },
+    {
+      "body": "Jar",
+      "seconds": 6.024361963995034
+    },
+    {
+      "body": "Jar",
+      "seconds": 5.543032774992753
+    },
+    {
+      "body": "Lid",
+      "seconds": 0.5898271860205568
+    },
+    {
+      "body": "Lid",
+      "seconds": 5.080768790998263
+    },
+    {
+      "body": "Lid bore",
+      "seconds": 0.5827644600067288
+    },
+    {
+      "body": "Lid",
+      "seconds": 3.0704060599964578
+    },
+    {
+      "body": "Lid",
+      "seconds": 3.463410982018104
+    },
+    {
+      "body": "Thread chamfer",
+      "seconds": 0.5851147680077702
+    },
+    {
+      "body": "Thread chamfer cone",
+      "seconds": 0.5776524080138188
+    },
+    {
+      "body": "Thread chamfer",
+      "seconds": 2.079882723017363
+    },
+    {
+      "body": "Jar",
+      "seconds": 4.828398755984381
+    },
+    {
+      "body": "Lid mouth chamfer",
+      "seconds": 0.5727482750080526
+    },
+    {
+      "body": "Lid",
+      "seconds": 2.9488467880000826
+    },
+    {
+      "body": "Lid",
+      "seconds": 2.9627375019772444
+    }
+  ],
+  "render_mesh_update_seconds": 46.63755344206584,
+  "quality_after_build": 360,
+  "bodies": [
+    {
+      "id": "body_cylinder_1",
+      "name": "Jar",
+      "volume": 16238.21561287711,
+      "triangles": 30098,
+      "faces": 135,
+      "edges": 98,
+      "mesh_sha256": "8008c0e56e73f519e91e5b6d68db5d2cb54aebb16a7fcc0f25978eaa53a84a42"
+    },
+    {
+      "id": "body_cylinder_7",
+      "name": "Lid",
+      "volume": 6171.779304944283,
+      "triangles": 21334,
+      "faces": 27,
+      "edges": 30,
+      "mesh_sha256": "14801887be96f0c3abcc7a66646b44da9bc0df5fd6421233379a96631b6b868a"
+    }
+  ],
+  "triangles": 51432
+}

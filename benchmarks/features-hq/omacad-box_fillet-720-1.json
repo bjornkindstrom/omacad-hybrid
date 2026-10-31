@@ -1,0 +1,457 @@
+{
+  "root": "/home/kindstrom/Work/omacad",
+  "revision": "fdf4331b00d014521de916ce65bb2863d06ee444",
+  "version": "0.9.9.80.69",
+  "case": "box_fillet",
+  "segments": 720,
+  "interactive_simplification": false,
+  "profiled": false,
+  "base_build_seconds": 0.024010824010474607,
+  "operation_seconds": 0.05844724300550297,
+  "render_mesh_updates": [
+    {
+      "body": "Box 1",
+      "seconds": 0.007175520004238933
+    },
+    {
+      "body": "Box 1",
+      "seconds": 0.03432606998831034
+    }
+  ],
+  "render_mesh_update_seconds": 0.04150158999254927,
+  "quality_after_build": 720,
+  "bodies": [
+    {
+      "id": "body_box_1",
+      "name": "Box 1",
+      "volume": 47623.10560167222,
+      "triangles": 204,
+      "faces": 6,
+      "edges": 8,
+      "mesh_sha256": "5d5b13b47e2b23607d5b07033445d8a48e2994d6e51016ab0ce4bcda2723093e"
+    }
+  ],
+  "triangles": 204,
+  "requested_msaa": 8,
+  "active_msaa": 8,
+  "gpu": "AMD Radeon Graphics (radeonsi, renoir, ACO, DRM 3.64, 7.2.8-9-omarchy)",
+  "framebuffer_pixels": [
+    2560,
+    1440
+  ],
+  "format_samples": 0,
+  "body_pick": {
+    "median_ms": 0.091807,
+    "p95_ms": 0.35767639999999995,
+    "samples": 58
+  },
+  "body_hits": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    "body_box_1",
+    null,
+    null,
+    null,
+    "body_box_1",
+    null,
+    "body_box_1",
+    "body_box_1",
+    "body_box_1",
+    null,
+    null,
+    null,
+    null,
+    "body_box_1",
+    null,
+    "body_box_1",
+    null,
+    null,
+    "body_box_1",
+    null,
+    "body_box_1",
+    null,
+    null,
+    "body_box_1",
+    null,
+    null,
+    "body_box_1",
+    null,
+    "body_box_1",
+    null,
+    null,
+    null,
+    null,
+    "body_box_1",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "body_box_1",
+    null,
+    "body_box_1",
+    null,
+    "body_box_1",
+    "body_box_1",
+    "body_box_1",
+    null,
+    "body_box_1",
+    null,
+    null,
+    null
+  ],
+  "hover_cpu": {
+    "median_ms": 0.346414,
+    "p95_ms": 0.7440947999999998,
+    "samples": 58
+  },
+  "hover_hits": [
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      "line",
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        0
+      ],
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        0
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      "body_box_1"
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        0
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        0
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      "line",
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        0
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      null,
+      null
+    ],
+    [
+      null,
+      "line",
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      [
+        "body_box_1",
+        5
+      ],
+      null,
+      null
+    ],
+    [
+      null,
+      "line",
+      null
+    ],
+    [
+      null,
+      "line",
+      null
+    ],
+    [
+      null,
+      "line",
+      null
+    ],
+    [
+      null,
+      "line",
+      null
+    ],
+    [
+      null,
+      "line",
+      null
+    ]
+  ],
+  "hover_plus_frame": {
+    "median_ms": 11.265266,
+    "p95_ms": 23.44561325,
+    "samples": 20
+  },
+  "orbit_frame": {
+    "median_ms": 10.526587,
+    "p95_ms": 10.88382655,
+    "samples": 20
+  }
+}
