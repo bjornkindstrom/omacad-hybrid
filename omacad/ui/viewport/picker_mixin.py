@@ -405,7 +405,7 @@ class PickerMixin:
                     d_wall = d1
                 return np.array([edge.p0 + offset * d_wall, edge.p1 + offset * d_wall])
         elif kind == "circle":
-            wall_dir = -np.asarray(edge.axis) * getattr(edge, "s2", 1.0)
+            wall_dir = np.asarray(edge.axis) * getattr(edge, "s2", 1.0)
             return edge.polyline() + offset * wall_dir
         elif kind == "loop":
             n = getattr(edge, "n", np.array([0.0, 0.0, 1.0]))

@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.90
+
+### Funktioner och rättningar
+- **Rätt riktning på fillet-hjälplinjer i hörn (#141, rapport 20261031-165820)**: När en kant med en avrundad cirkelbåge i ett hörn förhandsvisades under Fillet/Chamfer försköts den blå markeringslinjen (`_offset_edge_polyline`) i fel riktning (uppåt i stället för neråt längs cylinderväggen), eftersom cirkelkantens väggvektor räknades med fel tecken mot `CircularEdge.axis` och `s2`. Rättat så att cirkelbågar i hörn följer väggvektorn (`s2 * axis`) nedåt i exakt samma riktning som de angränsande räta linjerna. Test: `test_fillet_rail_offset.py`.
+
 # Hybrid-experiment — 0.9.9.80.89
 
 ### Funktioner och rättningar
