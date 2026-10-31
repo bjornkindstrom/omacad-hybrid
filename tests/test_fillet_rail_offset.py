@@ -31,7 +31,9 @@ def test_fillet_rail_offset_direction():
 
 
 def test_fillet_rail_offset_from_report_document():
-    doc = Exporter.load_project("/home/kindstrom/Work/omacad-hybrid/.state/data/feedback/20261031-165820/document.omacad")
+    from pathlib import Path
+    doc_path = Path(__file__).parent / "data" / "fillet_corner_rail_offset.omacad"
+    doc = Exporter.load_project(str(doc_path))
     doc.timeline.step_to(2, doc)
     body = list(doc.bodies.values())[0]
 

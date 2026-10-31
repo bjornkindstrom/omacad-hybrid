@@ -9,7 +9,7 @@ from omacad.io.exporter import Exporter
 
 
 def test_pattern_thread_no_ugly_vertical_facet_lines():
-    doc_path = Path("/home/kindstrom/Work/omacad-hybrid/.state/data/feedback/20261031-083336/document.omacad")
+    doc_path = Path(__file__).parent / "data" / "pattern_thread_ugly_facet_lines.omacad"
     doc = Exporter.load_project(str(doc_path))
     doc.timeline.recompute(doc)
     body = doc.bodies["body_split_5"]

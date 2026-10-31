@@ -5,7 +5,7 @@ Each step type reuses the dialog it was created with, filled with its current va
 Accepting rebuilds everything after the step.
 """
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QMessageBox
 
 from omacad import applog
