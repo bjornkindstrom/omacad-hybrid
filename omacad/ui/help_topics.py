@@ -28,6 +28,15 @@ class Topic:
 
 # Longer help where the ribbon tooltip is short. Keywords help the search find a command by other names.
 MORE = {
+    "screenshot": ("Export > Screenshot saves the model alone, cropped with a small margin, from the view as it is: no "
+                   "grid, axes, sketches or ViewCube, no selection colour. A section shows its cut face.",
+                   "picture image png jpg jpeg save render snapshot"),
+    "copy_image": ("Export > Copy Image puts the same picture as Screenshot on the clipboard; paste it with Ctrl+V in "
+                   "a mail, chat or document.", "clipboard paste picture image"),
+    "turntable": ("Export > Rotating Video records the model turning once around (6 s). First choose the camera "
+                  "distance: Near, Medium or Far centre the turn on the model at that distance and keep all of it in "
+                  "the picture; As shown turns from the current view. MP4, WebM or GIF; needs ffmpeg.",
+                  "video movie animation turntable spin rotate gif mp4 webm near far distance"),
     "create_sketch": ("Click a plane (XY, XZ, YZ, a construction plane) or a flat face of a body, then draw. Finish "
                       "Sketch returns to 3D.", "draw 2d plane face start"),
     "extrude": ("Pick closed profiles in the view (Shift+click adds more), type the distance or drag the arrow. "

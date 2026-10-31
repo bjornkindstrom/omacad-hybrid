@@ -133,6 +133,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         # Camera parameters
         self.target = np.array([0.0, 0.0, 0.0], dtype=np.float32)
         self.azimuth: float = 45.0      # Orbit around Z (deg)
+        self.capture_model_only = False   # paintGL draws only the bodies (screenshot / video export)
         self.elevation: float = 30.0    # Elevation above ground (deg)
         self.distance: float = 140.0    # Distance to target (mm)
         self.fovy: float = REF_FOVY   # zoom calibration only; the drawn field of view is the view_fov setting
@@ -682,6 +683,10 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
         proj, view, mvp = self.get_matrices()
+        if self.capture_model_only:      # Export: the bodies alone (media_export.model_only), cut face included
+            self.render_bodies(mvp)
+            self.render_section_cap(mvp)
+            return
 
         # 1. Draw 3D Ground Grid
         if self.show_grid:

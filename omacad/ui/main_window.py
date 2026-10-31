@@ -45,6 +45,7 @@ from omacad.ui.theme import style
 from omacad.ui.ribbon import Ribbon, RECT_TOOLS
 from omacad.ui.viewport import Viewport3D
 from omacad.ui.browser import BrowserTree
+from omacad.ui import media_export
 from omacad.ui.timeline_bar import STEP_CHANGE_MIN_THICKNESS, TimelineBar
 from omacad.ui.side_panel import InspectorPanel
 from omacad.ui.canvas_dialog import CanvasEditorDialog
@@ -198,6 +199,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.viewport.profile_picked.connect(self.ribbon.sync_context)
         self.ribbon.delete_clicked.connect(self.on_delete_selected)
         self.ribbon.inspect_clicked.connect(self.on_inspect)
+        self.ribbon.export_media_clicked.connect(lambda kind: media_export.run(self, kind))
         self.ribbon.settings_clicked.connect(self.on_open_settings)
         self.ribbon.sketch_tool_selected.connect(self.on_sketch_tool_selected)
         self.viewport.sketch_tool_changed.connect(self.sync_sketch_tool_from_viewport)

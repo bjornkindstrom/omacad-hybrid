@@ -86,6 +86,13 @@ _ALL = [
        signal="section_clicked"),
     _c("statistics", "Document Statistics", "📊", "How many bodies, sketches and steps the design has",
        signal="inspect_clicked"),
+    # --- SOLID: EXPORT -------------------------------------------------------------------------------------------
+    _c("screenshot", "Screenshot", "📸", "Save a picture of the model as it is shown (PNG or JPEG), without grid, "
+       "axes, sketches or ViewCube", signal="export_media_clicked", arg="screenshot"),
+    _c("copy_image", "Copy Image", "📋", "Copy a picture of the model as it is shown, to paste into another app",
+       signal="export_media_clicked", arg="copy"),
+    _c("turntable", "Rotating Video", "🎬", "A video (MP4, WebM or GIF) of the model turning once around, from the "
+       "current view", signal="export_media_clicked", arg="video"),
     _c("settings", "Settings", "⚙️", "Colors, ribbon layout and app preferences", "Ctrl+,", "settings_clicked",
        modes=("model", "sketch")),
     # --- SKETCH: CREATE ------------------------------------------------------------------------------------------
@@ -143,6 +150,8 @@ INSERT = ("insert", "Insert", "🖼️", "Canvas (Image) and Import 3MF", ["canv
 MODIFY_BODY = ("modify_body", "Body", "🔗", "Combine, Split Body, Shell, Offset Face, Move",
                ["combine", "split_body", "shell", "offset_face", "move"])
 INSPECT = ("inspect", "Inspect", "📏", "Measure, Section View, Document Statistics", ["measure", "section", "statistics"])
+EXPORT = ("export", "Export", "📤", "Screenshot, Copy Image, Rotating Video of the model as it is shown",
+          ["screenshot", "copy_image", "turntable"])
 PATTERNS = ["pattern_linear", "pattern_circular", "mirror", "pattern_fill"]   # the Pattern button's arrow
 
 SOLID_GROUPS: List[Tuple[str, list]] = [
@@ -150,6 +159,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
                 INSERT]),
     ("MODIFY", ["fillet", "chamfer", MODIFY_BODY, "parameters", "delete"]),
     ("INSPECT", [INSPECT]),
+    ("EXPORT", [EXPORT]),
 ]
 SKETCH_GROUPS: List[Tuple[str, list]] = [
     ("CREATE", ["line", "rect", "circle", "arc", "spline", "polygon", "slot", "text", "offset_sketch", "mirror_sketch", "project",

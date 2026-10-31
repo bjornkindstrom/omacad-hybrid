@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.88
+
+### Funktioner och rättningar
+- **Ny Export-knapp: Screenshot, Copy Image och Rotating Video**: ny grupp EXPORT i SOLID-bandet med en Export-knapp. Alla tre visar bara modellen så som den syns i vyn (samma kamera och färger), utan rutnät, axlar, skisser, handtag, ViewCube, text eller markeringsfärg; ett snitt visar sin snittyta. *Screenshot* sparar PNG/JPEG och *Copy Image* lägger bilden i urklipp för att klistra in i en annan app; bilden beskärs till modellen med 6 % marginal. *Rotating Video* spelar in modellen när den vrider sig ett varv på 6 s (MP4/WebM 30 bilder/s, GIF 15 bilder/s) via ffmpeg, med förloppsruta och Avbryt. Först väljs kameraavståndet: Near, Medium eller Far centrerar varvet på modellen och zoomar så att hela modellen ryms i bild hela vägen runt (dess omslutande klot fyller 95/70/45 % av bildens kortsida); As shown vrider från vyn som den är. Senaste valet kommer ihåg. Kameran återställs efteråt. Nya ikoner i Studio-setet, hjälptext i F1. Test: `test_media_export.py`.
+
 # Hybrid-experiment — 0.9.9.80.87
 
 ### Funktioner och rättningar

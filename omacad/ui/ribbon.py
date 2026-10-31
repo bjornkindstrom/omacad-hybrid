@@ -155,6 +155,7 @@ class Ribbon(QWidget):
     canvas_clicked = Signal()
     import_3mf_clicked = Signal()
     inspect_clicked = Signal()
+    export_media_clicked = Signal(str)    # "screenshot", "copy" or "video"
     settings_clicked = Signal()
 
     # Sketch Tools
@@ -374,7 +375,7 @@ class Ribbon(QWidget):
         grouped = {"primitives": bool(settings.get("group_primitives", True)),
                    "modify_body": bool(settings.get("group_modify", False)),
                    "inspect": bool(settings.get("group_inspect", True)),
-                   "insert": True}
+                   "insert": True, "export": True}
         self.command_buttons = {}
         h_layout = QHBoxLayout(self.solid_tab)
         h_layout.setContentsMargins(4, 1, 4, 1)
