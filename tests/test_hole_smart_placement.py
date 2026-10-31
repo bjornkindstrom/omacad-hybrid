@@ -257,3 +257,37 @@ def test_hole_in_all_corners_with_chamfer(win):
     assert max(xs) == pytest.approx(35.0)
     assert min(ys) == pytest.approx(5.0)
     assert max(ys) == pytest.approx(25.0)
+
+
+def test_hole_in_all_corners_preserves_custom_offsets_from_placed_hole(win):
+    """If user placed a hole with custom offsets (e.g. 8 mm and 12 mm), 'Holes in all corners' uses those offsets."""
+    body = win.doc.add_box(60.0, 40.0, 20.0)
+    win.prompt_hole()
+
+    plane = SketchPlane.from_face([0.0, 0.0, 1.0], [0.0, 0.0, 20.0])
+    win.viewport.hole_plane_picked.emit(plane)
+    dlg = win.inspector.current_tool_dlg
+
+    # Place a hole with custom offsets (8.0 mm from one edge, 12.0 mm from another)
+    pt_custom = {
+        "origin": [8.0, 12.0, 20.0],
+        "normal": [0.0, 0.0, 1.0],
+        "refs": [
+            {"p1": [0.0, 0.0], "p2": [60.0, 0.0], "dist": 12.0, "expr": None},
+            {"p1": [0.0, 0.0], "p2": [0.0, 40.0], "dist": 8.0, "expr": None},
+        ],
+    }
+    win.viewport.hole_point_picked.emit(pt_custom)
+
+    assert len(dlg.points) == 1
+    # Click Holes in all corners
+    dlg.btn_all_corners.click()
+
+    assert len(dlg.points) == 4
+    xs = [p["origin"][0] for p in dlg.points]
+    ys = [p["origin"][1] for p in dlg.points]
+    assert min(xs) == pytest.approx(8.0)
+    assert max(xs) == pytest.approx(52.0)
+    assert min(ys) == pytest.approx(12.0)
+    assert max(ys) == pytest.approx(28.0)
+

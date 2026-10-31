@@ -55,7 +55,12 @@ class OverlayMixin:
             painter.save()
             painter.setPen(QPen(QColor(40, 170, 255, 210), 1.5))
             painter.setBrush(QColor(40, 170, 255, 150))
-            marks = [*getattr(self, "hole_place_points", [])]
+            marks = []
+            for pt in getattr(self, "hole_place_points", []):
+                if isinstance(pt, dict) and "origin" in pt:
+                    marks.append(pt["origin"])
+                else:
+                    marks.append(pt)
             # Use effective resolved hole preview point if available so preview follows typed dimensions
             hover_effective = getattr(self, "_hole_last_effective_world", getattr(self, "hole_place_hover", None))
             if hover_effective is not None:

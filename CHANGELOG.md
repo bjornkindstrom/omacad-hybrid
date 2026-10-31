@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.83
+
+### Features & Fixes
+- **Behåll anpassade mått vid "Holes in all corners" (#138)**: När man placerat ett hål med anpassade kantmått och därefter klickade på "Holes in all corners" sparades inte de uppmätta avstånden till referenskanterna i hålpunktslistan, vilket gjorde att beräkningen föll tillbaka på standardavståndet 5 mm. Nu skickas befintliga placerade hål med fullständig referens- och avståndsdata till `hole_corner_points`, så att hålbilden i alla hörn behåller exakt samma kantavstånd som det först valda hålet. Test: `test_hole_smart_placement.py`.
+
 # Hybrid experiment — 0.9.9.80.82
 
 ### Features & Fixes

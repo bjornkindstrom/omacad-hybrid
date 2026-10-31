@@ -484,19 +484,19 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
                 return
             if dlg.spn_chamfer_depth.value() <= 0:
                 dlg.spn_chamfer_depth.setValue(1.0)
-            corner_pts = vp.hole_corner_points(plane)
+            corner_pts = vp.hole_corner_points(plane, existing_points=points)
             if not corner_pts:
                 return
             points.clear()
             for pt in corner_pts:
                 points.append(pt)
             dlg.set_points(points)
-            vp.hole_place_points = [q["origin"] for q in points]
+            vp.hole_place_points = list(points)
             preview_hole()
 
         def place_points():
             if plane is not None:
-                vp.begin_hole_place(plane, [p["origin"] for p in points])
+                vp.begin_hole_place(plane, list(points))
                 dlg.set_placing(True)
                 vp.setFocus(Qt.FocusReason.OtherFocusReason)
 
@@ -512,7 +512,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             if not any(np.linalg.norm(p - np.asarray(old["origin"])) < 1e-3 for old in points):
                 points.append(pt_entry)
                 dlg.set_points(points)
-                vp.hole_place_points = [q["origin"] for q in points]
+                vp.hole_place_points = list(points)
                 preview_hole()
 
         def preview_hole():

@@ -87,7 +87,7 @@ class PointPickMixin:
                 out.append((p1, p2, None))
         return out
 
-    def hole_corner_points(self, plane, default_dist1=5.0, default_dist2=5.0):
+    def hole_corner_points(self, plane, existing_points=None, default_dist1=5.0, default_dist2=5.0):
         """Compute matching hole placement points at all corners of the planar face."""
         segs = self._hole_reference_segments(plane)
         if not segs:
@@ -133,7 +133,7 @@ class PointPickMixin:
         # Check existing points or hover for user's desired offsets
         dx_dist = float(default_dist1)
         dy_dist = float(default_dist2)
-        pts_placed = getattr(self, "hole_place_points", [])
+        pts_placed = list(existing_points) if existing_points is not None else list(getattr(self, "hole_place_points", []))
         if pts_placed:
             last = pts_placed[-1]
             if isinstance(last, dict) and "refs" in last and len(last["refs"]) >= 2:
@@ -213,7 +213,7 @@ class PointPickMixin:
         point_data = self._hole_place_resolve_point(x, y)
         if point_data is None:
             return False
-        self.hole_place_points.append(point_data["origin"])
+        self.hole_place_points.append(point_data)
         self.hole_point_picked.emit(point_data)
         self.hole_dyn_texts = ["", ""]
         self.hole_dyn_focus = 0
@@ -366,7 +366,7 @@ class PointPickMixin:
             if plane is not None and getattr(self, "hole_place_hover", None) is not None:
                 pt_data = self._hole_place_resolve_point()
                 if pt_data is not None:
-                    self.hole_place_points.append(pt_data["origin"])
+                    self.hole_place_points.append(pt_data)
                     self.hole_point_picked.emit(pt_data)
                     self.hole_dyn_texts = ["", ""]
                     self.hole_dyn_focus = 0

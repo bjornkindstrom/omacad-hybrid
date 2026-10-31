@@ -52,7 +52,7 @@ class SolidFeaturePromptsMixin:
 
         def start_placing():
             if dlg.plane is not None:
-                self.viewport.begin_hole_place(dlg.plane, [p["origin"] for p in points])
+                self.viewport.begin_hole_place(dlg.plane, list(points))
                 dlg.set_placing(True)
                 self.viewport.setFocus(Qt.FocusReason.OtherFocusReason)
                 self.status_label.setText("Hole: click to place hole centers on the selected plane. Esc pauses placement.")
@@ -63,7 +63,7 @@ class SolidFeaturePromptsMixin:
             # If user hasn't specified chamfer yet, enable a 1.0 mm 45 deg chamfer by default
             if dlg.spn_chamfer_depth.value() <= 0:
                 dlg.spn_chamfer_depth.setValue(1.0)
-            corner_pts = self.viewport.hole_corner_points(dlg.plane)
+            corner_pts = self.viewport.hole_corner_points(dlg.plane, existing_points=points)
             if not corner_pts:
                 self.status_label.setText("Hole: no square corners detected on this surface.")
                 return
@@ -71,7 +71,7 @@ class SolidFeaturePromptsMixin:
             for pt in corner_pts:
                 points.append(pt)
             dlg.set_points(points)
-            self.viewport.hole_place_points = [q["origin"] for q in points]
+            self.viewport.hole_place_points = list(points)
             refresh_preview()
             self.status_label.setText(f"Hole: {len(points)} corner holes created with chamfer.")
 
@@ -87,7 +87,7 @@ class SolidFeaturePromptsMixin:
             if not any(np.linalg.norm(p - np.asarray(old["origin"])) < 1e-3 for old in points):
                 points.append(pt_entry)
                 dlg.set_points(points)
-                self.viewport.hole_place_points = [q["origin"] for q in points]
+                self.viewport.hole_place_points = list(points)
                 refresh_preview()
 
         def refresh_preview():
