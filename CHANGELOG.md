@@ -1,116 +1,116 @@
-# Hybrid experiment — 0.9.9.80.85
+# Hybrid-experiment — 0.9.9.80.85
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Canvas på yta kan skalas till ytans mått**: i Canvas-dialogen finns knappen "⤢ Skala till yta" när planet är en kroppsyta. Bilden skalas jämnt så att den precis ryms på ytan (den sida som tar slut först styr) och centreras på ytans mitt. Knappen är avstängd utan bild och för origoplan. Helpers `face_size_uv` och `face_for_plane` i `model/canvas.py`. Test: `test_canvas_face.py`.
 
-# Hybrid experiment — 0.9.9.80.84
+# Hybrid-experiment — 0.9.9.80.84
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Hole vänder sig mot och zoomar in på vald yta**: när en yta valdes för Hole (nytt hål och Edit) låg kameran kvar i sin gamla vinkel. Nu riktas kameran rakt mot ytan och ytan zoomas så den fyller vyn, samma som när man skissar på en yta (`Viewport3D.frame_picked_plane`). Origoplan riktas bara in. Test: `test_hole_frame_face.py`.
 
-# Hybrid experiment — 0.9.9.80.83
+# Hybrid-experiment — 0.9.9.80.83
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Behåll anpassade mått vid "Holes in all corners" (#138)**: När man placerat ett hål med anpassade kantmått och därefter klickade på "Holes in all corners" sparades inte de uppmätta avstånden till referenskanterna i hålpunktslistan, vilket gjorde att beräkningen föll tillbaka på standardavståndet 5 mm. Nu skickas befintliga placerade hål med fullständig referens- och avståndsdata till `hole_corner_points`, så att hålbilden i alla hörn behåller exakt samma kantavstånd som det först valda hålet. Test: `test_hole_smart_placement.py`.
 
-# Hybrid experiment — 0.9.9.80.82
+# Hybrid-experiment — 0.9.9.80.82
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Hål i alla hörn med fasning (Holes in all corners) (#138)**: Lagt till knappen "Holes in all corners" / "All corners" i Hole-dialogen. När man valt en plan yta placeras automatiskt motsvarande hål i samtliga hörn på ytan med samma kantavstånd som första hålet/valda mått, och aktiverar fasning (`chamfer_depth` 1.0 mm vid 45°) med liveförhandsvisning och fullt stöd vid editering. Test: `test_hole_smart_placement.py`.
 
-# Hybrid experiment — 0.9.9.80.81
+# Hybrid-experiment — 0.9.9.80.81
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Box med Outer round i browsern blev tung och randig (rapport 20261031-091740)**: när Outer round på en Box ändrades i browsern byggdes avrundningen som en trappa av skivor (ca 19 000 trianglar med mörka ränder) i stället för den släta fillet som det vanliga verktyget ger. Hörnen byggs nu som skrovet (`hull`) av en kula per hörn (`_rounded_box` i `primitives.py`), ca 3 000 trianglar utan ränder, samma volym som rullande-kula-formeln. Fas och hollow-lådor med taper behåller sin väg. Test: `test_box_round_hull.py`.
 
-# Hybrid experiment — 0.9.9.80.80
+# Hybrid-experiment — 0.9.9.80.80
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Mönster/spegling av gängor (Pattern/Mirror of Thread) utan fula ränder (#139, rapport 20261031-083336)**: När ett gängningssteg (Thread) mönstrades eller speglades kopierades tidigare den booleska skillnaden mellan kroppen före och efter gängningen. Skillnaden begränsades av cylinderväggens polygonfasetter, vilket lämnade kvar tusentals mikroskopiska restfasetter och skarpa vertikala ränder ("fula threads") när kopian subtraherades från ett annat hål vars fasettering inte sammanföll. Mönstret transformerar nu gängskärverktyget (`ThreadFeature.build_solid()`) direkt för subtraktionen, vilket ger helt rena, släta och perfekta gängor i alla kopierade hål. Test: `test_pattern_thread.py`.
 
-# Hybrid experiment — 0.9.9.80.79
+# Hybrid-experiment — 0.9.9.80.79
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Hole öppnar inte skissläge vid val av yta (#138)**: När man startar Hole och klickar på en yta eller ett plan skapades tidigare oavsiktligt en ny skiss (`on_plane_picked`) eftersom signalen `plane_picked` delades med "Create Sketch". `hole_plane` har nu en dedikerad signal `hole_plane_picked` och startar direkt med val av yta och placering av hålpunkter utan att användaren någonsin hamnar i skissläge eller behöver trycka på "Finish Sketch".
 
-# Hybrid experiment — 0.9.9.80.78
+# Hybrid-experiment — 0.9.9.80.78
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Dynamisk förhandsvisning och flyttande smartguider vid Hole-placering (#138)**: När siffror matas in i smartrutorna under placering av hål flyttar sig nu måttlinjerna, smartrutorna och förhandsvisningscirkeln dynamiskt i realtid till de exakta måtten på ytan, så man tydligt ser var hålet hamnar innan man klickar eller trycker Enter.
 - **Smidig fokusväxling mellan panel och rityta / smartrutor (#138)**: Klick i 3D-vyn och klick på smartrutornas måttetiketter sätter omedelbart tangentbordsfokus till 3D-ytan utan att av misstag placera ett oönskat hål. När användaren trycker på "Place hole points" aktiveras placeringsläget tydligt ("Placing on surface (Click or Esc to pause)") och fokus överförs direkt till 3D-vyn.
 - **Redigera hålavstånd via pennan och dubbelklick i trädet (#138)**: Lade till stöd för att klicka på pennikonen eller dubbelklicka på hålavståndsrader (`hole_dim`) i objektbrowsern för att direkt öppna inline-redigeraren i trädet.
 
-# Hybrid experiment — 0.9.9.80.77
+# Hybrid-experiment — 0.9.9.80.77
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Inskrivning i smartrutor vid placering av Hole (#138)**: Under placering av hål i 3D-vyn (när plan eller yta valts) kan måtten till referenskanterna nu skrivas in direkt med tangentbordet på samma sätt som i Smart Circle. Siffror/uttryck matas in i den aktiva smartrutan, `Tab` växlar mellan avstånd 1 och avstånd 2, och `Enter` placerar hålet på de exakta måtten.
 - **Redigera hålmått i objektträdet (#138)**: De uppmätta avstånden sparas med hålet och visas som redigerbara parameterrader i objektbrowsern (`Distance to edge 1`, `Distance to edge 2`). Användaren kan dubbelklicka eller klicka på pennikonen för att ändra avståndet i efterhand, vilket automatiskt flyttar hålet och bygger om modellen med fullt stöd för Undo/Redo. Test: `test_hole_smart_placement.py`.
 
-# Hybrid experiment — 0.9.9.80.76
+# Hybrid-experiment — 0.9.9.80.76
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Mäthjälp vid placering av Hole (#138)**: Efter att ha valt yta eller plan i Hole-verktyget visas nu live-mått och vinkelräta måttlinjer från närmaste raka kanter till muspekaren (på samma sätt som i Smart Circle). Referenskanterna markeras i cyan och orange med avstånd i mm. Test: `test_hole_smart_placement.py`.
 
-# Hybrid experiment — 0.9.9.80.75
+# Hybrid-experiment — 0.9.9.80.75
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Fillet/Chamfer-drag utan oönskad vändning (#137)**: Drag med pilen använde tidigare `abs(val)` vilket gjorde att när man drog musen uppåt förbi nollan slog värdet över och började öka radien igen (reagerade som att den bara drog neråt/ökade). Draget begränsas nu korrekt nedåt mot minsta positiva radie (`0.2 mm`) i stället för att vända. Test: `test_rotation_and_fillet_arrow.py`.
 
-# Hybrid experiment — 0.9.9.80.74
+# Hybrid-experiment — 0.9.9.80.74
 
-### Features & Fixes
+### Funktioner och rättningar
 - **Fillet/Chamfer-dragpil upp och ner (#137, rapport 20261031-072053)**: När en horisontell kant rundas eller fasas (t.ex. på toppen eller botten av en extrudering) pekar dragpilen i viewporten nu rakt lodrätt upp/ner längs Z-axeln i stället för snett från sidan, vilket gör draget naturligt och stabilt på skärmen. Test: `test_rotation_and_fillet_arrow.py`.
 
-# Hybrid experiment — 0.9.9.80.73
+# Hybrid-experiment — 0.9.9.80.73
 
-### Features & Fixes
-- **Jar with Lid shoulder thread flap (#134)**: Prevented thread helical lead-in from slicing into or creating sliver flaps at the neck shoulder ($z = 30$). Adjusted `gap = 0.5` and `anchor_gap = 0.5` in `omacad/model/jar.py`, ensuring a clean, unbroken 360° circular boundary at the neck shoulder base while maintaining lid fit.
-- **Fillet interactive guide line (#135)**: Updated `picker_mixin.py` and `round_pattern_prompts.py` so the blue edge highlight (`selected_edges`) follows the bottom rail of the fillet preview (`fillet_rail_offset` offset along the wall vector) rather than remaining stationary on the original edge.
-- **Editable polygon sides in tree and sketch (#136)**: Enabled regular polygon side counts to be edited after finishing a sketch. Exposed `Polygon sides: <n>` in the object browser under the sketch for inline editing (fixed pencil click inline trigger in `browser.py`), added `"🔢 Number of sides…"` to the sketch right-click context menu, and integrated `set_polygon_sides` with full undo/redo and feature recalculation.
-- **Smooth transition option in Loft**: Added an optional smooth tangency transition (`smooth=True/False`, checkbox "Smooth transition / Mjuk övergång" in Loft dialog). Smooth lofts interpolate between cross-sections using a 3D Catmull-Rom spline (or cubic Hermite curves for 2 sections) instead of linear ruled segment surfaces. Fully serialized across `.omacad` projects.
+### Funktioner och rättningar
+- **Flärp på Jar-axel (#134)**: Gängans avslutning/start vid axeln ($z = 30$) skapade tidigare en icke-manifolder flärp/sliver som bröt den cirkulära kanten mot halsens rot. Med `gap = 0.5` och `anchor_gap = 0.5` i `omacad/model/jar.py` hålls gängans bas ren och axelkanten förblir en obruten 360°-cirkel med bibehållen lockpassning.
+- **Blå linje följer filletens undersida vid justering (#135)**: Uppdaterade `picker_mixin.py` och `round_pattern_prompts.py` så att den blå kantmarkeringen (`selected_edges`) följer filletens nedre kant i förhandsvisningen (`fillet_rail_offset` förskjuten längs väggvektorn) i stället för att ligga kvar på originalkanten.
+- **Ändra antal sidor på polygon i träd och skiss (#136)**: Gjorde antalet sidor på en reguljär polygon redigerbart även efter avslutad skiss. Lade till `Polygon sides: <n>` i objektbrowsern under skissen för inline-redigering (rättade pennklicket i `browser.py`), lade till `"🔢 Number of sides…"` i skissens högerklicksmeny samt integrerade `set_polygon_sides` med fullt stöd för ångra/gör om och uppdatering av tidslinjens features.
+- **Mjuk övergång i Loft (valbart)**: Lade till valbar mjuk övergång i Loft (`smooth=True/False`, kryssruta "Smooth transition / Mjuk övergång" i Loft-dialogen). Mjuk loft interpolerar mellan tvärsnitten med 3D Catmull-Rom-spline (eller kubiska Hermite-kurvor för 2 sektioner) i stället för linjära segment. Sparas och läses fullt ut i `.omacad`.
 
-### Performance
-- Accelerate edge boundary graph snapping and segment cleaning (`snap_and_clean_segments` in `topology.rs` / `faces_edges.py`) natively in Rust. Profiling showed `snap_vertex` in Python took over 70% of edge analysis time on cylinders and curved features; the native pass reduces `_circular_edges` runtime by ~70% (from 14.3s down to 4.1s in repeated runs) while maintaining identical tolerances and deduplication logic.
-- Optimize curved topology surface classification in `faces_topology.py`: vectorized projection in `width_across` and short-circuited symmetric checks. This cuts the full 360-segment Jar with Lid parametric build time from 51.86s (baseline Omacad) down to 4.05s (over 12x speedup).
-- Extend Rust acceleration beyond viewport ray picking to coplanar triangle grouping and flat-patch shading classification. Batch passes release the GIL while preserving union order, group identities, tolerances and float32/float64 behavior. Keep the Python implementations as fallbacks.
-- Advance the native extension API to version 2; rebuild the extension when updating the Python adapter.
+### Prestanda
+- Accelerera snäppning i kantgraf och segmentstädning (`snap_and_clean_segments` i `topology.rs` / `faces_edges.py`) direkt i Rust. Profilering visade att `snap_vertex` i Python tog över 70 % av kantanalystiden på cylindrar och krökta detaljer; den nativa körningen minskar körtiden för `_circular_edges` med ca 70 % (från 14,3 s ned till 4,1 s vid upprepade körningar) med bibehållna toleranser och deduplicering.
+- Optimera klassificering av krökt ytgeometri i `faces_topology.py`: vektoriserad projektion i `width_across` och tidiga avbrott för symmetriska kontroller. Detta sänker parametrisk byggtid för 360-segment Jar with Lid från 51,86 s (baslinje-Omacad) till 4,05 s (över 12 ggr snabbare).
+- Utöka Rust-acceleration bortom strålplockning i viewporten till gruppering av koplanära trianglar och platt ytklassificering för skuggning. Batchkörningar släpper GIL:en med bibehållen ordning, gruppidentiteter, toleranser och float32/float64-beteende. Python-implementationerna behålls som fallback.
+- Höj det nativa tilläggs-API:t till version 2; bygg om tillägget när Python-adaptern uppdateras.
 
-### Verification
-- Pass edge tests, picking tests, native topology unit tests and strict Clippy. Coverage includes fillets, shading normals, circular edge snapping, editable jar history and exact group/render-buffer parity with Python.
-- Compare the actual Omacad and Hybrid checkouts with matching geometry and quality settings. All completed feature cases produce identical mesh hashes, volumes, triangle counts and face/edge counts.
+### Verifiering
+- Klarar kanttester, plocktester, nativa topologitester och strikt Clippy. Testtäckningen inkluderar fillets, skuggningsnormaler, snäppning av cirkulära kanter, redigerbar jar-historik och exakt paritet för grupper och renderingsbuffertar med Python.
+- Jämför faktisk Omacad- och Hybrid-checkout med matchande geometri och kvalitetsinställningar. Samtliga genomförda featurefall ger identiska meshashar, volymer, triangelantal och yt-/kantantal.
 
-### Preliminary measurements
-Single runs per version and case; these are observations, not established performance guarantees:
+### Preliminära mätningar
+Enskilda körningar per version och fall; detta är observationer, inte garanterade prestandalöften:
 
-| Feature build | Curve setting | Omacad | Hybrid | Observation |
+| Feature-bygge | Kurvinställning | Omacad | Hybrid | Observation |
 |---|---:|---:|---:|---|
-| Box, four top-edge fillets, R3 | 720 | 0.058 s | 0.060 s | No clear improvement |
-| Cylinder, top-rim fillet, R3 | 720 | 6.52 s | 4.22 s | About 35% less time |
-| Jar with Lid, default dimensions and full history | 360 | 51.86 s | 3.72 s | Over 13x faster (93% less time) |
+| Box, fyra avrundade överkanter, R3 | 720 | 0,058 s | 0,060 s | Ingen tydlig skillnad |
+| Cylinder, avrundad toppkant, R3 | 720 | 6,52 s | 4,22 s | Cirka 35 % snabbare |
+| Jar with Lid, standardmått och full historik | 360 | 51,86 s | 3,72 s | Över 13 ggr snabbare (93 % mindre tid) |
 
-### Limitations
-- Completed fillet viewport checks used a 2560 × 1440 physical framebuffer and verified 8× MSAA. Interactive geometry simplification was disabled during feature builds.
-- 360 is the highest preset in the app; 720 is the kernel ceiling used for extra stress testing. Some fillet tools still use fixed 16/24 arc segments, so the global curve setting does not control every fillet arc.
-- A profiled original-Omacad jar stress test at 720 segments did not finish within 600 seconds and was stopped. It is not comparable to the unprofiled build times above.
-- The Hybrid jar build completed, but its subsequent viewport benchmark was interrupted at the user's request. No complete jar viewport comparison or FPS gain is claimed; all benchmark processes were stopped.
+### Begränsningar
+- Genomförda viewport-tester för fillet använde en fysisk framebuffer på 2560 × 1440 med 8× MSAA verifierat. Interaktiv geometriförenkling var avstängd under byggena.
+- 360 är det högsta förvalet i appen; 720 är kärnans maxtak för extra stresstestning. Vissa fillet-verktyg använder fortfarande fasta 16/24 bågsegment, så den globala kurvinställningen styr inte alla filletbågar.
+- Ett profilerat stresstest av original-Omacad med jar vid 720 segment blev inte klart inom 600 sekunder och avbröts. Det är inte jämförbart med de oprofilerade byggtiderna ovan.
+- Hybrid-bygget för jar slutfördes, men dess efterföljande viewport-benchmark avbröts på användarens begäran. Ingen fullständig jämförelse av viewport eller FPS-ökning görs gällande; alla benchmarkprocesser stoppades.
 
-# Hybrid experiment — 0.9.9.80.72
+# Hybrid-experiment — 0.9.9.80.72
 
-- Add parametric associative sketch copy across planes (`LinkedSketchFeature`) with optional scaling. Updating the source sketch automatically updates the copied geometry and solves new profiles.
-- Add independent sketch scaling tool in sketch edit mode (`SketchScalePanel`, ribbon tool, `scale_sketch` command, and support for all sketch entity types).
-- Add icons for the Scale sketch tool across all four icon themes (studio, solid, blueprint, semantic).
+- Parametrisk associativ skisskopia mellan plan (`LinkedSketchFeature`) med valfri skalning. Ändringar i källskissen uppdaterar automatiskt kopierad geometri och löser nya profiler.
+- Fristående verktyg för skisskalning i skissredigeringsläge (`SketchScalePanel`, ribbonverktyg, kommandot `scale_sketch` och stöd för alla skissentiteter).
+- Ikoner för skisskalningsverktyget i alla fyra ikonteman (studio, solid, blueprint, semantic).
 
-# Hybrid experiment — 0.9.9.80.71
+# Hybrid-experiment — 0.9.9.80.71
 
-- Add a per-user Omacad Hybrid app-menu entry and command that starts the Rust backend.
-- Add a distinct H-badged icon and a repeatable launcher installer.
+- Programmenypost och terminalkommando för Omacad Hybrid per användare som startar Rust-backend.
+- Tydlig H-märkt ikon och repeterbart installationsskript för startikonen.
 
-# Hybrid experiment — 0.9.9.80.70
+# Hybrid-experiment — 0.9.9.80.70
 
-- Add optional Rust/PyO3 BVH picking behind the original Python/Qt viewport.
-- Preserve the NumPy backend for A/B comparison and fallback.
-- Isolate experiment state and disable inherited automatic release/restart behavior.
-- Add native/parity/Qt regression tests and cold/warm CPU picking benchmarks.
+- Valfri Rust/PyO3 BVH-strålplockning bakom den befintliga Python/Qt-viewporten.
+- NumPy-backend behålls för A/B-jämförelse och fallback.
+- Isolerat experimenttillstånd med inaktiverat automatiskt release-/omstartsbeteende från förlagan.
+- Nativa paritets- och Qt-regressionstester samt CPU-plockningsbenchmarks (kall och varm).
 
 # Changelog
 
