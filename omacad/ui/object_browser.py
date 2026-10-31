@@ -94,6 +94,9 @@ def _add_object(browser, group, oid, features, excluded):
     font.setBold(oid == history.active_id)
     parent.setFont(0, font)
     parent.setToolTip(0, 'Active object' if oid == history.active_id else 'Click to activate this object')
+    thumbnails = getattr(browser, 'thumbnails', None)
+    if thumbnails and thumbnails.icon(oid):
+        parent.setIcon(0, thumbnails.icon(oid))      # the last picture; a newer one replaces it in idle time
     browser._style_eye(parent, doc.object_visible(oid))
     if obj.origin_feature_id in features:
         link = QTreeWidgetItem(parent, ["🔗 " + features[obj.origin_feature_id].name, ""])

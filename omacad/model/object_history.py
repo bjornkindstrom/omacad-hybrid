@@ -5,6 +5,9 @@ histories contain stable IDs, never indexes into that schedule.
 """
 from dataclasses import dataclass, field
 import copy
+import re
+
+BODY_NAME = re.compile(r'Body (\d+)')
 
 
 @dataclass
@@ -167,12 +170,26 @@ class ObjectHistory:
                     target.body_ids.append(bid)
         self.objects = objects
         self.names = {k: v for k, v in self.names.items() if k in objects}
+        self._name_new_bodies(objects, features)
         self.dependencies = {k: v for k, v in self.dependencies.items() if k in valid}
         self.markers = {k: v for k, v in self.markers.items()
                         if k in objects and (v is None or v in objects[k].feature_ids)}
         if self.active_id not in objects:
             self.active_id = next(reversed(objects), None) if objects else None
         return objects
+
+    def _name_new_bodies(self, objects, features):
+        """An object that starts as a sketch is called "Body N" once it has made a body, not after its sketch.
+        The name goes into `names`, so it is saved and its number stays when other bodies come and go;
+        a name the user gave is never touched."""
+        kinds = {f.feature_id: f.feature_type for f in features}
+        taken = [int(m.group(1)) for m in map(BODY_NAME.fullmatch, self.names.values()) if m]
+        for oid, obj in objects.items():
+            if (oid in self.names or not obj.body_ids or not obj.feature_ids
+                    or kinds.get(obj.feature_ids[0]) not in ('sketch', 'linked_sketch')):
+                continue
+            taken.append(max(taken, default=0) + 1)
+            self.names[oid] = obj.name = f'Body {taken[-1]}'
 
     @staticmethod
     def _is_ancestor(objects, oid, of):

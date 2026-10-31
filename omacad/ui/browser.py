@@ -14,6 +14,7 @@ from omacad.ui import theme
 from omacad.ui.theme import style
 from omacad.model.document import Document
 from omacad.ui.theme import qcolor
+from omacad.ui.body_thumbnails import BodyThumbnails
 
 
 class BrowserTree(QWidget):
@@ -53,6 +54,8 @@ class BrowserTree(QWidget):
         super().__init__(parent)
         self.doc = document
         self.parameter_error = None
+        self.thumbnails = BodyThumbnails(self)       # object pictures, drawn in idle time
+        self.thumbnails.ready.connect(self._show_thumbnail)
         self._editor_width = 0
         self.doc.add_change_listener(self.refresh_tree)
 
@@ -181,6 +184,15 @@ class BrowserTree(QWidget):
                     break
         self._editor_width = 0
         self.content_width_changed.emit()
+        self.thumbnails.schedule()
+
+    def _show_thumbnail(self, object_id: str):
+        """A picture drawn in idle time goes straight onto its row; the tree is not rebuilt for it."""
+        for item, _ in self._walk():
+            if item.data(0, Qt.ItemDataRole.UserRole) == ("object", object_id):
+                item.setIcon(0, self.thumbnails.icon(object_id))
+                self.content_width_changed.emit()
+                return
 
     def preferred_width(self, available_width):
         """Fit visible rows while keeping usable space for the model on small windows."""

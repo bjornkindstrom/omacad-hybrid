@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.86
+
+### Funktioner och rättningar
+- **Kropp från skiss heter "Body N" och har en miniatyrbild i browsern** (rapport 20261031-125610): ett objekt som börjar som en skiss döptes efter skissen ("Sketch 1") även när det blivit en kropp. Nu får det namnet "Body 1", "Body 2" … så fort det gjort en kropp; namnet sparas i dokumentet, numret står kvar när andra kroppar tillkommer eller tas bort, och ett eget namn skrivs aldrig över. Primitiver behåller sitt namn ("Box 1"). Objektraden visar en liten bild av objektets kroppar (framifrån-höger-ovanifrån, platt skuggad). Bilden ritas bara när appen är ledig: 0,7 s efter senaste ändringen, inte medan en musknapp är nedtryckt och ett objekt i taget, och bara när kroppens form eller läge har ändrats. Ritningen är en liten numpy-z-buffer utan GL (högst ~150 ms för en modell med 200 000 trianglar). Test: `test_body_thumbnail.py`.
+
 # Hybrid-experiment — 0.9.9.80.85
 
 ### Funktioner och rättningar

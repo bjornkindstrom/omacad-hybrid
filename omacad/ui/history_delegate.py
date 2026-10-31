@@ -2,7 +2,7 @@
 
 The editor starts after the row's label ("Height: "), so the name of the value stays in sight while it is typed,
 and it suggests parameter names and shows what a formula evaluates to (ExprLineEdit)."""
-from PySide6.QtCore import Qt, QTimer, QEvent
+from PySide6.QtCore import Qt, QTimer, QEvent, QSize
 from PySide6.QtWidgets import QLineEdit, QStyledItemDelegate
 from omacad.model import expr
 from omacad.ui.expr_spin import ExprLineEdit
@@ -36,6 +36,14 @@ class HistoryDelegate(QStyledItemDelegate):
         self.preview_timer.timeout.connect(self.update_preview)
         self.preview_value = None
         self.closeEditor.connect(lambda *args: self.clear_preview())
+
+    def initStyleOption(self, option, index):
+        """An object row's picture of its bodies is shown larger than the other rows' icons."""
+        super().initStyleOption(option, index)
+        data = index.data(Qt.ItemDataRole.UserRole)
+        if data and data[0] == 'object' and not option.icon.isNull():
+            from omacad.ui.body_thumbnails import SIZE
+            option.decorationSize = QSize(SIZE, SIZE)
 
     def clear_preview(self):
         self.preview_timer.stop()
