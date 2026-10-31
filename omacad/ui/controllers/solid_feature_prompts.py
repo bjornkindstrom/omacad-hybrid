@@ -45,6 +45,7 @@ class SolidFeaturePromptsMixin:
             dlg.set_plane(plane)
             dlg.set_points(points)
             refresh_preview()
+            self.viewport.frame_picked_plane(plane)
             self.viewport.begin_hole_place(plane)
             dlg.set_placing(True)
             self.viewport.setFocus(Qt.FocusReason.OtherFocusReason)

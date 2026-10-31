@@ -544,6 +544,13 @@ class OverlayMixin:
         self.distance = max(5.0, min(2000.0, size / (fill * aspect * 2.0 * math.tan(math.radians(self.fovy) / 2.0))))
         self.update()
 
+    def frame_picked_plane(self, plane) -> None:
+        """Looks straight at a picked plane, and for a body face also zooms it to fill the view."""
+        self.align_to_plane(plane)
+        face = getattr(plane, "face", None)
+        if face is not None:
+            self.frame_face(plane, face.tris)
+
     def zoom_to_body(self, body_id: str) -> None:
         b = self.doc.bodies.get(body_id)
         if b is not None and b.render_mesh is not None and len(b.render_mesh.vertices):

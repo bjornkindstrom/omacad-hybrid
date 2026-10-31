@@ -475,6 +475,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             points.clear()
             dlg.set_plane(plane)
             dlg.set_points(points)
+            vp.frame_picked_plane(plane)
             vp.begin_hole_place(plane)
             dlg.set_placing(True)
             vp.setFocus(Qt.FocusReason.OtherFocusReason)

@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.84
+
+### Features & Fixes
+- **Hole vänder sig mot och zoomar in på vald yta**: när en yta valdes för Hole (nytt hål och Edit) låg kameran kvar i sin gamla vinkel. Nu riktas kameran rakt mot ytan och ytan zoomas så den fyller vyn, samma som när man skissar på en yta (`Viewport3D.frame_picked_plane`). Origoplan riktas bara in. Test: `test_hole_frame_face.py`.
+
 # Hybrid experiment — 0.9.9.80.83
 
 ### Features & Fixes
