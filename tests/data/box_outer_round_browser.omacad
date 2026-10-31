@@ -1,0 +1,283 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "box_1": "object_box_1",
+      "hole_2": "object_box_1"
+    },
+    "names": {},
+    "outputs": {
+      "box_1": [
+        "body_box_1"
+      ],
+      "hole_2": [
+        "body_box_1"
+      ]
+    },
+    "dependencies": {
+      "box_1": [],
+      "hole_2": [
+        "box_1"
+      ]
+    },
+    "markers": {},
+    "active_id": "object_box_1"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "box_1",
+      "feature_type": "box",
+      "name": "Box 1",
+      "suppressed": false,
+      "length": 50.0,
+      "width": 50.0,
+      "height": 25.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 2.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "hole_2",
+      "feature_type": "hole",
+      "name": "Hole 1",
+      "suppressed": false,
+      "points": [
+        {
+          "origin": [
+            -15.0,
+            15.0,
+            25.0
+          ],
+          "normal": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "plane": {
+            "origin": [
+              0.0,
+              0.0,
+              25.0
+            ],
+            "normal": [
+              -0.0,
+              0.0,
+              1.0
+            ],
+            "u_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "v_axis": [
+              0.0,
+              1.0,
+              -0.0
+            ]
+          },
+          "refs": [
+            {
+              "p1": [
+                -25.0,
+                25.0
+              ],
+              "p2": [
+                25.0,
+                25.0
+              ],
+              "dist": 10.0,
+              "expr": null
+            },
+            {
+              "p1": [
+                -25.0,
+                -25.0
+              ],
+              "p2": [
+                -25.0,
+                25.0
+              ],
+              "dist": 10.0,
+              "expr": null
+            }
+          ]
+        },
+        {
+          "origin": [
+            15.0,
+            15.0,
+            25.0
+          ],
+          "normal": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "plane": {
+            "origin": [
+              0.0,
+              0.0,
+              25.0
+            ],
+            "normal": [
+              -0.0,
+              0.0,
+              1.0
+            ],
+            "u_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "v_axis": [
+              0.0,
+              1.0,
+              -0.0
+            ]
+          },
+          "refs": [
+            {
+              "p1": [
+                25.0,
+                -25.0
+              ],
+              "p2": [
+                25.0,
+                25.0
+              ],
+              "dist": 10.0,
+              "expr": null
+            },
+            {
+              "p1": [
+                -25.0,
+                25.0
+              ],
+              "p2": [
+                25.0,
+                25.0
+              ],
+              "dist": 10.0,
+              "expr": null
+            }
+          ]
+        },
+        {
+          "origin": [
+            15.0,
+            -15.0,
+            25.0
+          ],
+          "normal": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "plane": {
+            "origin": [
+              0.0,
+              0.0,
+              25.0
+            ],
+            "normal": [
+              -0.0,
+              0.0,
+              1.0
+            ],
+            "u_axis": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "v_axis": [
+              0.0,
+              1.0,
+              -0.0
+            ]
+          },
+          "refs": [
+            {
+              "p1": [
+                25.0,
+                -25.0
+              ],
+              "p2": [
+                25.0,
+                25.0
+              ],
+              "dist": 10.0,
+              "expr": null
+            },
+            {
+              "p1": [
+                -25.0,
+                -25.0
+              ],
+              "p2": [
+                25.0,
+                -25.0
+              ],
+              "dist": 10.0,
+              "expr": null
+            }
+          ]
+        }
+      ],
+      "hole_type": "simple",
+      "diameter": 6.0,
+      "depth": 10.0,
+      "through": false,
+      "cb_diameter": 12.0,
+      "cb_depth": 4.0,
+      "cs_diameter": 12.0,
+      "cs_angle": 90.0,
+      "tip": "flat",
+      "tip_angle": 118.0,
+      "chamfer": 2.0,
+      "chamfer_angle": 45.0,
+      "chamfer_depth": 0.0,
+      "exprs": {},
+      "target_body_ids": [
+        "body_box_1"
+      ]
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "body_colors": {},
+  "canvases": {},
+  "favorites": [],
+  "curve_segments": 192
+}

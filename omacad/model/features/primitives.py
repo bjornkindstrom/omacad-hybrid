@@ -43,6 +43,26 @@ def _rect_cross_section(lx: float, wy: float, r: float, kind: str) -> m3d.CrossS
     return m3d.CrossSection([pts])
 
 
+def _rounded_box(lx: float, wy: float, hz: float, r: float, round_top: bool) -> m3d.Manifold:
+    """Straight box with a rolling-ball round `r` on every bottom edge, the vertical corners and (if `round_top`)
+    the top edges. Each corner gets a ball, and the hull of the balls is the box: the same shape as the Fillet
+    tool gives, as a few thousand smooth triangles instead of a stack of slabs."""
+    from omacad.model.kernel import CadKernel
+    from omacad.model import quality
+    seg = quality.sphere_segments()
+    hx, hy = lx / 2.0 - r, wy / 2.0 - r
+    parts = []
+    for sx in (-1.0, 1.0):
+        for sy in (-1.0, 1.0):
+            x, y = sx * hx, sy * hy
+            parts.append(CadKernel.create_sphere(r, seg).translate((x, y, r)))
+            if round_top:
+                parts.append(CadKernel.create_sphere(r, seg).translate((x, y, hz - r)))
+            else:
+                parts.append(m3d.Manifold.cylinder(hz - r, r, r, circular_segments=seg).translate((x, y, r)))
+    return m3d.Manifold.batch_hull(parts)
+
+
 def _rounded_prism(lx: float, wy: float, hz: float, r: float, kind: str, round_top: bool = True, taper: float = 0.0) -> m3d.Manifold:
     """Prism centered in XY, z in [0, hz], with vertical corners and bottom (plus optionally top) edges rounded/chamfered."""
     import math
@@ -54,6 +74,8 @@ def _rounded_prism(lx: float, wy: float, hz: float, r: float, kind: str, round_t
     if r <= 1e-4:
         return m3d.Manifold.extrude(_rect_cross_section(lx, wy, 0.0, kind), hz,
                                    scale_top=((lx-2*hz*taper)/lx, (wy-2*hz*taper)/wy))
+    if kind != "chamfer" and abs(taper) < 1e-12:
+        return _rounded_box(lx, wy, hz, r, round_top)
     n_steps = 1 if kind == "chamfer" else max(6, quality.circle_segments() // 4)
     z_levels = [0.0]
     for k in range(1, n_steps + 1):

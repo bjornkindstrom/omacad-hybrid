@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.81
+
+### Features & Fixes
+- **Box med Outer round i browsern blev tung och randig (rapport 20261031-091740)**: när Outer round på en Box ändrades i browsern byggdes avrundningen som en trappa av skivor (ca 19 000 trianglar med mörka ränder) i stället för den släta fillet som det vanliga verktyget ger. Hörnen byggs nu som skrovet (`hull`) av en kula per hörn (`_rounded_box` i `primitives.py`), ca 3 000 trianglar utan ränder, samma volym som rullande-kula-formeln. Fas och hollow-lådor med taper behåller sin väg. Test: `test_box_round_hull.py`.
+
 # Hybrid experiment — 0.9.9.80.80
 
 ### Features & Fixes
