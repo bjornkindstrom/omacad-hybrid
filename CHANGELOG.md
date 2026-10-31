@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.89
+
+### Funktioner och rättningar
+- **Smidiga övergångar vid fillet/chamfer på slot- och konturlopar**: när alla delar av en sluten kontur (t.ex. två räta linjer och två cirkelbågar i en avrundad slot) markeras via tangentkedja eller manuellt val, slås de ihop och rundas som en hel `LoopEdge`. Tidigare skars linjerna och bågarna med separata verktyg med olika chord sag-marginaler, vilket skapade hundratals fula fasningslinjer och skarpa skarvar där linjerna mötte bågarna. Test: `test_slot_fillet_loop.py`.
+- **Solfjädermeny (Radial / Fan Menu) vid högerklick**: ersätter den traditionella rullgardinsmenyn i 3D-vyn och skissläget med en modern solfjädermeny i två koncentriska bågar.
+  - **Inre båge**: primära kategorier (*Create*, *Primitives*, *Modify*, *Constraints*, *Inspect*, *View*, *History*) samt en dedikerad *Context*-sektor vid högerklick på yta, kant, profil, skiss eller plan.
+  - **Yttre båge**: verktygsblad för vald kategori med ikoner, kortkommandon och dynamisk tooltip-pill. Undernivåer för *Primitives*, *Patterns* och *Rectangles* fälls ut både vid hovring och vid klick. Primitiver som skapas via högerklicksmenyn placeras med sitt origo i den 3D-punkt (på markplanet XY eller på den högerklickade ytan) där högerklicket skedde.
+  - **Nav / Mittcirkel**: snabbknapp för Finish/Cancel av aktivt verktygspanel eller Finish Sketch.
+  - **Dubbla interaktionslägen**: vanligt klick/hovra-läge, samt marking-menu-gest (håll höger musknapp stilla ~160 ms och dra direkt mot önskat verktyg och släpp). Omedelbar musrörelse fortsätter panorera kameran som vanligt. Test: `test_fan_menu.py`.
+
 # Hybrid-experiment — 0.9.9.80.88
 
 ### Funktioner och rättningar

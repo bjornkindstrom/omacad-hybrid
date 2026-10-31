@@ -665,6 +665,18 @@ class FilletFeature(Feature):
             else:
                 take(*best)
 
+        # If all pieces of a closed outline loop were selected (e.g. through tangent chaining
+        # or picking every segment of an extruded slot or rounded plate), promote them to the loop
+        # itself so CadKernel.loop_round_tool rounds the outline smoothly as a single continuous tube
+        # without seams or faceting steps where straight lines meet arcs.
+        bodies = {b.body_id: b for b, _ in seen}
+        for bid, b in bodies.items():
+            for lp in [e for e in b.edges if getattr(e, "kind", "") == "loop"]:
+                all_lp_pieces = [e for e in b.edges if e is not lp and loop_contains(lp, e)]
+                if len(all_lp_pieces) > 1 and all(any(body.body_id == bid and edge.same_as(p) for body, edge in seen) for p in all_lp_pieces):
+                    seen = [(body, edge) for body, edge in seen if not (body.body_id == bid and loop_contains(lp, edge))]
+                    seen.append((b, lp))
+
         # A whole outline includes its straight and circular pieces. Cutting those again with independently fitted
         # tools makes nearly coincident bevels, splitting one surface into many narrow strips.
         loops = [(body, edge) for body, edge in seen if edge.kind == "loop"]
