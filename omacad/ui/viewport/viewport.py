@@ -228,6 +228,12 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         # Right-click menu on a face
         self._rpress: Optional[QPointF] = None
         self.ctx_face = None
+        self._rfan_timer = QTimer(self)
+        self._rfan_timer.setSingleShot(True)
+        self._rfan_timer.setInterval(160)
+        self._rfan_timer.timeout.connect(self._on_rfan_timeout)
+        self._rfan_gesture_active = False
+        self.fan_overlay = None
 
         # Sketch plane picking (origin planes + planar body faces)
         self.plane_pick_mode: bool = False
@@ -461,6 +467,8 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self._place_constraint_help()
+        if hasattr(self, 'fan_overlay') and self.fan_overlay is not None:
+            self.fan_overlay.setGeometry(0, 0, self.width(), self.height())
         if hasattr(self, 'sketch_palette'):
             self.sketch_palette.place_default(self.size())
         if hasattr(self, '_on_viewport_resized') and callable(self._on_viewport_resized):

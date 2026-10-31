@@ -418,6 +418,10 @@ class OverlayMixin:
         painter.drawText(16, h - 16, cam_info)
         self._draw_status_text(painter, w, h)
 
+        if hasattr(self, "fan_menu") and self.fan_menu and self.fan_menu.is_open:
+            self.fan_menu.draw(painter, w, h)
+
+
     def _draw_status_text(self, painter: QPainter, w: int, h: int):
         """The status message above the camera line (lower left) and the sketch status / units at the lower right."""
         fm = painter.fontMetrics()

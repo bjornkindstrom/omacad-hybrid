@@ -43,13 +43,13 @@ class TextDialog(BaseFeatureDialog):
         form = QFormLayout()
 
         self.cmb_type = QComboBox()
+        self.cmb_type.addItem("Text In Box", "box")
         self.cmb_type.addItem("Text", "text")
         self.cmb_type.addItem("Text On Path", "path")
-        self.cmb_type.addItem("Text In Box", "box")
-        self.cmb_type.setToolTip("Text: letters in a frame, placed where you click.\n"
-                                 "Text On Path: letters along a circle, arc or line of the sketch.\n"
-                                 "Text In Box: click two corners; the text fills the box, centred, and fits again "
-                                 "when you change the font or the text.")
+        self.cmb_type.setToolTip("Text In Box: click two corners; the text fills the box, centred, and fits again "
+                                 "when you change the font or the text.\n"
+                                 "Text: letters in a frame, placed where you click.\n"
+                                 "Text On Path: letters along a circle, arc or line of the sketch.")
         form.addRow("Type:", self.cmb_type)
 
         self.edt_text = QPlainTextEdit("Text")
@@ -232,7 +232,14 @@ class TextDialog(BaseFeatureDialog):
                   self.spn_angle, self.spn_margin):
             w.blockSignals(True)
         try:
-            self.cmb_type.setCurrentIndex(1 if ent.path_id else (2 if getattr(ent, "box", None) else 0))
+            if ent.path_id:
+                type_data = "path"
+            elif getattr(ent, "box", None):
+                type_data = "box"
+            else:
+                type_data = "text"
+            idx = self.cmb_type.findData(type_data)
+            self.cmb_type.setCurrentIndex(max(0, idx))
             self.edt_text.setPlainText(ent.text)
             self.cmb_font.setCurrentFont(QFont(ent.font))
             self.cmb_h.setCurrentIndex(max(0, self.cmb_h.findData(ent.h_align)))

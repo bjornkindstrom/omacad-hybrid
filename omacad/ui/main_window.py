@@ -40,7 +40,7 @@ class _BackgroundWorker(QRunnable):
 
 from omacad.model.document import Document, ORIGIN_GROUPS
 from omacad.model.timeline import ExtrudeFeature, CombineFeature, SplitBodyFeature, ShellFeature, MoveFeature
-from omacad.ui import theme
+from omacad.ui import commands, theme
 from omacad.ui.theme import style
 from omacad.ui.ribbon import Ribbon, RECT_TOOLS
 from omacad.ui.viewport import Viewport3D
@@ -448,6 +448,13 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
             self.on_redo()
         elif cmd.startswith("sketch:"):
             self.start_sketch_on_plane(cmd.split(":", 1)[1])
+        elif cmd.startswith("constraint:"):
+            self.viewport.handle_constraint_clicked(cmd.split(":", 1)[1])
+        elif cmd.startswith("sketch_tool:"):
+            self.on_sketch_tool_selected(cmd.split(":", 1)[1])
+        elif cmd in commands.COMMANDS:
+            self.ribbon._emit_command(cmd)
+
 
     def on_redo(self):
         busy = self._busy_reason()

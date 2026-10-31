@@ -21,6 +21,18 @@ from omacad.ui.controllers.prompt_guards import leaves_sketch
 class PrimitivePromptsMixin:
     """Primitive prompt workflows for MainWindow."""
 
+    def _apply_fan_origin(self, dlg):
+        """If launched from the right-click fan menu, place the primitive's origin at the right-clicked 3D point."""
+        vp = self.viewport
+        if not getattr(vp, "_fan_dispatching", False):
+            return
+        plane = getattr(vp, "_fan_click_plane", None)
+        world_pt = getattr(vp, "_fan_click_world", None)
+        if plane is not None and hasattr(dlg, "set_target_plane"):
+            dlg.set_target_plane(plane)
+        elif world_pt is not None:
+            dlg.placement_offset = np.asarray(world_pt, dtype=float)
+
     @leaves_sketch
     def prompt_jar(self):
         """Jar with Lid: sizes with sliders and a live preview; OK adds the steps (one undo step)."""
@@ -80,6 +92,7 @@ class PrimitivePromptsMixin:
     def prompt_box(self):
         from omacad.model.features.primitives import BoxFeature
         dlg = BoxDialog(self)
+        self._apply_fan_origin(dlg)
 
         def refresh_preview():
             l, w, h, center, po, pn, pu, pv = dlg.get_values()
@@ -152,6 +165,7 @@ class PrimitivePromptsMixin:
         from omacad.model.features.primitives import ConeFeature, CylinderFeature, PrismFeature
         from omacad.ui.dialogs.primitives_dlg import ConeDialog
         dlg = PrismDialog(self) if prism else ConeDialog(self) if cone else CylinderDialog(self)
+        self._apply_fan_origin(dlg)
         label = "Prism" if prism else "Cone" if cone else "Cylinder"
 
         def make_feature(fid, name, size, h, center, **params):
@@ -232,6 +246,7 @@ class PrimitivePromptsMixin:
         from omacad.model.kernel import CadKernel
         from omacad.ui.primitive_handles import attach_primitive_handles
         dlg = SphereDialog(self)
+        self._apply_fan_origin(dlg)
 
         def preview():
             solid = CadKernel.create_sphere(dlg.get_values()).translate(tuple(getattr(dlg, "placement_offset", (0, 0, 0))))

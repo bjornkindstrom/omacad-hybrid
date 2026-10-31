@@ -60,7 +60,7 @@ def test_text_on_path_picks_a_circle(win):
     circle = sk.add_circle((0.0, 0.0), 25.0)
     win.prompt_text()
     dlg = win._text_session.dlg
-    dlg.cmb_type.setCurrentIndex(1)                                  # Text On Path
+    dlg.cmb_type.setCurrentIndex(dlg.cmb_type.findData("path"))      # Text On Path
     assert win.viewport.text_wants_path
     win.viewport.text_place_requested.emit(None, None)               # a click that hit no curve does nothing
     assert _texts(win) == []
@@ -117,9 +117,18 @@ def test_dialog_shows_the_rows_that_fit_the_type():
     from omacad.ui.dialogs import TextDialog
     dlg = TextDialog()
     dlg.show()
+    # Default is Text In Box ("box")
+    assert dlg.is_box()
+    assert dlg.spn_margin.isVisible()
+    assert dlg.layout_label(dlg.spn_margin).isVisible()
+
+    # Plain Text ("text")
+    dlg.cmb_type.setCurrentIndex(dlg.cmb_type.findData("text"))
     assert dlg.cmb_v.isVisible() and dlg.flip_box.isVisible() and not dlg.cmb_place.isVisible()
     assert dlg.layout_label(dlg.flip_box).isVisible()
-    dlg.cmb_type.setCurrentIndex(1)
+
+    # Text On Path ("path")
+    dlg.cmb_type.setCurrentIndex(dlg.cmb_type.findData("path"))
     assert not dlg.cmb_v.isVisible() and not dlg.flip_box.isVisible() and dlg.cmb_place.isVisible() and dlg.chk_fit.isVisible()
     assert not dlg.layout_label(dlg.flip_box).isVisible()               # no "Flip:" label left behind
 
@@ -234,6 +243,8 @@ def test_text_in_box_margin_keeps_room_on_every_side(win):
     import pytest as _pytest
     win.prompt_text()
     dlg = win._text_session.dlg
+    assert dlg.spn_margin.isVisibleTo(dlg)
+    dlg.cmb_type.setCurrentIndex(dlg.cmb_type.findData("text"))
     assert not dlg.spn_margin.isVisibleTo(dlg)
     dlg.cmb_type.setCurrentIndex(dlg.cmb_type.findData("box"))
     assert dlg.spn_margin.isVisibleTo(dlg)

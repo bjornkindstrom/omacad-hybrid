@@ -149,6 +149,11 @@ class ViewportEventsMixin:
         self.update()
 
     def keyPressEvent(self, event):
+        if hasattr(self, "fan_menu") and self.fan_menu and self.fan_menu.is_open:
+            if event.key() == Qt.Key.Key_Escape:
+                self.fan_menu.dismiss()
+                return
+
         if getattr(self, "hole_place_mode", False) and getattr(self, "hole_place_plane", None) is not None:
             if hasattr(self, "_hole_key") and self._hole_key(event):
                 return
@@ -359,9 +364,59 @@ class ViewportEventsMixin:
         elif event.key() == Qt.Key.Key_F:
             self.zoom_fit()
 
+    def _dispatch_context_menu(self, event):
+        """Dispatch right-click to the appropriate context menu or fan menu."""
+        if not self.doc.active_sketch and self.move_gizmo:
+            self._show_axis_menu(event)
+        elif not self.doc.active_sketch and self.pick_profile(event.position().x(), event.position().y()) is not None:
+            self._show_profile_menu(event, self.pick_profile(event.position().x(), event.position().y()))
+        elif not self.doc.active_sketch and self._sketch_line_at(event.position().x(), event.position().y()) is not None:
+            self._show_sketch_menu(event, self._sketch_line_at(event.position().x(), event.position().y()))
+        elif not self.doc.active_sketch and not self.active_tool_title() and self._pick_edge(event.position().x(), event.position().y()) is not None:
+            self._show_edge_menu(event, self._pick_edge(event.position().x(), event.position().y()))
+        elif not self.doc.active_sketch:
+            target = self._pick_plane_target(event.position().x(), event.position().y())
+            if target is not None and target[0] == "face":
+                self._show_face_menu(event)
+            elif target is not None:
+                self._show_plane_menu(event, target)
+            else:
+                self._show_general_menu(event)
+        elif self.dim_badge_at(event.position().x(), event.position().y()) is not None:
+            self._show_dimension_menu(event, *self.dim_badge_at(event.position().x(), event.position().y()))
+        elif self.sketch_tool in ("NONE", "DIMENSION") and not self._move:
+            ent = self._pick_entity(event.position().x(), event.position().y())
+            if ent is not None:
+                self._show_element_menu(event, ent)
+            else:
+                self._show_general_menu(event)
+        else:
+            self._show_general_menu(event)
+
     def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton and getattr(self, "_rfan_gesture_active", False):
+            if hasattr(self, "_rfan_timer") and self._rfan_timer.isActive():
+                self._rfan_timer.stop()
+            self._rfan_gesture_active = False
+            self._rpress = None
+            self.is_panning = False
+            self.is_orbiting = False
+            if getattr(self, "fan_menu", None) is not None and self.fan_menu.is_open:
+                self.fan_menu.handle_mouse_move(event.position().x(), event.position().y())
+                self.fan_menu.finish_gesture()
+            return
+
+        if hasattr(self, "fan_menu") and self.fan_menu and self.fan_menu.is_open:
+            if self.fan_menu.handle_mouse_release(event.position().x(), event.position().y(), event.button()):
+                self._press_pos = None
+                self._rpress = None
+                self.is_orbiting = False
+                self.is_panning = False
+                return
+
         if (event.button() == Qt.MouseButton.LeftButton and self.primitive_handles
                 and self.primitive_handles.release()):
+
             self.update()
             return
         if event.button() == Qt.MouseButton.LeftButton and self.rotate_handles.release():
@@ -397,42 +452,30 @@ class ViewportEventsMixin:
             self.update()
             return
         if event.button() == Qt.MouseButton.RightButton and self._rpress is not None:
+            if hasattr(self, "_rfan_timer") and self._rfan_timer.isActive():
+                self._rfan_timer.stop()
+
             moved = (event.position() - self._rpress).manhattanLength()
             self._rpress = None
             self.is_panning = False
-            if moved < 4 and self.plane_pick_mode and self.plane_pick_purpose == "move_body":
+
+            if getattr(self, "_rfan_gesture_active", False):
+                self._rfan_gesture_active = False
+                if getattr(self, "fan_menu", None) is not None and self.fan_menu.is_open:
+                    self.fan_menu.finish_gesture()
+                return
+
+            if moved < 6 and self.plane_pick_mode and self.plane_pick_purpose == "move_body":
                 body_id = self.pick_body(event.position().x(), event.position().y())
                 if body_id is not None:
                     self.doc.select_body(body_id)
                     self.body_clicked.emit(body_id)
                     self.update()
                 return
-            if moved < 4 and not self.plane_pick_mode and not self.edge_pick_mode:
-                if not self.doc.active_sketch and self.move_gizmo:
-                    self._show_axis_menu(event)
-                elif not self.doc.active_sketch and self.pick_profile(event.position().x(), event.position().y()) is not None:
-                    self._show_profile_menu(event, self.pick_profile(event.position().x(), event.position().y()))
-                elif not self.doc.active_sketch and self._sketch_line_at(event.position().x(), event.position().y()) is not None:
-                    self._show_sketch_menu(event, self._sketch_line_at(event.position().x(), event.position().y()))
-                elif not self.doc.active_sketch and not self.active_tool_title() and self._pick_edge(event.position().x(), event.position().y()) is not None:
-                    self._show_edge_menu(event, self._pick_edge(event.position().x(), event.position().y()))
-                elif not self.doc.active_sketch:
-                    target = self._pick_plane_target(event.position().x(), event.position().y())
-                    if target is not None and target[0] == "face":
-                        self._show_face_menu(event)
-                    elif target is not None:
-                        self._show_plane_menu(event, target)
-                    else:
-                        self._show_general_menu(event)
-                elif self.dim_badge_at(event.position().x(), event.position().y()) is not None:
-                    self._show_dimension_menu(event, *self.dim_badge_at(event.position().x(), event.position().y()))
-                elif self.sketch_tool in ("NONE", "DIMENSION") and not self._move:
-                    ent = self._pick_entity(event.position().x(), event.position().y())
-                    if ent is not None:
-                        self._show_element_menu(event, ent)
-                    else:
-                        self._show_general_menu(event)
+            if moved < 6 and not self.plane_pick_mode and not self.edge_pick_mode:
+                self._dispatch_context_menu(event)
             return
+
         if self._endpoint_drag is not None and event.button() == Qt.MouseButton.LeftButton:
             self._endpoint_drag_release()
             return
@@ -445,6 +488,7 @@ class ViewportEventsMixin:
         if self._drag is not None and event.button() == Qt.MouseButton.LeftButton:
             self._drag_release(event)
             return
+
         was_click = (
             event.button() == Qt.MouseButton.LeftButton
             and self._press_pos is not None

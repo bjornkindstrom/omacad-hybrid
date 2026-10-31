@@ -17,6 +17,9 @@ class PointerMixin:
     def mousePressEvent(self, event):
         x = event.position().x()
         y = event.position().y()
+        if getattr(self, "fan_menu", None) is not None and self.fan_menu.is_open:
+            self.fan_menu.handle_mouse_move(x, y)
+            return
         if self._constraint_guide is not None:
             if event.button() == Qt.MouseButton.RightButton:
                 self.constraint_help.dismiss()
@@ -372,10 +375,41 @@ class PointerMixin:
                 self.is_orbiting = True
         elif event.button() == Qt.MouseButton.RightButton:
             self._rpress = event.position()
-            self.is_panning = True
+            self.last_mouse_pos = event.position().toPoint()
+            self.is_panning = False
+            if hasattr(self, "_rfan_timer"):
+                self._rfan_gesture_active = False
+                self._rfan_timer.start(180)
+    def _on_rfan_timeout(self):
+        """Right mouse button held down for 180ms without dragging: open fan menu in gesture mode."""
+        if self._rpress is not None and not self.is_panning and not self.plane_pick_mode and not self.edge_pick_mode:
+            self._rfan_gesture_active = True
+            # Create a synthetic right-click event at current position
+            class _SyntheticEvent:
+                def __init__(self, pos):
+                    self._pos = pos
+                def position(self):
+                    return self._pos
+                def globalPosition(self):
+                    return self._pos
+            self._dispatch_context_menu(_SyntheticEvent(self._rpress))
+
     def mouseMoveEvent(self, event):
         x = event.position().x()
         y = event.position().y()
+
+        if hasattr(self, "fan_menu") and self.fan_menu and self.fan_menu.is_open:
+            self.last_mouse_pos = event.position().toPoint()
+            self.fan_menu.handle_mouse_move(x, y)
+            return
+
+        if self._rpress is not None and not self.is_panning and (event.position() - self._rpress).manhattanLength() >= 6:
+            if hasattr(self, "_rfan_timer") and self._rfan_timer.isActive():
+                self._rfan_timer.stop()
+            self.is_panning = True
+            self.last_mouse_pos = event.position().toPoint()
+
+
         if self.hole_place_mode:
             if not self.is_orbiting and not self.is_panning:
                 self._hole_place_hover(x, y)

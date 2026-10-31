@@ -267,11 +267,23 @@ class SketchDimensionsMixin:
         theme.style_menu(menu)
         edit = theme.action_with_icon(menu, "✏️ Edit value…")
         delete = theme.action_with_icon(menu, "🗑️ Delete dimension\tDel")
-        chosen = menu.exec(event.globalPosition().toPoint())
-        if chosen is edit:
-            self.prompt_edit_dimension(sketch_id, dim_id, dim.value)
-        elif chosen is delete:
-            self.delete_dimension(sketch_id, dim_id)
+
+        from PySide6.QtWidgets import QMenu as _RealQMenu
+        if QMenu is not _RealQMenu or getattr(QMenu, "exec", None) != _RealQMenu.exec:
+            chosen = menu.exec(event.globalPosition().toPoint())
+            if chosen is edit:
+                self.prompt_edit_dimension(sketch_id, dim_id, dim.value)
+            elif chosen is delete:
+                self.delete_dimension(sketch_id, dim_id)
+            return
+
+        from omacad.ui.fan_menu import FanItem
+        context_items = [
+            FanItem("edit_val", "Edit Value", theme.named_icon("sketch", "✏️", 20), callback=lambda: self.prompt_edit_dimension(sketch_id, dim_id, dim.value)),
+            FanItem("del_dim", "Delete Dimension", theme.named_icon("delete", "🗑️", 20), shortcut="Del", callback=lambda: self.delete_dimension(sketch_id, dim_id)),
+        ]
+        self._open_fan_or_menu(event, menu, {edit: ("edit", None), delete: ("del", None)}, context_items=context_items, context_label="Dimension")
+
 
     def _dim_drag_release(self):
         d, self._dim_drag = self._dim_drag, None
@@ -367,90 +379,113 @@ class SketchDimensionsMixin:
         general: dict = {}
         self._add_history_and_view(menu, general, True)
 
-        chosen = menu.exec(event.globalPosition().toPoint())
-        if chosen in general:
-            self._run_general(*general[chosen])
-            return
-        key = acts.get(chosen)
-        if key is None:
-            return
-        pt = lambda name: [("pt", ent, name)]
-        if key == "insert_point":
-            uv = self.get_sketch_plane_uv(event.position().x(), event.position().y())
-            if uv is not None:
+        def _handle_key(key):
+            if key is None:
+                return
+            pt = lambda name: [("pt", ent, name)]
+            if key == "insert_point":
+                uv = self.get_sketch_plane_uv(event.position().x(), event.position().y())
+                if uv is not None:
+                    before = sk.to_dict()
+                    try:
+                        idx = sk.insert_spline_point(ent.entity_id, uv)
+                        if self.doc.record_sketch_change(sk, before):
+                            self.doc.timeline.recompute(self.doc)
+                        self.selected_entities = {ent.entity_id}
+                        self.selection_changed.emit()
+                        self.status_message.emit(f"Inserted spline point #{idx + 1}")
+                        self.update()
+                    except Exception as e:
+                        self.status_message.emit(f"Could not insert point: {e}")
+                return
+            if key == "edit_text":
+                self.text_edit_requested.emit(ent.entity_id)
+                return
+            if key == "explode_text":
                 before = sk.to_dict()
-                try:
-                    idx = sk.insert_spline_point(ent.entity_id, uv)
-                    if self.doc.record_sketch_change(sk, before):
-                        self.doc.timeline.recompute(self.doc)
-                    self.selected_entities = {ent.entity_id}
-                    self.selection_changed.emit()
-                    self.status_message.emit(f"Inserted spline point #{idx + 1}")
-                    self.update()
-                except Exception as e:
-                    self.status_message.emit(f"Could not insert point: {e}")
+                sk.explode_text(ent.entity_id)
+                self.selected_entities.clear()
+                self.doc.record_sketch_change(sk, before)
+                self.update()
+                return
+            if key == "arc_radius":
+                self._dim_arc(ent)
+                return
+            if key == "slot_length":
+                self._dim_slot_length(ent)
+                return
+            if key == "slot_width":
+                self._dim_slot_width(ent)
+                return
+            if key == "p_sides":
+                gid = getattr(poly_line, "group", None)
+                if gid:
+                    cur_sides = len([m for m in members if isinstance(m, SketchLine)])
+                    res = self.prompt_dimension_value("Polygon sides", "Number of sides (3..200):", cur_sides, lo=3.0, hi=200.0, suffix="", inline=True)
+                    val = res[0] if res is not None else None
+                    if val is not None:
+                        self.doc.set_polygon_sides(sk.sketch_id, gid, int(round(val)))
+                        self.update()
+                return
+            if key == "p_side":
+                self._dim_length(poly_line)
+                return
+            if key == "p_dia":
+                self._dim_circle(poly_circle)
+                return
+            if key == "p_centre":
+                self._start_guided_dimension([("pt", poly_circle, "center")], "Distance from the polygon's centre: click a point, a line or a face edge.")
+                return
+            if key == "p_fix":
+                self.selected_entities = {m.entity_id for m in members}
+                self.apply_constraint("FIX")
+                return
+            if key == "length":
+                self._dim_length(ent)
+            elif key == "diameter":
+                self._dim_circle(ent)
+            elif key == "angle":
+                self._start_guided_dimension([("ent", ent)], "Angle: click the other line. (Click empty space instead to dimension the length.)")
+            elif key in ("p1", "p2"):
+                self._start_guided_dimension(pt(key), "Distance: click a point, another line or a face edge to measure to.")
+            elif key == "centre":
+                self._start_guided_dimension(pt("center"), "Distance from the centre: click a point, a line or a face edge.")
+            elif key in ("near", "far"):
+                self._start_guided_dimension([("ent", ent)], f"Distance from the {key} edge: click a line or a face edge to measure to.", side=key)
+            elif key in ("horizontal", "vertical"):
+                self.apply_constraint(key.upper())
+            elif key == "fix":
+                self.apply_constraint("FIX")
+            elif key == "fillet":
+                self.set_sketch_tool("FILLET")
+            elif key == "offset":
+                self.set_sketch_tool("OFFSET")
+            elif key == "delete":
+                self.delete_selected_entities()
+
+        from PySide6.QtWidgets import QMenu as _RealQMenu
+        if QMenu is not _RealQMenu or getattr(QMenu, "exec", None) != _RealQMenu.exec:
+            chosen = menu.exec(event.globalPosition().toPoint())
+            if chosen in general:
+                self._run_general(*general[chosen])
+            else:
+                _handle_key(acts.get(chosen))
             return
-        if key == "edit_text":
-            self.text_edit_requested.emit(ent.entity_id)
-            return
-        if key == "explode_text":
-            before = sk.to_dict()
-            sk.explode_text(ent.entity_id)
-            self.selected_entities.clear()
-            self.doc.record_sketch_change(sk, before)
-            self.update()
-            return
-        if key == "arc_radius":
-            self._dim_arc(ent)
-            return
-        if key == "slot_length":
-            self._dim_slot_length(ent)
-            return
-        if key == "slot_width":
-            self._dim_slot_width(ent)
-            return
-        if key == "p_sides":
-            gid = getattr(poly_line, "group", None)
-            if gid:
-                cur_sides = len([m for m in members if isinstance(m, SketchLine)])
-                res = self.prompt_dimension_value("Polygon sides", "Number of sides (3..200):", cur_sides, lo=3.0, hi=200.0, suffix="", inline=True)
-                val = res[0] if res is not None else None
-                if val is not None:
-                    self.doc.set_polygon_sides(sk.sketch_id, gid, int(round(val)))
-                    self.update()
-            return
-        if key == "p_side":
-            self._dim_length(poly_line)
-            return
-        if key == "p_dia":
-            self._dim_circle(poly_circle)
-            return
-        if key == "p_centre":
-            self._start_guided_dimension([("pt", poly_circle, "center")], "Distance from the polygon's centre: click a point, a line or a face edge.")
-            return
-        if key == "p_fix":
-            self.selected_entities = {m.entity_id for m in members}
-            self.apply_constraint("FIX")
-            return
-        if key == "length":
-            self._dim_length(ent)
-        elif key == "diameter":
-            self._dim_circle(ent)
-        elif key == "angle":
-            self._start_guided_dimension([("ent", ent)], "Angle: click the other line. (Click empty space instead to dimension the length.)")
-        elif key in ("p1", "p2"):
-            self._start_guided_dimension(pt(key), "Distance: click a point, another line or a face edge to measure to.")
-        elif key == "centre":
-            self._start_guided_dimension(pt("center"), "Distance from the centre: click a point, a line or a face edge.")
-        elif key in ("near", "far"):
-            self._start_guided_dimension([("ent", ent)], f"Distance from the {key} edge: click a line or a face edge to measure to.", side=key)
-        elif key in ("horizontal", "vertical"):
-            self.apply_constraint(key.upper())
-        elif key == "fix":
-            self.apply_constraint("FIX")
-        elif key == "fillet":
-            self.set_sketch_tool("FILLET")
-        elif key == "offset":
-            self.set_sketch_tool("OFFSET")
-        elif key == "delete":
-            self.delete_selected_entities()
+
+        from omacad.ui.fan_menu import FanItem
+        context_items = []
+        for act, k in acts.items():
+            txt = act.text().split("…")[0].split("(")[0].strip()
+            # Clean emoji if present
+            if len(txt) > 2 and ord(txt[0]) > 127:
+                txt = txt[2:].strip()
+            context_items.append(FanItem(
+                id=f"el_{k}",
+                label=txt or k,
+                icon=act.icon(),
+                tooltip=act.toolTip(),
+                callback=lambda _k=k: _handle_key(_k)
+            ))
+
+        self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label=ent.__class__.__name__.replace("Sketch", ""))
+

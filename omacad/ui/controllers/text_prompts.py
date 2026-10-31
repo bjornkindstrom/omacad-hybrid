@@ -47,7 +47,10 @@ class TextPromptsMixin:
         draft = SketchText("text_draft", **self._text_args(dlg))
         draft.sketch = sk
         self._start_text_session(_TextSession(sk, dlg, None, draft))
-        self.status_label.setText("Text: click in the sketch to place it. Text On Path: click the circle, arc or line it follows.")
+        if dlg.is_box():
+            self.status_label.setText("Text In Box: click one corner, then the opposite corner.")
+        else:
+            self.status_label.setText("Text: click in the sketch to place it. Text On Path: click the circle, arc or line it follows.")
 
     def prompt_text_edit(self, entity_id: str):
         sk = self.doc.active_sketch
