@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.85
+
+### Features & Fixes
+- **Canvas på yta kan skalas till ytans mått**: i Canvas-dialogen finns knappen "⤢ Skala till yta" när planet är en kroppsyta. Bilden skalas jämnt så att den precis ryms på ytan (den sida som tar slut först styr) och centreras på ytans mitt. Knappen är avstängd utan bild och för origoplan. Helpers `face_size_uv` och `face_for_plane` i `model/canvas.py`. Test: `test_canvas_face.py`.
+
 # Hybrid experiment — 0.9.9.80.84
 
 ### Features & Fixes

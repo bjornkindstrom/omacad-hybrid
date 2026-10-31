@@ -95,3 +95,41 @@ def test_face_context_menu_opens_canvas_editor_on_that_face(monkeypatch, tmp_pat
     c = next(iter(win.doc.canvases.values()))
     assert np.dot(canvas_plane(win.doc, c).normal, face.normal) == pytest.approx(1)
     win.close()
+
+
+def test_fit_to_face_scales_the_image_inside_the_face_and_centres_it(tmp_path):
+    app = QApplication.instance() or QApplication([])
+    doc = Document()
+    doc.add_box(40, 30, 20)
+    bid = next(iter(doc.bodies))
+    doc.move_body(bid, dx=17, dy=9, dz=25, rx=30)
+    face = doc.bodies[bid].faces[0]
+    path = str(tmp_path / "wide.png")
+    img = QImage(300, 100, QImage.Format.Format_RGB32)   # 3:1 image on a face that is not 3:1
+    img.fill(QColor("red"))
+    assert img.save(path)
+    dlg = CanvasEditorDialog(doc, initial_image_path=path, preselected_face=face)
+    assert dlg.btn_fit_face.isEnabled()
+    dlg.fit_to_face()
+    from omacad.model.canvas import face_size_uv
+    cu, cv, fw, fh = face_size_uv(face)
+    data = dlg.get_canvas_data()
+    assert data["width_mm"] <= fw + 1e-6 and data["height_mm"] <= fh + 1e-6
+    assert max(data["width_mm"] / fw, data["height_mm"] / fh) == pytest.approx(1, rel=1e-6)  # fills one side
+    cid = doc.add_canvas(**data)
+    plane = canvas_plane(doc, doc.canvases[cid])
+    centre = plane.uv_to_world(cu, cv)
+    origin_u, origin_v = data["origin_uv"]
+    image_centre = plane.uv_to_world(origin_u + data["width_mm"] / 2, origin_v + data["height_mm"] / 2)
+    assert image_centre == pytest.approx(centre, abs=1e-5)
+    dlg.close()
+
+
+def test_fit_to_face_is_only_enabled_for_a_face_with_an_image(tmp_path):
+    app = QApplication.instance() or QApplication([])
+    doc = Document()
+    doc.add_box(40, 30, 20)
+    dlg = CanvasEditorDialog(doc)
+    dlg.cmb_plane.setCurrentIndex(dlg.cmb_plane.findData("XY"))
+    assert not dlg.btn_fit_face.isEnabled()          # no image yet, and an origin plane
+    dlg.close()

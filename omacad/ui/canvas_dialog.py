@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QFileDialog, QSlider, QCheckBox, QComboBox, QDoubleSpinBox,
     QGroupBox, QFormLayout, QMessageBox, QWidget, QScrollArea, QSplitter
 )
+from omacad.model.canvas import face_for_plane, face_size_uv
 from omacad.model.document import Document
 from omacad.ui.theme import style
 
@@ -563,6 +564,13 @@ class CanvasEditorDialog(QDialog):
         self.sld_opacity.setValue(50)
         form_place.addRow("Opacitet:", self.sld_opacity)
 
+        self.btn_fit_face = QPushButton("⤢ Skala till yta")
+        self.btn_fit_face.setToolTip("Skala bilden så att den ryms på det valda ytan och centrera den på ytan")
+        self.btn_fit_face.clicked.connect(self.fit_to_face)
+        self.btn_fit_face.setEnabled(False)
+        form_place.addRow(self.btn_fit_face)
+        self.cmb_plane.currentIndexChanged.connect(self.update_fit_button)
+
         self.lbl_dims = QLabel("Storlek: - x - mm")
         form_place.addRow(self.lbl_dims)
         tools_layout.addWidget(grp_place)
@@ -759,6 +767,28 @@ class CanvasEditorDialog(QDialog):
         self.canvas_view.origin_pt = QPointF(px, py)
         self.canvas_view.update()
 
+    def update_fit_button(self):
+        data = self.cmb_plane.currentData()
+        ok = (self.current_image is not None and isinstance(data, dict)
+              and face_for_plane(self.doc, data) is not None)
+        self.btn_fit_face.setEnabled(ok)
+
+    def fit_to_face(self):
+        """Scales the image uniformly to fit inside the chosen body face and centres it on the face."""
+        face = face_for_plane(self.doc, self.cmb_plane.currentData() or {})
+        if face is None or not self.current_image:
+            return
+        cu, cv, fw, fh = face_size_uv(face)
+        iw, ih = self.current_image.width(), self.current_image.height()
+        self.px_per_mm = max(iw / max(fw, 1e-6), ih / max(fh, 1e-6))
+        w_mm, h_mm = iw / self.px_per_mm, ih / self.px_per_mm
+        # The image's origin point is (0, 0) of the plane; put the image's centre on the face centre.
+        x_orig_mm, y_orig_mm = w_mm / 2.0 - cu, h_mm / 2.0 - cv
+        self.canvas_view.origin_pt = QPointF(x_orig_mm * self.px_per_mm, ih - y_orig_mm * self.px_per_mm)
+        self.canvas_view.update()
+        self.update_dimension_labels()
+        self.update_origin_display()
+
     def update_dimension_labels(self):
         if not self.current_image:
             return
@@ -860,6 +890,7 @@ class CanvasEditorDialog(QDialog):
         pix = QPixmap.fromImage(img)
         self.canvas_view.set_pixmap(pix)
         self.update_dimension_labels()
+        self.update_fit_button()
 
     def get_canvas_data(self) -> dict:
         """Returns the finalized canvas properties to be added or updated in Document."""
