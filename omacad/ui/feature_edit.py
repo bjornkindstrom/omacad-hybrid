@@ -466,6 +466,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
 
         def pick_hole_plane():
             vp.end_hole_place()
+            dlg.set_placing(False)
             vp.begin_plane_pick("hole_plane")
 
         def plane_picked(selected_plane):
@@ -475,10 +476,14 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             dlg.set_plane(plane)
             dlg.set_points(points)
             vp.begin_hole_place(plane)
+            dlg.set_placing(True)
+            vp.setFocus(Qt.FocusReason.OtherFocusReason)
 
         def place_points():
             if plane is not None:
                 vp.begin_hole_place(plane, [p["origin"] for p in points])
+                dlg.set_placing(True)
+                vp.setFocus(Qt.FocusReason.OtherFocusReason)
 
         def point_picked(hit):
             if isinstance(hit, dict):

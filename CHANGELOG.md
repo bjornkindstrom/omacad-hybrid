@@ -1,3 +1,10 @@
+# Hybrid experiment — 0.9.9.80.78
+
+### Features & Fixes
+- **Dynamisk förhandsvisning och flyttande smartguider vid Hole-placering (#138)**: När siffror matas in i smartrutorna under placering av hål flyttar sig nu måttlinjerna, smartrutorna och förhandsvisningscirkeln dynamiskt i realtid till de exakta måtten på ytan, så man tydligt ser var hålet hamnar innan man klickar eller trycker Enter.
+- **Smidig fokusväxling mellan panel och rityta / smartrutor (#138)**: Klick i 3D-vyn och klick på smartrutornas måttetiketter sätter omedelbart tangentbordsfokus till 3D-ytan utan att av misstag placera ett oönskat hål. När användaren trycker på "Place hole points" aktiveras placeringsläget tydligt ("Placing on surface (Click or Esc to pause)") och fokus överförs direkt till 3D-vyn.
+- **Redigera hålavstånd via pennan och dubbelklick i trädet (#138)**: Lade till stöd för att klicka på pennikonen eller dubbelklicka på hålavståndsrader (`hole_dim`) i objektbrowsern för att direkt öppna inline-redigeraren i trädet.
+
 # Hybrid experiment — 0.9.9.80.77
 
 ### Features & Fixes

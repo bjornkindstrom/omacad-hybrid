@@ -43,6 +43,14 @@ class PointerMixin:
             return
 
         if self.hole_place_mode and event.button() == Qt.MouseButton.LeftButton:
+            self.setFocus(Qt.FocusReason.MouseFocusReason)
+            # Check if clicked on a dimension badge to focus that smart input box
+            badges = getattr(self, "_hole_badge_rects", [])
+            for idx, rect in badges:
+                if rect.contains(x, y):
+                    self.hole_dyn_focus = idx
+                    self.update()
+                    return
             if self._hole_place_press(x, y):
                 return
 

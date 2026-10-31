@@ -36,6 +36,7 @@ class SolidFeaturePromptsMixin:
         def pick_plane():
             self.viewport.end_hole_place()
             self.viewport.clear_hole_place()
+            dlg.set_placing(False)
             self.viewport.begin_plane_pick("hole_plane")
             self.status_label.setText("Hole: select a planar face or origin plane for hole placement.")
 
@@ -45,11 +46,15 @@ class SolidFeaturePromptsMixin:
             dlg.set_points(points)
             refresh_preview()
             self.viewport.begin_hole_place(plane)
+            dlg.set_placing(True)
+            self.viewport.setFocus(Qt.FocusReason.OtherFocusReason)
             self.status_label.setText("Hole: click to place points on the selected plane. Esc pauses placement; select Place hole points to continue.")
 
         def start_placing():
             if dlg.plane is not None:
                 self.viewport.begin_hole_place(dlg.plane, [p["origin"] for p in points])
+                dlg.set_placing(True)
+                self.viewport.setFocus(Qt.FocusReason.OtherFocusReason)
                 self.status_label.setText("Hole: click to place hole centers on the selected plane. Esc pauses placement.")
 
         def point_picked(hit):

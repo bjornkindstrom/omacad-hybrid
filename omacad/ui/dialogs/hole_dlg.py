@@ -123,6 +123,13 @@ class HoleDialog(BaseFeatureDialog):
         if plane is not None:
             self.lbl_points.setText(f"Plane: {plane.name}; {len(self.points)} point(s) selected")
 
+    def set_placing(self, active: bool):
+        """Update button label to indicate placing state."""
+        if active:
+            self.btn_place.setText("Placing on surface (Click or Esc to pause)")
+        else:
+            self.btn_place.setText("Place hole points")
+
     def values(self):
         return {"points": self.points, "hole_type": self.cmb_type.currentData(),
                 "diameter": self.spn_diameter.value(), "depth": self.spn_depth.value(),

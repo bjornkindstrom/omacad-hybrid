@@ -115,6 +115,10 @@ def test_hole_placement_typing_and_browser_editing(win):
     assert "Distance to edge 1: 15 mm" in hole_dim_rows[0][0].text(0)
     assert "Distance to edge 2: 12 mm" in hole_dim_rows[1][0].text(0)
 
+    # Click on the pencil (column 1) to edit distance
+    item_row, item_data = hole_dim_rows[0]
+    win.browser.on_item_clicked(item_row, 1)
+
     # Edit distance 1 in document via edit_hole_dimension
     assert win.doc.edit_hole_dimension(feat.feature_id, 0, 0, "20.0")
     assert feat.points[0]["refs"][0]["dist"] == 20.0
@@ -147,3 +151,59 @@ def test_hole_placement_typing_and_browser_editing(win):
     win.doc.undo()
     current_feat = next(f for f in win.doc.timeline.features if f.feature_id == feat.feature_id)
     assert current_feat.points[0]["refs"][0]["dist"] == 15.0
+
+
+def test_hole_preview_moves_with_typed_dimensions_and_badge_focus(win):
+    """As the user types into smart boxes, the preview coordinates update dynamically,
+    and clicking on dimension badges selects that dimension box."""
+    from PySide6.QtGui import QKeyEvent, QMouseEvent
+    from PySide6.QtCore import QEvent, Qt, QPointF
+
+    body = win.doc.add_box(40.0, 30.0, 20.0)
+    vp = win.viewport
+
+    plane = SketchPlane.from_face([0.0, 0.0, 1.0], [0.0, 0.0, 20.0])
+    vp.begin_hole_place(plane)
+
+    # Hover cursor over top face near (10, 10, 20)
+    vp.hole_place_hover = np.array([10.0, 10.0, 20.0])
+
+    # Render overlays to compute badges and effective position
+    img = QImage(800, 600, QImage.Format.Format_ARGB32)
+    painter = QPainter(img)
+    vp.draw_painter_overlays(painter)
+    painter.end()
+
+    # Initial effective position matches hover
+    orig_eff = getattr(vp, "_hole_last_effective_world", None)
+    assert orig_eff is not None
+    assert np.allclose(orig_eff, [10.0, 10.0, 20.0])
+
+    # Now type "5" into box 0
+    evt = QKeyEvent(QEvent.Type.KeyPress, 0, Qt.KeyboardModifier.NoModifier, "5")
+    vp.keyPressEvent(evt)
+    assert vp.hole_dyn_texts[0] == "5"
+
+    # Render again - effective point should now have shifted to 5 mm from edge 1
+    painter = QPainter(img)
+    vp.draw_painter_overlays(painter)
+    painter.end()
+
+    new_eff = getattr(vp, "_hole_last_effective_world", None)
+    assert new_eff is not None
+    # Position shifted
+    assert not np.allclose(orig_eff, new_eff)
+
+    # Check that badge rects are registered
+    assert hasattr(vp, "_hole_badge_rects")
+    assert len(vp._hole_badge_rects) >= 1
+
+    # Simulate mouse click on badge 1 (orange / edge 2)
+    idx, rect = vp._hole_badge_rects[1] if len(vp._hole_badge_rects) > 1 else vp._hole_badge_rects[0]
+    click_pos = rect.center()
+    mouse_evt = QMouseEvent(QEvent.Type.MouseButtonPress, click_pos, Qt.MouseButton.LeftButton,
+                            Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+    vp.mousePressEvent(mouse_evt)
+
+    # Focus should have shifted to that badge index
+    assert vp.hole_dyn_focus == idx

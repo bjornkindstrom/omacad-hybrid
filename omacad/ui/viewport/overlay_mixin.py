@@ -56,8 +56,10 @@ class OverlayMixin:
             painter.setPen(QPen(QColor(40, 170, 255, 210), 1.5))
             painter.setBrush(QColor(40, 170, 255, 150))
             marks = [*getattr(self, "hole_place_points", [])]
-            if getattr(self, "hole_place_hover", None) is not None:
-                marks.append(self.hole_place_hover)
+            # Use effective resolved hole preview point if available so preview follows typed dimensions
+            hover_effective = getattr(self, "_hole_last_effective_world", getattr(self, "hole_place_hover", None))
+            if hover_effective is not None:
+                marks.append(hover_effective)
             for point in marks:
                 screen = self.world_to_screen(np.asarray(point, dtype=float))
                 if screen is not None:
@@ -584,17 +586,38 @@ class OverlayMixin:
         plane = getattr(self, "hole_place_plane", None)
         hover_pt = getattr(self, "hole_place_hover", None)
         segs = getattr(self, "hole_place_segments", None)
+        self._hole_badge_rects = []
+        self._hole_last_effective_world = hover_pt
         if plane is None or hover_pt is None or not segs:
             return
         from omacad.ui import smart_circle
-        hp = np.asarray(hover_pt, dtype=float)
-        try:
-            uv = plane.world_to_uv(hp)
-        except Exception:
-            rel = hp - np.asarray(plane.origin, dtype=float)
-            uv = (float(rel @ np.asarray(plane.u_axis, dtype=float)), float(rel @ np.asarray(plane.v_axis, dtype=float)))
 
-        seg1 = smart_circle.nearest_line(segs, uv)
+        res = None
+        if hasattr(self, "_hole_place_resolve_point"):
+            try:
+                res = self._hole_place_resolve_point()
+            except Exception:
+                res = None
+
+        if res is not None and "final_uv" in res:
+            uv = res["final_uv"]
+            self._hole_last_effective_world = res["origin"]
+            seg1 = res.get("seg1")
+            seg2 = res.get("seg2")
+            d1_val = res.get("d1_val")
+            d2_val = res.get("d2_val")
+        else:
+            hp = np.asarray(hover_pt, dtype=float)
+            try:
+                uv = plane.world_to_uv(hp)
+            except Exception:
+                rel = hp - np.asarray(plane.origin, dtype=float)
+                uv = (float(rel @ np.asarray(plane.u_axis, dtype=float)), float(rel @ np.asarray(plane.v_axis, dtype=float)))
+            seg1 = smart_circle.nearest_line(segs, uv)
+            seg2 = None
+            d1_val = None
+            d2_val = None
+
         if seg1 is None:
             return
 
@@ -610,11 +633,12 @@ class OverlayMixin:
         texts = getattr(self, "hole_dyn_texts", ["", ""])
         focus = getattr(self, "hole_dyn_focus", 0)
 
-        def badge(at: QPointF, text: str, col: QColor, is_active=False):
+        def badge(at: QPointF, text: str, col: QColor, idx: int, is_active=False):
             fm = painter.fontMetrics()
             tw = max(48, fm.horizontalAdvance(text) + 16)
             th = 22
             rect = QRectF(at.x() - tw / 2, at.y() - th / 2, tw, th)
+            self._hole_badge_rects.append((idx, rect))
             painter.setBrush(QBrush(qcolor(37, 40, 44, 240)))
             painter.setPen(QPen(col, 2.0 if is_active else 1.5))
             painter.drawRoundedRect(rect, 4, 4)
@@ -624,7 +648,7 @@ class OverlayMixin:
             painter.setPen(qcolor(224, 227, 231))
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
 
-        def measure_line(foot_uv, cur_uv, text: str, col: QColor, is_active=False):
+        def measure_line(foot_uv, cur_uv, text: str, col: QColor, idx: int, is_active=False):
             sf, sc = uv_to_scr(foot_uv), uv_to_scr(cur_uv)
             if sf is None or sc is None:
                 return
@@ -636,7 +660,7 @@ class OverlayMixin:
             painter.setPen(QPen(col, 1.5))
             for p in (sf, sc):
                 painter.drawLine(QPointF(p.x() - nx, p.y() - ny), QPointF(p.x() + nx, p.y() + ny))
-            badge(QPointF((sf.x() + sc.x()) / 2, (sf.y() + sc.y()) / 2), text, col, is_active)
+            badge(QPointF((sf.x() + sc.x()) / 2, (sf.y() + sc.y()) / 2), text, col, idx, is_active)
 
         painter.save()
         font = QFont(theme.font_family(), 9)
@@ -649,14 +673,15 @@ class OverlayMixin:
             painter.setPen(QPen(cyan, 2.5))
             painter.drawLine(a1, b1)
         foot1 = smart_circle.foot_on_line(seg1, uv)
-        d1 = abs(smart_circle.signed_distance(seg1, uv))
+        d1 = d1_val if d1_val is not None else abs(smart_circle.signed_distance(seg1, uv))
         txt1 = (texts[0] + ("|" if focus == 0 else "")) if texts[0] else f"{d1:.1f}"
         txt1 = f"{txt1} mm"
-        measure_line(foot1, uv, txt1, cyan, is_active=(focus == 0))
+        measure_line(foot1, uv, txt1, cyan, 0, is_active=(focus == 0))
 
         # Second edge (non-parallel) and draw perpendicular dimension line
-        n1 = smart_circle.line_normal(seg1)
-        seg2 = smart_circle.nearest_line(segs, uv, not_parallel_to=n1)
+        if seg2 is None:
+            n1 = smart_circle.line_normal(seg1)
+            seg2 = smart_circle.nearest_line(segs, uv, not_parallel_to=n1)
         if seg2 is not None:
             orange = qcolor(255, 160, 50)
             a2, b2 = uv_to_scr(seg2[0]), uv_to_scr(seg2[1])
@@ -664,10 +689,10 @@ class OverlayMixin:
                 painter.setPen(QPen(orange, 2.5))
                 painter.drawLine(a2, b2)
             foot2 = smart_circle.foot_on_line(seg2, uv)
-            d2 = abs(smart_circle.signed_distance(seg2, uv))
+            d2 = d2_val if d2_val is not None else abs(smart_circle.signed_distance(seg2, uv))
             txt2 = (texts[1] + ("|" if focus == 1 else "")) if texts[1] else f"{d2:.1f}"
             txt2 = f"{txt2} mm"
-            measure_line(foot2, uv, txt2, orange, is_active=(focus == 1))
+            measure_line(foot2, uv, txt2, orange, 1, is_active=(focus == 1))
 
         painter.restore()
 

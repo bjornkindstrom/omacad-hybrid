@@ -34,6 +34,8 @@ class PointPickMixin:
     def end_hole_place(self):
         self.hole_place_mode = False
         self.hole_place_hover = None
+        self._hole_last_effective_world = None
+        self._hole_badge_rects = []
         self.hole_place_segments = []
         self.hole_dyn_texts = ["", ""]
         self.hole_dyn_focus = 0
@@ -231,6 +233,11 @@ class PointPickMixin:
             "normal": [float(x) for x in plane.normal],
             "plane": plane_info,
             "refs": refs,
+            "final_uv": (float(final_uv[0]), float(final_uv[1])),
+            "seg1": seg1,
+            "d1_val": d1_val,
+            "seg2": seg2,
+            "d2_val": d2_val,
         }
 
     def _hole_key(self, event) -> bool:
