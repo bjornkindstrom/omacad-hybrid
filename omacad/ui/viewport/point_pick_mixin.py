@@ -25,6 +25,8 @@ class PointPickMixin:
         self.hole_place_plane = plane
         self.hole_place_points = list(points)
         self.hole_place_segments = self._hole_reference_segments(plane)
+        self.hole_dyn_texts = ["", ""]
+        self.hole_dyn_focus = 0
         self._hole_place_hover(0, 0)
         self.setFocus()
         self.update()
@@ -33,6 +35,8 @@ class PointPickMixin:
         self.hole_place_mode = False
         self.hole_place_hover = None
         self.hole_place_segments = []
+        self.hole_dyn_texts = ["", ""]
+        self.hole_dyn_focus = 0
         self.update()
 
     def clear_hole_place(self):
@@ -40,6 +44,8 @@ class PointPickMixin:
         self.hole_place_plane = None
         self.hole_place_points = []
         self.hole_place_segments = []
+        self.hole_dyn_texts = ["", ""]
+        self.hole_dyn_focus = 0
         self.update()
 
     def _hole_reference_segments(self, plane):
@@ -90,14 +96,194 @@ class PointPickMixin:
         self.update()
 
     def _hole_place_press(self, x, y):
-        point = self._hole_place_at(x, y)
-        if point is None:
+        plane = self.hole_place_plane
+        if plane is None:
             return False
-        point = np.asarray(point, dtype=float)
-        self.hole_place_points.append(point.tolist())
-        self.hole_point_picked.emit(point.tolist())
+        point_data = self._hole_place_resolve_point(x, y)
+        if point_data is None:
+            return False
+        self.hole_place_points.append(point_data["origin"])
+        self.hole_point_picked.emit(point_data)
+        self.hole_dyn_texts = ["", ""]
+        self.hole_dyn_focus = 0
         self.update()
         return True
+
+    def _hole_place_resolve_point(self, x=None, y=None):
+        plane = self.hole_place_plane
+        if plane is None:
+            return None
+        if x is not None and y is not None:
+            point = self._hole_place_at(x, y)
+        else:
+            point = self.hole_place_hover
+        if point is None:
+            return None
+        hp = np.asarray(point, dtype=float)
+        try:
+            cur_uv = np.asarray(plane.world_to_uv(hp), dtype=float)
+        except Exception:
+            rel = hp - np.asarray(plane.origin, dtype=float)
+            cur_uv = np.array([float(rel @ np.asarray(plane.u_axis, dtype=float)),
+                               float(rel @ np.asarray(plane.v_axis, dtype=float))])
+        from omacad.ui import smart_circle
+        from omacad.model import expr
+        segs = getattr(self, "hole_place_segments", None)
+        texts = getattr(self, "hole_dyn_texts", ["", ""])
+        seg1, seg2 = None, None
+        d1_val, d2_val = None, None
+        d1_expr, d2_expr = None, None
+        refs = []
+
+        if segs:
+            seg1 = smart_circle.nearest_line(segs, (float(cur_uv[0]), float(cur_uv[1])))
+            if seg1 is not None:
+                n1 = smart_circle.line_normal(seg1)
+                seg2 = smart_circle.nearest_line(segs, (float(cur_uv[0]), float(cur_uv[1])), not_parallel_to=n1)
+
+        if seg1 is not None:
+            raw_d1 = abs(smart_circle.signed_distance(seg1, (float(cur_uv[0]), float(cur_uv[1]))))
+            if texts[0].strip():
+                try:
+                    d1_val = abs(float(expr.evaluate(texts[0].strip(), self.doc.parameter_values())))
+                    d1_expr = None if expr.is_plain_number(texts[0].strip()) else texts[0].strip()
+                except Exception:
+                    d1_val = raw_d1
+            else:
+                d1_val = raw_d1
+
+        if seg2 is not None:
+            raw_d2 = abs(smart_circle.signed_distance(seg2, (float(cur_uv[0]), float(cur_uv[1]))))
+            if texts[1].strip():
+                try:
+                    d2_val = abs(float(expr.evaluate(texts[1].strip(), self.doc.parameter_values())))
+                    d2_expr = None if expr.is_plain_number(texts[1].strip()) else texts[1].strip()
+                except Exception:
+                    d2_val = raw_d2
+            else:
+                d2_val = raw_d2
+
+        final_uv = cur_uv.copy()
+        if seg1 is not None and d1_val is not None and seg2 is not None and d2_val is not None:
+            try:
+                p1, p2 = np.array(seg1[0]), np.array(seg1[1])
+                v1 = p2 - p1
+                dir1 = v1 / max(float(np.linalg.norm(v1)), 1e-12)
+                norm1 = np.array([-dir1[1], dir1[0]])
+                side1 = 1.0 if (cur_uv - p1) @ norm1 >= 0 else -1.0
+                k1 = p1 @ norm1 + side1 * d1_val
+
+                p3, p4 = np.array(seg2[0]), np.array(seg2[1])
+                v2 = p4 - p3
+                dir2 = v2 / max(float(np.linalg.norm(v2)), 1e-12)
+                norm2 = np.array([-dir2[1], dir2[0]])
+                side2 = 1.0 if (cur_uv - p3) @ norm2 >= 0 else -1.0
+                k2 = p3 @ norm2 + side2 * d2_val
+
+                A = np.vstack([norm1, norm2])
+                b = np.array([k1, k2])
+                final_uv = np.linalg.solve(A, b)
+            except Exception:
+                final_uv = cur_uv
+        elif seg1 is not None and d1_val is not None:
+            try:
+                p1, p2 = np.array(seg1[0]), np.array(seg1[1])
+                v1 = p2 - p1
+                dir1 = v1 / max(float(np.linalg.norm(v1)), 1e-12)
+                norm1 = np.array([-dir1[1], dir1[0]])
+                side1 = 1.0 if (cur_uv - p1) @ norm1 >= 0 else -1.0
+                k1 = p1 @ norm1 + side1 * d1_val
+                t = float((cur_uv - p1) @ dir1)
+                final_uv = p1 + t * dir1 + norm1 * (side1 * d1_val)
+            except Exception:
+                final_uv = cur_uv
+
+        if hasattr(plane, "uv_to_world"):
+            w = plane.uv_to_world(float(final_uv[0]), float(final_uv[1]))
+        else:
+            w = (np.asarray(plane.origin, dtype=float) + np.asarray(plane.u_axis, dtype=float) * float(final_uv[0])
+                 + np.asarray(plane.v_axis, dtype=float) * float(final_uv[1]))
+        final_world = np.asarray(w, dtype=float).tolist()
+
+        if seg1 is not None and d1_val is not None:
+            refs.append({
+                "p1": [float(seg1[0][0]), float(seg1[0][1])],
+                "p2": [float(seg1[1][0]), float(seg1[1][1])],
+                "dist": float(d1_val),
+                "expr": d1_expr,
+            })
+        if seg2 is not None and d2_val is not None:
+            refs.append({
+                "p1": [float(seg2[0][0]), float(seg2[0][1])],
+                "p2": [float(seg2[1][0]), float(seg2[1][1])],
+                "dist": float(d2_val),
+                "expr": d2_expr,
+            })
+
+        plane_info = {
+            "origin": [float(x) for x in plane.origin],
+            "normal": [float(x) for x in plane.normal],
+            "u_axis": [float(x) for x in getattr(plane, "u_axis", [1, 0, 0])],
+            "v_axis": [float(x) for x in getattr(plane, "v_axis", [0, 1, 0])],
+        }
+        return {
+            "origin": final_world,
+            "normal": [float(x) for x in plane.normal],
+            "plane": plane_info,
+            "refs": refs,
+        }
+
+    def _hole_key(self, event) -> bool:
+        """Handle keyboard typing for hole smart dimension boxes."""
+        key = event.key()
+        txt = event.text()
+        texts = getattr(self, "hole_dyn_texts", ["", ""])
+        focus = getattr(self, "hole_dyn_focus", 0)
+
+        if key in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab):
+            self.hole_dyn_focus = 1 - focus
+            self.update()
+            return True
+
+        if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            plane = getattr(self, "hole_place_plane", None)
+            if plane is not None and getattr(self, "hole_place_hover", None) is not None:
+                pt_data = self._hole_place_resolve_point()
+                if pt_data is not None:
+                    self.hole_place_points.append(pt_data["origin"])
+                    self.hole_point_picked.emit(pt_data)
+                    self.hole_dyn_texts = ["", ""]
+                    self.hole_dyn_focus = 0
+                    self.update()
+                    return True
+            return False
+
+        if key == Qt.Key.Key_Backspace:
+            if texts[focus]:
+                texts[focus] = texts[focus][:-1]
+                self.update()
+                return True
+            elif focus > 0:
+                self.hole_dyn_focus = 0
+                self.update()
+                return True
+            return False
+
+        if key == Qt.Key.Key_Escape:
+            if any(texts):
+                self.hole_dyn_texts = ["", ""]
+                self.hole_dyn_focus = 0
+                self.update()
+                return True
+            self.end_hole_place()
+            return True
+
+        if txt and len(txt) == 1 and (txt in "0123456789.,-+*/()^" or txt.isalpha() or txt == "_"):
+            texts[focus] += txt
+            self.update()
+            return True
+
+        return False
 
     def begin_point_pick(self):
         self.point_pick = True

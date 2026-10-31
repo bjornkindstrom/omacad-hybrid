@@ -63,14 +63,22 @@ def hole_tool(kind: str, diameter: float, depth: float, cb_diameter: float = 0.0
 
 class HoleFeature(Feature):
     """Drilled holes (Fusion 360 Hole): simple, counterbore or countersink, placed at points on faces.
-    points: [{"origin": [x, y, z], "normal": [nx, ny, nz]}], the normal points out of the material."""
+    points: [{"origin": [x, y, z], "normal": [nx, ny, nz], "plane": {...}, "refs": [...]}], the normal points out of the material."""
 
     def __init__(self, feature_id: str, name: str, points, hole_type: str = "simple", diameter: float = 6.0,
                  depth: float = 10.0, through: bool = False, cb_diameter: float = 12.0, cb_depth: float = 4.0,
                  cs_diameter: float = 12.0, cs_angle: float = 90.0, tip: str = "flat", tip_angle: float = 118.0,
                  chamfer: float = 0.0, chamfer_angle: float = 45.0, chamfer_depth: float = 0.0):
         super().__init__(feature_id, "hole", name)
-        self.points = [{"origin": [float(x) for x in p["origin"]], "normal": [float(x) for x in p["normal"]]} for p in points]
+        clean_pts = []
+        for p in points:
+            pt_dict = {"origin": [float(x) for x in p["origin"]], "normal": [float(x) for x in p["normal"]]}
+            if "plane" in p:
+                pt_dict["plane"] = dict(p["plane"])
+            if "refs" in p:
+                pt_dict["refs"] = [dict(r) for r in p["refs"]]
+            clean_pts.append(pt_dict)
+        self.points = clean_pts
         self.hole_type = hole_type
         self.diameter, self.depth, self.through = float(diameter), float(depth), bool(through)
         self.cb_diameter, self.cb_depth = float(cb_diameter), float(cb_depth)

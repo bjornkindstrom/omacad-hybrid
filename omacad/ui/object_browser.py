@@ -126,6 +126,18 @@ def _add_object(browser, group, oid, features, excluded):
                 row.setFlags(row.flags() | Qt.ItemFlag.ItemIsEditable)
                 row.setToolTip(0, 'Double-click or click the pencil to edit this parameter or expression')
                 _pencil(row)
+            if feat.feature_type == 'hole':
+                for p_idx, pt in enumerate(feat.points):
+                    for r_idx, ref in enumerate(pt.get("refs", [])):
+                        val = ref.get("dist", 0.0)
+                        formula = ref.get("expr")
+                        shown = f'{formula} = {val:g}' if formula else f'{val:g}'
+                        lbl = f'Hole {p_idx + 1} distance {r_idx + 1}' if len(feat.points) > 1 else f'Distance to edge {r_idx + 1}'
+                        row = QTreeWidgetItem(node, [f'{lbl}: {shown} mm', ''])
+                        row.setData(0, ROLE, ('hole_dim', (fid, p_idx, r_idx)))
+                        row.setFlags(row.flags() | Qt.ItemFlag.ItemIsEditable)
+                        row.setToolTip(0, 'Double-click or click the pencil to edit this distance')
+                        _pencil(row)
         if feat.error:
             node.setForeground(0, QColor('#e06c75'))
             node.setToolTip(0, feat.error)

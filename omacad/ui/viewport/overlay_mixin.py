@@ -607,18 +607,24 @@ class OverlayMixin:
             s = self.world_to_screen(np.asarray(w, dtype=float))
             return None if s is None else QPointF(float(s[0]), float(s[1]))
 
-        def badge(at: QPointF, text: str, col: QColor):
+        texts = getattr(self, "hole_dyn_texts", ["", ""])
+        focus = getattr(self, "hole_dyn_focus", 0)
+
+        def badge(at: QPointF, text: str, col: QColor, is_active=False):
             fm = painter.fontMetrics()
-            tw = fm.horizontalAdvance(text) + 16
+            tw = max(48, fm.horizontalAdvance(text) + 16)
             th = 22
             rect = QRectF(at.x() - tw / 2, at.y() - th / 2, tw, th)
             painter.setBrush(QBrush(qcolor(37, 40, 44, 240)))
-            painter.setPen(QPen(col, 1.5))
+            painter.setPen(QPen(col, 2.0 if is_active else 1.5))
             painter.drawRoundedRect(rect, 4, 4)
+            if is_active:
+                painter.setBrush(QBrush(QColor(col.red(), col.green(), col.blue(), 60)))
+                painter.drawRoundedRect(rect, 4, 4)
             painter.setPen(qcolor(224, 227, 231))
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
 
-        def measure_line(foot_uv, cur_uv, text: str, col: QColor):
+        def measure_line(foot_uv, cur_uv, text: str, col: QColor, is_active=False):
             sf, sc = uv_to_scr(foot_uv), uv_to_scr(cur_uv)
             if sf is None or sc is None:
                 return
@@ -630,7 +636,7 @@ class OverlayMixin:
             painter.setPen(QPen(col, 1.5))
             for p in (sf, sc):
                 painter.drawLine(QPointF(p.x() - nx, p.y() - ny), QPointF(p.x() + nx, p.y() + ny))
-            badge(QPointF((sf.x() + sc.x()) / 2, (sf.y() + sc.y()) / 2), text, col)
+            badge(QPointF((sf.x() + sc.x()) / 2, (sf.y() + sc.y()) / 2), text, col, is_active)
 
         painter.save()
         font = QFont(theme.font_family(), 9)
@@ -644,7 +650,9 @@ class OverlayMixin:
             painter.drawLine(a1, b1)
         foot1 = smart_circle.foot_on_line(seg1, uv)
         d1 = abs(smart_circle.signed_distance(seg1, uv))
-        measure_line(foot1, uv, f"{d1:.1f} mm", cyan)
+        txt1 = (texts[0] + ("|" if focus == 0 else "")) if texts[0] else f"{d1:.1f}"
+        txt1 = f"{txt1} mm"
+        measure_line(foot1, uv, txt1, cyan, is_active=(focus == 0))
 
         # Second edge (non-parallel) and draw perpendicular dimension line
         n1 = smart_circle.line_normal(seg1)
@@ -657,7 +665,9 @@ class OverlayMixin:
                 painter.drawLine(a2, b2)
             foot2 = smart_circle.foot_on_line(seg2, uv)
             d2 = abs(smart_circle.signed_distance(seg2, uv))
-            measure_line(foot2, uv, f"{d2:.1f} mm", orange)
+            txt2 = (texts[1] + ("|" if focus == 1 else "")) if texts[1] else f"{d2:.1f}"
+            txt2 = f"{txt2} mm"
+            measure_line(foot2, uv, txt2, orange, is_active=(focus == 1))
 
         painter.restore()
 

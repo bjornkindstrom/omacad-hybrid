@@ -1,3 +1,9 @@
+# Hybrid experiment — 0.9.9.80.77
+
+### Features & Fixes
+- **Inskrivning i smartrutor vid placering av Hole (#138)**: Under placering av hål i 3D-vyn (när plan eller yta valts) kan måtten till referenskanterna nu skrivas in direkt med tangentbordet på samma sätt som i Smart Circle. Siffror/uttryck matas in i den aktiva smartrutan, `Tab` växlar mellan avstånd 1 och avstånd 2, och `Enter` placerar hålet på de exakta måtten.
+- **Redigera hålmått i objektträdet (#138)**: De uppmätta avstånden sparas med hålet och visas som redigerbara parameterrader i objektbrowsern (`Distance to edge 1`, `Distance to edge 2`). Användaren kan dubbelklicka eller klicka på pennikonen för att ändra avståndet i efterhand, vilket automatiskt flyttar hålet och bygger om modellen med fullt stöd för Undo/Redo. Test: `test_hole_smart_placement.py`.
+
 # Hybrid experiment — 0.9.9.80.76
 
 ### Features & Fixes

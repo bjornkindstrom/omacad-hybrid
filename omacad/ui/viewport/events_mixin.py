@@ -121,6 +121,11 @@ class ViewportEventsMixin:
         must not start Extrude at its 'e'), and letters typed for an open tool panel's field."""
         no_mods = not event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.AltModifier)
         txt = event.text()
+        if getattr(self, "hole_place_mode", False) and getattr(self, "hole_place_plane", None) is not None:
+            if no_mods and (txt in "0123456789.,-+*/()^" or txt.isalpha() or txt == "_"):
+                return True
+            if event.key() in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab, Qt.Key.Key_Backspace, Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Escape):
+                return True
         if self.doc.active_sketch:
             if no_mods and len(txt) == 1 and (txt.isalnum() or txt == "_") and self._dyn_can_start() and self.dyn.active:
                 return True                 # the dimension fields are open: letters may be a parameter name
@@ -144,6 +149,10 @@ class ViewportEventsMixin:
         self.update()
 
     def keyPressEvent(self, event):
+        if getattr(self, "hole_place_mode", False) and getattr(self, "hole_place_plane", None) is not None:
+            if hasattr(self, "_hole_key") and self._hole_key(event):
+                return
+
         # A tool panel is open (Extrude, Fillet, Chamfer, Shell, ...): typing a number or a parameter name in the 3D
         # view goes straight into its main field, Enter is OK. Backspace stays "undo last edge" while edges are picked.
         tool_dlg = self._typing_panel()

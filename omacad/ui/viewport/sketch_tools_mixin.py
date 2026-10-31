@@ -725,6 +725,9 @@ class SketchToolsMixin:
             return True
         # Tab would otherwise move Qt focus; route it to dimension entry while drawing
         if e.type() == QEvent.Type.KeyPress and e.key() in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab):
+            if getattr(self, "hole_place_mode", False) and getattr(self, "hole_place_plane", None) is not None:
+                self.keyPressEvent(e)
+                return True
             if self._dyn_can_start():
                 self.keyPressEvent(e)
                 return True

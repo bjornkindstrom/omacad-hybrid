@@ -18,7 +18,7 @@ def value_ref(data):
     """(kind, ids) of a value row: a parameter or sketch dimension, polygon sides, or a starred one (also "text"); else None."""
     if not data:
         return None
-    if data[0] in ('parameter', 'dimension', 'polygon_sides'):
+    if data[0] in ('parameter', 'dimension', 'polygon_sides', 'hole_dim'):
         return data
     if data[0] == 'fav':
         kind, a, b = data[1]
@@ -121,6 +121,20 @@ class HistoryDelegate(QStyledItemDelegate):
                     return
                 feature = doc.timeline.features[pos]
                 value = feature.exprs.get(key, str(getattr(feature, key)))
+            elif kind == 'hole_dim':
+                fid, p_idx, r_idx = ids
+                pos = doc.object_history.index(doc, fid)
+                if pos is None:
+                    return
+                feature = doc.timeline.features[pos]
+                if p_idx < len(feature.points):
+                    refs = feature.points[p_idx].get("refs", [])
+                    if r_idx < len(refs):
+                        value = refs[r_idx].get("expr") or str(refs[r_idx].get("dist", 0.0))
+                    else:
+                        return
+                else:
+                    return
             elif kind == 'polygon_sides':
                 sid, gid = ids
                 sketch = doc.sketches.get(sid)
@@ -171,6 +185,9 @@ class HistoryDelegate(QStyledItemDelegate):
 def apply_dimension(doc, kind, ids, text):
     if kind == 'parameter':
         return doc.edit_feature_dimension(*ids, text)
+    if kind == 'hole_dim':
+        fid, p_idx, r_idx = ids
+        return doc.edit_hole_dimension(fid, p_idx, r_idx, text)
     if kind == 'polygon_sides':
         sid, gid = ids
         try:

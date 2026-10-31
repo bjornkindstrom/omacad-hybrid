@@ -1122,6 +1122,89 @@ class Document:
             formulas[key] = text
         return self.edit_feature(index, **{key: int(value) if isinstance(old, int) else value}, exprs=formulas)
 
+    @undoable("Edit hole dimension")
+    def edit_hole_dimension(self, feature_id: str, point_idx: int, ref_idx: int, text: str):
+        from omacad.model.feature_parameters import normalize_parameter_text
+        text = normalize_parameter_text("length", text)
+        index = self.object_history.index(self, feature_id)
+        if index is None:
+            raise ValueError("The feature no longer exists")
+        feature = self.timeline.features[index]
+        if feature.feature_type != "hole":
+            raise ValueError("Not a hole feature")
+        if not (0 <= point_idx < len(feature.points)):
+            raise ValueError("Point index out of range")
+        pt = feature.points[point_idx]
+        refs = pt.get("refs", [])
+        if not (0 <= ref_idx < len(refs)):
+            raise ValueError("Reference edge out of range")
+        value = exprlib.evaluate(text, self.parameter_values())
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Enter a positive value")
+
+        # Copy points and update the target reference distance and/or formula
+        import copy
+        new_points = copy.deepcopy(feature.points)
+        target_pt = new_points[point_idx]
+        target_refs = target_pt.get("refs", [])
+        ref = target_refs[ref_idx]
+        ref["dist"] = float(value)
+        ref["expr"] = None if exprlib.is_plain_number(text) else text
+
+        # Recalculate 3D origin on the placement plane
+        plane_info = target_pt.get("plane")
+        if plane_info and len(target_refs) >= 1:
+            o = np.asarray(plane_info["origin"], dtype=float)
+            n = np.asarray(plane_info["normal"], dtype=float)
+            ua = np.asarray(plane_info.get("u_axis", [1, 0, 0]), dtype=float)
+            va = np.asarray(plane_info.get("v_axis", [0, 1, 0]), dtype=float)
+            cur_origin = np.asarray(target_pt["origin"], dtype=float)
+            rel = cur_origin - o
+            cur_uv = np.array([float(rel @ ua), float(rel @ va)])
+
+            if len(target_refs) >= 2:
+                r1 = target_refs[0]
+                r2 = target_refs[1]
+                p1, p2 = np.array(r1["p1"]), np.array(r1["p2"])
+                v1 = p2 - p1
+                dir1 = v1 / max(float(np.linalg.norm(v1)), 1e-12)
+                norm1 = np.array([-dir1[1], dir1[0]])
+                side1 = 1.0 if (cur_uv - p1) @ norm1 >= 0 else -1.0
+                k1 = p1 @ norm1 + side1 * r1["dist"]
+
+                p3, p4 = np.array(r2["p1"]), np.array(r2["p2"])
+                v2 = p4 - p3
+                dir2 = v2 / max(float(np.linalg.norm(v2)), 1e-12)
+                norm2 = np.array([-dir2[1], dir2[0]])
+                side2 = 1.0 if (cur_uv - p3) @ norm2 >= 0 else -1.0
+                k2 = p3 @ norm2 + side2 * r2["dist"]
+
+                try:
+                    A = np.vstack([norm1, norm2])
+                    b = np.array([k1, k2])
+                    new_uv = np.linalg.solve(A, b)
+                    new_w = o + ua * new_uv[0] + va * new_uv[1]
+                    target_pt["origin"] = new_w.tolist()
+                except Exception:
+                    pass
+            elif len(target_refs) == 1:
+                r1 = target_refs[0]
+                p1, p2 = np.array(r1["p1"]), np.array(r1["p2"])
+                v1 = p2 - p1
+                dir1 = v1 / max(float(np.linalg.norm(v1)), 1e-12)
+                norm1 = np.array([-dir1[1], dir1[0]])
+                side1 = 1.0 if (cur_uv - p1) @ norm1 >= 0 else -1.0
+                k1 = p1 @ norm1 + side1 * r1["dist"]
+                t = float((cur_uv - p1) @ dir1)
+                new_uv = p1 + t * dir1 + norm1 * (side1 * r1["dist"])
+                new_w = o + ua * new_uv[0] + va * new_uv[1]
+                target_pt["origin"] = new_w.tolist()
+
+        feature.points = new_points
+        self.timeline.recompute(self)
+        self.notify_changed()
+        return True
+
     EDITABLE = {
         "box": ("length", "width", "height", "center", "plane_origin", "plane_normal", "plane_u", "plane_v",
                 "wall_thickness", "outer_round", "outer_round_kind", "inner_round", "inner_round_kind", "taper_angle"),

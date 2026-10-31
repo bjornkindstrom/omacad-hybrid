@@ -52,11 +52,17 @@ class SolidFeaturePromptsMixin:
                 self.viewport.begin_hole_place(dlg.plane, [p["origin"] for p in points])
                 self.status_label.setText("Hole: click to place hole centers on the selected plane. Esc pauses placement.")
 
-        def point_picked(position):
-            p = np.asarray(position, dtype=float)
-            n = np.asarray(dlg.plane.normal, dtype=float)
+        def point_picked(hit):
+            if isinstance(hit, dict):
+                p = np.asarray(hit["origin"], dtype=float)
+                n = np.asarray(hit.get("normal", dlg.plane.normal), dtype=float)
+                pt_entry = dict(hit)
+            else:
+                p = np.asarray(hit, dtype=float)
+                n = np.asarray(dlg.plane.normal, dtype=float)
+                pt_entry = {"origin": p.tolist(), "normal": n.tolist()}
             if not any(np.linalg.norm(p - np.asarray(old["origin"])) < 1e-3 for old in points):
-                points.append({"origin": p.tolist(), "normal": n.tolist()})
+                points.append(pt_entry)
                 dlg.set_points(points)
                 self.viewport.hole_place_points = [q["origin"] for q in points]
                 refresh_preview()

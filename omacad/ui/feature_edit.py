@@ -481,9 +481,16 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
                 vp.begin_hole_place(plane, [p["origin"] for p in points])
 
         def point_picked(hit):
-            p, n = hit, plane.normal
-            if not any(np.linalg.norm(np.asarray(p) - np.asarray(old["origin"])) < 1e-3 for old in points):
-                points.append({"origin": np.asarray(p).tolist(), "normal": np.asarray(n).tolist()})
+            if isinstance(hit, dict):
+                p = np.asarray(hit["origin"], dtype=float)
+                n = np.asarray(hit.get("normal", plane.normal), dtype=float)
+                pt_entry = dict(hit)
+            else:
+                p = np.asarray(hit, dtype=float)
+                n = np.asarray(plane.normal, dtype=float)
+                pt_entry = {"origin": p.tolist(), "normal": n.tolist()}
+            if not any(np.linalg.norm(p - np.asarray(old["origin"])) < 1e-3 for old in points):
+                points.append(pt_entry)
                 dlg.set_points(points)
                 vp.hole_place_points = [q["origin"] for q in points]
                 preview_hole()
