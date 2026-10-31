@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.75
+
+### Features & Fixes
+- **Fillet/Chamfer-drag utan oönskad vändning (#137)**: Drag med pilen använde tidigare `abs(val)` vilket gjorde att när man drog musen uppåt förbi nollan slog värdet över och började öka radien igen (reagerade som att den bara drog neråt/ökade). Draget begränsas nu korrekt nedåt mot minsta positiva radie (`0.2 mm`) i stället för att vända. Test: `test_rotation_and_fillet_arrow.py`.
+
 # Hybrid experiment — 0.9.9.80.74
 
 ### Features & Fixes

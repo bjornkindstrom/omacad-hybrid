@@ -74,3 +74,28 @@ def test_fillet_arrow_vertical_along_wall_for_horizontal_edge():
     assert handle_bottom is not None
     assert np.allclose(handle_bottom["axis"], [0.0, 0.0, 1.0])
 
+
+def test_fillet_arrow_drag_up_and_down_clamps_not_flips():
+    """Dragging arrow upwards past 0 clamps to minimum positive radius rather than flipping/increasing via abs."""
+    from omacad.ui.main_window import MainWindow
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance() or QApplication([])
+    win = MainWindow()
+    win.doc.add_box(30.0, 20.0, 10.0)
+    win.prompt_round_edges("fillet")
+    dlg = win._round_dlg
+    vp = win.viewport
+
+    # Simulate handle drag callback
+    # Moving up into negative numbers should clamp to 0.2, not jump to positive values
+    vp.extrude_handle_dragged.emit(5.0)
+    assert dlg.spn_size.value() == 5.0
+    vp.extrude_handle_dragged.emit(1.5)
+    assert dlg.spn_size.value() == 1.5
+    vp.extrude_handle_dragged.emit(0.0)
+    assert dlg.spn_size.value() == 0.2
+    vp.extrude_handle_dragged.emit(-3.5)
+    assert dlg.spn_size.value() == 0.2
+
+

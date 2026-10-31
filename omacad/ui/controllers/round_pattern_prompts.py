@@ -157,8 +157,10 @@ class RoundPatternPromptsMixin:
             update_arrow()
 
         def on_handle_drag(val: float):
-            sign = -1.0 if dlg.kind() == "fillet" and dlg.spn_size.value() < 0 else 1.0
-            v = sign * max(0.2, abs(val))
+            if dlg.kind() == "fillet" and dlg.spn_size.value() < 0:
+                v = -max(0.2, abs(val))
+            else:
+                v = max(0.2, val)
             dlg.spn_size.setValue(round(v, 2))
 
         def on_cancel_pick():
