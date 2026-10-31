@@ -138,6 +138,8 @@ def test_big_picture_is_drawn_in_idle_time_after_the_small_ones(monkeypatch):
     doc = Exporter.load_project(DATA)
     browser = BrowserTree(doc)
     browser.thumbnails.timer.stop()
+    # an earlier test in the same worker can leave a mouse button "down", which makes work() wait
+    monkeypatch.setattr(body_thumbnails.QApplication, "mouseButtons", staticmethod(lambda: Qt.MouseButton.NoButton))
     (oid,) = doc.object_history.objects
     drawn = []
     real = body_thumbnails.render_thumbnail
