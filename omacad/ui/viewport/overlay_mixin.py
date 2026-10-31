@@ -51,6 +51,7 @@ class OverlayMixin:
         """Draws ViewCube, sketch status banner, and HUD controls."""
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         if getattr(self, "hole_place_plane", None) is not None:
+            self._draw_hole_measure_guides(painter)
             painter.save()
             painter.setPen(QPen(QColor(40, 170, 255, 210), 1.5))
             painter.setBrush(QColor(40, 170, 255, 150))
@@ -577,4 +578,86 @@ class OverlayMixin:
             self.target = np.array([0.0, 0.0, 0.0], dtype=np.float32)
             self.distance = 140.0
         self.update()
+
+    def _draw_hole_measure_guides(self, painter: QPainter) -> None:
+        """Smart Circle style measuring guides from the nearest straight edges to the hole placement cursor."""
+        plane = getattr(self, "hole_place_plane", None)
+        hover_pt = getattr(self, "hole_place_hover", None)
+        segs = getattr(self, "hole_place_segments", None)
+        if plane is None or hover_pt is None or not segs:
+            return
+        from omacad.ui import smart_circle
+        hp = np.asarray(hover_pt, dtype=float)
+        try:
+            uv = plane.world_to_uv(hp)
+        except Exception:
+            rel = hp - np.asarray(plane.origin, dtype=float)
+            uv = (float(rel @ np.asarray(plane.u_axis, dtype=float)), float(rel @ np.asarray(plane.v_axis, dtype=float)))
+
+        seg1 = smart_circle.nearest_line(segs, uv)
+        if seg1 is None:
+            return
+
+        def uv_to_scr(p_uv):
+            if hasattr(plane, "uv_to_world"):
+                w = plane.uv_to_world(p_uv[0], p_uv[1])
+            else:
+                w = (np.asarray(plane.origin, dtype=float) + np.asarray(plane.u_axis, dtype=float) * p_uv[0]
+                     + np.asarray(plane.v_axis, dtype=float) * p_uv[1])
+            s = self.world_to_screen(np.asarray(w, dtype=float))
+            return None if s is None else QPointF(float(s[0]), float(s[1]))
+
+        def badge(at: QPointF, text: str, col: QColor):
+            fm = painter.fontMetrics()
+            tw = fm.horizontalAdvance(text) + 16
+            th = 22
+            rect = QRectF(at.x() - tw / 2, at.y() - th / 2, tw, th)
+            painter.setBrush(QBrush(qcolor(37, 40, 44, 240)))
+            painter.setPen(QPen(col, 1.5))
+            painter.drawRoundedRect(rect, 4, 4)
+            painter.setPen(qcolor(224, 227, 231))
+            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
+
+        def measure_line(foot_uv, cur_uv, text: str, col: QColor):
+            sf, sc = uv_to_scr(foot_uv), uv_to_scr(cur_uv)
+            if sf is None or sc is None:
+                return
+            painter.setPen(QPen(col, 1.5, Qt.PenStyle.DashLine))
+            painter.drawLine(sf, sc)
+            dx, dy = sc.x() - sf.x(), sc.y() - sf.y()
+            ln = math.hypot(dx, dy) or 1.0
+            nx, ny = -dy / ln * 5.0, dx / ln * 5.0
+            painter.setPen(QPen(col, 1.5))
+            for p in (sf, sc):
+                painter.drawLine(QPointF(p.x() - nx, p.y() - ny), QPointF(p.x() + nx, p.y() + ny))
+            badge(QPointF((sf.x() + sc.x()) / 2, (sf.y() + sc.y()) / 2), text, col)
+
+        painter.save()
+        font = QFont(theme.font_family(), 9)
+        painter.setFont(font)
+        cyan = qcolor(60, 190, 255)
+
+        # Highlight edge 1 and draw perpendicular dimension line
+        a1, b1 = uv_to_scr(seg1[0]), uv_to_scr(seg1[1])
+        if a1 is not None and b1 is not None:
+            painter.setPen(QPen(cyan, 2.5))
+            painter.drawLine(a1, b1)
+        foot1 = smart_circle.foot_on_line(seg1, uv)
+        d1 = abs(smart_circle.signed_distance(seg1, uv))
+        measure_line(foot1, uv, f"{d1:.1f} mm", cyan)
+
+        # Second edge (non-parallel) and draw perpendicular dimension line
+        n1 = smart_circle.line_normal(seg1)
+        seg2 = smart_circle.nearest_line(segs, uv, not_parallel_to=n1)
+        if seg2 is not None:
+            orange = qcolor(255, 160, 50)
+            a2, b2 = uv_to_scr(seg2[0]), uv_to_scr(seg2[1])
+            if a2 is not None and b2 is not None:
+                painter.setPen(QPen(orange, 2.5))
+                painter.drawLine(a2, b2)
+            foot2 = smart_circle.foot_on_line(seg2, uv)
+            d2 = abs(smart_circle.signed_distance(seg2, uv))
+            measure_line(foot2, uv, f"{d2:.1f} mm", orange)
+
+        painter.restore()
 

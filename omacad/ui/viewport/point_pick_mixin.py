@@ -6,6 +6,7 @@ corner, blue for the centre of a flat face or a circle. Points hidden behind a b
 dots are projected again on every repaint so they stay on the body while the camera moves. The world
 origin can be picked too. A click emits `point_picked` with {"body", "kind", "xyz"}."""
 
+import math
 import numpy as np
 from PySide6.QtCore import Qt, QPointF
 from PySide6.QtGui import QColor, QPen
@@ -23,6 +24,7 @@ class PointPickMixin:
         self.hole_place_mode = True
         self.hole_place_plane = plane
         self.hole_place_points = list(points)
+        self.hole_place_segments = self._hole_reference_segments(plane)
         self._hole_place_hover(0, 0)
         self.setFocus()
         self.update()
@@ -30,13 +32,52 @@ class PointPickMixin:
     def end_hole_place(self):
         self.hole_place_mode = False
         self.hole_place_hover = None
+        self.hole_place_segments = []
         self.update()
 
     def clear_hole_place(self):
         self.end_hole_place()
         self.hole_place_plane = None
         self.hole_place_points = []
+        self.hole_place_segments = []
         self.update()
+
+    def _hole_reference_segments(self, plane):
+        """Straight edge segments on or projected to `plane`, for measuring placement like Smart Circle."""
+        if plane is None or not self.doc.bodies:
+            return []
+        o = np.asarray(plane.origin, dtype=np.float64)
+        n = np.asarray(plane.normal, dtype=np.float64)
+        ua = np.asarray(plane.u_axis, dtype=np.float64)
+        va = np.asarray(plane.v_axis, dtype=np.float64)
+        segs = []
+        for body in self.doc.bodies.values():
+            mesh = body.render_mesh
+            if not body.visible or mesh is None or len(mesh.sharp_lines) == 0:
+                continue
+            lines = np.asarray(mesh.sharp_lines, dtype=np.float64).reshape(-1, 2, 3)
+            d0 = np.abs((lines[:, 0, :] - o) @ n)
+            d1 = np.abs((lines[:, 1, :] - o) @ n)
+            coplanar = (d0 < 1e-4) & (d1 < 1e-4)
+            use_lines = lines[coplanar] if coplanar.any() else lines
+            pts = use_lines - o
+            uv = np.stack([pts @ ua, pts @ va], axis=-1)
+            segs.append(uv)
+        if not segs:
+            return []
+        allseg = np.concatenate(segs)
+        r = np.round(allseg, 3)
+        swap = (r[:, 0, 0] > r[:, 1, 0]) | ((r[:, 0, 0] == r[:, 1, 0]) & (r[:, 0, 1] > r[:, 1, 1]))
+        r[swap] = r[swap][:, ::-1]
+        key = r.reshape(len(r), 4)
+        _, idx = np.unique(key, axis=0, return_index=True)
+        segs = allseg[np.sort(idx)]
+        out = []
+        for s in segs:
+            p1, p2 = (float(s[0, 0]), float(s[0, 1])), (float(s[1, 0]), float(s[1, 1]))
+            if math.hypot(p2[0] - p1[0], p2[1] - p1[1]) > 1e-4:
+                out.append((p1, p2, None))
+        return out
 
     def _hole_place_at(self, x, y):
         proj, view, _ = self.get_matrices()

@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.76
+
+### Features & Fixes
+- **Mäthjälp vid placering av Hole (#138)**: Efter att ha valt yta eller plan i Hole-verktyget visas nu live-mått och vinkelräta måttlinjer från närmaste raka kanter till muspekaren (på samma sätt som i Smart Circle). Referenskanterna markeras i cyan och orange med avstånd i mm. Test: `test_hole_smart_placement.py`.
+
 # Hybrid experiment — 0.9.9.80.75
 
 ### Features & Fixes
