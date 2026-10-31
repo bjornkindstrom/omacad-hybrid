@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.74
+
+### Features & Fixes
+- **Fillet/Chamfer-dragpil upp och ner (#137, rapport 20261031-072053)**: När en horisontell kant rundas eller fasas (t.ex. på toppen eller botten av en extrudering) pekar dragpilen i viewporten nu rakt lodrätt upp/ner längs Z-axeln i stället för snett från sidan, vilket gör draget naturligt och stabilt på skärmen. Test: `test_rotation_and_fillet_arrow.py`.
+
 # Hybrid experiment — 0.9.9.80.73
 
 ### Features & Fixes

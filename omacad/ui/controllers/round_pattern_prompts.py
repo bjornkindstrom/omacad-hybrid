@@ -71,24 +71,37 @@ class RoundPatternPromptsMixin:
                     d1 = getattr(e0, "d1", None)
                     d2 = getattr(e0, "d2", None)
                     if d1 is not None and d2 is not None:
-                        # For a convex edge, d1 + d2 points into the material (cutting direction)
-                        axis = np.asarray(d1) + np.asarray(d2)
-                        if not getattr(e0, "convex", True):
-                            axis = -axis  # for inside corner, cut/fill bisector
-                        n_axis = np.linalg.norm(axis)
-                        axis = axis / n_axis if n_axis > 1e-6 else np.array([0.0, 0.0, 1.0])
+                        # If edge has a vertical face / downward cut direction, point straight along Z (up/down)
+                        # so the arrow moves vertically on screen rather than diagonally from the side.
+                        if abs(d1[2]) > 0.1 and abs(d2[2]) < 0.1:
+                            axis = np.array([0.0, 0.0, float(np.sign(d1[2]))])
+                        elif abs(d2[2]) > 0.1 and abs(d1[2]) < 0.1:
+                            axis = np.array([0.0, 0.0, float(np.sign(d2[2]))])
+                        elif abs(d1[2]) > 0.1 or abs(d2[2]) > 0.1:
+                            sz = float(np.sign(d1[2] + d2[2]))
+                            axis = np.array([0.0, 0.0, sz if sz != 0 else -1.0])
+                        else:
+                            # Both are horizontal (e.g. vertical edge): bisector into material
+                            axis = np.asarray(d1) + np.asarray(d2)
+                            if not getattr(e0, "convex", True):
+                                axis = -axis  # for inside corner, cut/fill bisector
+                            n_axis = np.linalg.norm(axis)
+                            axis = axis / n_axis if n_axis > 1e-6 else np.array([0.0, 0.0, 1.0])
                     else:
-                        axis = np.array([0.0, 0.0, 1.0])
+                        axis = np.array([0.0, 0.0, -1.0])
                 elif hasattr(e0, "center") and hasattr(e0, "radius"):
                     # Circular edge: pick a point on the circle towards the camera or top
                     u, v_ = e0._basis() if hasattr(e0, "_basis") else (np.array([1., 0., 0.]), np.array([0., 1., 0.]))
                     mid = np.asarray(e0.center) + u * float(e0.radius)
                     # Bisector into the cut: radial inward plus wall inward
-                    rad_inward = -u if e0.s1 < 0 else u
                     wall_inward = -np.asarray(e0.axis) * e0.s2
-                    axis = rad_inward + wall_inward
-                    n_axis = np.linalg.norm(axis)
-                    axis = axis / n_axis if n_axis > 1e-6 else np.array([0.0, 0.0, 1.0])
+                    if abs(wall_inward[2]) > 0.1:
+                        axis = np.array([0.0, 0.0, float(np.sign(wall_inward[2]))])
+                    else:
+                        rad_inward = -u if e0.s1 < 0 else u
+                        axis = rad_inward + wall_inward
+                        n_axis = np.linalg.norm(axis)
+                        axis = axis / n_axis if n_axis > 1e-6 else np.array([0.0, 0.0, 1.0])
                 elif hasattr(e0, "c"):
                     mid = np.asarray(e0.c)
                     axis = np.asarray(getattr(e0, "n", [0.0, 0.0, 1.0]))

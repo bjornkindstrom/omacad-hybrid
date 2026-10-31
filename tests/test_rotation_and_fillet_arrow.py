@@ -43,3 +43,34 @@ def test_fillet_chamfer_arrow_direction():
         # Pointing into material: dot product with outward face normals should be <= 0
         assert (axis @ e.n1) <= 1e-6
         assert (axis @ e.n2) <= 1e-6
+
+
+def test_fillet_arrow_vertical_along_wall_for_horizontal_edge():
+    """Report 20261031-072053: user requested that the draggable fillet arrow moves vertically (up/down)
+    rather than diagonally from the side when adjusting an edge on top of an extrusion."""
+    from omacad.ui.main_window import MainWindow
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance() or QApplication([])
+    win = MainWindow()
+    body = win.doc.add_box(30.0, 20.0, 10.0)
+    win.prompt_round_edges("fillet")
+    top_edges = [e for e in body.edges if hasattr(e, "p0") and abs(e.p0[2] - 10.0) < 1e-6 and abs(e.p1[2] - 10.0) < 1e-6]
+    assert len(top_edges) > 0
+    win.viewport.selected_edges = [top_edges[0]]
+    win.viewport.edges_selection_changed.emit()
+
+    handle = win.viewport.extrude_handle
+    assert handle is not None
+    # For a top edge on the box, the arrow must point straight down along Z [0, 0, -1]
+    assert np.allclose(handle["axis"], [0.0, 0.0, -1.0])
+
+    # For a bottom edge, the arrow must point straight up along Z [0, 0, 1]
+    bottom_edges = [e for e in body.edges if hasattr(e, "p0") and abs(e.p0[2]) < 1e-6 and abs(e.p1[2]) < 1e-6]
+    assert len(bottom_edges) > 0
+    win.viewport.selected_edges = [bottom_edges[0]]
+    win.viewport.edges_selection_changed.emit()
+    handle_bottom = win.viewport.extrude_handle
+    assert handle_bottom is not None
+    assert np.allclose(handle_bottom["axis"], [0.0, 0.0, 1.0])
+
