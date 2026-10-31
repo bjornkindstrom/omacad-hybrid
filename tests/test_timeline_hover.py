@@ -22,6 +22,15 @@ def bar():
     return b
 
 
+def _wait_for(condition, timeout_ms):
+    """Wait for the hover timer rather than a fixed time: a busy CI worker can be slow to fire it."""
+    for _ in range(timeout_ms // 10):
+        if condition():
+            return True
+        QTest.qWait(10)
+    return bool(condition())
+
+
 def _chips(bar):
     return bar.findChildren(FeatureNodeWidget)
 
@@ -50,13 +59,14 @@ def test_hover_shows_what_the_step_added_and_leaving_restores(bar):
     chips = sorted(_chips(bar), key=lambda c: c.index)
     _enter(chips[1])
     assert seen == []                               # a quick sweep does not compute anything yet
-    QTest.qWait(200)
+    assert _wait_for(lambda: seen, 5000)       # wait for the hover timer, not a fixed time (slow CI)
     assert seen[-1] == (True, False)                # the cylinder added material
     _leave(chips[1])
     assert seen[-1] == (False, False)               # nothing was clicked: cleared
     bar.on_node_clicked(1)                          # click colours step 1 ...
     _enter(chips[2])
-    QTest.qWait(200)
+    n = len(seen)
+    assert _wait_for(lambda: len(seen) > n, 5000)
     _leave(chips[2])
     assert seen[-1] == (True, False)                # ... and leaving a hovered chip brings that back
 
@@ -85,7 +95,7 @@ def test_hovering_a_sketch_step_lights_the_sketch_up():
     b.flash_sketch_requested.connect(flashes.append)
     chip = [c for c in _chips(b) if c.feature.feature_type == "sketch"][0]
     _enter(chip)
-    QTest.qWait(200)
+    assert _wait_for(lambda: flashes, 5000)
     assert flashes[-1] == sk.sketch_id
     _leave(chip)
     assert flashes[-1] is None
