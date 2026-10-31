@@ -1,3 +1,8 @@
+# Hybrid experiment — 0.9.9.80.80
+
+### Features & Fixes
+- **Mönster/spegling av gängor (Pattern/Mirror of Thread) utan fula ränder (#139, rapport 20261031-083336)**: När ett gängningssteg (Thread) mönstrades eller speglades kopierades tidigare den booleska skillnaden mellan kroppen före och efter gängningen. Skillnaden begränsades av cylinderväggens polygonfasetter, vilket lämnade kvar tusentals mikroskopiska restfasetter och skarpa vertikala ränder ("fula threads") när kopian subtraherades från ett annat hål vars fasettering inte sammanföll. Mönstret transformerar nu gängskärverktyget (`ThreadFeature.build_solid()`) direkt för subtraktionen, vilket ger helt rena, släta och perfekta gängor i alla kopierade hål. Test: `test_pattern_thread.py`.
+
 # Hybrid experiment — 0.9.9.80.79
 
 ### Features & Fixes

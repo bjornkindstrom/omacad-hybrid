@@ -723,8 +723,22 @@ class PatternFeature(Feature):
                 # Only the height the copies occupy is trimmed: a thread or flat elsewhere is not round
                 # about the axis and the intersection would erase it.
                 self._keep = self._keep + outside
+        from omacad.model.features.thread import ThreadFeature
+        thread_cutters = []
+        for i in pos:
+            feat = doc.timeline.features[i]
+            if isinstance(feat, ThreadFeature) and (feat.operation == "cut" or feat.is_female):
+                if getattr(feat, "target_body_id", None) in (None, body_id):
+                    solid = feat.build_solid()
+                    if not solid.is_empty():
+                        thread_cutters.append(solid)
+
         rem = add = None
-        if not removed.is_empty():
+        if thread_cutters:
+            all_cutters = thread_cutters[0] if len(thread_cutters) == 1 else m3d.Manifold.batch_boolean(thread_cutters, m3d.OpType.Add)
+            parts = [f(all_cutters) for f in funcs]
+            rem = m3d.Manifold.batch_boolean(parts, m3d.OpType.Add) if len(parts) > 1 else parts[0]
+        elif not removed.is_empty():
             parts = [f(removed) for f in funcs]
             rem = m3d.Manifold.batch_boolean(parts, m3d.OpType.Add) if len(parts) > 1 else parts[0]
         if not added.is_empty():
