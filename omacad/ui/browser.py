@@ -4,10 +4,10 @@ Hierarchy tree for Document Settings, Origin geometry, Bodies, and Sketches.
 """
 
 from typing import Optional, Dict
-from PySide6.QtCore import Qt, Signal, QSize, QTimer
+from PySide6.QtCore import Qt, Signal, QSize, QTimer, QEvent
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QMenu, QHeaderView, QLabel, QHBoxLayout,
-    QAbstractItemView, QToolButton
+    QAbstractItemView, QToolButton, QToolTip
 )
 from PySide6.QtGui import QIcon, QAction, QBrush, QColor, QFont, QKeySequence, QShortcut
 from omacad.ui import theme
@@ -93,6 +93,7 @@ class BrowserTree(QWidget):
         self.tree = QTreeWidget()
         from omacad.ui.history_delegate import HistoryDelegate
         self.tree.setItemDelegate(HistoryDelegate(self))
+        self.tree.viewport().installEventFilter(self)     # tooltip: a big picture on an object row
         self.tree.itemExpanded.connect(lambda item: self.content_width_changed.emit())
         self.tree.itemCollapsed.connect(lambda item: self.content_width_changed.emit())
         self.tree.setHeaderHidden(True)
@@ -185,6 +186,17 @@ class BrowserTree(QWidget):
         self._editor_width = 0
         self.content_width_changed.emit()
         self.thumbnails.schedule()
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.ToolTip and watched is self.tree.viewport():
+            item = self.tree.itemAt(event.pos())
+            data = item.data(0, Qt.ItemDataRole.UserRole) if item else None
+            picture = self.thumbnails.large_picture(data[1]) if data and data[0] == "object" else ""
+            if picture:
+                QToolTip.showText(event.globalPos(), f"{picture}<br>{item.toolTip(0)}", self.tree.viewport(),
+                                  self.tree.visualItemRect(item))
+                return True
+        return super().eventFilter(watched, event)
 
     def _show_thumbnail(self, object_id: str):
         """A picture drawn in idle time goes straight onto its row; the tree is not rebuilt for it."""

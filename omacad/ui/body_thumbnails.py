@@ -5,12 +5,13 @@ culled, through a small numpy z-buffer (no GL context needed, all triangles at o
 redraws an object only when its geometry changed, after the user has paused (IDLE_MS) and with no mouse button
 held, one object per event-loop turn, so modelling never waits for a picture."""
 import numpy as np
-from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtCore import QBuffer, QByteArray, QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import QApplication
 
 SIZE = 40           # shown size in the tree, px
 OVERSAMPLE = 2      # drawn this much larger and scaled down: smooth edges
+LARGE = 220         # the picture shown while the mouse rests on the row (tooltip), px
 IDLE_MS = 700       # quiet time after the last change before pictures are drawn
 NEXT_MS = 30        # pause between two pictures, so input in between is handled first
 
@@ -68,7 +69,17 @@ def render_thumbnail(solids, size: int = SIZE, scale: float = 2.0) -> QImage:
 
 def _rasterize(corners, depth, size):
     """Z-buffer: (pixel index, triangle index) of the triangle nearest the viewer at every covered pixel centre.
-    `corners` (n, 3, 2) in pixels, `depth` (n, 3) larger = nearer. All triangles at once, no Python loop."""
+    `corners` (n, 3, 2) in pixels, `depth` (n, 3) larger = nearer. All triangles at once, no Python loop: each
+    triangle becomes planes (two barycentric weights and the depth as a*x + b*y + c), tested on its bounding box."""
+    (ax, ay), (bx, by), (cx, cy) = (corners[:, k].T for k in range(3))
+    area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+    ok = area != 0
+    corners, depth = corners[ok], depth[ok]
+    ax, ay, bx, by, cx, cy, area = ax[ok], ay[ok], bx[ok], by[ok], cx[ok], cy[ok], area[ok]
+    w1 = np.stack([by - cy, cx - bx, bx * cy - cx * by]) / area          # weight of corner a
+    w2 = np.stack([cy - ay, ax - cx, cx * ay - ax * cy]) / area          # weight of corner b
+    d0, d1, d2 = depth.T
+    plane = np.stack([*w1, *w2, *((d0 - d2) * w1 + (d1 - d2) * w2 + np.array([[0], [0], [1]]) * d2)], axis=1)
     x0 = np.clip(np.floor(corners[..., 0].min(axis=1) - 0.5), 0, size - 1).astype(np.int64)
     x1 = np.clip(np.ceil(corners[..., 0].max(axis=1) - 0.5), 0, size - 1).astype(np.int64)
     y0 = np.clip(np.floor(corners[..., 1].min(axis=1) - 0.5), 0, size - 1).astype(np.int64)
@@ -78,21 +89,20 @@ def _rasterize(corners, depth, size):
     tri = np.repeat(np.arange(len(corners)), count)
     local = np.arange(count.sum()) - np.repeat(np.cumsum(count) - count, count)
     px, py = x0[tri] + local % w[tri], y0[tri] + local // w[tri]
-    (ax, ay), (bx, by), (cx, cy) = (corners[tri, k].T for k in range(3))
+    k = plane[tri]
     qx, qy = px + 0.5, py + 0.5
-    area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
-    with np.errstate(divide='ignore', invalid='ignore'):
-        l1 = ((cx - bx) * (qy - by) - (cy - by) * (qx - bx)) / area
-        l2 = ((ax - cx) * (qy - cy) - (ay - cy) * (qx - cx)) / area
-    l3 = 1.0 - l1 - l2
-    inside = (area != 0) & (l1 >= -1e-9) & (l2 >= -1e-9) & (l3 >= -1e-9)
+    l1 = k[:, 0] * qx + k[:, 1] * qy + k[:, 2]
+    l2 = k[:, 3] * qx + k[:, 4] * qy + k[:, 5]
+    inside = (l1 >= -1e-9) & (l2 >= -1e-9) & (l1 + l2 <= 1 + 1e-9)
     tri, pixel = tri[inside], (py * size + px)[inside]
-    d = depth[tri, 0] * l1[inside] + depth[tri, 1] * l2[inside] + depth[tri, 2] * l3[inside]
-    order = np.lexsort((-d, pixel))                       # per pixel, nearest first
-    pixel, tri = pixel[order], tri[order]
-    first = np.ones(len(pixel), bool)
-    first[1:] = pixel[1:] != pixel[:-1]
-    return pixel[first], tri[first]
+    d = k[inside, 6] * qx[inside] + k[inside, 7] * qy[inside] + k[inside, 8]
+    nearest = np.full(size * size, -np.inf)
+    np.maximum.at(nearest, pixel, d)
+    win = d == nearest[pixel]
+    owner = np.full(size * size, -1, np.int64)
+    owner[pixel[win]] = np.flatnonzero(ok)[tri[win]]
+    covered = np.flatnonzero(owner >= 0)
+    return covered, owner[covered]
 
 
 def _signature(manifold):
@@ -109,12 +119,30 @@ class BodyThumbnails(QObject):
         super().__init__(browser)
         self.browser = browser
         self.icons, self.keys, self.pending = {}, {}, []
+        self.large, self.pending_large = {}, []      # object id -> (key, tooltip <img> tag)
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.work)
 
     def icon(self, object_id):
         return self.icons.get(object_id)
+
+    def large_picture(self, object_id):
+        """<img> tag of a big picture of the object's bodies for its tooltip, or '' when it has no small one yet.
+        Usually drawn in idle time after all small pictures; drawn here only if the mouse gets there first."""
+        if object_id not in self.icons:
+            return ''
+        key, solids = self._wanted(object_id)
+        if key is None:
+            return ''
+        cached = self.large.get(object_id)
+        if cached is None or cached[0] != key:
+            data = QByteArray()
+            buffer = QBuffer(data)
+            buffer.open(QBuffer.OpenModeFlag.WriteOnly)
+            render_thumbnail(solids, LARGE, 1.0).save(buffer, 'PNG')
+            cached = self.large[object_id] = (key, f'<img src="data:image/png;base64,{bytes(data.toBase64()).decode()}">')
+        return cached[1]
 
     def _wanted(self, object_id):
         """(key, [(manifold, rgb)]) of an object's bodies now, or (None, []) when it has none."""
@@ -132,7 +160,9 @@ class BodyThumbnails(QObject):
         for gone in [oid for oid in self.icons if oid not in objects]:
             self.icons.pop(gone)
             self.keys.pop(gone, None)
+            self.large.pop(gone, None)
         self.pending = list(objects)
+        self.pending_large = list(objects)
         self.timer.start(IDLE_MS)
 
     def work(self):
@@ -140,9 +170,21 @@ class BodyThumbnails(QObject):
         if QApplication.mouseButtons() != Qt.MouseButton.NoButton:
             self.timer.start(IDLE_MS)
             return
-        self._draw_next()
         if self.pending:
+            self._draw_next()
+        else:
+            self._draw_next_large()
+        if self.pending or self.pending_large:
             self.timer.start(NEXT_MS)
+
+    def _draw_next_large(self):
+        """The big tooltip pictures come last: a small picture of every object matters more."""
+        while self.pending_large:
+            oid = self.pending_large.pop(0)
+            key, _solids = self._wanted(oid) if oid in self.icons else (None, [])
+            if key is not None and self.large.get(oid, (None,))[0] != key:
+                self.large_picture(oid)
+                return
 
     def _draw_next(self):
         while self.pending:
@@ -159,8 +201,10 @@ class BodyThumbnails(QObject):
             self.ready.emit(oid)
             return
 
-    def finish(self):
-        """Draw everything that is pending now instead of in idle time (tests)."""
+    def finish(self, large=False):
+        """Draw the pending small pictures (and the big ones with `large`) now instead of in idle time (tests)."""
         self.timer.stop()
         while self.pending:
             self._draw_next()
+        while large and self.pending_large:
+            self._draw_next_large()

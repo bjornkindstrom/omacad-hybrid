@@ -102,3 +102,49 @@ def test_row_gets_the_picture_only_in_idle_time_and_redraws_only_after_a_change(
     assert len(drawn) == 2
     index = browser.tree.indexFromItem(object_row(browser, oid))
     assert browser.tree.sizeHintForIndex(index).height() >= body_thumbnails.SIZE
+
+
+def test_resting_the_mouse_on_the_row_shows_a_big_picture_drawn_once_until_the_body_changes(monkeypatch):
+    from PySide6.QtCore import QEvent, QPoint
+    from PySide6.QtGui import QHelpEvent
+    from PySide6.QtWidgets import QToolTip
+    doc = Exporter.load_project(DATA)
+    browser = BrowserTree(doc)
+    browser.resize(320, 600)
+    browser.show()
+    (oid,) = doc.object_history.objects
+    assert browser.thumbnails.large_picture(oid) == ""          # nothing until the small picture exists
+    browser.thumbnails.finish()
+    drawn = []
+    real = body_thumbnails.render_thumbnail
+    monkeypatch.setattr(body_thumbnails, "render_thumbnail", lambda solids, *a: drawn.append(a) or real(solids, *a))
+    rect = browser.tree.visualItemRect(object_row(browser, oid))
+    viewport = browser.tree.viewport()
+    QApplication.sendEvent(viewport, QHelpEvent(QEvent.Type.ToolTip, rect.center(), viewport.mapToGlobal(rect.center())))
+    assert "data:image/png;base64," in QToolTip.text() and "object" in QToolTip.text()
+    assert drawn == [(body_thumbnails.LARGE, 1.0)]
+    browser.thumbnails.large_picture(oid)
+    assert len(drawn) == 1                                      # cached while the body is the same
+    extrude = next(f for f in doc.timeline.features if f.feature_type == "extrude")
+    doc.edit_feature_dimension(extrude.feature_id, "distance", "40")
+    browser.thumbnails.finish()
+    browser.thumbnails.large_picture(oid)
+    assert drawn[-1] == (body_thumbnails.LARGE, 1.0) and len(drawn) == 3   # small + big drawn again
+    QToolTip.hideText()
+    browser.close()
+
+
+def test_big_picture_is_drawn_in_idle_time_after_the_small_ones(monkeypatch):
+    doc = Exporter.load_project(DATA)
+    browser = BrowserTree(doc)
+    (oid,) = doc.object_history.objects
+    drawn = []
+    real = body_thumbnails.render_thumbnail
+    monkeypatch.setattr(body_thumbnails, "render_thumbnail", lambda solids, *a: drawn.append(a) or real(solids, *a))
+    browser.thumbnails.work()                   # first idle turn: the small picture
+    assert drawn == [()] and browser.thumbnails.timer.isActive()
+    browser.thumbnails.work()                   # next turn: the big one
+    assert drawn[-1] == (body_thumbnails.LARGE, 1.0)
+    browser.thumbnails.large_picture(oid)       # the hover finds it ready
+    assert len(drawn) == 2
+    assert not browser.thumbnails.pending and not browser.thumbnails.pending_large      # nothing left to do

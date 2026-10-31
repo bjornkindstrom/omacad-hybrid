@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.87
+
+### Funktioner och rättningar
+- **Större bild när musen vilar på kroppens rad**: håller man muspekaren över ett objekt med miniatyrbild en kort stund (Qt:s vanliga tooltip-fördröjning) visas en 220 px stor bild av kropparna i tooltipen, ovanför den vanliga texten. Den stora bilden ritas också i ledig tid, efter alla små bilder, så den brukar vara klar när musen kommer dit; annars ritas den då, en gång tills kroppen ändras. Z-buffern i `render_thumbnail` räknar nu med plan per triangel och `np.maximum.at` i stället för sortering (stora bilden på en modell med 100 000 trianglar: 545 → 350 ms). Test: `test_body_thumbnail.py`.
+
 # Hybrid-experiment — 0.9.9.80.86
 
 ### Funktioner och rättningar
