@@ -150,7 +150,7 @@ class RoundPatternPromptsMixin:
                 return
             changed = {bid: t.manifold for bid, t in tmp_bodies.items()
                        if t.manifold is not self.doc.bodies[bid].manifold}
-            self.viewport.fillet_rail_offset = max(0.0, float(v["size"]))
+            self.viewport.fillet_rail_offset = 0.0
             self.viewport.set_display_override(changed)
             if tmp.skipped:
                 self.status_label.setText(f"Fillet/Chamfer: {tmp.skipped} edge(s) cannot be rounded with that size.")

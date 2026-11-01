@@ -365,11 +365,7 @@ class PickerMixin:
         def flat(edges):
             out = []
             for e in edges:
-                offset_r = getattr(self, "fillet_rail_offset", 0.0)
-                if offset_r > 0.0:
-                    pts = self._offset_edge_polyline(e, offset_r)
-                else:
-                    pts = e.polyline()
+                pts = e.polyline()
                 for i in range(len(pts) - 1):
                     out += [*pts[i], *pts[i + 1]]
             return out

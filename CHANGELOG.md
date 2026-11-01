@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.95
+
+### Rättningar
+- **Kantmarkering på rätt plats vid val för Fillet/Chamfer (rapport 20261101-100445)**: Vid markering av flera kanter för Fillet och Chamfer förskjuts inte längre markerings- och hovringslinjerna till fasens/rundningens tänkta bottenkant (`fillet_rail_offset`). Kanterna ritas nu alltid exakt där de är på modellen (`e.polyline()`), så att man tydligt ser vilka kanter man klickar på och har valt, medan den 3D-solida förhandsvisningen visar geometrins faktiska form. Test: `test_fillet_pick_polyline.py`.
+
 # Hybrid-experiment — 0.9.9.80.94
 
 ### Funktioner
