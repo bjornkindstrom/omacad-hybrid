@@ -162,6 +162,39 @@ def _tapered_primitive(feat, kind):
     return solid
 
 
+def _lid_xy_mask_poly(x_min, x_max, y_half, r_back, r_front, kind_back="fillet", kind_front="fillet", n_seg=16):
+    import numpy as np
+    from shapely.geometry import Polygon, box as sbox
+    rb = max(0.0, min(r_back, y_half - 0.1, (x_max - x_min) * 0.4))
+    rf = max(0.0, min(r_front, y_half - 0.1, (x_max - x_min) * 0.4))
+    if rb < 0.05 and rf < 0.05:
+        return sbox(x_min, -y_half, x_max, y_half)
+    pts = []
+    if rf >= 0.05:
+        if kind_front == "chamfer":
+            pts.extend([(x_max - rf, y_half), (x_max, y_half - rf)])
+            pts.extend([(x_max, -y_half + rf), (x_max - rf, -y_half)])
+        else:
+            for a in np.linspace(np.pi / 2, 0, n_seg):
+                pts.append((x_max - rf + rf * np.cos(a), y_half - rf + rf * np.sin(a)))
+            for a in np.linspace(0, -np.pi / 2, n_seg):
+                pts.append((x_max - rf + rf * np.cos(a), -y_half + rf + rf * np.sin(a)))
+    else:
+        pts.extend([(x_max, y_half), (x_max, -y_half)])
+    if rb >= 0.05:
+        if kind_back == "chamfer":
+            pts.extend([(x_min + rb, -y_half), (x_min, -y_half + rb)])
+            pts.extend([(x_min, y_half - rb), (x_min + rb, y_half)])
+        else:
+            for a in np.linspace(-np.pi / 2, -np.pi, n_seg):
+                pts.append((x_min + rb + rb * np.cos(a), -y_half + rb + rb * np.sin(a)))
+            for a in np.linspace(np.pi, np.pi / 2, n_seg):
+                pts.append((x_min + rb + rb * np.cos(a), y_half - rb + rb * np.sin(a)))
+    else:
+        pts.extend([(x_min, -y_half), (x_min, y_half)])
+    return Polygon(pts)
+
+
 class BoxFeature(Feature):
     def __init__(self, feature_id: str, name: str, length: float, width: float, height: float, center: Any = False,
                  plane_origin: Any = None, plane_normal: Any = None, plane_u: Any = None, plane_v: Any = None,
@@ -206,126 +239,168 @@ class BoxFeature(Feature):
         has_smart = hollow or self.outer_round > 1e-4 or self.inner_round > 1e-4
 
         if self.is_lid:
-            # Sliding lid in groove (Björn #151, problem report 20261101-185047, chamfer update)
-            # Fits into the inner chamfered horizontal groove with clearance, front pull tab (flärp) and snap detent
-            from shapely.geometry import Polygon
+            # Cool small box slide lid (Björn, report 20261101-202026)
+            # Sliding plate with side V-grooves matching the triangular wall rails,
+            # corner filleting/chamfering matching the box corners,
+            # compliant thumb slot, raised grip rib and underside snap pip
+            from shapely.geometry import Polygon, box as sbox
             from omacad.model.features.base import region_cross_section
-            t_lid = self.lid_top if self.lid_top > 1e-4 else 2.0
-            h_lip = self.lip_height if self.lip_height > 1e-4 else 6.0
-            s = self.lip_step if self.lip_step > 1e-4 else 1.0
-            c = self.clearance
+
             t = min(self.wall_thickness if self.wall_thickness > 1e-4 else 2.0, min(self.length, self.width) * 0.45, self.height * 0.9)
             tb = self.bottom_thickness if self.bottom_thickness > 1e-4 else t
+            c = self.clearance
+            h_lip = self.lip_height if self.lip_height > 1e-4 else 2.2
+            t_lid = self.lid_top if self.lid_top > 1e-4 else max(1.2, h_lip - c)
+            r_out = self.outer_round
+            r_in = self.inner_round if self.inner_round > 1e-4 else max(0.2, r_out - t)
             tab_sz = getattr(self, "tab_size", 4.0) or 4.0
 
             in_l = max(0.2, self.length - 2.0 * t)
             in_w = max(0.2, self.width - 2.0 * t)
-            d_g = min(s, t * 0.6)
-            h_g = t_lid + c
-            z_g = self.height - h_lip
-            z_g = max(tb + 1.0, min(self.height - h_g - 1.0, z_g))
 
-            lid_z = z_g + c / 2.0
-            poly_lid_xz = Polygon([
-                (-(in_l / 2.0 + d_g - c), lid_z),
-                ((in_l / 2.0 + d_g - c), lid_z),
-                ((in_l / 2.0 - c), lid_z + t_lid),
-                (-(in_l / 2.0 - c), lid_z + t_lid),
+            z_shelf = self.height - h_lip
+            z_shelf = max(tb + 1.0, min(self.height - t_lid - 0.2, z_shelf))
+
+            d_shelf = min(self.lip_step if self.lip_step > 1e-4 else 0.75, t * 0.5)
+            d_triangle = min(d_shelf * 1.6, t * 0.7)
+
+            h_step = min(0.20, t_lid * 0.15)
+            h_tri = max(0.2, t_lid - 2.0 * h_step)
+            z_peak = z_shelf + h_step + h_tri / 2.0
+
+            y_shelf = in_w / 2.0 + d_shelf
+            y_peak = y_shelf - d_triangle
+
+            lid_z = z_shelf + c / 2.0
+            y_shelf_lid = y_shelf - c
+            y_peak_lid = y_peak - c / 2.0
+
+            poly_lid_yz = Polygon([
+                (-y_shelf_lid, lid_z),
+                (y_shelf_lid, lid_z),
+                (y_shelf_lid, lid_z + h_step),
+                (y_peak_lid, z_peak),
+                (y_shelf_lid, lid_z + h_step + h_tri),
+                (y_shelf_lid, lid_z + t_lid),
+                (-y_shelf_lid, lid_z + t_lid),
+                (-y_shelf_lid, lid_z + h_step + h_tri),
+                (-y_peak_lid, z_peak),
+                (-y_shelf_lid, lid_z + h_step),
             ])
-            cs_lid = region_cross_section(poly_lid_xz)
-            lid_y_front = -self.width / 2.0
-            lid_y_back = in_w / 2.0 + d_g - c
-            lid_len_y = lid_y_back - lid_y_front
-            lid_plate = m3d.Manifold.extrude(cs_lid, lid_len_y).rotate((90, 0, 0)).translate((0, lid_y_back, 0))
+            cs_lid_yz = region_cross_section(poly_lid_yz)
+            x_back = -in_l / 2.0
+            x_back_lid = x_back + c
+            x_front_lid = self.length / 2.0 - c
+            lid_len = max(0.2, x_front_lid - x_back_lid)
+            lid_plate = m3d.Manifold.extrude(cs_lid_yz, lid_len).rotate((90, 0, 90)).translate((x_back_lid, 0.0, 0.0))
 
-            # Chamfer back edge of lid so it fits the back wall chamfer
-            poly_back_lid = Polygon([
-                (lid_y_back, lid_z - 0.1),
-                (lid_y_back, lid_z + t_lid + 0.1),
-                (lid_y_back - d_g, lid_z + t_lid + 0.1),
-            ])
-            cs_back_cut = region_cross_section(poly_back_lid)
-            cutter_lid_back = m3d.Manifold.extrude(cs_back_cut, in_l + 2.0 * d_g).rotate((0, 90, 0)).rotate((0, 0, 90)).translate((-in_l / 2.0 - d_g, 0, 0))
-            lid_plate = lid_plate - cutter_lid_back
+            # XY corner rounding/chamfer mask
+            poly_xy_mask = _lid_xy_mask_poly(
+                x_back_lid, x_front_lid, y_shelf_lid,
+                r_in - c, r_out - c,
+                self.inner_round_kind, self.outer_round_kind,
+            )
+            cs_mask = region_cross_section(poly_xy_mask)
+            lid_mask = m3d.Manifold.extrude(cs_mask, t_lid + 2.0).translate((0.0, 0.0, lid_z - 1.0))
+            lid_plate = lid_plate ^ lid_mask
 
-            # Flärpen på locket (front pull tab / flap, adjustable tab_size)
-            flarp_w = max(0.2, in_l - 2.0 * c)
-            flarp_t = t
-            flarp_h = max(1.0, tab_sz)
-            flarp = m3d.Manifold.cube((flarp_w, flarp_t, flarp_h), False).translate((-flarp_w / 2.0, lid_y_front, lid_z))
+            # Thumb slot (compliant flexure) and snap features
+            solid = lid_plate
+            if in_l > 12.0 and in_w > 8.0:
+                slot_w = min(3.5, max(1.5, tab_sz * 0.75), in_l * 0.15)
+                slot_l = min(max(6.0, tab_sz * 4.0), in_w * 0.65)
+                r_slot = min(slot_w / 2.0, 1.5)
+                bridge_len = max(2.5, min(8.0, in_l * 0.15))
+                slot_x = self.length / 2.0 - t - slot_w - bridge_len
+                slot_poly = sbox(slot_x - slot_w / 2.0 + r_slot, -slot_l / 2.0 + r_slot,
+                                 slot_x + slot_w / 2.0 - r_slot, slot_l / 2.0 - r_slot).buffer(r_slot)
+                cs_slot = region_cross_section(slot_poly)
+                slot_cutter = m3d.Manifold.extrude(cs_slot, t_lid + 2.0).translate((0.0, 0.0, lid_z - 1.0))
+                solid = solid - slot_cutter
 
-            r_flarp = min(1.0, flarp_t / 2.0)
-            flarp_grip = m3d.Manifold.cylinder(flarp_w, r_flarp, r_flarp, circular_segments=16).rotate((0, 90, 0)).translate((-flarp_w / 2.0, lid_y_front + flarp_t / 2.0, lid_z + flarp_h))
+                # Raised thumb grip rib
+                rib_w = min(2.5, slot_w)
+                rib_l = min(slot_l * 0.4, max(2.5, tab_sz))
+                rib_h = min(0.4, max(0.2, tab_sz * 0.08))
+                rib_x = slot_x + slot_w / 2.0 + bridge_len * 0.5
+                rib_poly = sbox(rib_x - rib_w / 2.0, -rib_l / 2.0, rib_x + rib_w / 2.0, rib_l / 2.0).buffer(0.25)
+                cs_rib = region_cross_section(rib_poly)
+                rib = m3d.Manifold.extrude(cs_rib, rib_h).translate((0.0, 0.0, lid_z + t_lid))
+                solid = solid + rib
 
-            # Snap detent ridge on underside of flärp
-            r_det = min(0.35, c * 1.5, t_lid * 0.2)
-            y_det = -self.width / 2.0 + t / 2.0
-            det_ridge = m3d.Manifold.cylinder(flarp_w, r_det * 0.85, r_det * 0.85, circular_segments=16).rotate((0, 90, 0)).translate((-flarp_w / 2.0, y_det, lid_z))
+                # Underside snap pip
+                r_det = min(0.35, c * 1.5, t_lid * 0.15)
+                w_det = min(6.0, in_w * 0.25)
+                x_det = self.length / 2.0 - t / 2.0
+                r_pip = r_det * 0.7
+                w_pip = max(0.5, w_det - 2.0 * c)
+                snap_pip = m3d.Manifold.cylinder(w_pip, r_pip, r_pip, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_pip / 2.0, lid_z))
+                solid = solid + snap_pip
 
-            solid = lid_plate + flarp + flarp_grip + det_ridge
             if is_centered:
                 solid = solid.translate((0.0, 0.0, -self.height / 2.0))
             elif not is_bottom:
                 solid = solid.translate((self.length / 2.0, self.width / 2.0, 0.0))
         elif self.lip_height > 1e-4 and self.lip_step > 1e-4:
-            # Box with slide lid groove (Björn #151, problem report 20261101-185047, chamfer update)
-            # Outer box with bottom/corner rounding, inner cavity, chamfered grooves on short sides and back,
-            # and open front (no hanging lip) for supportless 3D printing
+            # Cool small box with sliding lid rails (Björn, report 20261101-202026)
+            # Outer box with rounded/chamfered corners, inner cavity,
+            # triangular rails on side walls, lowered front sill, and solid back wall
             from shapely.geometry import Polygon
             from omacad.model.features.base import region_cross_section
             box_outer = _rounded_prism(self.length, self.width, self.height, self.outer_round, self.outer_round_kind, round_top=False)
             t = min(self.wall_thickness, min(self.length, self.width) * 0.45, self.height * 0.9)
             tb = self.bottom_thickness if self.bottom_thickness > 1e-4 else t
+            c = self.clearance
+            h_lip = self.lip_height if self.lip_height > 1e-4 else 2.2
+            t_lid = self.lid_top if self.lid_top > 1e-4 else max(1.2, h_lip - c)
+            r_in = self.inner_round if self.inner_round > 1e-4 else max(0.2, self.outer_round - t)
+
             in_l = max(0.2, self.length - 2.0 * t)
             in_w = max(0.2, self.width - 2.0 * t)
-            in_h = max(0.2, self.height - tb) + 1.0
-            cavity = _rounded_prism(in_l, in_w, in_h, self.inner_round, self.inner_round_kind, round_top=False).translate((0.0, 0.0, tb))
-            solid = box_outer - cavity
 
-            t_lid = self.lid_top if self.lid_top > 1e-4 else 2.0
-            c = self.clearance
-            h_lip = self.lip_height
-            s = self.lip_step
-            d_g = min(s, t * 0.6)
-            h_g = t_lid + c
-            z_g = self.height - h_lip
-            z_g = max(tb + 1.0, min(self.height - h_g - 1.0, z_g))
+            z_shelf = self.height - h_lip
+            z_shelf = max(tb + 1.0, min(self.height - t_lid - 0.2, z_shelf))
 
-            # Cut front wall from z_g all the way to top: removes the long hanging lip above opening
-            front_open_w = in_l + 2.0 * d_g
-            y_front_cut = -self.width / 2.0 - 1.0
-            y_front_inner = -in_w / 2.0
-            front_cutter = m3d.Manifold.cube(
-                (front_open_w, y_front_inner - y_front_cut, self.height - z_g + 1.0), False
-            ).translate((-front_open_w / 2.0, y_front_cut, z_g))
+            d_shelf = min(self.lip_step if self.lip_step > 1e-4 else 0.75, t * 0.5)
+            d_triangle = min(d_shelf * 1.6, t * 0.7)
 
-            # Chamfered grooves along short sides (left and right walls)
-            poly_xz = Polygon([
-                (-in_l / 2.0 - d_g, z_g),
-                (in_l / 2.0 + d_g, z_g),
-                (in_l / 2.0, z_g + h_g),
-                (-in_l / 2.0, z_g + h_g),
+            h_step = min(0.20, t_lid * 0.15)
+            h_tri = max(0.2, t_lid - 2.0 * h_step)
+            z_peak = z_shelf + h_step + h_tri / 2.0
+            z_top_rail = z_shelf + h_step + h_tri
+
+            y_shelf = in_w / 2.0 + d_shelf
+            y_peak = y_shelf - d_triangle
+
+            cavity = _rounded_prism(in_l, in_w, self.height - tb + 1.0, r_in, self.inner_round_kind, round_top=False).translate((0.0, 0.0, tb))
+
+            poly_rail_cutter_yz = Polygon([
+                (-y_shelf, z_shelf),
+                (y_shelf, z_shelf),
+                (y_shelf, z_shelf + h_step),
+                (y_peak, z_peak),
+                (y_shelf, z_top_rail),
+                (y_shelf, self.height + 1.0),
+                (-y_shelf, self.height + 1.0),
+                (-y_shelf, z_top_rail),
+                (-y_peak, z_peak),
+                (-y_shelf, z_shelf + h_step),
             ])
-            cs_xz = region_cross_section(poly_xz)
-            y_back_cut = in_w / 2.0 + d_g
-            cutter_sides = m3d.Manifold.extrude(cs_xz, y_back_cut - y_front_cut).rotate((90, 0, 0)).translate((0, y_back_cut, 0))
+            cs_channel = region_cross_section(poly_rail_cutter_yz)
+            x_back = -in_l / 2.0
+            x_front = self.length / 2.0 + 1.0
+            channel_len = x_front - x_back
+            channel_cutter = m3d.Manifold.extrude(cs_channel, channel_len).rotate((90, 0, 90)).translate((x_back, 0.0, 0.0))
 
-            # Back wall chamfered groove
-            poly_yz = Polygon([
-                (in_w / 2.0 - 0.1, z_g),
-                (in_w / 2.0 + d_g, z_g),
-                (in_w / 2.0, z_g + h_g),
-                (in_w / 2.0 - 0.1, z_g + h_g),
-            ])
-            cs_yz = region_cross_section(poly_yz)
-            cutter_back = m3d.Manifold.extrude(cs_yz, in_l + 2.0 * d_g).rotate((0, 90, 0)).rotate((0, 0, 90)).translate((-in_l / 2.0 - d_g, 0, 0))
+            solid = box_outer - cavity - channel_cutter
 
-            # Snap detent notch in front wall sill at z_g
-            r_det = min(0.35, c * 1.5, t_lid * 0.2)
-            y_det = -self.width / 2.0 + t / 2.0
-            det_notch = m3d.Manifold.cylinder(front_open_w, r_det, r_det, circular_segments=16).rotate((0, 90, 0)).translate((-front_open_w / 2.0, y_det, z_g))
-
-            solid = solid - front_cutter - cutter_sides - cutter_back - det_notch
+            # Snap detent notch in front sill
+            if in_l > 12.0 and in_w > 8.0:
+                r_det = min(0.35, c * 1.5, t_lid * 0.15)
+                w_det = min(6.0, in_w * 0.25)
+                x_det = self.length / 2.0 - t / 2.0
+                notch = m3d.Manifold.cylinder(w_det, r_det, r_det, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_det / 2.0, z_shelf))
+                solid = solid - notch
 
             if self.honeycomb:
                 try:

@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.113
+
+### Changed
+- **Ny Cool small box-design för Box in a row (rapport 20261101-202026)**: Ersatt tidigare skjutlock med geometrin från den importerade lådan "Cool small box 70 x 45": 1) Lådan har triangulära styrskenor längs sidoväggarna (självbärande 37.5°-vinkel utan supports), solid bakvägg som ändstopp och sänkt tröskel framtill så locket kan skjutas in rakt framifrån. 2) Locket är en plan skiva med matchande V-spår på sidorna, hörnrundningar som sömlöst följer lådans yttre och inre radier, flexande genomgående fingerslits med upphöjd greppribba på ovansidan samt snäpp-pip på undersidan som klickar i tröskelns urtag. Locket sitter helt plant (flush) mot lådans övre kant utan utstickande flärpar. 3) Samma mätregler bibehålls: höjd Z är det fria inre nyttoutrymmet mätt från lådans insida till lockets undersida, medan längd X och bredd Y är det yttre fotavtrycket. Tester: `tests/test_cool_small_box.py`, `tests/test_box_in_row.py`, `tests/test_box_row_settings.py`.
+
 # Hybrid-experiment — 0.9.9.80.112
 
 ### Added

@@ -695,9 +695,9 @@ class BoxInRowDialog(BaseFeatureDialog):
 
         self.spn_lip_height = ExprDoubleSpinBox()
         self.spn_lip_height.setRange(1.0, 500.0)
-        self.spn_lip_height.setValue(6.0)
+        self.spn_lip_height.setValue(2.2)
         self.spn_lip_height.setSuffix(" mm")
-        self.spn_lip_height.setToolTip("Distance from the top rim down to the sliding groove.")
+        self.spn_lip_height.setToolTip("Distance from the top rim down to the sliding groove shelf.")
         self.spn_lip_height.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("  Groove height from top:", self.spn_lip_height)
 
@@ -719,9 +719,9 @@ class BoxInRowDialog(BaseFeatureDialog):
 
         self.spn_tab_size = ExprDoubleSpinBox()
         self.spn_tab_size.setRange(1.0, 50.0)
-        self.spn_tab_size.setValue(4.0)
+        self.spn_tab_size.setValue(3.0)
         self.spn_tab_size.setSuffix(" mm")
-        self.spn_tab_size.setToolTip("Size/height of the front pull tab (flärp) that holds and opens the lid.")
+        self.spn_tab_size.setToolTip("Size of the thumb grip rib and flexure slot on the lid.")
         self.spn_tab_size.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("  Lid tab size (flärp):", self.spn_tab_size)
 
