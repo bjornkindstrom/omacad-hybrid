@@ -1,3 +1,11 @@
+## Länkade objekt följer originalet — 2026-11-01 (0.9.9.80.103)
+
+`BranchFeature.follow` (True när länken görs från objektets senaste steg) tar originalets senaste kropp;
+`Timeline._place_linked_objects` flyttar länken + allt som bygger på den bakom originalets nya steg (anropas i
+`_recompute` och `Document._finish_object_operation`, ägare blir kända först efter körning). `ObjectHistory.sync`
+sparar bara beroenden till tidigare steg. `beside=True`/`beside_offset` lägger kopior till höger.
+`OverlayMixin._draw_link_badges` ritar 🔗-brickan. Skärmbild med overlay: `viewport.grabFramebuffer()`.
+
 ## Arbetsrepo: omacad-hybrid (regel, Björn 2026-11-01)
 
 All utveckling sker i **`/home/kindstrom/Work/omacad-hybrid`**, inte i `~/Work/omacad`. Rättningar,

@@ -176,6 +176,8 @@ class Document:
             self.timeline.clear_cache()
             self.timeline.recompute(self)
         history.sync(self)
+        if self.timeline._place_linked_objects(history):
+            self.timeline.recompute(self)     # the original got a new step: its links copy the new result
         history.active_id = history.owners[new[-1].feature_id]
         if history.target_object_id is not None:
             history.target_object_id = history.active_id
@@ -996,9 +998,13 @@ class Document:
         fid = self._feature_id("branch" if linked else "copy")
         self.object_history.insert_after = None
         if linked:
-            feature = BranchFeature(fid, name, feature_id, body_id)
+            # made from the original's latest step: follows every later change; from an older step: stays there
+            obj = self.object_history.objects.get(self.object_history.owners.get(feature_id))
+            follow = obj is None or not obj.feature_ids or obj.feature_ids[-1] == feature_id
+            feature = BranchFeature(fid, name, feature_id, body_id, follow=follow, beside=True)
         else:
-            mesh = source.to_mesh()
+            from omacad.model.features.branch import beside_offset
+            mesh = source.translate((beside_offset(source), 0.0, 0.0)).to_mesh()   # next to the original
             feature = ImportMeshFeature(fid, name, mesh.vert_properties[:, :3].tolist(), mesh.tri_verts.tolist())
         self.timeline.marker_index = len(self.timeline.features)
         self.timeline.add_feature(feature)

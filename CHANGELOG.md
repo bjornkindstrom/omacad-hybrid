@@ -1,3 +1,12 @@
+# Hybrid-experiment — 0.9.9.80.103
+
+### Changed
+- **Linked objects follow the original completely**: steps added to the original after the link (shell, fillet, extrude…) now also appear on the linked copy. `Timeline._place_linked_objects` moves the link (and the copy's own steps) behind the original's new steps; `BranchFeature.follow` copies the original's latest body. A link made from an older (or rolled-back) step stays frozen at that step. Test: `test_object_history.py`.
+- **Copies are placed beside the original**: linked and independent copies go to the right (+X) by the original's width plus half of it (at least 5 mm), so they never touch; a linked copy keeps its distance when the original grows (`beside_offset`).
+
+### Added
+- **Link badge**: a small chain-link chip above every linked body in the 3D view (blue = follows the original, grey = frozen at an older step).
+
 # Hybrid-experiment — 0.9.9.80.102
 
 ### Added

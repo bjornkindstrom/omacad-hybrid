@@ -442,7 +442,8 @@ class Exporter:
             fname = f_data.get("name")
             if ft == "branch":
                 from omacad.model.features.branch import BranchFeature
-                feat = BranchFeature(fid, fname, f_data["source_feature_id"], f_data["source_body_id"])
+                feat = BranchFeature(fid, fname, f_data["source_feature_id"], f_data["source_body_id"],
+                                     follow=f_data.get("follow"), beside=f_data.get("beside", False))
                 doc.timeline.add_feature(feat)
             elif ft == "box":
                 feat = BoxFeature(

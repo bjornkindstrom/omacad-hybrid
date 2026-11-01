@@ -129,6 +129,8 @@ class Timeline:
         history = getattr(doc, "object_history", None)
         if history is not None:
             history.sync(doc)
+            if self._place_linked_objects(history):
+                history.sync(doc)
         excluded = history.excluded() if history is not None else set()
         unavailable = excluded | {f.feature_id for f in self.features if f.suppressed}
         if history is not None:
@@ -219,6 +221,14 @@ class Timeline:
         self._step_feature_ids = [f.feature_id for f in self.features[:limit]]
         if history is not None:
             history.sync(doc)
+            # a new step only gets its owner from what it changed: a step the original just got may only now be
+            # known to belong ahead of a link to it
+            if not getattr(self, "_relinking", False) and self._place_linked_objects(history):
+                self._relinking = True
+                try:
+                    return self._recompute(doc)
+                finally:
+                    self._relinking = False
         for bid in hidden:       # the rebuilt bodies are fresh objects: a body the user hid stays hidden
             if bid in doc.bodies:
                 doc.bodies[bid].visible = False
@@ -228,6 +238,53 @@ class Timeline:
                 doc.bodies[bid].color = list(col)
         if active and active.sketch_id not in doc.sketches:
             doc.sketches[active.sketch_id] = active
+
+    def _place_linked_objects(self, history) -> bool:
+        """A linked object follows its original: steps the original got after the link (and that do not build on the
+        link) are moved ahead of it, so the link copies the original's latest result. The link's own steps, and
+        anything built on them, move along behind it. Returns True when the order changed."""
+        changed_from = None
+        for branch in [f for f in self.features if f.feature_type == "branch"]:
+            feats = self.features
+            bi = feats.index(branch)
+            src_owner = history.owners.get(branch.source_feature_id)
+            if src_owner is None or bi >= self.marker_index:
+                continue
+            if getattr(branch, "follow", True) is None:
+                # older files: a link made from the original's latest step follows it
+                before = [f for f in feats[:bi] if history.owners.get(f.feature_id) == src_owner]
+                branch.follow = bool(before) and before[-1].feature_id == branch.source_feature_id
+            if not branch.follow:
+                continue
+            moving, bodies, owners, sketches = {branch.feature_id}, {"body_" + branch.feature_id}, set(), set()
+            owners.add(history.owners.get(branch.feature_id))
+            last = None
+            for i in range(bi + 1, min(self.marker_index, len(feats))):
+                f = feats[i]
+                fid, owner = f.feature_id, history.owners.get(f.feature_id)
+                builds_on_link = (owner in owners or set(history.body_inputs(f)) & bodies
+                                  or set(history.sketch_inputs(f)) & sketches)
+                if builds_on_link:
+                    if owner == src_owner:
+                        break            # the original uses the link itself: it can only follow up to here
+                    moving.add(fid)
+                    owners.add(owner)
+                    bodies.update(history.outputs.get(fid, []))
+                    if f.feature_type == "sketch":
+                        sketches.add(f.sketch.sketch_id)
+                elif owner == src_owner:
+                    last = i
+            if last is None:
+                continue
+            head = [f for f in feats[bi:last + 1] if f.feature_id not in moving]
+            tail = [f for f in feats[bi:last + 1] if f.feature_id in moving]
+            self.features[bi:last + 1] = head + tail
+            changed_from = bi if changed_from is None else min(changed_from, bi)
+        if changed_from is None:
+            return False
+        for k in [k for k in self._state_cache if k >= changed_from]:
+            del self._state_cache[k]
+        return True
 
     def step_to(self, index: int, doc: Any) -> None:
         self.marker_index = max(0, min(index, len(self.features)))

@@ -252,3 +252,61 @@ def test_combined_tool_objects_become_branches_of_the_target_object():
     assert jar.parent_id is None
     neck_join = by_name['Neck'].consumed_by
     assert set(history.children(jar.object_id)[neck_join]) == {by_name['Neck'].object_id}
+
+
+def test_linked_object_follows_later_steps_of_the_original():
+    doc = Document()
+    source = doc.add_box(10, 10, 10)
+    fid = doc.timeline.last_added.feature_id
+    linked = doc.branch_object(fid, source.body_id)
+    doc.add_box(1, 1, 1, translation=(40, 0, 0))            # an unrelated object stays where it is
+    doc.add_shell(source.body_id, 1)                        # a step the original gets after the link
+    shelled = doc.bodies[source.body_id].manifold.volume()
+    assert shelled < 1000
+    assert doc.bodies[linked.body_id].manifold.volume() == pytest.approx(shelled)
+    order = [f.feature_type for f in doc.timeline.features]
+    assert order.index('shell') < order.index('branch')
+    doc.edit_feature_dimension(fid, 'height', '20')
+    assert doc.bodies[linked.body_id].manifold.volume() == pytest.approx(doc.bodies[source.body_id].manifold.volume())
+    restored = Document()
+    Exporter.apply_dict(restored, Exporter.document_to_dict(doc))
+    assert restored.bodies[linked.body_id].manifold.volume() == pytest.approx(doc.bodies[source.body_id].manifold.volume())
+
+
+def test_linked_object_keeps_its_own_steps_behind_the_original():
+    doc = Document()
+    source = doc.add_box(10, 10, 10)
+    fid = doc.timeline.last_added.feature_id
+    linked = doc.branch_object(fid, source.body_id)
+    doc.move_body(linked.body_id, dx=30)                    # the copy's own step
+    doc.add_shell(source.body_id, 1)                        # then the original changes
+    ids = [f.feature_id for f in doc.timeline.features]
+    types = [f.feature_type for f in doc.timeline.features]
+    assert types.index('shell') < types.index('branch') < types.index('move')
+    copy_body = doc.bodies[linked.body_id].manifold
+    assert copy_body.volume() == pytest.approx(doc.bodies[source.body_id].manifold.volume())
+    assert copy_body.bounding_box()[0] > 15          # the copy kept its own move
+    assert len(ids) == len(set(ids))
+
+
+def test_link_from_an_older_step_stays_at_that_step():
+    doc = Document()
+    source = doc.add_box(10, 10, 10)
+    fid = doc.timeline.last_added.feature_id
+    doc.add_shell(source.body_id, 1)
+    old = doc.branch_object(fid, source.body_id)
+    assert doc.timeline.last_added.follow is False
+    assert doc.bodies[old.body_id].manifold.volume() == pytest.approx(1000)
+
+
+def test_copies_are_placed_to_the_right_of_the_original():
+    doc = Document()
+    source = doc.add_box(10, 10, 10)
+    fid = doc.timeline.last_added.feature_id
+    linked = doc.branch_object(fid, source.body_id)
+    independent = doc.branch_object(fid, source.body_id, linked=False)
+    right = doc.bodies[source.body_id].manifold.bounding_box()[3]
+    for body in (linked, independent):
+        lo = doc.bodies[body.body_id].manifold.bounding_box()[0]
+        assert lo > right                                   # beside, not touching
+    assert (doc.bodies[source.body_id].manifold ^ doc.bodies[linked.body_id].manifold).volume() == pytest.approx(0)

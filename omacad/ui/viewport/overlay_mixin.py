@@ -20,6 +20,41 @@ from omacad.model.sketch import (
 
 class OverlayMixin:
     """Mixin providing 2D QPainter overlays (dimensions, badges, HUD) for Viewport3D."""
+    def _draw_link_badges(self, painter: QPainter):
+        """A small chain-link chip above every linked object's body: blue when it follows its original, grey when it
+        is frozen at an older step of it."""
+        links = {}
+        for f in self.doc.timeline.features:
+            if f.feature_type == "branch" and not f.suppressed and not f.error:
+                links["body_" + f.feature_id] = getattr(f, "follow", True) is not False
+        if not links:
+            return
+        painter.save()
+        for bid, follows in links.items():
+            body = self.doc.bodies.get(bid)
+            mesh = body.render_mesh if body is not None else None
+            if not body or not body.visible or mesh is None or len(mesh.vertices) == 0:
+                continue
+            lo, hi = np.asarray(mesh.bounds_min, float), np.asarray(mesh.bounds_max, float)
+            top = np.array([(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, hi[2]])
+            scr = self.world_to_screen(top)
+            if scr is None:
+                continue
+            cx, cy = scr[0], scr[1] - 16
+            accent = qcolor(40, 170, 255) if follows else QColor(150, 150, 150)
+            painter.setPen(QPen(accent, 1.4))
+            painter.setBrush(QColor(20, 24, 30, 200))
+            painter.drawRoundedRect(QRectF(cx - 13, cy - 9, 26, 18), 9, 9)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(accent, 1.8))
+            painter.save()
+            painter.translate(cx, cy)
+            painter.rotate(-35)
+            painter.drawRoundedRect(QRectF(-8, -2.6, 9, 5.2), 2.6, 2.6)   # two interlocked chain links
+            painter.drawRoundedRect(QRectF(-1, -2.6, 9, 5.2), 2.6, 2.6)
+            painter.restore()
+        painter.restore()
+
     def _draw_plane_labels(self, painter: QPainter):
         """Each shown plane's name, small, in the corner of the plane that is lowest-right on screen, so it reads
         from wherever the camera looks."""
@@ -74,6 +109,7 @@ class OverlayMixin:
         h = self.height()
 
         self._draw_plane_labels(painter)
+        self._draw_link_badges(painter)
         # 1. ViewCube
         self.viewcube.draw(painter, w, h, self.azimuth, self.elevation)
         if self.rotate_handles.drag is None:

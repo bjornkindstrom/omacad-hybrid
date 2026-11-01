@@ -2,11 +2,23 @@
 from omacad.model.features.base import Feature, Body
 
 
+def beside_offset(solid):
+    """How far right (+X) a copy goes so it sits next to the original, not inside it: its width plus a gap."""
+    lo_x, _, _, hi_x, _, _ = solid.bounding_box()
+    width = max(hi_x - lo_x, 0.0)
+    return width + max(5.0, 0.5 * width)
+
+
 class BranchFeature(Feature):
-    def __init__(self, feature_id, name, source_feature_id, source_body_id):
+    def __init__(self, feature_id, name, source_feature_id, source_body_id, follow=True, beside=False):
         super().__init__(feature_id, 'branch', name)
         self.source_feature_id = source_feature_id
         self.source_body_id = source_body_id
+        # True: copies the original's latest result (Timeline._place_linked_objects keeps the link after the
+        # original's steps). False: frozen at the source step. None: decided on the first rebuild (older files).
+        self.follow = follow
+        # the copy is placed to the right of the original (follows its width when the original grows)
+        self.beside = beside
 
     def execute(self, doc):
         index = doc.object_history.index(doc, self.source_feature_id)
@@ -14,9 +26,15 @@ class BranchFeature(Feature):
             raise ValueError('The branch source step is missing')
         if self in doc.timeline.features and index >= doc.timeline.features.index(self):
             raise ValueError('A branch must follow its source step')
-        solid = doc.step_states.get(index + 1, {}).get(self.source_body_id)
+        solid = None
+        if self.follow and self.source_body_id in doc.bodies:
+            solid = doc.bodies[self.source_body_id].manifold
+        if solid is None:
+            solid = doc.step_states.get(index + 1, {}).get(self.source_body_id)
         if solid is None:
             raise ValueError('The source step has no body result')
+        if self.beside:
+            solid = solid.translate((beside_offset(solid), 0.0, 0.0))
         body = Body('body_' + self.feature_id, self.name, solid)
         body.update_render_mesh()
         doc.bodies[body.body_id] = body
@@ -24,4 +42,5 @@ class BranchFeature(Feature):
     def to_dict(self):
         return dict(feature_type=self.feature_type, feature_id=self.feature_id,
                     name=self.name, suppressed=self.suppressed,
-                    source_feature_id=self.source_feature_id, source_body_id=self.source_body_id)
+                    source_feature_id=self.source_feature_id, source_body_id=self.source_body_id,
+                    follow=self.follow, beside=self.beside)
