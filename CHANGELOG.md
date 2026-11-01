@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.104
+
+### Fixed
+- **A linked object is always the whole original (report 20261101-141324)**: "New linked object" from the menu of an object's first step (e.g. the Box primitive) gave a copy frozen at the plain box, without the extrude made on it later. A link now starts from the object as it stands and follows every later change, whichever of its steps it was made from (an older state = "Independent copy" of that step). A link made right after a primitive also follows the sketch and extrude made on it afterwards. The link badge is grey only for links frozen by older files. Test: `test_object_history.py`.
+
 # Hybrid-experiment — 0.9.9.80.103
 
 ### Changed

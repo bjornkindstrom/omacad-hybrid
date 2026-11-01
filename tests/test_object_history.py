@@ -289,14 +289,41 @@ def test_linked_object_keeps_its_own_steps_behind_the_original():
     assert len(ids) == len(set(ids))
 
 
-def test_link_from_an_older_step_stays_at_that_step():
+def test_link_from_the_primitive_step_is_the_whole_object_and_follows_it():
+    """Report 20261101-141324: a linked object made from the menu of the object's first step (the Box) stopped at
+    the plain box instead of being the object with its extrude."""
+    import os
+    path = os.path.join(os.path.dirname(__file__), 'data', 'linked_copy_of_primitive_step.omacad')
+    doc = Exporter.load_project(path)
+    doc.timeline.features = [f for f in doc.timeline.features if f.feature_type != 'branch']
+    doc.timeline.marker_index = len(doc.timeline.features)
+    doc.timeline.recompute(doc)
+    original = doc.bodies['body_box_1'].manifold
+    assert original.volume() == pytest.approx(50 * 50 * 25 + 20 * 20 * 15)
+    linked = doc.branch_object('box_1', 'body_box_1')
+    assert doc.timeline.last_added.follow is True
+    copy = doc.bodies[linked.body_id].manifold
+    assert copy.volume() == pytest.approx(original.volume())
+    assert copy.bounding_box()[5] == pytest.approx(original.bounding_box()[5])   # the extruded block is on it too
+    doc.edit_feature_dimension('extrude_3', 'distance', '30')
+    assert doc.bodies[linked.body_id].manifold.volume() == pytest.approx(50 * 50 * 25 + 20 * 20 * 30)
+
+
+def test_link_made_right_after_a_primitive_follows_a_sketch_and_extrude_on_it():
+    from omacad.model.sketch_entities import SketchPlane
+    import numpy as np
     doc = Document()
     source = doc.add_box(10, 10, 10)
-    fid = doc.timeline.last_added.feature_id
-    doc.add_shell(source.body_id, 1)
-    old = doc.branch_object(fid, source.body_id)
-    assert doc.timeline.last_added.follow is False
-    assert doc.bodies[old.body_id].manifold.volume() == pytest.approx(1000)
+    linked = doc.branch_object(doc.timeline.last_added.feature_id, source.body_id)
+    plane = SketchPlane('FACE', np.array([0.0, 0.0, 10.0]), np.array([1.0, 0.0, 0.0]),
+                        np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, 1.0]))
+    sk = doc.start_sketch_on_plane(plane)
+    sk.add_rect((3, 3), (7, 7))
+    doc.finish_sketch()
+    profile = min(range(len(sk.profiles)), key=lambda i: abs(sk.profiles[i].area - 16))
+    doc.extrude_profile(sk.sketch_id, profile, 5, operation='join')
+    assert doc.bodies[source.body_id].manifold.volume() == pytest.approx(1000 + 80)
+    assert doc.bodies[linked.body_id].manifold.volume() == pytest.approx(1000 + 80)
 
 
 def test_copies_are_placed_to_the_right_of_the_original():

@@ -998,10 +998,11 @@ class Document:
         fid = self._feature_id("branch" if linked else "copy")
         self.object_history.insert_after = None
         if linked:
-            # made from the original's latest step: follows every later change; from an older step: stays there
-            obj = self.object_history.objects.get(self.object_history.owners.get(feature_id))
-            follow = obj is None or not obj.feature_ids or obj.feature_ids[-1] == feature_id
-            feature = BranchFeature(fid, name, feature_id, body_id, follow=follow, beside=True)
+            # a link is the original itself, from whichever of its steps it was made: it starts from the object as
+            # it stands now and follows every later change (an older state = Independent copy of that step)
+            owner = self.object_history.owners.get(feature_id)
+            latest = dict((b, s) for s, b in self.object_history.copy_sources(self, owner))
+            feature = BranchFeature(fid, name, latest.get(body_id, feature_id), body_id, follow=True, beside=True)
         else:
             from omacad.model.features.branch import beside_offset
             mesh = source.translate((beside_offset(source), 0.0, 0.0)).to_mesh()   # next to the original
