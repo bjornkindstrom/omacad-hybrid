@@ -43,6 +43,8 @@ BOX_ROW_PARAMS_CONFIG = [
 BOX_ROW_LID_PARAMS_CONFIG = [
     ("clearance", "3D print clearance", "mm"),
     ("snap_size", "Snap detent (snäpp)", "mm"),
+    ("slot_length", "Slot length (0 = auto)", "mm"),
+    ("slot_width", "Slot width (0 = auto)", "mm"),
     ("lip_height", "Groove height from top", "mm"),
     ("lip_step", "Groove depth into wall", "mm"),
 ]

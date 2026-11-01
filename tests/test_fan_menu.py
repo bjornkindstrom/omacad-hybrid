@@ -47,6 +47,7 @@ def test_fan_categories_solid_mode(win):
     prims = next(t for t in create_cat.children if t.id == "primitives")
     assert any(p.id == "box" for p in prims.children)
     assert any(p.id == "cylinder" for p in prims.children)
+    assert any(p.id == "box_row" for p in prims.children)
 
 
 def test_fan_categories_sketch_mode(win):

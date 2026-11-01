@@ -196,9 +196,17 @@ def _lid_xy_mask_poly(x_min, x_max, y_half, r_back, r_front, kind_back="fillet",
 
 
 
+SNAP_MIN_OUTER = 0.6  # mm of material that always stays outside the snap pocket
+
+
 def _snap_center_x(length: float, wall: float, radius: float) -> float:
-    """Snap pocket centre: leaves wall material on the outer (front) side."""
-    return length / 2.0 - wall + radius + 0.2
+    """Snap pocket centre: at least SNAP_MIN_OUTER mm of wall stays on the outer (front) side.
+
+    A bigger snap moves the pocket back into the sill instead of eating the outer skin
+    (report 20261101-212302)."""
+    near_cavity = length / 2.0 - wall + radius + 0.2
+    keep_outer = length / 2.0 - SNAP_MIN_OUTER - radius
+    return max(length / 2.0 - wall, min(near_cavity, keep_outer))
 
 class BoxFeature(Feature):
     def __init__(self, feature_id: str, name: str, length: float, width: float, height: float, center: Any = False,
@@ -208,7 +216,8 @@ class BoxFeature(Feature):
                  translation: Any = None, lip_height: float = 0.0, lip_step: float = 0.0,
                  bottom_thickness: float = 0.0, honeycomb: bool = False, honeycomb_size: float = 4.0,
                  honeycomb_wall: float = 1.2, honeycomb_margin: float = 2.0, is_lid: bool = False,
-                 clearance: float = 0.2, lid_top: float = 2.0, tab_size: float = 4.0, snap_size: float = 0.6):
+                 clearance: float = 0.2, lid_top: float = 2.0, tab_size: float = 4.0, snap_size: float = 0.6,
+                 slot_length: float = 0.0, slot_width: float = 0.0):
         super().__init__(feature_id, "box", name)
         self.length = float(length)
         self.width = float(width)
@@ -237,6 +246,8 @@ class BoxFeature(Feature):
         self.lid_top = float(lid_top)
         self.tab_size = float(tab_size)
         self.snap_size = float(snap_size)
+        self.slot_length = float(slot_length)  # lid finger slot, 0 = automatic
+        self.slot_width = float(slot_width)
 
     def build_solid(self) -> m3d.Manifold:
         is_centered = (self.center is True or self.center == "center")
@@ -313,13 +324,23 @@ class BoxFeature(Feature):
             # Thumb slot (compliant flexure) and snap features
             solid = lid_plate
             if in_l > 12.0 and in_w > 8.0:
+                user_w = float(getattr(self, "slot_width", 0.0) or 0.0)
+                user_l = float(getattr(self, "slot_length", 0.0) or 0.0)
                 slot_w = min(3.5, max(1.5, tab_sz * 0.75), in_l * 0.15)
                 slot_l = min(max(6.0, tab_sz * 4.0), in_w * 0.65)
+                if user_w > 1e-4:
+                    slot_w = min(user_w, in_l * 0.5)
+                if user_l > 1e-4:
+                    slot_l = min(user_l, in_w - 2.0)
+                slot_l = max(slot_l, slot_w)
                 r_slot = min(slot_w / 2.0, 1.5)
+                if user_w > 1e-4:
+                    r_slot = slot_w / 2.0  # a requested slot is a full capsule
                 bridge_len = max(2.5, min(8.0, in_l * 0.15))
                 slot_x = self.length / 2.0 - t - slot_w - bridge_len
-                slot_poly = sbox(slot_x - slot_w / 2.0 + r_slot, -slot_l / 2.0 + r_slot,
-                                 slot_x + slot_w / 2.0 - r_slot, slot_l / 2.0 - r_slot).buffer(r_slot)
+                hw = max(slot_w / 2.0 - r_slot, 1e-6)
+                hl = max(slot_l / 2.0 - r_slot, 1e-6)
+                slot_poly = sbox(slot_x - hw, -hl, slot_x + hw, hl).buffer(r_slot)
                 cs_slot = region_cross_section(slot_poly)
                 slot_cutter = m3d.Manifold.extrude(cs_slot, t_lid + 2.0).translate((0.0, 0.0, lid_z - 1.0))
                 solid = solid - slot_cutter
@@ -392,6 +413,13 @@ class BoxFeature(Feature):
             channel_cutter = m3d.Manifold.extrude(cs_channel, channel_len).rotate((90, 0, 90)).translate((x_back, 0.0, 0.0))
 
             solid = box_outer - cavity - channel_cutter
+
+            # The rails stop where the front wall starts: left running through the front
+            # corners they poke out as a triangular stub (report 20261101-205314).
+            r_front = min(r_in, t)
+            x_clear = self.length / 2.0 - t - r_front
+            front_clear = m3d.Manifold.cube((self.length / 2.0 + 1.0 - x_clear, 2.0 * y_shelf, self.height + 1.0 - z_shelf)).translate((x_clear, -y_shelf, z_shelf))
+            solid = solid - front_clear
 
             # Snap detent notch in front sill
             if in_l > 12.0 and in_w > 8.0:
@@ -541,6 +569,8 @@ class BoxFeature(Feature):
             "lid_top": self.lid_top,
             "tab_size": getattr(self, "tab_size", 4.0),
             "snap_size": getattr(self, "snap_size", 0.6),
+            "slot_length": getattr(self, "slot_length", 0.0),
+            "slot_width": getattr(self, "slot_width", 0.0),
         }
 
 

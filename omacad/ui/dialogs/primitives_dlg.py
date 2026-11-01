@@ -725,6 +725,22 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.spn_snap_size.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("  Snap detent (snäpp):", self.spn_snap_size)
 
+        self.spn_slot_length = ExprDoubleSpinBox()
+        self.spn_slot_length.setRange(0.0, 500.0)
+        self.spn_slot_length.setSpecialValueText("Auto")
+        self.spn_slot_length.setSuffix(" mm")
+        self.spn_slot_length.setToolTip("Length of the finger slot in the lid (across the box). Auto = default.")
+        self.spn_slot_length.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  Slot length:", self.spn_slot_length)
+
+        self.spn_slot_width = ExprDoubleSpinBox()
+        self.spn_slot_width.setRange(0.0, 100.0)
+        self.spn_slot_width.setSpecialValueText("Auto")
+        self.spn_slot_width.setSuffix(" mm")
+        self.spn_slot_width.setToolTip("Width of the finger slot in the lid. Auto = default.")
+        self.spn_slot_width.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  Slot width:", self.spn_slot_width)
+
         # Placement
         self.cmb_placement = QComboBox()
         _add_placements(self.cmb_placement, (
@@ -806,6 +822,8 @@ class BoxInRowDialog(BaseFeatureDialog):
             "clearance": self.spn_clearance.value(),
             "snap_size": self.spn_snap_size.value(),
             "tab_size": self.spn_snap_size.value(),
+            "slot_length": self.spn_slot_length.value(),
+            "slot_width": self.spn_slot_width.value(),
             "center": self.cmb_placement.currentData(),
             "plane_origin": self.plane_origin if self.cmb_placement.currentData() == "on_face" else None,
             "plane_normal": self.plane_normal if self.cmb_placement.currentData() == "on_face" else None,
@@ -854,6 +872,10 @@ class BoxInRowDialog(BaseFeatureDialog):
             self.spn_lip_step.setValue(float(params["lip_step"]))
         if "clearance" in params:
             self.spn_clearance.setValue(float(params["clearance"]))
+        if "slot_length" in params:
+            self.spn_slot_length.setValue(float(params["slot_length"]))
+        if "slot_width" in params:
+            self.spn_slot_width.setValue(float(params["slot_width"]))
         if "snap_size" in params:
             self.spn_snap_size.setValue(float(params["snap_size"]))
         elif "tab_size" in params:

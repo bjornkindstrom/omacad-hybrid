@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.116
+
+### Fixed
+- **Box in a row: utstick, snäpp och slot (rapporterna 20261101-205314, -212302, -221011)**: 1) Skenornas triangelrygg löpte ut genom lådans främre hörn och stack ut som en trekantig stump; ryggen slutar nu där främre väggen börjar. 2) Snäppurtaget lämnar alltid minst 0,6 mm material ytterst; ett större snäpp flyttas bakåt in mot facket i stället för att äta upp ytterväggen (lockets pip följer med). 3) Lockets fingerslits har egna mått, `slot_length` och `slot_width` (0 = automatiskt), i dialogen och under `⚙️ Settings` i trädet; sparas i `.omacad`. Box in a Row finns nu även under Primitives i solfjädermenyn. Test: `test_box_row_report_152_154.py`, `test_fan_menu.py`.
+
 # Hybrid-experiment — 0.9.9.80.115
 
 ### Fixed

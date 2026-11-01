@@ -67,7 +67,7 @@ class ContextMenuMixin:
 
             # Primitives Sub-fan
             prim_items = []
-            for cid in ("box", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"):
+            for cid in ("box", "box_row", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"):
                 c = commands.get(cid)
                 prim_items.append(FanItem(
                     id=cid,
@@ -81,7 +81,7 @@ class ContextMenuMixin:
                 id="primitives",
                 label="Primitives",
                 icon=theme.named_icon("box", "📦", 20),
-                tooltip="Box, Cylinder, Cone, Prism, Pipe, Thread, Jar",
+                tooltip="Box, Box in a Row, Cylinder, Cone, Prism, Pipe, Thread, Jar",
                 children=prim_items
             ))
 

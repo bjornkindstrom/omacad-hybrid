@@ -391,7 +391,8 @@ class Document:
                 translation: Any = None, lip_height: float = 0.0, lip_step: float = 0.0,
                 bottom_thickness: float = 0.0, honeycomb: bool = False, honeycomb_size: float = 4.0,
                 honeycomb_wall: float = 1.2, honeycomb_margin: float = 2.0, is_lid: bool = False,
-                clearance: float = 0.2, lid_top: float = 2.0, tab_size: float = 4.0, snap_size: float = 0.6) -> Body:
+                clearance: float = 0.2, lid_top: float = 2.0, tab_size: float = 4.0, snap_size: float = 0.6,
+                slot_length: float = 0.0, slot_width: float = 0.0) -> Body:
         feat_id = self._feature_id("box")
         feat_name = name or f"Box {len([f for f in self.timeline.features if f.feature_type == 'box']) + 1}"
         feat = BoxFeature(feat_id, feat_name, length, width, height, center,
@@ -401,7 +402,8 @@ class Document:
                           translation=translation, lip_height=lip_height, lip_step=lip_step,
                           bottom_thickness=bottom_thickness, honeycomb=honeycomb, honeycomb_size=honeycomb_size,
                           honeycomb_wall=honeycomb_wall, honeycomb_margin=honeycomb_margin, is_lid=is_lid,
-                          clearance=clearance, lid_top=lid_top, tab_size=tab_size, snap_size=snap_size)
+                          clearance=clearance, lid_top=lid_top, tab_size=tab_size, snap_size=snap_size,
+                          slot_length=slot_length, slot_width=slot_width)
         feat.execute(self)
         self.timeline.add_feature(feat)
         self.notify_changed()
@@ -2170,6 +2172,10 @@ class Document:
             if "snap_size" not in p:
                 p["snap_size"] = 0.6
                 og["params"]["snap_size"] = 0.6
+            for k in ("slot_length", "slot_width"):
+                if k not in p:
+                    p[k] = 0.0
+                    og["params"][k] = 0.0
             return p
 
         box_feats, lid_feats = self.box_row_features(group_id)
@@ -2213,6 +2219,8 @@ class Document:
             "clearance": float(getattr(f0, "clearance", 0.2)),
             "lid_top": float(getattr(f0, "lid_top", 2.0)),
             "snap_size": float(getattr(f0, "snap_size", 0.6)),
+            "slot_length": float(getattr(f0, "slot_length", 0.0)),
+            "slot_width": float(getattr(f0, "slot_width", 0.0)),
             "tab_size": float(getattr(f0, "tab_size", 4.0)),
             "center": getattr(f0, "center", "bottom_center"),
             "plane_origin": getattr(f0, "plane_origin", None),
@@ -2253,6 +2261,10 @@ class Document:
             val = float(new_params["tab_size"])
             snap_sz = val if val <= 2.5 else 0.6
         tab_sz = snap_sz
+        slot_l = float(params.get("slot_length", 0.0))
+        slot_w = float(params.get("slot_width", 0.0))
+        params["slot_length"] = slot_l
+        params["slot_width"] = slot_w
         params["snap_size"] = snap_sz
         params["tab_size"] = snap_sz
         center = params.get("center", "bottom_center")
@@ -2292,6 +2304,7 @@ class Document:
                 honeycomb_wall=params.get("honeycomb_wall", 1.2),
                 honeycomb_margin=params.get("honeycomb_margin", 2.0),
                 tab_size=tab_sz, snap_size=snap_sz, translation=t_box,
+                slot_length=slot_l, slot_width=slot_w,
             )
             self.timeline.add_feature(b_feat)
             box_feats.append(b_feat)
@@ -2305,7 +2318,7 @@ class Document:
                     wall_thickness=wall_t, outer_round=out_r, outer_round_kind=out_rk,
                     lip_height=lip_h, lip_step=lip_s, clearance=clearance,
                     lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, snap_size=snap_sz, is_lid=True,
-                    translation=t_box,
+                    slot_length=slot_l, slot_width=slot_w, translation=t_box,
                 )
                 self.timeline.add_feature(l_feat)
                 lid_feats.append(l_feat)
@@ -2363,6 +2376,8 @@ class Document:
             bf.lip_step = (lip_s if has_lid else 0.0)
             bf.tab_size = tab_sz
             bf.snap_size = snap_sz
+            bf.slot_length = slot_l
+            bf.slot_width = slot_w
             bf.translation = t_box
 
             if has_lid and i < len(lid_feats):
@@ -2378,6 +2393,8 @@ class Document:
                 lf.clearance = clearance
                 lf.tab_size = tab_sz
                 lf.snap_size = snap_sz
+                lf.slot_length = slot_l
+                lf.slot_width = slot_w
                 lf.translation = t_box
 
         og["box_features"] = [bf.feature_id for bf in box_feats]
@@ -2412,7 +2429,7 @@ class Document:
             raise ValueError("Enter a finite value")
         if key in ("length", "width", "height", "wall_thickness", "bottom_thickness", "count", "lip_height", "tab_size", "snap_size") and val <= 0:
             raise ValueError("This dimension must be greater than zero")
-        if key in ("outer_round", "inner_round", "spacing", "clearance") and val < 0:
+        if key in ("outer_round", "inner_round", "spacing", "clearance", "slot_length", "slot_width") and val < 0:
             raise ValueError("This value cannot be negative")
         if key == "count":
             new_val = max(1, int(round(float(val))))
@@ -2445,6 +2462,8 @@ class Document:
         lid_top: float = 2.0,
         tab_size: float = 4.0,
         snap_size: float = 0.6,
+        slot_length: float = 0.0,
+        slot_width: float = 0.0,
         center: Any = "bottom_center",
         plane_origin: Any = None,
         plane_normal: Any = None,
@@ -2494,6 +2513,7 @@ class Document:
                 honeycomb=honeycomb, honeycomb_size=honeycomb_size,
                 honeycomb_wall=honeycomb_wall, honeycomb_margin=honeycomb_margin,
                 tab_size=tab_size, snap_size=snap_size,
+                slot_length=slot_length, slot_width=slot_width,
                 translation=t_box,
             )
             created_bodies.append(box_body)
@@ -2513,7 +2533,7 @@ class Document:
                     outer_round=outer_round, outer_round_kind=outer_round_kind,
                     lip_height=lip_height, lip_step=lip_step,
                     clearance=clearance, lid_top=lid_top, tab_size=tab_size, snap_size=snap_size, is_lid=True,
-                    translation=t_box,
+                    slot_length=slot_length, slot_width=slot_width, translation=t_box,
                 )
                 lid_body.is_lid = True
                 self.lids.add(lid_body.body_id)
@@ -2547,6 +2567,8 @@ class Document:
             "clearance": float(clearance),
             "lid_top": float(lid_top),
             "snap_size": float(snap_size),
+            "slot_length": float(slot_length),
+            "slot_width": float(slot_width),
             "tab_size": float(tab_size),
             "center": center,
             "plane_origin": plane_origin,
