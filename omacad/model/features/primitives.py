@@ -195,6 +195,11 @@ def _lid_xy_mask_poly(x_min, x_max, y_half, r_back, r_front, kind_back="fillet",
     return Polygon(pts)
 
 
+
+def _snap_center_x(length: float, wall: float, radius: float) -> float:
+    """Snap pocket centre: leaves wall material on the outer (front) side."""
+    return length / 2.0 - wall + radius + 0.2
+
 class BoxFeature(Feature):
     def __init__(self, feature_id: str, name: str, length: float, width: float, height: float, center: Any = False,
                  plane_origin: Any = None, plane_normal: Any = None, plane_u: Any = None, plane_v: Any = None,
@@ -325,7 +330,7 @@ class BoxFeature(Feature):
                     snap_s = 0.6
                 r_det = min(snap_s, t_lid * 0.6, t * 0.8)
                 w_det = min(8.0, in_w * 0.3)
-                x_det = self.length / 2.0 - t / 2.0
+                x_det = _snap_center_x(self.length, t, r_det)
                 r_pip = max(0.2, r_det * 0.75)
                 w_pip = max(0.5, w_det - 2.0 * c)
                 snap_pip = m3d.Manifold.cylinder(w_pip, r_pip, r_pip, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_pip / 2.0, lid_z))
@@ -395,8 +400,13 @@ class BoxFeature(Feature):
                     snap_s = 0.6
                 r_det = min(snap_s, t_lid * 0.6, t * 0.8)
                 w_det = min(8.0, in_w * 0.3)
-                x_det = self.length / 2.0 - t / 2.0
-                notch = m3d.Manifold.cylinder(w_det, r_det, r_det, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_det / 2.0, z_shelf))
+                x_det = _snap_center_x(self.length, t, r_det)
+                # Round pocket on the outer side, opened with a ramp towards the
+                # cavity so it prints without an overhang (report 20261101-211334).
+                pocket = m3d.Manifold.cylinder(w_det, r_det, r_det, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_det / 2.0, z_shelf))
+                ramp_x = self.length / 2.0 - t - 0.5
+                ramp_end = m3d.Manifold.cube((0.5, w_det, 0.01)).translate((ramp_x, -w_det / 2.0, z_shelf - 0.01))
+                notch = m3d.Manifold.batch_hull([pocket, ramp_end])
                 solid = solid - notch
 
             if self.honeycomb:

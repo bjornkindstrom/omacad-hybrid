@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.115
+
+### Fixed
+- **Snäppurtaget lämnar material ytterst och öppnar mot lådans insida (rapport 20261101-211334)**: urtaget i tröskeln låg mitt i väggen och hade överhäng åt båda hållen. Det ligger nu mot insidan (`_snap_center_x`, minst 0,2 mm vägg kvar ytterst) och öppnas med en ramp in mot facket så det går att skriva ut. Locksnäppet följer samma läge. Test: `tests/test_snap_detent_printable.py`.
+
 # Hybrid-experiment — 0.9.9.80.114
 
 ### Changed
