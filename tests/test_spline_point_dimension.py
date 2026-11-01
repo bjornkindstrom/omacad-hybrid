@@ -12,6 +12,7 @@ from omacad.model.document import Document
 from omacad.model.sketch import Sketch, SketchSpline
 
 DATA = os.path.join(os.path.dirname(__file__), "data", "control_spline_dimension.json")
+BADGE_DATA = os.path.join(os.path.dirname(__file__), "data", "spline_constraint_badges.json")
 
 
 def _report_doc():
@@ -19,6 +20,41 @@ def _report_doc():
     with open(DATA, encoding="utf-8") as f:
         Exporter.apply_dict(doc, json.load(f))
     return doc
+
+
+def test_saved_spline_coincident_constraints_do_not_interrupt_dimension_painting():
+    """Report 20261101-112927: snapped spline endpoints use integer constraint point indices."""
+    from PySide6.QtGui import QImage, QPainter
+    from PySide6.QtWidgets import QApplication
+    from omacad.ui.viewport.viewport import Viewport3D
+
+    if QApplication.instance() is None:
+        QApplication([])
+    with open(BADGE_DATA, encoding="utf-8") as f:
+        sketch = Sketch.from_dict(json.load(f))
+    constraints = {c.cid: c for c in sketch.constraints}
+    assert constraints["c_4"].pts == ["pt0", "p2"]
+    assert constraints["c_5"].pts == ["pt3", "p2"]
+    doc = Document()
+    doc.sketches[sketch.sketch_id] = sketch
+    doc.active_sketch = sketch
+    view = Viewport3D(doc)
+    view.resize(800, 600)
+    view.align_to_plane(sketch.plane)
+    view.sketch_palette.chk_show_constraints.setChecked(True)
+    view.sketch_palette.chk_show_dims.setChecked(True)
+    image = QImage(800, 600, QImage.Format.Format_ARGB32)
+    painter = QPainter(image)
+    try:
+        view.draw_constraint_badges(painter)
+        view.draw_dimensions(painter)
+    finally:
+        painter.end()
+        view.close()
+    assert {cid for _, cid in view.constraint_badges} >= {"c_4", "c_5"}
+    assert {"d5", "d6"} <= set(view.dim_badges)
+    assert doc.update_dimension(sketch.sketch_id, "d5", 4.5)
+    assert sketch.get_entity("spline_1").points[1][1] == pytest.approx(4.5)
 
 
 def test_dimension_tool_picks_a_control_point_of_the_spline():

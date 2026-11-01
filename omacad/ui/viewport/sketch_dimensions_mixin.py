@@ -185,7 +185,9 @@ class SketchDimensionsMixin:
             if not show_all and not (set(c.refs) & focus):
                 continue
             if c.ctype in ("COINCIDENT", "MIDPOINT") and c.pts:
-                uv = getattr(ent, c.pts[0], None) or (0.0, 0.0)
+                uv = point_of(ent, c.pts[0])
+                if uv is None:
+                    continue
             elif isinstance(ent, SketchLine):
                 uv = ((ent.p1[0] + ent.p2[0]) / 2.0, (ent.p1[1] + ent.p2[1]) / 2.0)
             elif isinstance(ent, SketchCircle):

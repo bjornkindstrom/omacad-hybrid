@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.99
+
+### Fixed
+- **Spline control point dimensions remain visible and editable (report 20261101-112927)**: snapped spline endpoints stored integer point indices in coincident constraints, crashing both badge painting and the dimension solver. New constraints use named points (`pt0`, …), and loading converts existing integer references so saved sketches work again. Test: `test_spline_point_dimension.py`.
+
 # Hybrid-experiment — 0.9.9.80.98
 
 ### Fixed

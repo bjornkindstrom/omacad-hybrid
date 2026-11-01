@@ -1,0 +1,267 @@
+{
+  "sketch_id": "sketch_1",
+  "name": "Sketch 1",
+  "plane": {
+    "name": "XZ",
+    "origin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "u_axis": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "v_axis": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "normal": [
+      0.0,
+      -1.0,
+      0.0
+    ]
+  },
+  "entities": [
+    {
+      "entity_id": "spline_1",
+      "entity_type": "spline",
+      "points": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          28.644298553466797,
+          3.7876157760620117
+        ],
+        [
+          43.34199523925781,
+          12.156952857971191
+        ],
+        [
+          45.00683212064651,
+          40.202351293562714
+        ]
+      ],
+      "is_construction": false,
+      "control_points": true
+    },
+    {
+      "entity_id": "spline_2",
+      "entity_type": "spline",
+      "points": [
+        [
+          1.8369701987210297e-16,
+          3.0
+        ],
+        [
+          27.83724494414676,
+          6.977743732874275
+        ],
+        [
+          40.155340037923146,
+          13.892791639623402
+        ],
+        [
+          42.00683212064651,
+          40.202351293562714
+        ]
+      ],
+      "is_construction": false,
+      "control_points": true
+    },
+    {
+      "entity_id": "line_3",
+      "entity_type": "line",
+      "p1": [
+        1.8369701987210297e-16,
+        0.0
+      ],
+      "p2": [
+        1.8369701987210297e-16,
+        3.0
+      ],
+      "is_construction": false
+    },
+    {
+      "entity_id": "line_4",
+      "entity_type": "line",
+      "p1": [
+        42.00683212064651,
+        40.202351293562714
+      ],
+      "p2": [
+        45.00683212064651,
+        40.202351293562714
+      ],
+      "is_construction": false
+    },
+    {
+      "entity_id": "line_5",
+      "entity_type": "line",
+      "p1": [
+        1.8369701987210297e-16,
+        3.0
+      ],
+      "p2": [
+        2.7424288502714006e-15,
+        44.787261962890625
+      ],
+      "is_construction": false
+    },
+    {
+      "entity_id": "line_6",
+      "entity_type": "line",
+      "p1": [
+        0.0,
+        0.0
+      ],
+      "p2": [
+        59.78782272338867,
+        0.0
+      ],
+      "is_construction": false
+    }
+  ],
+  "dimensions": [
+    {
+      "dim_id": "d1",
+      "name": "Length",
+      "dim_type": "LENGTH",
+      "target_entity_id": "line_3",
+      "value": 3.0,
+      "offset_distance": 12.0,
+      "refs": [],
+      "pts": [],
+      "expr": null
+    },
+    {
+      "dim_id": "d2",
+      "name": "Length",
+      "dim_type": "LENGTH",
+      "target_entity_id": "line_4",
+      "value": 3.0,
+      "offset_distance": 12.0,
+      "refs": [],
+      "pts": [],
+      "expr": null
+    },
+    {
+      "dim_id": "d3",
+      "name": "Length",
+      "dim_type": "LENGTH",
+      "target_entity_id": "line_5",
+      "value": 41.787261962890625,
+      "offset_distance": 12.0,
+      "refs": [],
+      "pts": [],
+      "expr": null
+    },
+    {
+      "dim_id": "d4",
+      "name": "Length",
+      "dim_type": "LENGTH",
+      "target_entity_id": "line_6",
+      "value": 59.78782272338867,
+      "offset_distance": -3.1311988830566406,
+      "refs": [],
+      "pts": [],
+      "expr": null
+    },
+    {
+      "dim_id": "d5",
+      "name": "Dim 5",
+      "dim_type": "PT_LINE_DIST",
+      "target_entity_id": "spline_1",
+      "value": 3.79,
+      "offset_distance": 12.0,
+      "refs": [
+        "line_6"
+      ],
+      "pts": [
+        "pt1"
+      ],
+      "expr": null
+    },
+    {
+      "dim_id": "d6",
+      "name": "Dim 6",
+      "dim_type": "PT_LINE_DIST",
+      "target_entity_id": "spline_2",
+      "value": 6.98,
+      "offset_distance": 12.0,
+      "refs": [
+        "line_6"
+      ],
+      "pts": [
+        "pt1"
+      ],
+      "expr": null
+    }
+  ],
+  "constraints": [
+    {
+      "cid": "c1",
+      "ctype": "VERTICAL",
+      "refs": [
+        "line_3"
+      ],
+      "pts": []
+    },
+    {
+      "cid": "c_4",
+      "ctype": "COINCIDENT",
+      "refs": [
+        "spline_2",
+        "line_3"
+      ],
+      "pts": [
+        0,
+        "p2"
+      ]
+    },
+    {
+      "cid": "c3",
+      "ctype": "HORIZONTAL",
+      "refs": [
+        "line_4"
+      ],
+      "pts": []
+    },
+    {
+      "cid": "c_5",
+      "ctype": "COINCIDENT",
+      "refs": [
+        "spline_1",
+        "line_4"
+      ],
+      "pts": [
+        3,
+        "p2"
+      ]
+    },
+    {
+      "cid": "c5",
+      "ctype": "VERTICAL",
+      "refs": [
+        "line_5"
+      ],
+      "pts": []
+    },
+    {
+      "cid": "c6",
+      "ctype": "HORIZONTAL",
+      "refs": [
+        "line_6"
+      ],
+      "pts": []
+    }
+  ],
+  "face_key": null,
+  "parent_body_id": null,
+  "face_center": null,
+  "visible": true
+}

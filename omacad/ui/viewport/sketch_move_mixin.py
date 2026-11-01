@@ -317,7 +317,8 @@ class SketchMoveMixin:
                                     ent.p_end = opt
                                 from omacad.model.sketch_types import SketchConstraint
                                 cid = sk._new_entity_id("c")
-                                sk.constraints.append(SketchConstraint(cid, "COINCIDENT", [ent.entity_id, other.entity_id], [pname, oname]))
+                                point_name = f"pt{pname}" if getattr(ent, "entity_type", "") == "spline" else pname
+                                sk.constraints.append(SketchConstraint(cid, "COINCIDENT", [ent.entity_id, other.entity_id], [point_name, oname]))
                                 break
                     elif getattr(other, "entity_type", "") == "arc":
                         for oname, opt in (("p_start", other.p_start), ("p_end", other.p_end)):
@@ -328,7 +329,8 @@ class SketchMoveMixin:
                                     ent.p2 = opt
                                 from omacad.model.sketch_types import SketchConstraint
                                 cid = sk._new_entity_id("c")
-                                sk.constraints.append(SketchConstraint(cid, "COINCIDENT", [ent.entity_id, other.entity_id], [pname, oname]))
+                                point_name = f"pt{pname}" if getattr(ent, "entity_type", "") == "spline" else pname
+                                sk.constraints.append(SketchConstraint(cid, "COINCIDENT", [ent.entity_id, other.entity_id], [point_name, oname]))
                                 break
             sk.solve_profiles()
             if self.doc.record_sketch_change(sk, d["before"]):

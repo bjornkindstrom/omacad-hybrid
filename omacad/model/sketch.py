@@ -487,8 +487,12 @@ class Sketch(SketchEditingMixin):
 
         for dim_data in data.get("dimensions", []):
             sketch.dimensions.append(SketchDimension.from_dict(dim_data))
+        splines = {e.entity_id for e in sketch.entities if isinstance(e, SketchSpline)}
         for c_data in data.get("constraints", []):
-            sketch.constraints.append(SketchConstraint.from_dict(c_data))
+            constraint = SketchConstraint.from_dict(c_data)
+            constraint.pts = [f"pt{name}" if eid in splines and isinstance(name, int) else name
+                              for eid, name in zip(constraint.refs, constraint.pts)]
+            sketch.constraints.append(constraint)
 
         projected = {ed.get("entity_id") for ed in data.get("entities", []) if ed.get("projected")}
         for e in sketch.entities:
