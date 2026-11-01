@@ -214,6 +214,66 @@ def _tightened(nrm, mask, tol: float) -> np.ndarray:
     return mask
 
 
+def _revolution_axis(tri, nrm, area) -> Optional[tuple]:
+    """The axis of a surface of revolution (a vase, a bowl, a cone, a cylinder): every normal line of such a
+    surface meets the axis. In Plücker form the line (a, m) meets the normal line (n, p x n) when
+    (p x n) . a + n . m = 0, linear in (a, m); m is solved out by least squares, leaving the direction a with
+    |a| = 1 as the smallest singular vector. Returns (direction, point on the axis, rms miss in mm) or None when no
+    single line fits (flat walls, a sphere: every line through its centre fits)."""
+    w = np.asarray(area, dtype=float)
+    p = tri.mean(axis=1)
+    p0 = (p * w[:, None]).sum(axis=0) / w.sum()
+    sw = np.sqrt(w)[:, None]
+    Ra, Rm = np.cross(p - p0, nrm) * sw, nrm * sw
+    q, _ = np.linalg.qr(Rm)
+    _, s, vh = np.linalg.svd(Ra - q @ (q.T @ Ra), full_matrices=False)
+    if s[2] > 0.1 * s[1]:
+        return None
+    a = vh[2]
+    m = -np.linalg.lstsq(Rm, Ra @ a, rcond=None)[0]
+    return a, p0 + np.cross(a, m), float(s[2] / math.sqrt(w.sum()))
+
+
+def _circle_fit(patch, nrm, p_mean, diff, axis, u_vec, v_vec):
+    """Centre on the axis and radius of a cylinder wall round `axis`, or (None, None) when the patch is no cylinder."""
+    u_coords = diff @ u_vec
+    v_coords = diff @ v_vec
+
+    # 2D circle fit via linear least squares
+    A = np.column_stack([2.0 * u_coords, 2.0 * v_coords, np.ones(len(patch))])
+    b = u_coords**2 + v_coords**2
+    try:
+        sol, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+        du, dv, c_const = sol
+        rad_sq = c_const + du**2 + dv**2
+        if rad_sq <= 0:
+            return None, None
+        radius = float(np.sqrt(rad_sq))
+    except Exception:
+        return None, None
+
+    if radius < 0.1 or radius > 5000.0:
+        return None, None
+
+    center_on_axis = p_mean + du * u_vec + dv * v_vec
+
+    # Verify fit quality: points should be at distance ~ radius from axis
+    dists_to_axis = np.linalg.norm(diff - np.outer(diff @ axis, axis) - (du * u_vec + dv * v_vec), axis=1)
+    if float(np.std(dists_to_axis)) > 0.15 * radius:
+        return None, None
+
+    # A cylinder's face normals point straight out from its axis. A flat wall of a big-radius fit (a 20 mm hex
+    # wall "fits" a 28 mm circle within 0.15 * R) keeps one normal across its width, so it is refused here.
+    tri_mid = patch.reshape(-1, 3, 3).mean(axis=1)
+    radial = tri_mid - center_on_axis
+    radial -= np.outer(radial @ axis, axis)
+    radial /= np.maximum(np.linalg.norm(radial, axis=1), 1e-12)[:, None]
+    # A few stray triangles (a fillet's edge, a coarse facet) may tilt more, so judge the 90th percentile.
+    if float(np.percentile(np.abs(np.sum(nrm * radial, axis=1)), 10)) < math.cos(math.radians(RADIAL_TOLERANCE_DEG)):
+        return None, None
+    return center_on_axis, radius
+
+
 def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
     """Detect if the smooth patch around tri_idx is a cylindrical surface (pin/bolt or internal hole).
 
@@ -238,6 +298,7 @@ def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
     if int(solid.sum()) < 24:
         return None
     patch, tri, nrm, ln = tri[solid].reshape(-1, 3), tri[solid], nrm[solid] / ln[solid][:, None], ln[solid]
+    whole_tri, whole_nrm, whole_area = tri, nrm, ln
 
     # If all normals are almost identical, it's a planar face, not a cylinder
     if float(np.ptp(nrm, axis=0).max()) < 0.15:
@@ -266,6 +327,19 @@ def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
         return None
     axis /= axis_len
 
+    # A curved profile turned round an axis (a bowl, a vase) has normals tilted along the axis too, so the fits above
+    # can settle on a band of normals round a leaning axis (report 20261101-122337: 20 degrees off on a bowl, and
+    # emboss bent the letters sideways). Its normal lines still all meet the true axis.
+    revolved = None
+    turned = _revolution_axis(whole_tri, whole_nrm, whole_area)
+    if turned is not None and abs(float(turned[0] @ axis)) < math.cos(math.radians(1.0)):
+        hit = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3, 3)[tri_idx]
+        off = hit - turned[1]
+        r_hit = float(np.linalg.norm(off - np.outer(off @ turned[0], turned[0]), axis=1).mean())
+        if turned[2] <= 0.02 * r_hit:
+            axis, revolved = turned[0], (turned[1], r_hit)
+            patch, nrm = whole_tri.reshape(-1, 3), whole_nrm
+
     # Standardize axis direction: prefer positive Z, then positive Y, then positive X
     if axis[2] < -1e-4 or (abs(axis[2]) <= 1e-4 and (axis[1] < -1e-4 or (abs(axis[1]) <= 1e-4 and axis[0] < 0))):
         axis = -axis
@@ -280,41 +354,13 @@ def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
 
     p_mean = patch.mean(axis=0)
     diff = patch - p_mean
-    u_coords = diff @ u_vec
-    v_coords = diff @ v_vec
-
-    # 2D circle fit via linear least squares
-    A = np.column_stack([2.0 * u_coords, 2.0 * v_coords, np.ones(len(patch))])
-    b = u_coords**2 + v_coords**2
-    try:
-        sol, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
-        du, dv, c_const = sol
-        rad_sq = c_const + du**2 + dv**2
-        if rad_sq <= 0:
+    if revolved is not None:      # the radius where the triangle lies; the profile's radius changes along the axis
+        point, radius = revolved
+        center_on_axis = point + ((p_mean - point) @ axis) * axis
+    else:
+        center_on_axis, radius = _circle_fit(patch, nrm, p_mean, diff, axis, u_vec, v_vec)
+        if center_on_axis is None:
             return None
-        radius = float(np.sqrt(rad_sq))
-    except Exception:
-        return None
-
-    if radius < 0.1 or radius > 5000.0:
-        return None
-
-    center_on_axis = p_mean + du * u_vec + dv * v_vec
-
-    # Verify fit quality: points should be at distance ~ radius from axis
-    dists_to_axis = np.linalg.norm(diff - np.outer(diff @ axis, axis) - (du * u_vec + dv * v_vec), axis=1)
-    if float(np.std(dists_to_axis)) > 0.15 * radius:
-        return None
-
-    # A cylinder's face normals point straight out from its axis. A flat wall of a big-radius fit (a 20 mm hex
-    # wall "fits" a 28 mm circle within 0.15 * R) keeps one normal across its width, so it is refused here.
-    tri_mid = patch.reshape(-1, 3, 3).mean(axis=1)
-    radial = tri_mid - center_on_axis
-    radial -= np.outer(radial @ axis, axis)
-    radial /= np.maximum(np.linalg.norm(radial, axis=1), 1e-12)[:, None]
-    # A few stray triangles (a fillet's edge, a coarse facet) may tilt more, so judge the 90th percentile.
-    if float(np.percentile(np.abs(np.sum(nrm * radial, axis=1)), 10)) < math.cos(math.radians(RADIAL_TOLERANCE_DEG)):
-        return None
 
     z_coords = (patch - center_on_axis) @ axis
     z_min, z_max = float(z_coords.min()), float(z_coords.max())
@@ -322,8 +368,10 @@ def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
     origin_pt = center_on_axis + z_min * axis
 
     # Determine internal (hole) vs external (pin):
-    sample_pt = patch[0]
-    sample_norm = nrm[0]
+    sample_pt, sample_norm = patch[0], nrm[0]
+    if revolved is not None:      # the patch may run to the axis (a bowl's bottom); judge where it was hit
+        sample_pt = hit.mean(axis=0)
+        sample_norm = np.cross(hit[1] - hit[0], hit[2] - hit[0])
     radial_vec = sample_pt - (center_on_axis + ((sample_pt - center_on_axis) @ axis) * axis)
     is_internal = bool(float(sample_norm @ radial_vec) < 0.0)
 

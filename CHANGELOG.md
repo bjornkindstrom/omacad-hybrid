@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.101
+
+### Fixed
+- **Emboss on a bowl no longer skews the letters (report 20261101-122337)**: the cylinder fit picked a band of normals round an axis leaning 20° off the bowl's own axis, so wrapped text was bent sideways and stretched. `detect_cylinder_surface` now also fits the axis every normal line of a surface of revolution meets (`_revolution_axis`, Plücker least squares) and uses it with the radius where the face was hit; the radius field then keeps every letter on the wall. Test: `test_emboss_on_bowl.py`.
+
 # Hybrid-experiment — 0.9.9.80.100
 
 ### Funktioner
