@@ -198,9 +198,10 @@ class OverlayMixin:
                                 painter.setBrush(tip_brush)
                                 painter.drawEllipse(QPointF(*scr_tip), 4.5, 4.5)
 
-                    # Draw fit points (white circles with dark border)
-                    pt_pen = QPen(QColor(30, 30, 30, 240), 1.8)
-                    pt_brush = QBrush(QColor(255, 255, 255, 255))
+                    # Draw fit points (white circles with dark border, cyan for offset copies)
+                    is_offset = bool(getattr(ent, "offset_info", None))
+                    pt_pen = QPen(QColor(56, 189, 248, 240) if is_offset else QColor(30, 30, 30, 240), 1.8)
+                    pt_brush = QBrush(QColor(30, 34, 40, 240) if is_offset else QColor(255, 255, 255, 255))
                     painter.setPen(pt_pen)
                     painter.setBrush(pt_brush)
                     for pt in ent.points:

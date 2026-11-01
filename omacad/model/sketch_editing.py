@@ -139,7 +139,7 @@ def _ring_pieces(ring, max_turn_deg: float = 20.0, length_ratio: float = 3.0):
 class SketchEditingMixin:
     """Entity editing and geometry construction methods inherited by :class:`Sketch`."""
 
-    def offset_entities(self, ids, distance: float) -> list:
+    def offset_entities(self, ids, distance: float, link_splines: bool = True) -> list:
         """Parallel copies of the given elements, `distance` mm away: outward for closed shapes and circles
         (negative = inward), to the left of the drawing direction for open curves. Returns the new elements."""
         from shapely.geometry import LineString, Polygon
@@ -162,10 +162,23 @@ class SketchEditingMixin:
                 from omacad.model.sketch_offset import offset_control_spline, offset_spline
                 # a control point spline stays one, with as many points as the original where the offset allows
                 parts = offset_control_spline(ent, distance) if ent.control_points else offset_spline(ent, distance)
-                for points in parts:
-                    spline = SketchSpline(self._new_entity_id("spline"), points, control_points=ent.control_points)
+                src_key = tuple((round(p[0], 6), round(p[1], 6)) for p in ent.points) if ent.control_points else ()
+                for idx, points in enumerate(parts):
+                    off_info = {
+                        "source_id": ent.entity_id,
+                        "distance": float(distance),
+                        "piece_index": idx,
+                        "_last_src_pts": src_key,
+                    } if (ent.control_points and link_splines) else None
+                    spline = SketchSpline(self._new_entity_id("spline"), points,
+                                          control_points=ent.control_points,
+                                          offset_info=off_info)
                     self.entities.append(spline)
                     new.append(spline)
+                    if ent.control_points and link_splines:
+                        from omacad.model.sketch_types import SketchConstraint
+                        cid = self.new_constraint_id()
+                        self.constraints.append(SketchConstraint(cid, "OFFSET", [spline.entity_id, ent.entity_id], pts=[f"{distance:g}"]))
         # lines and arcs: whole chains, radii follow along, joints are remade
         from omacad.model.sketch_offset import offset_entities_chains
         chain_in = [e for e in self.entities if e.entity_id in ids and not e.is_construction and isinstance(e, (SketchLine, SketchArc))]
@@ -686,7 +699,10 @@ class SketchEditingMixin:
 
     def move_spline_point(self, entity_id: str, index: int, pos) -> None:
         ent = self._editable_spline(entity_id)
+        if getattr(ent, "offset_info", None):
+            raise ValueError("An offset spline is controlled by its source curve.")
         ent.points[index] = (float(pos[0]), float(pos[1]))
+        self.refit_spline_offsets()
         self.solve_profiles()
 
     def set_spline_tangent(self, entity_id: str, index: int, vec) -> None:
@@ -717,6 +733,8 @@ class SketchEditingMixin:
         gets a control point at `pos` itself, between the two neighbours where it adds the shortest detour to the
         control polygon. Returns its index."""
         ent = self._editable_spline(entity_id)
+        if getattr(ent, "offset_info", None):
+            raise ValueError("Offset spline is linked to its source curve. Remove the offset constraint first.")
         if ent.control_points:
             pos = (float(pos[0]), float(pos[1]))
             pts = ent.points
@@ -857,6 +875,53 @@ class SketchEditingMixin:
                 continue
             arc.fillet_info["corner"] = corner
             self._update_fillet_arc(arc, params[1])
+
+    def refit_spline_offsets(self) -> None:
+        """Updates control point splines created by offset to follow their source spline
+        at the chosen distance whenever the source spline changes shape."""
+        if getattr(self, "_refitting_offsets", False):
+            return
+        self._refitting_offsets = True
+        try:
+            from omacad.model.sketch_offset import offset_control_spline
+            from omacad.model.sketch_entities import SketchSpline
+            for _pass in range(3):
+                changed_any = False
+                for ent in self.entities:
+                    if not (isinstance(ent, SketchSpline) and ent.control_points and getattr(ent, "offset_info", None)):
+                        continue
+                    info = ent.offset_info
+                    source_id = info.get("source_id")
+                    distance = info.get("distance")
+                    piece_idx = info.get("piece_index", 0)
+                    if not source_id or distance is None:
+                        ent.offset_info = None
+                        continue
+                    # Check that an OFFSET constraint still connects them
+                    has_c = any(c.ctype == "OFFSET" and c.refs and c.refs[0] == ent.entity_id for c in self.constraints)
+                    if not has_c:
+                        ent.offset_info = None
+                        continue
+                    src = self.get_entity(source_id)
+                    if not (isinstance(src, SketchSpline) and src.control_points):
+                        ent.offset_info = None
+                        continue
+                    src_pts_key = tuple((round(p[0], 6), round(p[1], 6)) for p in src.points)
+                    if info.get("_last_src_pts") == src_pts_key:
+                        continue
+                    try:
+                        parts = offset_control_spline(src, float(distance))
+                        if parts:
+                            new_pts = parts[piece_idx] if 0 <= piece_idx < len(parts) else parts[0]
+                            ent.points = [(float(p[0]), float(p[1])) for p in new_pts]
+                            info["_last_src_pts"] = src_pts_key
+                            changed_any = True
+                    except Exception:
+                        pass
+                if not changed_any:
+                    break
+        finally:
+            self._refitting_offsets = False
 
     def sharp_corner(self, arc) -> Optional[Tuple[float, float]]:
         """The sharp corner a fillet arc rounds: where its two lines meet when carried on (None if it is no fillet)."""

@@ -326,6 +326,11 @@ class PointerMixin:
             if handle is not None:
                 sk = self.doc.active_sketch
                 ent = handle["entity"]
+                if getattr(ent, "offset_info", None):
+                    d_val = ent.offset_info.get("distance", 0.0)
+                    self.status_message.emit(f"Offset-kopia ({d_val:g} mm): punkterna styrs av originalet. Klicka på symbolen ⧉ för att koppla loss.")
+                    self._press_pos = None
+                    return
                 if not getattr(ent, "projected", False):
                     self._spline_drag = {
                         "sketch_id": sk.sketch_id,
@@ -526,6 +531,13 @@ class PointerMixin:
                     hovered = dim_id
                     break
 
+        hovered_constraint_cid = None
+        if not hovered and self.doc.active_sketch:
+            for rect, cid in getattr(self, "constraint_badges", []):
+                if rect.contains(x, y):
+                    hovered_constraint_cid = cid
+                    break
+
         self.hovered_dim_id = hovered
         if hovered != prev_hovered:      # say what the dimension measures (Björn #72)
             dim = next((d for d in self.doc.active_sketch.dimensions if d.dim_id == hovered), None) if hovered else None
@@ -533,7 +545,16 @@ class PointerMixin:
                 QToolTip.showText(event.globalPosition().toPoint(), describe_dimension(dim), self)
             else:
                 QToolTip.hideText()
-        if hovered:
+        elif hovered_constraint_cid:
+            c = next((c for c in self.doc.active_sketch.constraints if c.cid == hovered_constraint_cid), None)
+            if c and c.ctype == "OFFSET":
+                ent = self.doc.active_sketch.get_entity(c.refs[0]) if c.refs else None
+                d_val = ent.offset_info.get("distance", 0.0) if (ent and getattr(ent, "offset_info", None)) else 0.0
+                QToolTip.showText(event.globalPosition().toPoint(), f"Offset-kopia ({d_val:g} mm) — klicka på ⧉ för att koppla loss", self)
+            elif c:
+                QToolTip.showText(event.globalPosition().toPoint(), f"Villkor: {c.ctype} — klicka för att ta bort", self)
+
+        if hovered or hovered_constraint_cid:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
         elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "TRIM", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
             self.setCursor(Qt.CursorShape.CrossCursor)

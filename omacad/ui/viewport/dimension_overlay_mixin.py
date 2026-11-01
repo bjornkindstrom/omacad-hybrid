@@ -4,7 +4,7 @@ import math
 from typing import Optional, List, Tuple
 import numpy as np
 from PySide6.QtCore import Qt, QPoint, QRectF, QPointF, QTimer
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QCheckBox
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QPolygonF, QFontMetrics
 from omacad.ui import theme, dyn_input
 from omacad.ui.theme import qcolor
@@ -455,7 +455,7 @@ class DimensionOverlayMixin:
 
     def prompt_dimension_value(self, title: str, label: str, value: float, lo: float = 0.1,
                                hi: float = 50000.0, suffix: str = " mm", expr: str = None, on_change=None,
-                               inline: bool = False):
+                               inline: bool = False, checkbox_text: Optional[str] = None, checkbox_checked: bool = True):
         """Value dialog with the number pre-selected: type it and press Enter. Returns None on cancel.
         `inline`: a small box in the 3D view instead of the side panel (used for sketch dimensions)."""
         if inline and on_change is None:
@@ -476,6 +476,11 @@ class DimensionOverlayMixin:
             spin.set_expression(expr)  # keep showing the formula that drives this dimension
         spin.setToolTip("Type a value, a formula (10-1, 2x(3+5)) or a parameter name (width/2)")
         lay.addWidget(spin)
+        chk = None
+        if checkbox_text is not None:
+            chk = QCheckBox(checkbox_text)
+            chk.setChecked(bool(checkbox_checked))
+            lay.addWidget(chk)
         if on_change is not None:
             spin.valueChanged.connect(lambda *_: on_change(spin.value()))
             QTimer.singleShot(0, lambda: on_change(spin.value()))   # show the first preview at once
@@ -493,6 +498,8 @@ class DimensionOverlayMixin:
         if run_docked(dlg) != QDialog.DialogCode.Accepted:
             return None
         spin.interpretText()  # evaluates a formula that was typed but not yet committed
+        if checkbox_text is not None:
+            return spin.value(), spin.expression(), chk.isChecked()
         return spin.value(), spin.expression()
 
     def _dim_create(self, dim_type, target, measured, refs=(), pts=(), offset=12.0, label="", lo=0.1, hi=50000.0, suffix=" mm"):

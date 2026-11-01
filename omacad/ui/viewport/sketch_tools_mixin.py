@@ -163,16 +163,22 @@ class SketchToolsMixin:
             self.offset_preview = np.array(segs, dtype=np.float32) if segs else None
             self.update()
 
+        from omacad.model.sketch_entities import SketchSpline
+        has_ctrl_spline = any(isinstance(sk.get_entity(eid), SketchSpline) and sk.get_entity(eid).control_points
+                              for eid in ids if sk.get_entity(eid) is not None)
+        chk_label = "Länka kopians form till originalet" if has_ctrl_spline else None
         try:
             res = self.prompt_dimension_value("Offset", "Distance (negative = inward for a closed shape, positive = outward; for an open curve: positive = left of its direction):",
-                                              5.0, lo=-5000.0, hi=5000.0, on_change=preview)
+                                              5.0, lo=-5000.0, hi=5000.0, on_change=preview,
+                                              checkbox_text=chk_label, checkbox_checked=True)
         finally:
             self.offset_preview = None
             self.update()
         if res is None or abs(res[0]) < 1e-9:
             return
+        link_copy = res[2] if len(res) > 2 else True
         before = sk.to_dict()
-        new = sk.offset_entities(self.selected_entities, res[0])
+        new = sk.offset_entities(self.selected_entities, res[0], link_splines=link_copy)
         if not new:
             self.status_message.emit("Offset: nothing could be offset by that distance (a shape can't shrink past its own size).")
             return

@@ -373,12 +373,13 @@ class SketchArc(SketchEntity):
 class SketchSpline(SketchEntity):
     """Smooth interpolating spline through sketch points, sampled for display and profile operations."""
 
-    def __init__(self, entity_id: str, points, is_construction: bool = False, tangents=None, control_points=False):
+    def __init__(self, entity_id: str, points, is_construction: bool = False, tangents=None, control_points=False, offset_info=None):
         super().__init__(entity_id=entity_id, entity_type="spline", is_construction=is_construction)
         self.points = [(float(p[0]), float(p[1])) for p in points]
         self.control_points = bool(control_points)
         # optional explicit tangent vectors (Hermite derivative per span parameter) by point index
         self.tangents = {int(k): (float(v[0]), float(v[1])) for k, v in (tangents or {}).items()}
+        self.offset_info = dict(offset_info) if offset_info else None
 
     def tangent_at(self, i: int):
         """Tangent vector at point i: the explicit one, else the Catmull-Rom default."""
@@ -432,15 +433,19 @@ class SketchSpline(SketchEntity):
         return list(zip(pts, pts[1:]))
 
     def to_dict(self):
-        return {"entity_id": self.entity_id, "entity_type": "spline", "points": [list(p) for p in self.points],
-                "is_construction": self.is_construction,
-                **({"control_points": True} if self.control_points else {}),
-                **({"tangents": {str(k): list(v) for k, v in self.tangents.items()}} if self.tangents else {})}
+        d = {"entity_id": self.entity_id, "entity_type": "spline", "points": [list(p) for p in self.points],
+             "is_construction": self.is_construction,
+             **({"control_points": True} if self.control_points else {}),
+             **({"tangents": {str(k): list(v) for k, v in self.tangents.items()}} if self.tangents else {})}
+        if getattr(self, "offset_info", None):
+            d["offset_info"] = {k: v for k, v in self.offset_info.items() if not k.startswith("_")}
+        return d
 
     @classmethod
     def from_dict(cls, data):
         return cls(data["entity_id"], data.get("points", []), data.get("is_construction", False),
-                   tangents=data.get("tangents"), control_points=data.get("control_points", False))
+                   tangents=data.get("tangents"), control_points=data.get("control_points", False),
+                   offset_info=data.get("offset_info"))
 
 
 def _hermite(p1, p2, m1, m2, t):

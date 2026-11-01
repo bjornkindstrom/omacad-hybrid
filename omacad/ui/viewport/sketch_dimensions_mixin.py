@@ -173,6 +173,7 @@ class SketchDimensionsMixin:
         show_all = self.sketch_palette.chk_show_constraints.isChecked()
         show_const = self.sketch_palette.chk_show_construction.isChecked()
         focus = self.selected_entities | ({self.hover_entity_id} if self.hover_entity_id else set())
+        from omacad.model.sketch_entities import SketchSpline
         for c in sk.constraints:
             ent = ents.get(c.refs[0]) if c.refs else None
             if ent is None:
@@ -182,7 +183,7 @@ class SketchDimensionsMixin:
             grp = {getattr(ents.get(r), "group", None) for r in c.refs}
             if len(grp) == 1 and None not in grp and c.ctype in ("POINT_ON_CIRCLE", "EQUAL", "COINCIDENT"):
                 continue   # the built-in relations of a polygon stay out of sight
-            if not show_all and not (set(c.refs) & focus):
+            if not show_all and not (set(c.refs) & focus) and c.ctype != "OFFSET":
                 continue
             if c.ctype in ("COINCIDENT", "MIDPOINT") and c.pts:
                 uv = point_of(ent, c.pts[0])
@@ -192,6 +193,9 @@ class SketchDimensionsMixin:
                 uv = ((ent.p1[0] + ent.p2[0]) / 2.0, (ent.p1[1] + ent.p2[1]) / 2.0)
             elif isinstance(ent, SketchCircle):
                 uv = (ent.center[0] + ent.radius * 0.7071, ent.center[1] + ent.radius * 0.7071)
+            elif isinstance(ent, SketchSpline):
+                pts = ent.get_points()
+                uv = pts[len(pts) // 2] if pts else ent.points[len(ent.points) // 2]
             else:
                 continue
             scr = self.world_to_screen(plane.uv_to_world(uv[0], uv[1]))

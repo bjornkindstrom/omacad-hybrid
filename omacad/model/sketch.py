@@ -306,6 +306,7 @@ class Sketch(SketchEditingMixin):
 
     def solve_profiles(self) -> List[SketchProfile]:
         """Finds all closed 2D loops and builds SketchProfile objects."""
+        self.refit_spline_offsets()
         all_lines = []
         for ent in self.entities:
             if ent.is_construction:

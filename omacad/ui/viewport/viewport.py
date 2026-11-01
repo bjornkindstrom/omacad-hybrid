@@ -556,7 +556,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     CONSTRAINT_GLYPHS = {
         "HORIZONTAL": "H", "VERTICAL": "V", "PARALLEL": "∥", "PERPENDICULAR": "⟂",
         "EQUAL": "=", "TANGENT": "T", "CONCENTRIC": "◎", "COINCIDENT": "•", "FIX": "F", "POINT_ON_CIRCLE": "○",
-        "MIDPOINT": "M", "SYMMETRIC": "S", "CENTER": "⊙",
+        "MIDPOINT": "M", "SYMMETRIC": "S", "CENTER": "⊙", "OFFSET": "⧉",
     }
     CONSTRAINT_HINTS = {
         "HORIZONTAL": "Horizontal: select one or more lines.",
@@ -571,6 +571,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         "SYMMETRIC": "Symmetric: select two lines (or two circles) and the line they mirror across.",
         "CENTER": "Center: select two square-cornered rectangles to align their horizontal centres; use an edge distance for vertical offset.",
         "FIX": "Fix: select lines or circles to lock in place.",
+        "OFFSET": "Offset: parallel copy linked to the original curve (click to unlink).",
     }
 
 

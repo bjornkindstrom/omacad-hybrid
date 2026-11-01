@@ -2003,10 +2003,19 @@ class Document:
         if not sketch or not any(c.cid == cid for c in sketch.constraints):
             return False
         before = sketch.to_dict()
+        removed = [c for c in sketch.constraints if c.cid == cid]
         sketch.constraints = [c for c in sketch.constraints if c.cid != cid]
+        for c in removed:
+            if c.ctype == "OFFSET" and c.refs:
+                ent = sketch.get_entity(c.refs[0])
+                if ent is not None and getattr(ent, "offset_info", None):
+                    ent.offset_info = None
         solve_sketch(sketch)
         self.record_sketch_change(sketch, before)
-        self.last_message = "Constraint removed. " + self.sketch_status(sketch)
+        if any(c.ctype == "OFFSET" for c in removed):
+            self.last_message = "Offset constraint removed. Spline is now independent."
+        else:
+            self.last_message = "Constraint removed. " + self.sketch_status(sketch)
         self.timeline.recompute(self)
         self.notify_changed()
         return True

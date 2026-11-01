@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.100
+
+### Funktioner
+- **Parametrisk offset för control point spline**: En offset-kopia av en control point spline är nu parametriskt kopplad till originalet och behåller det valda offset-avståndet automatiskt. Om originalkurvan ändrar form (genom dragning av kontrollpunkter, måttsättning eller tillagda kontrollpunkter) följer kopians punkter med direkt.
+- **Valbart i Offset-dialogen**: I Offset-dialogen finns nu en kryssruta (*Länka kopians form till originalet*, förvald) när en control point spline är markerad. Avmarkeras den skapas kopian direkt som en fristående spline utan koppling.
+- **Tydlig offset-symbol i skissläget**: Offset-kopian markeras tydligt i skissläget med en symbol-badge (`⧉`) placerad mitt på kurvan. Genom att klicka på symbolen tas offset-villkoret bort och splinen blir fristående för individuell redigering.
+- Test: `test_control_spline_offset_link.py`.
+
 # Hybrid-experiment — 0.9.9.80.99
 
 ### Fixed

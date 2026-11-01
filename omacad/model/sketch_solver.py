@@ -70,6 +70,7 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
                 ent.radius = values[f"{eid}#r"]
     sketch.dof = dof
     sketch.refit_fillets()
+    sketch.refit_spline_offsets()
     sketch.solve_profiles()
     return SolveResult(True, dof, "")
 
