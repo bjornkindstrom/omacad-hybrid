@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.102
+
+### Added
+- **Copy an object from its browser row (report 20261101-131319)**: right-clicking the object row (the one with the thumbnail) now starts with "New linked object" and "Independent copy", taken from the object as it stands (its last active step, or the step it is rolled back to). Before, they were only in each step's own menu. `ObjectHistory.copy_sources` finds the step and body. Test: `test_object_copy_menu.py`.
+
 # Hybrid-experiment — 0.9.9.80.101
 
 ### Fixed

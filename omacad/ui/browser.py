@@ -637,6 +637,14 @@ class BrowserTree(QWidget):
                     add("Independent copy of " + bid, lambda checked=False, b=bid: self.doc.branch_object(fid, b, linked=False))
                 menu.addSeparator()
         if item_type == "object":
+            sources = self.doc.object_history.copy_sources(self.doc, item_id)
+            for step, bid in sources:
+                body = self.doc.bodies.get(bid)
+                of = f" of {body.name if body else bid}" if len(sources) > 1 else ""
+                add("New linked object" + of, lambda checked=False, s=step, b=bid: self.doc.branch_object(s, b))
+                add("Independent copy" + of, lambda checked=False, s=step, b=bid: self.doc.branch_object(s, b, linked=False))
+            if sources:
+                menu.addSeparator()
             rename()
             add("Show complete object", lambda: self.doc.object_fast_forward(item_id))
             show_hide()

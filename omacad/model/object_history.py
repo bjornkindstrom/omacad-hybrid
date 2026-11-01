@@ -225,5 +225,22 @@ class ObjectHistory:
                     changed = True
         return excluded
 
+    def copy_sources(self, doc, object_id):
+        """(step, body) pairs to copy an object from as it stands now: each body of the object
+        from the last step that made it, before the object's own and the timeline's marker."""
+        obj = self.objects.get(object_id)
+        if obj is None:
+            return []
+        excluded, found = self.excluded(), {}
+        for fid in reversed(obj.feature_ids):
+            index = self.index(doc, fid)
+            if (fid in excluded or index is None or index >= doc.timeline.marker_index
+                    or doc.timeline.features[index].suppressed):
+                continue
+            for bid in self.outputs.get(fid, []):
+                if bid in obj.body_ids and bid not in found and bid in doc.step_states.get(index + 1, {}):
+                    found[bid] = fid
+        return [(found[bid], bid) for bid in obj.body_ids if bid in found]
+
     def index(self, doc, feature_id):
         return next((i for i, f in enumerate(doc.timeline.features) if f.feature_id == feature_id), None)
