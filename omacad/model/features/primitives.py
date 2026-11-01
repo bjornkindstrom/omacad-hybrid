@@ -203,7 +203,7 @@ class BoxFeature(Feature):
                  translation: Any = None, lip_height: float = 0.0, lip_step: float = 0.0,
                  bottom_thickness: float = 0.0, honeycomb: bool = False, honeycomb_size: float = 4.0,
                  honeycomb_wall: float = 1.2, honeycomb_margin: float = 2.0, is_lid: bool = False,
-                 clearance: float = 0.2, lid_top: float = 2.0, tab_size: float = 4.0):
+                 clearance: float = 0.2, lid_top: float = 2.0, tab_size: float = 4.0, snap_size: float = 0.6):
         super().__init__(feature_id, "box", name)
         self.length = float(length)
         self.width = float(width)
@@ -231,6 +231,7 @@ class BoxFeature(Feature):
         self.clearance = float(clearance)
         self.lid_top = float(lid_top)
         self.tab_size = float(tab_size)
+        self.snap_size = float(snap_size)
 
     def build_solid(self) -> m3d.Manifold:
         is_centered = (self.center is True or self.center == "center")
@@ -318,21 +319,14 @@ class BoxFeature(Feature):
                 slot_cutter = m3d.Manifold.extrude(cs_slot, t_lid + 2.0).translate((0.0, 0.0, lid_z - 1.0))
                 solid = solid - slot_cutter
 
-                # Raised thumb grip rib
-                rib_w = min(2.5, slot_w)
-                rib_l = min(slot_l * 0.4, max(2.5, tab_sz))
-                rib_h = min(0.4, max(0.2, tab_sz * 0.08))
-                rib_x = slot_x + slot_w / 2.0 + bridge_len * 0.5
-                rib_poly = sbox(rib_x - rib_w / 2.0, -rib_l / 2.0, rib_x + rib_w / 2.0, rib_l / 2.0).buffer(0.25)
-                cs_rib = region_cross_section(rib_poly)
-                rib = m3d.Manifold.extrude(cs_rib, rib_h).translate((0.0, 0.0, lid_z + t_lid))
-                solid = solid + rib
-
                 # Underside snap pip
-                r_det = min(0.35, c * 1.5, t_lid * 0.15)
-                w_det = min(6.0, in_w * 0.25)
+                snap_s = getattr(self, "snap_size", None)
+                if snap_s is None or snap_s <= 1e-4:
+                    snap_s = 0.6
+                r_det = min(snap_s, t_lid * 0.6, t * 0.8)
+                w_det = min(8.0, in_w * 0.3)
                 x_det = self.length / 2.0 - t / 2.0
-                r_pip = r_det * 0.7
+                r_pip = max(0.2, r_det * 0.75)
                 w_pip = max(0.5, w_det - 2.0 * c)
                 snap_pip = m3d.Manifold.cylinder(w_pip, r_pip, r_pip, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_pip / 2.0, lid_z))
                 solid = solid + snap_pip
@@ -396,8 +390,11 @@ class BoxFeature(Feature):
 
             # Snap detent notch in front sill
             if in_l > 12.0 and in_w > 8.0:
-                r_det = min(0.35, c * 1.5, t_lid * 0.15)
-                w_det = min(6.0, in_w * 0.25)
+                snap_s = getattr(self, "snap_size", None)
+                if snap_s is None or snap_s <= 1e-4:
+                    snap_s = 0.6
+                r_det = min(snap_s, t_lid * 0.6, t * 0.8)
+                w_det = min(8.0, in_w * 0.3)
                 x_det = self.length / 2.0 - t / 2.0
                 notch = m3d.Manifold.cylinder(w_det, r_det, r_det, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_det / 2.0, z_shelf))
                 solid = solid - notch
@@ -533,6 +530,7 @@ class BoxFeature(Feature):
             "clearance": self.clearance,
             "lid_top": self.lid_top,
             "tab_size": getattr(self, "tab_size", 4.0),
+            "snap_size": getattr(self, "snap_size", 0.6),
         }
 
 

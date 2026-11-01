@@ -6,8 +6,9 @@
 """
 import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLineEdit
 from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 
 from omacad.model.document import Document, box_row_outer_height, box_row_inner_height
 from omacad.ui.history_delegate import apply_dimension, value_ref
@@ -109,6 +110,7 @@ def test_box_row_group_settings_in_browser_tree():
     assert any("Boxes count: 2" in l for l in param_labels)
     assert any("Spacing: 5 mm" in l for l in param_labels)
     assert any("Wall thickness: 2 mm" in l for l in param_labels)
+    assert any("Snap detent (snäpp): 0.6 mm" in l for l in param_labels)
 
     # Check that value_ref recognizes group_param
     item = next(it[0] for it in tree_items if it[0].data(0, Qt.ItemDataRole.UserRole) == ("group_param", (gid, "height")))
@@ -207,3 +209,99 @@ def test_box_row_group_params_persistence_and_export(tmp_path):
     tree_items = list(browser._walk())
     param_labels = [it[0].text(0) for it in tree_items if it[0].data(0, Qt.ItemDataRole.UserRole) and it[0].data(0, Qt.ItemDataRole.UserRole)[0] == "group_param"]
     assert any("Height (Z): 33 mm" in l for l in param_labels)
+
+
+def test_pencil_click_on_box_row_group_param_opens_editor():
+    """Verify that clicking the pencil in column 1 of a group setting row opens the in-place editor."""
+    app = QApplication.instance() or QApplication([])
+    doc = Document()
+    doc.add_box_row(count=2, length=60.0, width=40.0, height=30.0, has_lid=True)
+    browser = BrowserTree(doc)
+    browser.resize(500, 700)
+    browser.show()
+    browser.tree.expandAll()
+    app.processEvents()
+    gid = doc.object_groups[0]["id"]
+
+    tree_items = list(browser._walk())
+    count_item = next(it[0] for it in tree_items if it[0].data(0, Qt.ItemDataRole.UserRole) == ("group_param", (gid, "count")))
+
+    assert not count_item.icon(1).isNull()  # pencil exists
+    browser.on_item_clicked(count_item, 1)  # click the pencil
+    QTest.qWait(50)
+
+    editor = next((e for e in browser.tree.findChildren(QLineEdit) if e.isVisible()), None)
+    assert editor is not None, "Pencil click must open the QLineEdit editor for the group parameter"
+    assert editor.text() == "2"
+
+    # Edit count to 3
+    editor.setText("3")
+    QTest.keyClick(editor, Qt.Key.Key_Return)
+    QTest.qWait(200)
+
+    assert doc.box_row_group_params(gid)["count"] == 3
+    assert len(doc.box_row_features(gid)[0]) == 3
+
+
+def test_lid_is_flat_without_raised_rib_and_snap_size_scales():
+    """Verify that lid top has no protruding square/rib and that snap detent scales with snap_size."""
+    QApplication.instance() or QApplication([])
+    doc = Document()
+    bodies = doc.add_box_row(
+        count=1,
+        length=60.0,
+        width=40.0,
+        height=30.0,
+        wall_thickness=2.0,
+        bottom_thickness=2.0,
+        has_lid=True,
+        lip_height=2.2,
+        clearance=0.2,
+        snap_size=0.6,
+    )
+    box = bodies[0]
+    lid = bodies[1]
+
+    bb_box = box.manifold.bounding_box()
+    bb_lid = lid.manifold.bounding_box()
+
+    # Problem 1: No protruding rib/square above box top or lid plate
+    # Max Z of lid must not exceed box top Z
+    assert bb_lid[5] <= bb_box[5] + 1e-3, f"Lid max Z {bb_lid[5]} exceeds box top {bb_box[5]}"
+
+    # Problem 2: Snap detent size is 0.6 mm by default (twice standard)
+    gid = doc.object_groups[0]["id"]
+    params = doc.box_row_group_params(gid)
+    assert params["snap_size"] == 0.6
+
+    # Increase snap size to 1.0 mm
+    apply_dimension(doc, "group_param", (gid, "snap_size"), "1.0")
+    params_after = doc.box_row_group_params(gid)
+    assert params_after["snap_size"] == 1.0
+
+    box_feats, lid_feats = doc.box_row_features(gid)
+    assert box_feats[0].snap_size == 1.0
+    assert lid_feats[0].snap_size == 1.0
+
+    # Overlap between box and lid remains 0 (clean sliding fit)
+    box_after = doc.bodies[f"body_{box_feats[0].feature_id}"]
+    lid_after = doc.bodies[f"body_{lid_feats[0].feature_id}"]
+    assert (box_after.manifold ^ lid_after.manifold).volume() < 1e-3
+
+
+def test_feedback_report_20261101_205055_document():
+    """Load and verify document from report 20261101-205055."""
+    QApplication.instance() or QApplication([])
+    report_path = "/home/kindstrom/Work/omacad-hybrid/.state/data/feedback/20261101-205055/document.omacad"
+    if os.path.exists(report_path):
+        doc = Exporter.load_project(report_path)
+        assert len(doc.bodies) == 4
+        assert len(doc.object_groups) == 1
+        gid = doc.object_groups[0]["id"]
+        params = doc.box_row_group_params(gid)
+        assert "snap_size" in params
+        # Browser tree lists Snap detent
+        browser = BrowserTree(doc)
+        tree_items = list(browser._walk())
+        param_labels = [it[0].text(0) for it in tree_items if it[0].data(0, Qt.ItemDataRole.UserRole) and it[0].data(0, Qt.ItemDataRole.UserRole)[0] == "group_param"]
+        assert any("Snap detent (snäpp)" in l for l in param_labels)

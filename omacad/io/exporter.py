@@ -479,6 +479,7 @@ class Exporter:
                     clearance=f_data.get("clearance", 0.2),
                     lid_top=f_data.get("lid_top", 2.0),
                     tab_size=f_data.get("tab_size", 4.0),
+                    snap_size=f_data.get("snap_size", 0.6),
                 )
                 doc.timeline.add_feature(feat)
             elif ft == "cylinder":

@@ -717,13 +717,13 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.spn_clearance.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("  3D print clearance:", self.spn_clearance)
 
-        self.spn_tab_size = ExprDoubleSpinBox()
-        self.spn_tab_size.setRange(1.0, 50.0)
-        self.spn_tab_size.setValue(3.0)
-        self.spn_tab_size.setSuffix(" mm")
-        self.spn_tab_size.setToolTip("Size of the thumb grip rib and flexure slot on the lid.")
-        self.spn_tab_size.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("  Lid tab size (flärp):", self.spn_tab_size)
+        self.spn_snap_size = ExprDoubleSpinBox()
+        self.spn_snap_size.setRange(0.1, 5.0)
+        self.spn_snap_size.setValue(0.6)
+        self.spn_snap_size.setSuffix(" mm")
+        self.spn_snap_size.setToolTip("Size of the snap detent pip and notch locking the lid.")
+        self.spn_snap_size.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  Snap detent (snäpp):", self.spn_snap_size)
 
         # Placement
         self.cmb_placement = QComboBox()
@@ -804,7 +804,8 @@ class BoxInRowDialog(BaseFeatureDialog):
             "lip_height": self.spn_lip_height.value(),
             "lip_step": self.spn_lip_step.value(),
             "clearance": self.spn_clearance.value(),
-            "tab_size": self.spn_tab_size.value(),
+            "snap_size": self.spn_snap_size.value(),
+            "tab_size": self.spn_snap_size.value(),
             "center": self.cmb_placement.currentData(),
             "plane_origin": self.plane_origin if self.cmb_placement.currentData() == "on_face" else None,
             "plane_normal": self.plane_normal if self.cmb_placement.currentData() == "on_face" else None,
@@ -853,8 +854,12 @@ class BoxInRowDialog(BaseFeatureDialog):
             self.spn_lip_step.setValue(float(params["lip_step"]))
         if "clearance" in params:
             self.spn_clearance.setValue(float(params["clearance"]))
-        if "tab_size" in params:
-            self.spn_tab_size.setValue(float(params["tab_size"]))
+        if "snap_size" in params:
+            self.spn_snap_size.setValue(float(params["snap_size"]))
+        elif "tab_size" in params:
+            t_val = float(params["tab_size"])
+            if t_val <= 2.5:
+                self.spn_snap_size.setValue(t_val)
         if "center" in params:
             idx = self.cmb_placement.findData(params["center"])
             if idx >= 0:

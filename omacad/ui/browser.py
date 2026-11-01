@@ -491,11 +491,11 @@ class BrowserTree(QWidget):
         item_type, item_id = data
         # a dimension row lights up what it measures in the view (Björn #94); any other row clears that
         self.dimension_selected.emit(*(item_id if item_type == "dimension" else ("", "")))
-        if column == 1 and item_type in ("parameter", "dimension", "polygon_sides", "hole_dim", "fav"):       # the pencil
+        if column == 1 and item_type in ("parameter", "dimension", "polygon_sides", "hole_dim", "fav", "group_param"):       # the pencil
             from omacad.ui.object_browser import edit_parameter
             edit_parameter(self, item_type, item_id)
             return
-        if item_type in ("dimension", "polygon_sides", "hole_dim"):
+        if item_type in ("dimension", "polygon_sides", "hole_dim", "group_param"):
             return
         from omacad.ui.object_browser import FEATURE_ROLE
         fid = item.data(0, FEATURE_ROLE)
@@ -544,7 +544,7 @@ class BrowserTree(QWidget):
             return
 
         item_type, item_id = data
-        if item_type in ("parameter", "dimension", "polygon_sides", "hole_dim", "fav"):
+        if item_type in ("parameter", "dimension", "polygon_sides", "hole_dim", "fav", "group_param"):
             from omacad.ui.object_browser import edit_parameter
             edit_parameter(self, item_type, item_id)
         elif item_type == "feature":

@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.114
+
+### Changed
+- **Helt plant skjutlock, ställbar snäppstorlek & fungerande pennklick i trädet för Box in a row (rapport 20261101-205055)**: 1) Den uppstickande ribban på lockets ovansida har tagits bort så att locket är helt slätt och i plan med lådans övre kant. 2) Den föråldrade parametern "Lid tab size (flärp)" har ersatts av "Snap detent (snäpp)" (`snap_size`) i både dialogen och i inställningarna i objektträdet under `⚙️ Settings`, med standardvärde 0.6 mm (dubbelt så stor som tidigare) som styr snäpp-pipen under locket och det matchande urtaget i lådans tröskel. 3) Klick på pennikonen (`BrowserTree.on_item_clicked` på kolumn 1) och dubbelklick på gruppinställningsrader hanterar nu `group_param` och öppnar direkt in-line-editorn i stället för att bara markera cellen till höger om pennan. Tester: `tests/test_box_row_settings.py`, `tests/test_cool_small_box.py`.
+
 # Hybrid-experiment — 0.9.9.80.113
 
 ### Changed
