@@ -291,6 +291,21 @@ class SettingsDialog(QDialog):
         self.chk_labels.setChecked(bool(self.settings.get("show_button_labels", False)))
         lay_ui.addWidget(self.chk_labels)
 
+        fan_labels_row = QHBoxLayout()
+        fan_labels_title = QLabel("Fan menu text:")
+        fan_labels_title.setMinimumWidth(200)
+        self.cmb_fan_labels = QComboBox()
+        self.cmb_fan_labels.addItem("Curved (original)", "curved")
+        self.cmb_fan_labels.addItem("Readable curved text", "readable_curved")
+        self.cmb_fan_labels.addItem("Horizontal text", "horizontal")
+        style = self.settings.get("fan_menu_label_style", "curved")
+        self.cmb_fan_labels.setCurrentIndex(max(0, self.cmb_fan_labels.findData(style)))
+        self.cmb_fan_labels.setToolTip("Changes the text on the right-click fan menu, including its expanded sections.")
+        fan_labels_row.addWidget(fan_labels_title)
+        fan_labels_row.addWidget(self.cmb_fan_labels)
+        fan_labels_row.addStretch()
+        lay_ui.addLayout(fan_labels_row)
+
         # Palette position
         pos_row = QHBoxLayout()
         lbl_pos = QLabel("Sketch palette position:")
@@ -721,6 +736,7 @@ class SettingsDialog(QDialog):
         self.spn_arrow_gap.setValue(2.0)
         self.cmb_btn_size.setCurrentIndex(max(0, self.cmb_btn_size.findData(1.0)))
         self.chk_labels.setChecked(False)
+        self.cmb_fan_labels.setCurrentIndex(self.cmb_fan_labels.findData("curved"))
         self.chk_group_primitives.setChecked(True)
         self.chk_group_modify.setChecked(False)
         self.chk_group_inspect.setChecked(True)
@@ -775,6 +791,7 @@ class SettingsDialog(QDialog):
             "arrow_gap": self.spn_arrow_gap.value(),
             "button_scale": float(self.cmb_btn_size.currentData() or 1.0),
             "show_button_labels": self.chk_labels.isChecked(),
+            "fan_menu_label_style": self.cmb_fan_labels.currentData(),
             "group_primitives": self.chk_group_primitives.isChecked(),
             "group_modify": self.chk_group_modify.isChecked(),
             "group_inspect": self.chk_group_inspect.isChecked(),

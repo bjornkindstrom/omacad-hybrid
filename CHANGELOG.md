@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.92
+
+### Funktioner
+- **Valbar text i solfjädermenyn (#138)**: Settings → Interface → Fan menu text har tre val: ursprunglig böjd text, läsbar böjd text även i nedre bågen och horisontell text. Valet gäller alla menysektorer direkt och sparas mellan starter. PDF-förslagen har ritats om med appens faktiska rendering.
+
 # Hybrid-experiment — 0.9.9.80.91
 
 ### Funktioner och rättningar

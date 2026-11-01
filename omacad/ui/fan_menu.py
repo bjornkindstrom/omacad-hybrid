@@ -17,6 +17,7 @@ from PySide6.QtGui import (
 )
 
 from omacad.ui import theme
+from omacad.ui.settings import get_settings
 
 
 @dataclass
@@ -566,7 +567,7 @@ class FanMenu(QObject):
             pix = item.icon.pixmap(icon_size, icon_size)
             painter.drawPixmap(int(round(icx - icon_size / 2.0)), int(round(icy - icon_size / 2.0)), pix)
 
-        # 2. Draw curved text along the outer arc (above the icon)
+        # 2. Draw the selected label layout along the sector.
         label = item.label.strip()
         if not label:
             return
@@ -577,6 +578,17 @@ class FanMenu(QObject):
         painter.setFont(f)
         painter.setPen(text_col)
         fm = QFontMetrics(f)
+
+        style = get_settings().get("fan_menu_label_style", "curved")
+        if style == "horizontal":
+            r_label = sec.r_inner + (sec.r_outer - sec.r_inner) * (0.73 if has_icon else 0.5)
+            x = self.center_pos.x() + r_label * math.cos(mid_rad)
+            y = self.center_pos.y() - r_label * math.sin(mid_rad)
+            max_width = max(20, int(r_label * math.radians(sec.span_angle) * 0.86))
+            label = fm.elidedText(label, Qt.TextElideMode.ElideRight, max_width)
+            painter.drawText(QRectF(x - max_width / 2, y - fm.height() / 2,
+                                    max_width, fm.height()), Qt.AlignmentFlag.AlignCenter, label)
+            return
 
         # Radius for baseline of curved text: positioned near the top of the sector
         r_text = sec.r_outer - 11.0 if has_icon else (sec.r_inner + sec.r_outer) * 0.5
@@ -598,11 +610,12 @@ class FanMenu(QObject):
         # To read left-to-right along the arc:
         # For the top half / upper quadrants, reading L-to-R means sweeping clockwise (decreasing math degrees).
         # Characters are centered around mid_deg.
-        current_deg = mid_deg + (total_arc_deg / 2.0)
+        flip_lower = style == "readable_curved" and math.sin(mid_rad) < 0
+        current_deg = mid_deg + (-total_arc_deg if flip_lower else total_arc_deg) / 2.0
 
         for ch, ch_w in zip(label, char_widths):
             half_w_deg = math.degrees((ch_w / 2.0) / r_text)
-            char_center_deg = current_deg - half_w_deg
+            char_center_deg = current_deg + half_w_deg if flip_lower else current_deg - half_w_deg
             rad = math.radians(char_center_deg)
 
             px = self.center_pos.x() + r_text * math.cos(rad)
@@ -611,7 +624,7 @@ class FanMenu(QObject):
             # Rotation angle: tangent to circle at char_center_deg.
             # Angle of radial vector in Qt screen coords: atan2(dy_screen, dx_screen) = -char_center_deg
             # Tangent pointing clockwise is perpendicular: rotation = 90 - char_center_deg
-            rot_deg = 90.0 - char_center_deg
+            rot_deg = (270.0 if flip_lower else 90.0) - char_center_deg
 
             painter.save()
             painter.translate(px, py)
@@ -620,7 +633,7 @@ class FanMenu(QObject):
             painter.drawText(QRectF(-ch_w / 2.0, -fm.ascent(), ch_w + 2, fm.height()), Qt.AlignmentFlag.AlignCenter, ch)
             painter.restore()
 
-            current_deg -= math.degrees(ch_w / r_text)
+            current_deg += math.degrees(ch_w / r_text) * (1 if flip_lower else -1)
 
     def _draw_label_and_icon(self, painter: QPainter, item: FanItem, cx: float, cy: float, text_col, muted_col, max_width: float):
         pass

@@ -1,7 +1,7 @@
 # Hybrid experiment roadmap
 
-Control Point Spline and Fill Pattern fixes are included in 0.9.9.80.91; the fan
-menu text layout proposals await a choice before implementation.
+The three fan menu text layouts are selectable in Hybrid settings (0.9.9.80.92).
+Control Point Spline and Fill Pattern fixes are included in 0.9.9.80.91.
 
 Implemented first experiment: optional Rust BVH picking in the original Omacad
 UI, selectable NumPy fallback, parity/regression tests and a repeatable benchmark.

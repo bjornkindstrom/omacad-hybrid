@@ -10,8 +10,9 @@ om körs fortsatt med Omacads Python-kod. Det är alltså inte en omskriven CAD-
 
 I version 0.9.9.80.91 finns Control Point Spline i Sketch. Klicka kontrollpunkter
 och avsluta med Enter, dubbelklick eller högerklick; markera kurvan för att flytta
-punkterna. [Tre förslag för solfjädermenyn](design/request-138/layoutforslag.pdf)
-visar olika sätt att läsa knapptexterna.
+punkterna. I **Settings → Interface → Fan menu text** kan du välja mellan böjd
+text, läsbar böjd text även i nedre bågen och horisontell text. Valet sparas och
+gäller direkt. [Jämför de tre varianterna](design/request-138/layoutforslag.pdf).
 
 Utgångspunkt: Omacad `fdf4331` / `0.9.9.80.69`. Experimentet har eget Git-repo,
 egen miljö och egen profil. Ursprungliga Omacad och omacad-rs påverkas inte.
