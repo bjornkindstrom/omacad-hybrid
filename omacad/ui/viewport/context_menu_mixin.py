@@ -184,6 +184,7 @@ class ContextMenuMixin:
                 ("SMART_CIRCLE", "smart_circle", "smart_circle"),
                 ("ARC", "arc", "arc"),
                 ("SPLINE", "spline", "spline"),
+                ("CONTROL_SPLINE", "control_spline", "control_spline"),
                 ("POLYGON", "polygon", "polygon"),
                 ("SLOT", "slot", "slot"),
                 ("TEXT", "text", "text"),

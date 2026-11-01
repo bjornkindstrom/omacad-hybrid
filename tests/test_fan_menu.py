@@ -249,6 +249,11 @@ def test_fan_menu_sketch_text_and_tools(win):
     cats = vp._build_workspace_fan_categories(sketch=True)
     create_cat = next(c for c in cats if c.id == "cat_create")
 
+    control_item = next(it for it in create_cat.children if it.id == "CONTROL_SPLINE")
+    assert control_item.label == "Control Point Spline"
+    control_item.callback()
+    assert vp.sketch_tool == "CONTROL_SPLINE"
+
     # Find TEXT item in create_cat
     text_item = next(it for it in create_cat.children if it.id == "TEXT")
     assert text_item is not None

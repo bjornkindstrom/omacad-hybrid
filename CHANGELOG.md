@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.93
+
+### Fixed
+- Control Point Spline (#137) finns nu även i högerklicksmenyn under Sketch → Create och startar rätt skissverktyg.
+
 # Hybrid-experiment — 0.9.9.80.92
 
 ### Funktioner

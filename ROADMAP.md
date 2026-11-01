@@ -1,5 +1,7 @@
 # Hybrid experiment roadmap
 
+Control Point Spline is available from the sketch right-click fan menu (0.9.9.80.93).
+
 The three fan menu text layouts are selectable in Hybrid settings (0.9.9.80.92).
 Control Point Spline and Fill Pattern fixes are included in 0.9.9.80.91.
 
