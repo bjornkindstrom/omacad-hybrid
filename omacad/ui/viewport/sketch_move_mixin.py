@@ -284,6 +284,31 @@ class SketchMoveMixin:
         sk.solve_profiles()
         self.update()
 
+    @staticmethod
+    def _drop_end_on_line(sk, ent, pname, tol) -> bool:
+        """A line end released on the inside of another line (any angle) lands on it and stays there (POINT_ON_LINE)."""
+        import math
+        from omacad.model.sketch_solver import point_on_line_at
+        from omacad.model.sketch_types import SketchConstraint
+        p = getattr(ent, pname)
+        best = None
+        for other in sk.entities:
+            if other is ent or getattr(other, "entity_type", "") != "line" or other.is_construction \
+                    or getattr(other, "projected", False) or not point_on_line_at(p, other, tol):
+                continue
+            dx, dy = other.p2[0] - other.p1[0], other.p2[1] - other.p1[1]
+            t = ((p[0] - other.p1[0]) * dx + (p[1] - other.p1[1]) * dy) / (dx * dx + dy * dy)
+            foot = (other.p1[0] + t * dx, other.p1[1] + t * dy)
+            d = math.dist(p, foot)
+            if best is None or d < best[0]:
+                best = (d, other, foot)
+        if best is None:
+            return False
+        _, other, foot = best
+        setattr(ent, pname, foot)
+        sk.constraints.append(SketchConstraint(sk._new_entity_id("c"), "POINT_ON_LINE", [ent.entity_id, other.entity_id], [pname]))
+        return True
+
     def _endpoint_drag_release(self):
         d = self._endpoint_drag
         self._endpoint_drag = None
@@ -300,6 +325,7 @@ class SketchMoveMixin:
                 cur_pt = ent.points[pname] if getattr(ent, "entity_type", "") == "spline" else (ent.p1 if pname == "p1" else (ent.p2 if pname == "p2" else (ent.p_start if pname == "p_start" else ent.p_end)))
                 # Check if it was placed on/snapped to another endpoint or curve to connect them
                 tol = max(0.3, min(8.0, self._entity_tolerance() * 1.25))
+                n_before = len(sk.constraints)
                 for other in sk.entities:
                     if other.entity_id == ent.entity_id or other.is_construction or getattr(other, "projected", False):
                         continue
@@ -332,6 +358,8 @@ class SketchMoveMixin:
                                 point_name = f"pt{pname}" if getattr(ent, "entity_type", "") == "spline" else pname
                                 sk.constraints.append(SketchConstraint(cid, "COINCIDENT", [ent.entity_id, other.entity_id], [point_name, oname]))
                                 break
+                if len(sk.constraints) == n_before and pname in ("p1", "p2") and getattr(ent, "entity_type", "") == "line":
+                    self._drop_end_on_line(sk, ent, pname, tol)
             sk.solve_profiles()
             if self.doc.record_sketch_change(sk, d["before"]):
                 self.doc.timeline.recompute(self.doc)

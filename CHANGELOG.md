@@ -1,3 +1,9 @@
+# Hybrid-experiment — 0.9.9.80.106
+
+### Added
+- **Autosave and resume after a crash (request #143)**: unsaved work (document, open sketch, camera) is written to a recovery file every 2 minutes (Settings > General, 0 = off). Each running Omacad has its own file under a lock, so two open windows never mix; saving, New/Open or closing normally removes it. When Omacad starts after a crash it offers the work back: Resume (unsaved, title marked), Discard, or Later (ask next start). `omacad/autosave.py`. Test: `test_autosave.py`.
+- **Coincident on slanted lines (request #143)**: Coincident now puts the end point nearest the other line onto it anywhere along it, at any angle (as Fusion), and still joins two end points that are next to each other. A line drawn from or released on the inside of another line stays on it. New constraint `POINT_ON_LINE`. Test: `test_coincident_point_on_line.py`.
+
 # Hybrid-experiment — 0.9.9.80.105
 
 ### Fixed

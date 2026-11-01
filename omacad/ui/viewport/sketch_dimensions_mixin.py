@@ -1,6 +1,5 @@
 """Sketch constraints, dimension editing, and dimension menus."""
 
-import math
 from typing import Dict
 import numpy as np
 from PySide6.QtCore import Qt, QRectF, QPointF
@@ -8,7 +7,7 @@ from PySide6.QtGui import QCursor, QPainter, QPen, QBrush, QFont
 from PySide6.QtWidgets import QMenu
 from omacad.model.sketch import SketchArc, SketchCircle, SketchLine, SketchSlot, SketchText, point_of
 from omacad.model.dim_layout import offset_for_point
-from omacad.model.sketch_solver import midpoint_spec, symmetric_spec
+from omacad.model.sketch_solver import coincident_spec, midpoint_spec, symmetric_spec
 from omacad.ui import theme
 from omacad.ui.theme import qcolor
 
@@ -78,11 +77,7 @@ class SketchDimensionsMixin:
         elif ctype == "CONCENTRIC" and len(circles) == 2 and not lines:
             specs = [(ctype, [circles[0].entity_id, circles[1].entity_id], [])]
         elif ctype == "COINCIDENT" and len(lines) == 2 and not circles:
-            a, b = lines
-            best = min(((pa, pb) for pa in ("p1", "p2") for pb in ("p1", "p2")),
-                       key=lambda t: math.hypot(getattr(a, t[0])[0] - getattr(b, t[1])[0],
-                                                getattr(a, t[0])[1] - getattr(b, t[1])[1]))
-            specs = [(ctype, [a.entity_id, b.entity_id], list(best))]
+            specs = [coincident_spec(*lines)]
         elif ctype == "MIDPOINT" and len(lines) + len(circles) == 2 and lines:
             specs = [midpoint_spec(lines, circles)]
         elif ctype == "SYMMETRIC":
@@ -185,7 +180,7 @@ class SketchDimensionsMixin:
                 continue   # the built-in relations of a polygon stay out of sight
             if not show_all and not (set(c.refs) & focus) and c.ctype != "OFFSET":
                 continue
-            if c.ctype in ("COINCIDENT", "MIDPOINT") and c.pts:
+            if c.ctype in ("COINCIDENT", "MIDPOINT", "POINT_ON_LINE") and c.pts:
                 uv = point_of(ent, c.pts[0])
                 if uv is None:
                     continue

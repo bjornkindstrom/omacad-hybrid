@@ -381,8 +381,10 @@ class SketchToolsMixin:
             specs.append(("HORIZONTAL", [eid], []))
         elif abs(dx) < 1e-6 * max(1.0, abs(dy)):
             specs.append(("VERTICAL", [eid], []))
+        from omacad.model.sketch_solver import point_on_line_at
         for pname in ("p1", "p2"):
             mine = getattr(line, pname)
+            joined = False
             for other in sketch.entities:
                 if other is line or not isinstance(other, SketchLine):
                     continue
@@ -390,10 +392,18 @@ class SketchToolsMixin:
                     o = getattr(other, oname)
                     if math.hypot(mine[0] - o[0], mine[1] - o[1]) < 1e-6:
                         specs.append(("COINCIDENT", [eid, other.entity_id], [pname, oname]))
+                        joined = True
                         break
-                else:
-                    continue
-                break
+                if joined:
+                    break
+            if joined:
+                continue
+            # an end snapped onto the inside of another line (any angle) stays on it
+            for other in sketch.entities:
+                if other is not line and isinstance(other, SketchLine) and not getattr(other, "projected", False) \
+                        and point_on_line_at(mine, other, 1e-5):
+                    specs.append(("POINT_ON_LINE", [eid, other.entity_id], [pname]))
+                    break
         if specs:
             self.doc.auto_constrain(sketch, specs)
     def _dyn_can_start(self) -> bool:

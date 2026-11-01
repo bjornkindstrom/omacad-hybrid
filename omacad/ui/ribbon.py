@@ -472,7 +472,7 @@ class Ribbon(QWidget):
     CONSTRAINTS = (
         ("HORIZONTAL", "Horizontal", "━", "Make selected lines horizontal"),
         ("VERTICAL", "Vertical", "┃", "Make selected lines vertical"),
-        ("COINCIDENT", "Coincident", "•", "Join nearest end points of two selected curves"),
+        ("COINCIDENT", "Coincident", "•", "Put the nearest end point on the other line (any angle), or join the nearest end points"),
         ("PARALLEL", "Parallel", "∥", "Make selected lines parallel"),
         ("PERPENDICULAR", "Perpendicular", "⟂", "Make selected lines perpendicular"),
         ("EQUAL", "Equal", "＝", "Equal length (lines) or radius (circles)"),

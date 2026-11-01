@@ -555,7 +555,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     # ---- Constraints -----------------------------------------------------------
     CONSTRAINT_GLYPHS = {
         "HORIZONTAL": "H", "VERTICAL": "V", "PARALLEL": "∥", "PERPENDICULAR": "⟂",
-        "EQUAL": "=", "TANGENT": "T", "CONCENTRIC": "◎", "COINCIDENT": "•", "FIX": "F", "POINT_ON_CIRCLE": "○",
+        "EQUAL": "=", "TANGENT": "T", "CONCENTRIC": "◎", "COINCIDENT": "•", "FIX": "F", "POINT_ON_CIRCLE": "○", "POINT_ON_LINE": "•",
         "MIDPOINT": "M", "SYMMETRIC": "S", "CENTER": "⊙", "OFFSET": "⧉",
     }
     CONSTRAINT_HINTS = {
@@ -566,7 +566,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         "EQUAL": "Equal: select two or more lines, or two or more circles.",
         "TANGENT": "Tangent: select a line and a circle, or two circles.",
         "CONCENTRIC": "Concentric: select two circles.",
-        "COINCIDENT": "Coincident: select two lines (their nearest end points are joined).",
+        "COINCIDENT": "Coincident: select two lines (the nearest end point goes onto the other line, or the nearest end points are joined).",
         "MIDPOINT": "Midpoint: select a circle or line (its nearest end point) and the line whose middle it goes to.",
         "SYMMETRIC": "Symmetric: select two lines (or two circles) and the line they mirror across.",
         "CENTER": "Center: select two square-cornered rectangles to align their horizontal centres; use an edge distance for vertical offset.",

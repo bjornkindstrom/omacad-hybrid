@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QLineEdit, QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWidget, QLabel,
-    QPushButton, QComboBox, QCheckBox, QDoubleSpinBox, QColorDialog,
+    QPushButton, QComboBox, QCheckBox, QDoubleSpinBox, QSpinBox, QColorDialog,
     QFrame, QGridLayout, QScrollArea, QListWidget, QSizePolicy
 )
 
@@ -575,6 +575,19 @@ class SettingsDialog(QDialog):
         self.chk_auto_restart.setChecked(bool(self.settings.get("auto_restart", True)))
         lay_general.addWidget(self.chk_auto_restart)
 
+        # Autosave (recovery after a crash)
+        autosave_row = QHBoxLayout()
+        autosave_row.addWidget(QLabel("Autosave unsaved work every"))
+        self.spn_autosave = QSpinBox()
+        self.spn_autosave.setRange(0, 60)
+        self.spn_autosave.setSuffix(" min")
+        self.spn_autosave.setSpecialValueText("Off")
+        self.spn_autosave.setValue(int(self.settings.get("autosave_minutes", 2) or 0))
+        self.spn_autosave.setToolTip("Unsaved work is written to a recovery file and offered back after a crash. 0 = off.")
+        autosave_row.addWidget(self.spn_autosave)
+        autosave_row.addStretch()
+        lay_general.addLayout(autosave_row)
+
         lay_general.addStretch()
         self.tabs.addTab(self._make_scrollable(tab_general), "⚙️ General")
 
@@ -744,6 +757,7 @@ class SettingsDialog(QDialog):
         self.spn_grid.setValue(5.0)
         self.spn_fillet.setValue(2.0)
         self.chk_auto_restart.setChecked(True)
+        self.spn_autosave.setValue(2)
         self.cmb_theme_mode.setCurrentIndex(max(0, self.cmb_theme_mode.findData("omarchy")))   # the default
         self.cmb_icon_theme.setCurrentIndex(0)
         self.cmb_curves.setCurrentIndex(max(0, self.cmb_curves.findData(96)))
@@ -818,6 +832,7 @@ class SettingsDialog(QDialog):
             "view_projection": self.cmb_projection.currentData(),
             "view_fov": self.spn_fov.value(),
             "auto_restart": self.chk_auto_restart.isChecked(),
+            "autosave_minutes": self.spn_autosave.value(),
             "rfc_name": self.edt_rfc_name.text().strip(),
             "rfc_token": self.edt_rfc_token.text().strip(),
             "icon_theme": self.cmb_icon_theme.currentData(),

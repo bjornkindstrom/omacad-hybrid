@@ -67,9 +67,97 @@ class FileSessionMixin:
     def closeEvent(self, event):
         # a restart has saved the session already and the new process resumes it: no question
         if getattr(self, "_restarting", False) or self.confirm_discard_changes():
+            if getattr(self, "_autosave", None) is not None:
+                self._autosave.release()        # closed normally: nothing to recover next time
             event.accept()
         else:
             event.ignore()
+
+    # ---- autosave -----------------------------------------------------------
+
+    def start_autosave(self, check_ms: int = 30000, folder=None) -> None:
+        """Write unsaved work to a recovery file every `autosave_minutes` (Settings > General; 0 = off)."""
+        import time
+        from omacad import autosave
+        self._autosave = autosave.Autosave(folder or autosave.AUTOSAVE_DIR)
+        self._autosave_at = time.monotonic()
+        self._autosave_timer = QTimer(self)
+        self._autosave_timer.timeout.connect(self.autosave_now)
+        self._autosave_timer.start(check_ms)
+
+    def autosave_now(self, force: bool = False) -> None:
+        """Called by the timer; `force` writes at once (e.g. right after resuming)."""
+        import time
+        from omacad import applog, autosave
+        from omacad.ui.settings import get_settings
+        auto = getattr(self, "_autosave", None)
+        if auto is None:
+            return
+        minutes = get_settings().get("autosave_minutes", autosave.DEFAULT_MINUTES)
+        try:
+            minutes = float(minutes)
+        except (TypeError, ValueError):
+            minutes = autosave.DEFAULT_MINUTES
+        if not force and (minutes <= 0 or time.monotonic() - self._autosave_at < minutes * 60):
+            return
+        self._autosave_at = time.monotonic()
+        state = self._state_of(self.doc)
+        clean = getattr(self, "_clean_state", None) or self._state_of(Document())
+        if state == clean:
+            auto.clear()                        # everything is on disk already
+            return
+        if state == auto.last_state:
+            return
+        try:
+            auto.write(self.doc, self.current_path, self._camera_state())
+            auto.last_state = state
+        except (OSError, TypeError, ValueError) as e:
+            applog.log("ERROR", f"autosave failed: {e}")
+            self.status_label.setText(f"Autosave failed: {e}")
+
+    def _forget_autosave(self) -> None:
+        if getattr(self, "_autosave", None) is not None:
+            self._autosave.clear()
+
+    def offer_autosave_resume(self) -> bool:
+        """After a crash: offer the newest recovery file another Omacad left behind. Returns whether it was resumed."""
+        import datetime
+        from omacad import autosave
+        own = self._autosave.file if getattr(self, "_autosave", None) is not None else None
+        files = autosave.orphans(self._autosave.folder if own else autosave.AUTOSAVE_DIR, own)
+        if not files:
+            return False
+        file = files[0]
+        data = autosave.load(file)
+        if not data or "document" not in data:
+            autosave.discard(file)
+            return False
+        name = Path(data["path"]).name if data.get("path") else (data["document"].get("name") or "Untitled")
+        when = datetime.datetime.fromtimestamp(file.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+        answer = self._ask_resume_autosave(name, when)
+        if answer == "resume":
+            self._restore_state(data, f"Resumed autosaved work ({name}, {when}). Save it to keep it.")
+            autosave.discard(file)
+            self.autosave_now(force=True)       # the recovered work is protected again right away
+            return True
+        if answer == "discard":
+            autosave.discard(file)
+        return False
+
+    def _ask_resume_autosave(self, name: str, when: str) -> str:
+        """'resume', 'discard' or 'later' (keep the file and ask again next start)."""
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Icon.Question)
+        box.setWindowTitle("Resume autosave")
+        box.setText(f"Omacad did not close normally. Resume the autosaved work on {name}?")
+        box.setInformativeText(f"Autosaved {when}.")
+        resume = box.addButton("Resume", QMessageBox.ButtonRole.AcceptRole)
+        discard = box.addButton("Discard", QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton("Later", QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(resume)
+        box.exec()
+        clicked = box.clickedButton()
+        return "resume" if clicked is resume else "discard" if clicked is discard else "later"
 
     # ---- recent files -------------------------------------------------------
 
@@ -149,6 +237,7 @@ class FileSessionMixin:
     def on_file_new(self):
         if not self.confirm_discard_changes():
             return
+        self._forget_autosave()
         self.attach_document(Document("Omacad - Untitled"))
         self.status_label.setText("Created new design.")
 
@@ -178,6 +267,7 @@ class FileSessionMixin:
             return
         self.current_path = filepath
         self.mark_clean()
+        self._forget_autosave()
         self.add_recent_file(filepath)
         self.update_window_title()
         self.doc.notify_changed()
@@ -197,6 +287,7 @@ class FileSessionMixin:
         except (OSError, ValueError, KeyError) as e:
             QMessageBox.critical(self, "Open failed", f"Could not open {filepath}:\n{e}")
             return
+        self._forget_autosave()
         self.attach_document(doc, filepath)
         self.add_recent_file(filepath)
         self.viewport.zoom_fit()
@@ -299,11 +390,8 @@ class FileSessionMixin:
         from PySide6.QtCore import QProcess
         from PySide6.QtWidgets import QApplication
         from omacad import applog, session
-        v = self.viewport
-        camera = {"azimuth": v.azimuth, "elevation": v.elevation, "distance": v.distance,
-                  "target": [float(x) for x in v.target]}
         try:
-            session.save(self.doc, self.current_path, camera)
+            session.save(self.doc, self.current_path, self._camera_state())
         except (OSError, TypeError, ValueError) as e:      # no restart if the work could not be saved
             applog.log("ERROR", f"restart cancelled, could not save the session: {e}")
             self.status_label.setText(f"Restart cancelled, could not save the session: {e}")
@@ -324,6 +412,16 @@ class FileSessionMixin:
         data = session.load()
         if not data:
             return False
+        self._restore_state(data, f"Restarted on Omacad {__import__('omacad').__version__}; your work is back.")
+        return True
+
+    def _camera_state(self) -> dict:
+        v = self.viewport
+        return {"azimuth": v.azimuth, "elevation": v.elevation, "distance": v.distance,
+                "target": [float(x) for x in v.target]}
+
+    def _restore_state(self, data: dict, message: str) -> None:
+        """Document, open sketch and camera from a session or autosave file; unsaved compared to its own file."""
         doc = Document()
         Exporter.apply_dict(doc, data["document"])
         self.attach_document(doc, data.get("path"), clean=False)
@@ -336,8 +434,7 @@ class FileSessionMixin:
         if "target" in cam:
             v.target = np.array(cam["target"], dtype=np.float32)
         v.update()
-        self.status_label.setText(f"Restarted on Omacad {__import__('omacad').__version__}; your work is back.")
-        return True
+        self.status_label.setText(message)
 
     def _session_baseline(self, path: Optional[str]) -> str:
         """What "unchanged" means for a restored session: the file it was opened from, or an empty design."""

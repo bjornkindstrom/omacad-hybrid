@@ -298,6 +298,8 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=()):
             sys_.coincident(pts[(b, c.pts[0])], geo[a], wp)
         elif t == "TANGENT" and b:
             _tangent(sys_, wp, ents, pts, geo, a, b)
+        elif t == "POINT_ON_LINE" and b and line(b) and c.pts and (a, c.pts[0]) in pts:
+            sys_.coincident(pts[(a, c.pts[0])], geo[b], wp)
         elif t == "MIDPOINT" and b and line(b) and c.pts and (a, c.pts[0]) in pts:
             sys_.midpoint(pts[(a, c.pts[0])], geo[b], wp)
         elif t == "SYMMETRIC" and len(c.refs) == 3 and len(c.pts) == 2 and line(c.refs[2]) and b \
@@ -481,6 +483,40 @@ def _tangent(sys_, wp, ents, pts, geo, a, b):
         inner = d < max(ea.radius, eb.radius) - 1e-6
         value = abs(ea.radius - eb.radius) if inner else ea.radius + eb.radius
         sys_.distance(pts[(a, "center")], pts[(b, "center")], float(value), wp)
+
+
+def _foot_inside(p, line) -> Optional[Tuple[float, float]]:
+    """(distance from p to the line, position along it 0..1) when p's foot falls strictly inside the segment."""
+    dx, dy = line.p2[0] - line.p1[0], line.p2[1] - line.p1[1]
+    length2 = dx * dx + dy * dy
+    if length2 < 1e-18:
+        return None
+    t = ((p[0] - line.p1[0]) * dx + (p[1] - line.p1[1]) * dy) / length2
+    if not 1e-6 < t < 1 - 1e-6:
+        return None
+    return abs((p[0] - line.p1[0]) * dy - (p[1] - line.p1[1]) * dx) / math.sqrt(length2), t
+
+
+def point_on_line_at(p, line, tol: float) -> bool:
+    """p lies on the inside of the segment (not at an end), within tol."""
+    foot = _foot_inside(p, line)
+    return foot is not None and foot[0] <= tol and min(foot[1], 1 - foot[1]) * math.dist(line.p1, line.p2) > tol
+
+
+def coincident_spec(a, b):
+    """(ctype, refs, pts) for Coincident on two lines, as Fusion: the end point nearest the other line goes onto it.
+    When an end of one line is closer to the inside of the other line (at any angle) than to any of its ends, it lies
+    on that line (POINT_ON_LINE); otherwise the two nearest end points are joined (COINCIDENT)."""
+    ends = min(((pa, pb) for pa in ("p1", "p2") for pb in ("p1", "p2")),
+               key=lambda t: math.dist(getattr(a, t[0]), getattr(b, t[1])))
+    best = ("COINCIDENT", [a.entity_id, b.entity_id], list(ends))
+    best_d = math.dist(getattr(a, ends[0]), getattr(b, ends[1]))
+    for x, y in ((a, b), (b, a)):
+        for name in ("p1", "p2"):
+            foot = _foot_inside(getattr(x, name), y)
+            if foot is not None and foot[0] < best_d - 1e-9:
+                best, best_d = ("POINT_ON_LINE", [x.entity_id, y.entity_id], [name]), foot[0]
+    return best
 
 
 def midpoint_spec(lines, circles):

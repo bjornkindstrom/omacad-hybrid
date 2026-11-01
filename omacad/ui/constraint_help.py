@@ -15,7 +15,7 @@ HELP = {
     "EQUAL": ("Equal", "Match two line lengths or circle radii.", "Select two lines or two circles, one at a time.", "Use two items of the same type."),
     "TANGENT": ("Tangent", "Make two curves touch smoothly at one point.", "Select a line and circle, or two circles.", "Choose a supported line/circle pair."),
     "CONCENTRIC": ("Concentric", "Give two circles the same centre.", "Select two circles, one at a time.", "Choose circles in the active sketch."),
-    "COINCIDENT": ("Coincident", "Join the nearest end points of two lines.", "Select two straight lines, one at a time.", "The closest pair of end points will be joined."),
+    "COINCIDENT": ("Coincident", "Put an end point on another line, or join two end points.", "Select two straight lines, one at a time (any angle).", "The end point nearest the other line goes onto it; ends next to each other are joined."),
     "MIDPOINT": ("Midpoint", "Place a line end or circle centre at a line's midpoint.", "Select the point-carrying line or circle, then the target line.", "The second selection must be the target line."),
     "SYMMETRIC": ("Symmetric", "Mirror two elements across a centre line.", "Select two lines (or two circles), then the mirror line.", "Choose matching geometry, then a straight mirror line."),
     "CENTER": ("Center", "Align the horizontal centres of two rectangles.", "Select the reference rectangle, then the rectangle to centre.", "Use a vertical distance dimension between edges to set the height offset."),

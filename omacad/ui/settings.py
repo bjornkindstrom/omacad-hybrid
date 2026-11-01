@@ -56,6 +56,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "theme_mode": "omarchy",            # "omarchy" = follow the Omarchy theme live, "fixed" = theme_name
     "theme_name": "studio",             # "studio", "graphite", "atelier" or "user:<name>" when theme_mode is "fixed"
     "icon_theme": "solid",              # "solid", "blueprint", "semantic"
+    "autosave_minutes": 2,              # write unsaved work to a recovery file this often; 0 = off
     "auto_restart": False,               # restart the app (work saved and restored) when a new version is committed
 }
 

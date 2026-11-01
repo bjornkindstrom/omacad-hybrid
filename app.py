@@ -80,8 +80,12 @@ def main():
     
     window.show()
     from omacad import session
+    window.start_autosave()
     if session.RESUME_FLAG in sys.argv:
         window.restore_session()
+    else:
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(0, window.offer_autosave_resume)   # after a crash: get the unsaved work back
     from PySide6.QtWidgets import QLabel
     from omacad.viewport_accel import backend_name
     window.statusBar().addPermanentWidget(QLabel(f"Viewport picking: {backend_name().upper()}"))
