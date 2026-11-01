@@ -160,10 +160,10 @@ class SketchEditingMixin:
                 segs.extend(ent.to_lines())
             elif isinstance(ent, SketchSpline):
                 from omacad.model.sketch_offset import offset_control_spline, offset_spline
-                # a control point spline stays one with as many points when such a curve can follow the offset
-                same = offset_control_spline(ent, distance) if ent.control_points else None
-                for points in ([same] if same else offset_spline(ent, distance)):
-                    spline = SketchSpline(self._new_entity_id("spline"), points, control_points=bool(same))
+                # a control point spline stays one, with as many points as the original where the offset allows
+                parts = offset_control_spline(ent, distance) if ent.control_points else offset_spline(ent, distance)
+                for points in parts:
+                    spline = SketchSpline(self._new_entity_id("spline"), points, control_points=ent.control_points)
                     self.entities.append(spline)
                     new.append(spline)
         # lines and arcs: whole chains, radii follow along, joints are remade

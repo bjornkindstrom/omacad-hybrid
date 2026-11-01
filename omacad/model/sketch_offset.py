@@ -39,53 +39,186 @@ def offset_spline(spline, distance: float):
 
 
 def offset_control_spline(spline, distance: float):
-    """Control points for a control point spline offset by `distance` with as many control points as the original
-    (same degree and knots), or None when such a curve cannot follow the offset (a loop where the distance is larger
-    than the curvature radius, a split offset). Open: positive = left of the travel direction; closed: outward.
+    """Offset of a control point spline as control point splines (one per part when the offset splits; [] when it
+    collapses). Open: positive = left of the travel direction; closed: positive = outward.
 
-    The curve is linear in its control points, so the points come from one least-squares fit of the curve's own
-    samples moved along their normals; the fit is accepted only within the tolerance of the true offset."""
+    Each part of the exact offset (Shapely, which also trims the loops where the distance exceeds the curvature
+    radius) gets a clamped B-spline with the original's degree and knot pattern, fitted by least squares with its
+    end points on the offset's ends. Every offset point takes the parameter of its foot point on the original, so
+    with as many control points as the original the fit follows the original's own parameterization; points are
+    added only while the fit stays further than the tolerance from the offset. Where the offset has a corner (a
+    trimmed loop, the mitred seam of a closed curve) it is split, since no smooth spline follows a corner."""
     import numpy as np
     from shapely.geometry import LineString, Polygon
-    from omacad.model.sketch_entities import SketchSpline
 
     count = len(spline.points)
-    if count < 2 or not math.isfinite(distance):
-        return None
-    per_span = 32
-    samples = np.asarray(spline.get_points(samples_per_span=per_span), dtype=float)
-    closed = _close(tuple(samples[0]), tuple(samples[-1]), EPS)
-    step = np.gradient(samples, axis=0)
+    dense = np.asarray(spline.get_points(samples_per_span=DENSE), dtype=float)
+    if count < 2 or len(dense) < 2 or not math.isfinite(distance) or LineString(dense).length < EPS:
+        return []
+    closed = _close(tuple(dense[0]), tuple(dense[-1]), EPS)
     if closed:
-        step[0] = step[-1] = samples[1] - samples[-2]
-    length = np.linalg.norm(step, axis=1)
-    if np.any(length < EPS):
-        return None
-    normal = np.stack([-step[:, 1], step[:, 0]], axis=1) / length[:, None]   # left of the travel direction
-    if closed:
-        x, y = samples[:, 0], samples[:, 1]
-        ccw = float(np.dot(x[:-1], y[1:]) - np.dot(x[1:], y[:-1])) > 0
-        normal = -normal if ccw else normal                                      # outward
-    target = samples + distance * normal
-    basis = np.empty((len(samples), count))
-    for i in range(count):
-        unit = [(1.0, 0.0) if j == i else (0.0, 0.0) for j in range(count)]
-        basis[:, i] = [p[0] for p in SketchSpline("", unit, control_points=True).get_points(samples_per_span=per_span)]
-    weight = np.ones(len(samples))
-    weight[[0, -1]] = 100.0                                                      # the ends lie on the curve
-    points, *_ = np.linalg.lstsq(basis * weight[:, None], target * weight[:, None], rcond=None)
-    points = [tuple(map(float, p)) for p in points]
-    if closed:
-        points[-1] = points[0]
+        shape = Polygon(dense)
+        shape = shape if shape.is_valid else shape.buffer(0)
+        # mitred: the kink at the seam of a clamped closed spline stays a kink instead of growing a round arc
+        result = shape.buffer(distance, join_style="mitre", mitre_limit=10.0)
+        polygons = list(result.geoms) if hasattr(result, "geoms") else [result]
+        parts = [ring for poly in polygons if not poly.is_empty for ring in [poly.exterior, *poly.interiors]]
+    else:
+        result = LineString(dense).offset_curve(distance)
+        parts = list(result.geoms) if hasattr(result, "geoms") else [result]
+    dense_u = np.linspace(0.0, 1.0, len(dense))
+    tol = max(OFFSET_FIT_TOL, abs(distance) * OFFSET_FIT_REL)
+    pieces = []
+    for part in parts:
+        if part.is_empty or part.length <= EPS:
+            continue
+        coords = np.asarray(part.coords, dtype=float)
+        if closed and not _corners(coords[:-1], closed=True):
+            pieces.append((_start_like(coords, dense[0]), True))
+        else:
+            # where a loop was trimmed (distance > curvature radius) the offset has a corner that no smooth
+            # spline follows: each stretch between corners becomes its own spline
+            pieces += [(piece, False) for piece in _split_at_corners(coords, closed)]
+    out = []
+    for piece, ring in pieces:
+        line = LineString(piece)
+        if line.length <= EPS:
+            continue
+        target = np.array([line.interpolate(f, normalized=True).coords[0] for f in np.linspace(0.0, 1.0, FIT_SAMPLES)])
+        if ring:
+            target[-1] = target[0]
+        u = dense_u[np.argmin(((target[:, None, :] - dense[None, :, :]) ** 2).sum(axis=2), axis=1)]
+        if np.median(np.diff(u)) < 0:        # Shapely may return the part running the other way
+            target, u = target[::-1].copy(), u[::-1].copy()
+        if closed:
+            # the seam is both u = 0 and u = 1: an end lying just across it belongs to this side
+            tenth = max(1, len(u) // 10)
+            u[:tenth][u[:tenth] > 0.9] = 0.0
+            u[-tenth:][u[-tenth:] < 0.1] = 1.0
+        share = u.max() - u.min() if not ring else 1.0
+        step = np.diff(np.maximum.accumulate(u))
+        # a trimmed loop leaves a jump in the foot points next to a corner: close it so no control point is left
+        # without samples
+        step = np.minimum(step, 4.0 * np.median(step[step > 0]) if np.any(step > 0) else 1.0)
+        u = np.concatenate([[0.0], np.cumsum(step)])
+        u = u / u[-1] if u[-1] > EPS else np.linspace(0.0, 1.0, len(target))
+        first = max(2, math.ceil(count * share)) if len(pieces) > 1 else max(count, 2)
+        best = None
+        for m in range(first, first + MAX_EXTRA + 1):
+            points, error, simple = _fit_clamped_spline(target, u, m)
+            if best is None or (simple, -error) > (best[2], -best[1]):
+                best = (points, error, simple)
+            if simple and error <= tol:
+                break
+        out.append(best[0])
+    return out
 
-    curve = LineString(samples)
-    exact = (Polygon(samples).buffer(distance).exterior if closed else curve.offset_curve(distance))
-    if exact.is_empty or exact.geom_type != ("LinearRing" if closed else "LineString"):
-        return None
-    fitted = LineString(SketchSpline("", points, control_points=True).get_points())
-    if not fitted.is_simple or fitted.hausdorff_distance(exact) > max(0.18, abs(distance) * 0.08):   # as _fit_offset_spline
-        return None
-    return points
+
+def _corners(coords, closed: bool, turn_deg: float = 30.0):
+    """Indices of the vertices of a polyline where it turns more than turn_deg."""
+    import numpy as np
+    seg = np.diff(np.vstack([coords, coords[:1]]) if closed else coords, axis=0)
+    seg = seg[np.linalg.norm(seg, axis=1) > EPS]
+    if len(seg) < 2:
+        return []
+    a, b = (seg, np.roll(seg, -1, axis=0)) if closed else (seg[:-1], seg[1:])
+    cos = (a * b).sum(axis=1) / (np.linalg.norm(a, axis=1) * np.linalg.norm(b, axis=1))
+    found = np.nonzero(cos < math.cos(math.radians(turn_deg)))[0] + 1
+    return [int(i) % len(seg) for i in found]
+
+
+def _split_at_corners(coords, closed: bool):
+    """Pieces of a polyline (or a ring, with its closing vertex dropped) between its corners."""
+    import numpy as np
+    pts = coords[:-1] if closed else coords
+    keep = np.r_[True, np.linalg.norm(np.diff(pts, axis=0), axis=1) > EPS]
+    pts = pts[keep]
+    corners = _corners(pts, closed)
+    if not corners:
+        return [coords]
+    if closed:
+        pts = np.roll(pts, -corners[0], axis=0)
+        corners = sorted((c - corners[0]) % len(pts) for c in corners) + [len(pts)]
+        pts = np.vstack([pts, pts[:1]])
+    else:
+        corners = [0, *corners, len(pts) - 1]
+    return [pts[i:j + 1] for i, j in zip(corners, corners[1:]) if j > i]
+
+
+OFFSET_FIT_TOL = 0.1    # mm between a fitted offset spline and the exact offset ...
+OFFSET_FIT_REL = 0.05   # ... or this share of the distance, if larger
+DENSE = 64              # samples per span when a fit is measured
+FIT_SAMPLES = 160       # points taken evenly along the exact offset for the fit
+MAX_EXTRA = 24          # control points that may be added beyond the original's count
+SMOOTHING = 1e-5        # weight of the bending penalty in the fit
+
+
+def _start_like(ring, start):
+    """A closed ring's samples rotated to begin nearest `start` (the original's seam)."""
+    import numpy as np
+    ring = ring[:-1]
+    k = int(np.argmin(((ring - start) ** 2).sum(axis=1)))
+    ring = np.roll(ring, -k, axis=0)
+    return np.vstack([ring, ring[:1]])
+
+
+def _bspline_basis(count: int, u):
+    """Basis matrix (len(u) x count) of the clamped uniform B-spline that SketchSpline draws for `count` control
+    points (degree up to three, parameter 0..count - degree)."""
+    import numpy as np
+    degree = min(3, count - 1)
+    end = count - degree
+    knots = np.array([0] * (degree + 1) + list(range(1, end)) + [end] * (degree + 1), dtype=float)
+    u = np.clip(np.asarray(u, dtype=float), 0.0, end)
+    basis = np.zeros((len(u), len(knots) - 1))
+    for i in range(len(knots) - 1):
+        if knots[i] < knots[i + 1]:
+            last = knots[i + 1] == end
+            basis[:, i] = (u >= knots[i]) & ((u < knots[i + 1]) | (last & (u == end)))
+    for k in range(1, degree + 1):
+        nxt = np.zeros((len(u), len(knots) - 1 - k))
+        for i in range(len(knots) - 1 - k):
+            a = knots[i + k] - knots[i]
+            b = knots[i + k + 1] - knots[i + 1]
+            if a > 0:
+                nxt[:, i] += (u - knots[i]) / a * basis[:, i]
+            if b > 0:
+                nxt[:, i] += (knots[i + k + 1] - u) / b * basis[:, i + 1]
+        basis = nxt
+    return basis
+
+
+def _fit_clamped_spline(target, u, count: int, rounds: int = 4):
+    """Least-squares control points for `count` points, first and last on the target's ends, with the samples
+    starting at parameters u (0..1 along the curve) and moved to their nearest point on the fitted curve between
+    rounds. Returns (points, Hausdorff distance to the target, whether the curve keeps clear of itself)."""
+    import numpy as np
+    from shapely.geometry import LineString
+    from omacad.model.sketch_entities import SketchSpline
+
+    end = count - min(3, count - 1)
+    fine = np.linspace(0.0, 1.0, 6 * len(target))
+    fine_basis = _bspline_basis(count, fine * end)
+    a, b = target[0], target[-1]
+    # a light bending penalty (second differences of the control points) keeps the system well-posed
+    bend = np.zeros((max(count - 2, 0), count))
+    for i in range(count - 2):
+        bend[i, i:i + 3] = (1.0, -2.0, 1.0)
+    bend *= math.sqrt(SMOOTHING * len(target) / max(count, 1))
+    for k in range(rounds):
+        basis = np.vstack([_bspline_basis(count, u * end), bend])
+        goal = np.vstack([target, np.zeros((len(bend), 2))])
+        rhs = goal - np.outer(basis[:, 0], a) - np.outer(basis[:, -1], b)
+        inner = np.linalg.lstsq(basis[:, 1:-1], rhs, rcond=None)[0] if count > 2 else np.zeros((0, 2))
+        points = np.vstack([a, inner, b])
+        if k < rounds - 1:
+            curve = fine_basis @ points
+            u = np.maximum.accumulate(fine[np.argmin(((target[:, None, :] - curve[None]) ** 2).sum(axis=2), axis=1)])
+            u[0], u[-1] = 0.0, 1.0
+    pts = [tuple(map(float, p)) for p in points]
+    fitted = LineString(SketchSpline("", pts, control_points=True).get_points(samples_per_span=DENSE))
+    simple = fitted.is_simple or (_close(pts[0], pts[-1], EPS) and LineString(fitted.coords[:-1]).is_simple)
+    return pts, fitted.hausdorff_distance(LineString(target)), simple
 
 
 def _fit_offset_spline(part, distance):

@@ -71,10 +71,25 @@ def test_offset_of_a_control_point_spline_is_a_control_point_spline_with_as_many
         assert len(new) == 1 and isinstance(new[0], SketchSpline)
         assert new[0].control_points and len(new[0].points) == len(src.points)
         original = LineString(src.get_points(64))
-        fitted = LineString(new[0].get_points())
-        assert fitted.hausdorff_distance(original.offset_curve(distance)) < max(0.18, abs(distance) * 0.08)
-        for p in new[0].get_points():
-            assert original.distance(Point(p)) == pytest.approx(abs(distance), abs=0.2)
+        fitted = LineString(new[0].get_points(64))
+        assert fitted.hausdorff_distance(original.offset_curve(distance)) < 0.05
+        for p in new[0].get_points(64):
+            assert original.distance(Point(p)) == pytest.approx(abs(distance), abs=0.05)
+
+
+def test_offset_past_the_curvature_radius_stays_control_point_splines_without_loops():
+    """Where the distance is larger than a bend's radius the offset gets a corner (its loop is trimmed): the
+    stretches between corners become control point splines of their own, none crossing itself."""
+    sk = Sketch.from_dict(_report_doc().active_sketch.to_dict())
+    wavy = sk.add_spline([(0, 0), (20, 25), (40, -25), (60, 25), (80, -25), (100, 0)], control_points=True)
+    for distance in (5.0, 12.0, -12.0):
+        new = sk.offset_entities([wavy.entity_id], distance)
+        exact = LineString(wavy.get_points(64)).offset_curve(distance)
+        assert new and all(isinstance(e, SketchSpline) and e.control_points for e in new)
+        assert all(LineString(e.get_points(64)).is_simple for e in new)
+        joined = [p for e in new for p in e.get_points(64)]
+        assert max(exact.distance(Point(p)) for p in joined) < max(0.1, 0.05 * abs(distance))
+        assert sum(len(e.points) for e in new) <= len(wavy.points) + 24 * len(new)
 
 
 def test_add_control_point_goes_where_the_cursor_is_and_dimensions_keep_their_point():
@@ -120,3 +135,16 @@ def test_add_control_point_from_the_fan_menu_after_the_click_event_is_gone():
     spline = doc.active_sketch.get_entity("spline_1")
     assert len(spline.points) == 5
     assert spline.points[2] == pytest.approx((80.0, 30.0), abs=0.5)
+
+
+@pytest.mark.parametrize("distance", [2.0, -2.0, 5.0])
+def test_closed_control_point_spline_offsets_to_a_closed_one_with_as_many_points(distance):
+    from shapely.geometry import Polygon
+    sk = Sketch.from_dict(_report_doc().active_sketch.to_dict())
+    loop = sk.add_spline([(0, 0), (20, -5), (30, 20), (5, 30), (-10, 15), (0, 0)], control_points=True)
+    new = sk.offset_entities([loop.entity_id], distance)
+    assert len(new) == 1 and new[0].control_points and len(new[0].points) == len(loop.points)
+    assert new[0].points[0] == pytest.approx(new[0].points[-1])
+    # positive = outward; the seam's kink stays a kink (mitred), as in the original
+    exact = Polygon(loop.get_points(64)).buffer(distance, join_style="mitre", mitre_limit=10.0).exterior
+    assert max(exact.distance(Point(p)) for p in new[0].get_points(64)) < max(0.1, 0.05 * abs(distance))

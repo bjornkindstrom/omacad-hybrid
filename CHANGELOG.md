@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.97
+
+### Fixed
+- **Offset of a control point spline is always a control point spline**: 0.9.9.80.96 measured the fit at 16 samples per span against the exact offset at 64, so most fits failed the tolerance and fell back to a fit-point spline. Now every point of the exact offset gets the parameter of its foot point on the original, the same B-spline basis is fitted by least squares with parameter correction, and it starts with the original's number of points (adding points only beyond 5 % of the distance, min. 0.1 mm). Where the distance exceeds a bend's radius the offset's corner splits it into control point splines that never loop; a closed curve stays closed with its seam kink. Test: `test_spline_point_dimension.py`.
+
 # Hybrid-experiment — 0.9.9.80.96
 
 ### Fixed
