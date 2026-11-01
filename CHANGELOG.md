@@ -1,6 +1,7 @@
 # Hybrid-experiment — 0.9.9.80.105
 
 ### Fixed
+- **"Branch" is now "Linked copy", in italic**: a linked object is named "<object> Linked copy" (independent: "<object> Copy", both after the object's name, not its step's) and its object row, step and body read in italic in the browser. Links named "… Branch" in older files load as "… Linked copy". Undo label "Linked copy". Test: `test_object_copy_menu.py`.
 - **Independent copies land free of everything**: an independent copy goes right of the original and further past any body it would touch there (an earlier linked or independent copy), `features.branch.free_offset`. Test: `test_object_history.py`.
 - **A primitive just made can be copied from the menu**: "New linked object" / "Independent copy" were missing on a fresh primitive's object row and step row. A primitive is built on its own, without the full rebuild that records the step states the menus checked. `ObjectHistory.has_result` falls back to the step's own result (before the marker, not suppressed, no error) when no step state exists yet. Test: `test_object_copy_menu.py`.
 

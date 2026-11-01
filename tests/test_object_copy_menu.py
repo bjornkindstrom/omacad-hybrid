@@ -93,3 +93,26 @@ def test_a_primitive_just_made_can_be_copied_from_its_row_and_its_step(monkeypat
     texts = [a.text() for a in shown[-1].actions()]
     assert "Independent copy of " + cyl.body_id in texts
     assert box.body_id in doc.bodies
+
+
+def test_a_linked_copy_is_named_linked_copy_and_shown_in_italic():
+    from omacad.model.document import Document
+    QApplication.instance() or QApplication([])
+    doc = Document()
+    box = doc.add_box(10, 10, 10)
+    linked = doc.branch_object("box_1", box.body_id)
+    copy = doc.branch_object("box_1", box.body_id, linked=False)
+    assert linked.name == "Box 1 Linked copy" and copy.name == "Box 1 Copy"
+    browser = BrowserTree(doc)
+    lid = linked.body_id.removeprefix("body_")
+    oid = doc.object_history.owners[lid]
+    mine = {("object", oid), ("feature", lid), ("body", linked.body_id)}
+    items = [item for item, _ in browser._walk()]
+    italic = {item.data(0, ROLE) for item in items if item.font(0).italic()}
+    assert italic == mine                       # the link's object, step and body; nothing else
+    assert any(item.text(0) == "Box 1 Linked copy" for item in items)
+
+
+def test_links_named_branch_in_older_files_read_linked_copy():
+    doc = Exporter.load_project("tests/data/linked_copy_of_primitive_step.omacad")
+    assert doc.bodies["body_branch_4"].name == "Box 1 Linked copy"

@@ -984,7 +984,7 @@ class Document:
         self.notify_changed()
         return new_id
 
-    @undoable("Branch object")
+    @undoable("Linked copy")
     def branch_object(self, feature_id: str, body_id: str, linked=True):
         from omacad.model.features.branch import BranchFeature
         index = self.object_history.index(self, feature_id)
@@ -994,7 +994,9 @@ class Document:
         source = self.step_states.get(index + 1, {}).get(body_id)
         if source is None:
             raise ValueError("The source step has no body result")
-        name = self.timeline.features[index].name + (" Branch" if linked else " Copy")
+        source_obj = self.object_history.objects.get(self.object_history.owners.get(feature_id))
+        base = source_obj.name if source_obj is not None else self.timeline.features[index].name
+        name = base + (" Linked copy" if linked else " Copy")
         fid = self._feature_id("branch" if linked else "copy")
         self.object_history.insert_after = None
         if linked:

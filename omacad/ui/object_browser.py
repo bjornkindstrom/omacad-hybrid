@@ -79,6 +79,12 @@ def _add_sketch_rows(node, sketch):
             row.setData(0, ROLE, ('sketch_text', f'{sketch.sketch_id}:{entity.entity_id}'))
 
 
+def _italic(item):
+    font = item.font(0)
+    font.setItalic(True)
+    item.setFont(0, font)
+
+
 def _add_object(browser, group, oid, features, excluded):
     """One object's history; objects a Combine used up hang under that Combine as branches."""
     doc = browser.doc
@@ -90,8 +96,10 @@ def _add_object(browser, group, oid, features, excluded):
     parent.setData(0, ROLE, ('object', oid))
     parent.setFlags(parent.flags() | Qt.ItemFlag.ItemIsEditable)
     parent.setExpanded(True)
+    linked = bool(obj.feature_ids) and features[obj.feature_ids[0]].feature_type == 'branch'
     font = parent.font(0)
     font.setBold(oid == history.active_id)
+    font.setItalic(linked)                           # a linked copy reads in italic: object, its step and its body
     parent.setFont(0, font)
     parent.setToolTip(0, 'Active object' if oid == history.active_id else 'Click to activate this object')
     thumbnails = getattr(browser, 'thumbnails', None)
@@ -112,6 +120,8 @@ def _add_object(browser, group, oid, features, excluded):
             node = QTreeWidgetItem(parent, [icon + ' ' + feat.name, ''])
         node.setData(0, ROLE, ('feature', fid))
         node.setData(0, FEATURE_ROLE, fid)
+        if feat.feature_type == 'branch':
+            _italic(node)
         if feat.feature_type == 'sketch':
             node.setData(0, ROLE, ('sketch', feat.sketch.sketch_id))
             browser._style_eye(node, feat.sketch.visible)
@@ -163,6 +173,8 @@ def _add_object(browser, group, oid, features, excluded):
             continue
         item = QTreeWidgetItem(parent, ['🧊 ' + body.name, ''])
         item.setData(0, ROLE, ('body', bid))
+        if linked:
+            _italic(item)
         item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
         browser._style_eye(item, body.visible)
         item.setSelected(body.selected)

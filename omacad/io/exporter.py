@@ -442,6 +442,8 @@ class Exporter:
             fname = f_data.get("name")
             if ft == "branch":
                 from omacad.model.features.branch import BranchFeature
+                if fname and fname.endswith(" Branch"):          # files before 0.9.9.80.105 named links "… Branch"
+                    fname = fname[:-len(" Branch")] + " Linked copy"
                 feat = BranchFeature(fid, fname, f_data["source_feature_id"], f_data["source_body_id"],
                                      follow=f_data.get("follow"), beside=f_data.get("beside", False))
                 doc.timeline.add_feature(feat)
