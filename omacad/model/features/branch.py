@@ -9,6 +9,24 @@ def beside_offset(solid):
     return width + max(5.0, 0.5 * width)
 
 
+def free_offset(solid, others):
+    """Like `beside_offset`, but further right past any body (`others`, solids) the copy would touch there, so an
+    independent copy never lands on the original or on an earlier copy."""
+    lo_x, lo_y, lo_z, hi_x, hi_y, hi_z = solid.bounding_box()
+    gap = max(5.0, 0.5 * max(hi_x - lo_x, 0.0))
+    boxes = [o.bounding_box() for o in others]
+    dx = beside_offset(solid)
+    moved = True
+    while moved:
+        moved = False
+        for b in boxes:
+            if (b[0] < hi_x + dx + gap and lo_x + dx - gap < b[3] and b[1] < hi_y and lo_y < b[4]
+                    and b[2] < hi_z and lo_z < b[5]):
+                dx = b[3] + gap - lo_x
+                moved = True
+    return dx
+
+
 class BranchFeature(Feature):
     def __init__(self, feature_id, name, source_feature_id, source_body_id, follow=True, beside=False):
         super().__init__(feature_id, 'branch', name)

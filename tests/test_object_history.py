@@ -337,3 +337,16 @@ def test_copies_are_placed_to_the_right_of_the_original():
         lo = doc.bodies[body.body_id].manifold.bounding_box()[0]
         assert lo > right                                   # beside, not touching
     assert (doc.bodies[source.body_id].manifold ^ doc.bodies[linked.body_id].manifold).volume() == pytest.approx(0)
+
+
+def test_independent_copy_lands_free_of_the_original_and_earlier_copies():
+    doc = Document()
+    source = doc.add_box(10, 10, 10)
+    fid = doc.timeline.last_added.feature_id
+    copies = [doc.branch_object(fid, source.body_id), doc.branch_object(fid, source.body_id, linked=False),
+              doc.branch_object(fid, source.body_id, linked=False)]
+    solids = [doc.bodies[source.body_id].manifold] + [doc.bodies[c.body_id].manifold for c in copies]
+    for i, a in enumerate(solids):
+        for b in solids[i + 1:]:
+            assert (a ^ b).volume() == pytest.approx(0)
+            assert a.bounding_box()[3] < b.bounding_box()[0] or b.bounding_box()[3] < a.bounding_box()[0]

@@ -1004,8 +1004,9 @@ class Document:
             latest = dict((b, s) for s, b in self.object_history.copy_sources(self, owner))
             feature = BranchFeature(fid, name, latest.get(body_id, feature_id), body_id, follow=True, beside=True)
         else:
-            from omacad.model.features.branch import beside_offset
-            mesh = source.translate((beside_offset(source), 0.0, 0.0)).to_mesh()   # next to the original
+            from omacad.model.features.branch import free_offset
+            others = [b.manifold for b in self.bodies.values() if b.visible and b.manifold is not None]
+            mesh = source.translate((free_offset(source, others), 0.0, 0.0)).to_mesh()   # free of everything
             feature = ImportMeshFeature(fid, name, mesh.vert_properties[:, :3].tolist(), mesh.tri_verts.tolist())
         self.timeline.marker_index = len(self.timeline.features)
         self.timeline.add_feature(feature)
