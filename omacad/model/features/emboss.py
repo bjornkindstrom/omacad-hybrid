@@ -60,7 +60,7 @@ class EmbossFeature(ExtrudeFeature):
             # plane or cylinder carries them, so they are projected onto the surface as it is (Björn #57)
             solid = self._projected(M, region, field)
         elif surface and surface["kind"] == "cylinder":
-            solid = self._wrapped(cs, M, surface, region)
+            solid = self._wrapped(doc, cs, M, surface, region)
         else:
             z0 = surface["z"] if surface else 0.0      # a flat face behind the sketch plane: the letters start on it
             lo, hi = (-EPS, self.depth) if self.depth > 0 else (self.depth, EPS)      # along the sketch normal
@@ -77,8 +77,6 @@ class EmbossFeature(ExtrudeFeature):
         """Where the bodies' surface lies under the letters, seen along the sketch normal: a grid over the region's
         bounds with the sketch-z of the nearest surface facing the sketch in each cell (NaN where there is none),
         made by rasterising the facing triangles (a z-buffer), plus the footprint those triangles cover."""
-        from shapely.geometry import Polygon as _Poly
-        from shapely.ops import unary_union
         A = np.vstack([np.asarray(M, dtype=float).reshape(3, 4), [0.0, 0.0, 0.0, 1.0]])
         inv = np.linalg.inv(A)
         minx, miny, maxx, maxy = region.bounds
@@ -87,8 +85,7 @@ class EmbossFeature(ExtrudeFeature):
         pad = 2 * step
         xs = np.arange(minx - pad, maxx + pad + step, step)
         ys = np.arange(miny - pad, maxy + pad + step, step)
-        H = np.full((len(ys), len(xs)), np.nan)
-        polys = []
+        tris = []
         for body in doc.bodies.values():
             mesh = body.render_mesh
             if mesh is None or len(mesh.vertices) == 0 or not body.visible:
@@ -96,8 +93,20 @@ class EmbossFeature(ExtrudeFeature):
             tri = np.asarray(mesh.vertices, dtype=float).reshape(-1, 3)
             tri = (tri @ inv[:3, :3].T + inv[:3, 3]).reshape(-1, 3, 3)
             n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
-            keep = ((n[:, 2] > 1e-12) & (tri[:, :, 0].max(1) >= xs[0]) & (tri[:, :, 0].min(1) <= xs[-1])
-                    & (tri[:, :, 1].max(1) >= ys[0]) & (tri[:, :, 1].min(1) <= ys[-1]) & (tri[:, :, 2].max(1) < 0.0))
+            tris.append(tri[(n[:, 2] > 1e-12) & (tri[:, :, 2].max(1) < 0.0)])
+        return EmbossFeature._zbuffer(tris, xs, ys, step)
+
+    @staticmethod
+    def _zbuffer(tris, xs, ys, step) -> Optional[Dict[str, Any]]:
+        """Rasterises triangles given as (x, y, z) onto the grid xs x ys, keeping the largest z in each cell (NaN
+        where none lies), plus the footprint the triangles cover in (x, y)."""
+        from shapely.geometry import Polygon as _Poly
+        from shapely.ops import unary_union
+        H = np.full((len(ys), len(xs)), np.nan)
+        polys = []
+        for tri in tris:
+            keep = ((tri[:, :, 0].max(1) >= xs[0]) & (tri[:, :, 0].min(1) <= xs[-1])
+                    & (tri[:, :, 1].max(1) >= ys[0]) & (tri[:, :, 1].min(1) <= ys[-1]))
             for t in tri[keep]:
                 (x0, y0, z0), (x1, y1, z1), (x2, y2, z2) = t
                 det = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
@@ -117,7 +126,7 @@ class EmbossFeature(ExtrudeFeature):
                 inside = (a >= -1e-9) & (b >= -1e-9) & (c >= -1e-9)
                 z = a * z0 + b * z1 + c * z2
                 sub = H[j0:j1 + 1, i0:i1 + 1]
-                upd = inside & (np.isnan(sub) | (z > sub))     # nearest to the sketch (largest z) wins
+                upd = inside & (np.isnan(sub) | (z > sub))     # the largest z (nearest the sketch, outermost) wins
                 sub[upd] = z[upd]
         if not polys or np.all(np.isnan(H)):
             return None
@@ -211,7 +220,65 @@ class EmbossFeature(ExtrudeFeature):
             return {"kind": "plane", "z": z}
         return None
 
-    def _wrapped(self, cs, M, surface, region=None) -> m3d.Manifold:
+    @staticmethod
+    def _unrolled(pts, centre, e_par, e_perp, r):
+        """Sketch points (u, v, z) in the wrap's unrolled frame: (arc length at radius r, along the axis, radius)."""
+        du, dv, dz = pts[..., 0] - centre[0], pts[..., 1] - centre[1], pts[..., 2] - centre[2]
+        x = du * e_perp[0] + dv * e_perp[1]
+        return np.stack([r * np.arctan2(x, dz), du * e_par[0] + dv * e_par[1], np.hypot(x, dz)], axis=-1)
+
+    @staticmethod
+    def _region_frame(region, centre, e_par, e_perp):
+        """The region's bounds as (s_perp, s_par) in the wrap's frame."""
+        pts = []
+        for poly in getattr(region, "geoms", [region]):
+            for ring in (poly.exterior, *poly.interiors):
+                pts.append(np.asarray(ring.coords, dtype=float))
+        p = np.vstack(pts) - np.asarray(centre[:2], dtype=float)
+        sp, sa = p @ e_perp, p @ e_par
+        return sp.min(), sa.min(), sp.max(), sa.max()
+
+    @classmethod
+    def _radius_field(cls, doc, inv, region, centre, e_par, e_perp, r, cells: int = 160):
+        """The bodies' outermost radius around the wrap axis under the letters: a grid over (arc length, axial
+        position) made by rasterising the outward-facing triangles in the unrolled frame (see `_zbuffer`)."""
+        minx, miny, maxx, maxy = cls._region_frame(region, centre, e_par, e_perp)
+        size = max(maxx - minx, maxy - miny, 1e-6)
+        step = max(size / cells, 0.05)
+        pad = 2 * step
+        xs = np.arange(minx - pad, maxx + pad + step, step)
+        ys = np.arange(miny - pad, maxy + pad + step, step)
+        tris = []
+        for body in doc.bodies.values():
+            mesh = body.render_mesh
+            if mesh is None or len(mesh.vertices) == 0 or not body.visible:
+                continue
+            tri = np.asarray(mesh.vertices, dtype=float).reshape(-1, 3)
+            tri = (tri @ inv[:3, :3].T + inv[:3, 3]).reshape(-1, 3, 3)
+            n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+            mid = tri.mean(axis=1)
+            x = (mid[:, 0] - centre[0]) * e_perp[0] + (mid[:, 1] - centre[1]) * e_perp[1]
+            radial = np.column_stack([x * e_perp[0], x * e_perp[1], mid[:, 2] - centre[2]])
+            un = cls._unrolled(tri, centre, e_par, e_perp, r)
+            seam = np.ptp(un[:, :, 0], axis=1) > np.pi * r      # triangles across the back (theta = +-pi)
+            tris.append(un[(np.einsum("ij,ij->i", n, radial) > 1e-12) & ~seam])
+        return cls._zbuffer(tris, xs, ys, step)
+
+    @staticmethod
+    def _lies_on_cylinder(region, field, centre, e_par, e_perp, r) -> bool:
+        """Whether the surface under the letters is the fitted cylinder. A revolved curve (vase, bulb) passes the
+        cylinder fit, which allows 15 % of the radius, yet its radius changes under the letters; wrapped at one
+        radius they float above it (report 20261101-105801: 1.7 mm). The facets of a true cylinder lie inside it
+        by their sag only, well within max(0.1 mm, 0.2 % of the radius)."""
+        from shapely import contains_xy
+        X, Y = np.meshgrid(field["xs"], field["ys"])     # (s_perp, s_par): the letters' own flat coordinates
+        under = ~np.isnan(field["H"]) & contains_xy(region, X * e_perp[0] + Y * e_par[0] + centre[0],
+                                                    X * e_perp[1] + Y * e_par[1] + centre[1])
+        if not under.any():
+            return True
+        return float(np.abs(field["H"][under] - r).max()) <= max(0.1, 0.002 * r)
+
+    def _wrapped(self, doc, cs, M, surface, region=None) -> m3d.Manifold:
         """Letters that hug a cylinder: when `self.wrap` is True, the 2D profile is bent around the cylinder's
         circumference (theta = s_perp / r) so text wider than the diameter wraps all the way around; when False,
         it projects straight along the sketch normal and is clipped to the coaxial cylinder."""
@@ -235,7 +302,16 @@ class EmbossFeature(ExtrudeFeature):
                 else:
                     cs_fine = cs
                 margin = 0.05 * r + 0.02
-                r_in, r_out = (max(0.01, r - EPS), r + d) if d > 0 else (max(0.01, r + d), r + margin)
+                zc = float(surface["zc"])
+                field = (self._radius_field(doc, inv, region, (u0, v0, zc), e_par, e_perp, r)
+                         if region is not None and not region.is_empty else None)
+                if field is not None and self._lies_on_cylinder(region, field, (u0, v0), e_par, e_perp, r):
+                    field = None
+                if field is None:
+                    lo, hi = (-EPS, d) if d > 0 else (d, margin)
+                else:     # a vase or bulb: the radius under each point of the letters, not the fitted cylinder's
+                    reach = max(EPS, 2 * field["step"])
+                    lo, hi = (-reach, d) if d > 0 else (d, reach)
                 prism = m3d.Manifold.extrude(cs_fine, height=1.0, n_divisions=2)
                 # Boundary segmentation alone leaves long diagonals across the caps.
                 # After wrapping, those chords can dip inside the cylinder and leave
@@ -248,12 +324,13 @@ class EmbossFeature(ExtrudeFeature):
                     s_par = du * e_par[0] + dv * e_par[1]
                     s_perp = du * e_perp[0] + dv * e_perp[1]
                     theta = s_perp / r
-                    rad = r_in + pts[:, 2] * (r_out - r_in)
+                    base = r if field is None else self._surface_z(field, s_perp, s_par)
+                    rad = np.maximum(base + lo + pts[:, 2] * (hi - lo), 0.01)
                     sin_t = np.sin(theta)
                     cos_t = np.cos(theta)
                     u_new = u0 + s_par * e_par[0] + rad * sin_t * e_perp[0]
                     v_new = v0 + s_par * e_par[1] + rad * sin_t * e_perp[1]
-                    z_new = float(surface["zc"]) + rad * cos_t
+                    z_new = zc + rad * cos_t
                     return np.column_stack([u_new, v_new, z_new])
 
                 return prism.warp_batch(_warp_batch).transform(M)

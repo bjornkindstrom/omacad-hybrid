@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.98
+
+### Fixed
+- **Emboss on a vase or bulb sits on the surface (report 20261101-105801)**: a revolved curve passes the cylinder test, so wrapped letters were bent at one radius and floated up to 1.7 mm off the wall where it narrows. The wrap now reads the real surface radius under every point of the letters and follows it; true cylinders keep their exact radius. Test: `test_emboss_on_vase.py`.
+
 # Hybrid-experiment — 0.9.9.80.97
 
 ### Fixed
