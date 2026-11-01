@@ -205,43 +205,78 @@ class BoxFeature(Feature):
         has_smart = hollow or self.outer_round > 1e-4 or self.inner_round > 1e-4
 
         if self.is_lid:
-            # Slide-over lid (Björn #151): outer box matching box profile, inner cavity matching lip + clearance
+            # Sliding lid in groove (Björn #151, problem report 20261101-185047)
+            # Fits into the inner horizontal groove with clearance, front rounded pull bead (arc_9) and snap detent
             t_lid = self.lid_top if self.lid_top > 1e-4 else 2.0
             h_lip = self.lip_height if self.lip_height > 1e-4 else 6.0
             s = self.lip_step if self.lip_step > 1e-4 else 1.0
             c = self.clearance
-            total_h = h_lip + t_lid
-            lid_outer = _rounded_prism(self.length, self.width, total_h, self.outer_round, self.outer_round_kind, round_top=False)
-            r_lip = max(0.0, self.outer_round - s)
-            r_cavity = max(0.0, r_lip + c)
-            cav_l = max(0.2, self.length - 2.0 * s + 2.0 * c)
-            cav_w = max(0.2, self.width - 2.0 * s + 2.0 * c)
-            cav_h = h_lip + 0.1
-            lid_cavity = _rounded_prism(cav_l, cav_w, cav_h, r_cavity, self.outer_round_kind, round_top=False)
-            solid = lid_outer - lid_cavity
-            # Sits on the shelf at Z = height - h_lip
-            solid = solid.translate((0.0, 0.0, self.height - h_lip))
+            t = min(self.wall_thickness if self.wall_thickness > 1e-4 else 2.0, min(self.length, self.width) * 0.45, self.height * 0.9)
+            tb = self.bottom_thickness if self.bottom_thickness > 1e-4 else t
+
+            in_l = max(0.2, self.length - 2.0 * t)
+            in_w = max(0.2, self.width - 2.0 * t)
+            d_g = min(s, t * 0.6)
+            h_g = t_lid + c
+            z_g = self.height - h_lip
+            z_g = max(tb + 1.0, min(self.height - h_g - 1.0, z_g))
+
+            lid_l = max(0.2, in_l + 2.0 * d_g - 2.0 * c)
+            y_lid_back = in_w / 2.0 + d_g - c
+            y_lid_front = -self.width / 2.0
+            lid_w = max(0.2, y_lid_back - y_lid_front)
+            z_lid = z_g + c / 2.0
+
+            lid_plate = m3d.Manifold.cube((lid_l, lid_w, t_lid), False).translate((-lid_l / 2.0, y_lid_front, z_lid))
+
+            # Front grip bead on lid (from user sketch arc_9)
+            r_bead = min(1.0, t_lid / 2.0)
+            bead = m3d.Manifold.cylinder(lid_l, r_bead, r_bead, circular_segments=16).rotate((0, 90, 0)).translate((-lid_l / 2.0, y_lid_front, z_lid + t_lid / 2.0))
+
+            # Snap detent ridge on underside of lid
+            r_detent = min(0.4, c * 1.5, t_lid * 0.2)
+            y_detent = -self.width / 2.0 + t / 2.0
+            detent_ridge = m3d.Manifold.cylinder(lid_l, r_detent * 0.85, r_detent * 0.85, circular_segments=16).rotate((0, 90, 0)).translate((-lid_l / 2.0, y_detent, z_lid))
+
+            solid = lid_plate + bead + detent_ridge
             if is_centered:
                 solid = solid.translate((0.0, 0.0, -self.height / 2.0))
             elif not is_bottom:
                 solid = solid.translate((self.length / 2.0, self.width / 2.0, 0.0))
         elif self.lip_height > 1e-4 and self.lip_step > 1e-4:
-            # Box with slide-over stepped lip (Björn #151)
-            h_lip = min(self.lip_height, self.height * 0.8)
-            s = min(self.lip_step, min(self.length, self.width) * 0.45)
-            h_lower = self.height - h_lip
-            lower = _rounded_prism(self.length, self.width, h_lower, self.outer_round, self.outer_round_kind, round_top=False)
-            r_lip = max(0.0, self.outer_round - s)
-            lip = _rounded_prism(self.length - 2.0 * s, self.width - 2.0 * s, h_lip, r_lip, self.outer_round_kind, round_top=False).translate((0.0, 0.0, h_lower))
-            outer = lower + lip
-
+            # Box with slide lid groove (Björn #151, problem report 20261101-185047)
+            # Outer box with bottom/corner rounding, inner hollow cavity, and internal groove with front entry slot
+            box_outer = _rounded_prism(self.length, self.width, self.height, self.outer_round, self.outer_round_kind, round_top=False)
             t = min(self.wall_thickness, min(self.length, self.width) * 0.45, self.height * 0.9)
             tb = self.bottom_thickness if self.bottom_thickness > 1e-4 else t
             in_l = max(0.2, self.length - 2.0 * t)
             in_w = max(0.2, self.width - 2.0 * t)
             in_h = max(0.2, self.height - tb) + 1.0
-            cavity = _rounded_prism(in_l, in_w, in_h, self.inner_round, self.inner_round_kind, round_top=False)
-            solid = outer - cavity.translate((0.0, 0.0, tb))
+            cavity = _rounded_prism(in_l, in_w, in_h, self.inner_round, self.inner_round_kind, round_top=False).translate((0.0, 0.0, tb))
+            solid = box_outer - cavity
+
+            t_lid = self.lid_top if self.lid_top > 1e-4 else 2.0
+            c = self.clearance
+            h_lip = self.lip_height
+            s = self.lip_step
+            d_g = min(s, t * 0.6)
+            h_g = t_lid + c
+            z_g = self.height - h_lip
+            z_g = max(tb + 1.0, min(self.height - h_g - 1.0, z_g))
+
+            g_l = in_l + 2.0 * d_g
+            y_back = in_w / 2.0 + d_g
+            y_front = -self.width / 2.0 - 1.0
+            g_w = y_back - y_front
+
+            cutter_slot = m3d.Manifold.cube((g_l, g_w, h_g), False).translate((-g_l / 2.0, y_front, z_g))
+
+            # Snap detent notch in the slot sill
+            r_detent = min(0.4, c * 1.5, t_lid * 0.2)
+            y_detent = -self.width / 2.0 + t / 2.0
+            detent_notch = m3d.Manifold.cylinder(g_l, r_detent, r_detent, circular_segments=16).rotate((0, 90, 0)).translate((-g_l / 2.0, y_detent, z_g))
+
+            solid = solid - cutter_slot - detent_notch
 
             if self.honeycomb:
                 try:

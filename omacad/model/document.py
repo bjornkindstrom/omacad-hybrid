@@ -2135,6 +2135,7 @@ class Document:
                 lid_body = self.add_box(
                     length, width, height, center=center, name=lid_name,
                     plane_origin=plane_origin, plane_normal=plane_normal, plane_u=plane_u, plane_v=plane_v,
+                    wall_thickness=wall_thickness,
                     outer_round=outer_round, outer_round_kind=outer_round_kind,
                     lip_height=lip_height, lip_step=lip_step,
                     clearance=clearance, lid_top=lid_top, is_lid=True,

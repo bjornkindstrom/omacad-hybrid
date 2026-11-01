@@ -188,7 +188,8 @@ class PrimitivePromptsMixin:
                             "prev_l", "L", params["length"], params["width"], params["height"],
                             center=params["center"], plane_origin=params["plane_origin"],
                             plane_normal=params["plane_normal"], plane_u=params["plane_u"],
-                            plane_v=params["plane_v"], outer_round=params["outer_round"],
+                            plane_v=params["plane_v"], wall_thickness=params["wall_thickness"],
+                            outer_round=params["outer_round"],
                             outer_round_kind=params["outer_round_kind"],
                             lip_height=params["lip_height"], lip_step=params["lip_step"],
                             clearance=params["clearance"], is_lid=True, translation=t_box

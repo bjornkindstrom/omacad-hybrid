@@ -117,3 +117,56 @@ def test_box_in_row_save_and_load(tmp_path):
     assert loaded.has_lids() is True
     lids = [b for b in loaded.bodies.values() if b.is_lid]
     assert len(lids) == 2
+
+
+def test_sliding_lid_in_groove_from_feedback_report():
+    """Feedback report 20261101-185047:
+    The lid should be a sliding plate fitting into internal wall grooves with front entry slot,
+    front grip bead, and snap detent, with no flared trumpet edges or knife-edge claws.
+    """
+    QApplication.instance() or QApplication([])
+    doc = Document()
+    bodies = doc.add_box_row(
+        count=3,
+        length=60.0,
+        width=40.0,
+        height=30.0,
+        wall_thickness=2.0,
+        bottom_thickness=2.0,
+        outer_round=2.0,
+        outer_round_kind="fillet",
+        inner_round=1.0,
+        inner_round_kind="fillet",
+        honeycomb=True,
+        honeycomb_size=5.0,
+        honeycomb_wall=1.2,
+        honeycomb_margin=2.0,
+        has_lid=True,
+        lip_height=6.0,
+        lip_step=1.0,
+        clearance=0.2,
+    )
+    assert len(bodies) == 6
+    boxes = [b for b in bodies if not b.is_lid]
+    lids = [b for b in bodies if b.is_lid]
+    assert len(boxes) == 3
+    assert len(lids) == 3
+
+    for box, lid in zip(boxes, lids):
+        assert box.manifold.status().name == "NoError"
+        assert lid.manifold.status().name == "NoError"
+        assert box.manifold.volume() > 0
+        assert lid.manifold.volume() > 0
+        # Overlap between box and lid must be 0 (clean sliding fit with clearance)
+        overlap = (box.manifold ^ lid.manifold).volume()
+        assert overlap < 1e-3
+
+    # Load the actual project from the user's feedback report
+    feedback_file = "/home/kindstrom/Work/omacad-hybrid/.state/data/feedback/20261101-185047/document.omacad"
+    if os.path.exists(feedback_file):
+        rep_doc = Exporter.load_project(feedback_file)
+        assert len(rep_doc.bodies) == 6
+        for bid, b in rep_doc.bodies.items():
+            assert b.manifold.status().name == "NoError"
+            assert b.manifold.volume() > 0
+

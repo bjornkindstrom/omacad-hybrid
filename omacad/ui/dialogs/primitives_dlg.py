@@ -687,7 +687,7 @@ class BoxInRowDialog(BaseFeatureDialog):
         form.addRow("  Grid wall:", self.spn_hc_wall)
 
         # Slide-over lid
-        self.chk_lid = QCheckBox("Create slide-over lid(s)")
+        self.chk_lid = QCheckBox("Create slide lid(s) in groove")
         self.chk_lid.setChecked(True)
         self.chk_lid.toggled.connect(lambda _: self.changed.emit())
         form.addRow("Lids:", self.chk_lid)
@@ -696,23 +696,23 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.spn_lip_height.setRange(1.0, 500.0)
         self.spn_lip_height.setValue(6.0)
         self.spn_lip_height.setSuffix(" mm")
-        self.spn_lip_height.setToolTip("Height of the upper lip step that the lid slides over.")
+        self.spn_lip_height.setToolTip("Distance from the top rim down to the sliding groove.")
         self.spn_lip_height.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("  Lip height:", self.spn_lip_height)
+        form.addRow("  Groove height from top:", self.spn_lip_height)
 
         self.spn_lip_step = ExprDoubleSpinBox()
         self.spn_lip_step.setRange(0.2, 50.0)
         self.spn_lip_step.setValue(1.0)
         self.spn_lip_step.setSuffix(" mm")
-        self.spn_lip_step.setToolTip("Offset face depth for the slide lip.")
+        self.spn_lip_step.setToolTip("Depth of the sliding groove into the box walls.")
         self.spn_lip_step.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("  Offset face step:", self.spn_lip_step)
+        form.addRow("  Groove depth into wall:", self.spn_lip_step)
 
         self.spn_clearance = ExprDoubleSpinBox()
         self.spn_clearance.setRange(0.0, 5.0)
         self.spn_clearance.setValue(0.2)
         self.spn_clearance.setSuffix(" mm")
-        self.spn_clearance.setToolTip("3D printer clearance gap between lip and lid.")
+        self.spn_clearance.setToolTip("3D printer clearance gap for smooth sliding.")
         self.spn_clearance.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("  3D print clearance:", self.spn_clearance)
 

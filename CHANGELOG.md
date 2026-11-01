@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.109
+
+### Fixed
+- **Skjutlock i spår för Box in a row (rapport 20261101-185047)**: Ersatt den tidigare avsatsen/flänsen (som orsakade fula utsvängda rundningar och vassa vingar på lådkanten och lockets kjol) med ett rent skjutlock i spår. Lådans inre väggar (vänster, höger, bakre) får ett horisontellt spår och den främre väggen får ett genomgående införingsspår med snäpp-ursparning i tröskeln. Locket skapas som en plan skiva som glider in i spåret med ställbart 3D-print-spel (`clearance`), rundad greppvulst (`arc_9` i skissen) längs fronten och en snäppås på undersidan som håller locket stängt. Test: `tests/test_box_in_row.py`.
+
 # Hybrid-experiment — 0.9.9.80.108
 
 ### Added
