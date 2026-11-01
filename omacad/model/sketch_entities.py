@@ -373,9 +373,10 @@ class SketchArc(SketchEntity):
 class SketchSpline(SketchEntity):
     """Smooth interpolating spline through sketch points, sampled for display and profile operations."""
 
-    def __init__(self, entity_id: str, points, is_construction: bool = False, tangents=None):
+    def __init__(self, entity_id: str, points, is_construction: bool = False, tangents=None, control_points=False):
         super().__init__(entity_id=entity_id, entity_type="spline", is_construction=is_construction)
         self.points = [(float(p[0]), float(p[1])) for p in points]
+        self.control_points = bool(control_points)
         # optional explicit tangent vectors (Hermite derivative per span parameter) by point index
         self.tangents = {int(k): (float(v[0]), float(v[1])) for k, v in (tangents or {}).items()}
 
@@ -390,6 +391,8 @@ class SketchSpline(SketchEntity):
     def get_points(self, samples_per_span: int = 16):
         if len(self.points) < 2:
             return list(self.points)
+        if self.control_points:
+            return self._control_curve(samples_per_span)
         points = self.points
         out = []
         for i in range(len(points) - 1):
@@ -402,6 +405,28 @@ class SketchSpline(SketchEntity):
         out.append(points[-1])
         return out
 
+    def _control_curve(self, samples_per_span):
+        """Open, clamped B-spline of degree up to three through its end points."""
+        points = self.points
+        count = len(points)
+        degree = min(3, count - 1)
+        end = count - degree
+        knots = [0] * (degree + 1) + list(range(1, end)) + [end] * (degree + 1)
+        out = []
+        for span in range(degree, count):
+            for sample in range(samples_per_span):
+                t = knots[span] + (knots[span + 1] - knots[span]) * sample / samples_per_span
+                work = [list(points[j]) for j in range(span - degree, span + 1)]
+                for level in range(1, degree + 1):
+                    for j in range(degree, level - 1, -1):
+                        index = span - degree + j
+                        width = knots[index + degree - level + 1] - knots[index]
+                        alpha = (t - knots[index]) / width if width else 0.0
+                        work[j] = [(1 - alpha) * a + alpha * b for a, b in zip(work[j - 1], work[j])]
+                out.append(tuple(work[degree]))
+        out.append(points[-1])
+        return out
+
     def to_lines(self):
         pts = self.get_points()
         return list(zip(pts, pts[1:]))
@@ -409,12 +434,13 @@ class SketchSpline(SketchEntity):
     def to_dict(self):
         return {"entity_id": self.entity_id, "entity_type": "spline", "points": [list(p) for p in self.points],
                 "is_construction": self.is_construction,
+                **({"control_points": True} if self.control_points else {}),
                 **({"tangents": {str(k): list(v) for k, v in self.tangents.items()}} if self.tangents else {})}
 
     @classmethod
     def from_dict(cls, data):
         return cls(data["entity_id"], data.get("points", []), data.get("is_construction", False),
-                   tangents=data.get("tangents"))
+                   tangents=data.get("tangents"), control_points=data.get("control_points", False))
 
 
 def _hermite(p1, p2, m1, m2, t):

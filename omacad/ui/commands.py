@@ -103,6 +103,8 @@ _ALL = [
     _c("arc", "3-Point Arc", "⌒", "An arc through three points", "A", "sketch_tool_selected", "ARC", ("sketch",)),
     _c("spline", "Spline", "〰️", "A smooth curve through a sequence of points; Enter or right-click finishes",
        signal="sketch_tool_selected", arg="SPLINE", modes=("sketch",)),
+    _c("control_spline", "Control Point Spline", "〰️", "A smooth curve shaped by control points; Enter or right-click finishes",
+       signal="sketch_tool_selected", arg="CONTROL_SPLINE", modes=("sketch",)),
     _c("polygon", "Polygon", "⬡", "A regular polygon: centre, then out; Tab types side length and sides", "P",
        "sketch_tool_selected", "POLYGON", ("sketch",)),
     _c("slot", "Slot", "💊", "A slot from centre to centre and its width", "", "sketch_tool_selected", "SLOT",
@@ -162,7 +164,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
     ("EXPORT", [EXPORT]),
 ]
 SKETCH_GROUPS: List[Tuple[str, list]] = [
-    ("CREATE", ["line", "rect", "circle", "arc", "spline", "polygon", "slot", "text", "offset_sketch", "mirror_sketch", "project",
+    ("CREATE", ["line", "rect", "circle", "arc", "spline", "control_spline", "polygon", "slot", "text", "offset_sketch", "mirror_sketch", "project",
                 "dimension"]),
     ("MODIFY", ["fillet_sketch", "trim", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
     ("CONSTRAINTS", ["constraints"]),

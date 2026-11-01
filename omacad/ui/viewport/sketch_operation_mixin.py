@@ -43,8 +43,11 @@ class SketchOperationMixin:
         self.sketch_tool = tool_name
         self.dyn.reset()
         self.smart.reset()
+        if tool_name not in ("NONE", "TEXT"):
+            # A ribbon click gives its button focus. Return it to the canvas after Qt
+            # finishes the click so drawing shortcuts and numeric entry work at once.
+            QTimer.singleShot(0, self.setFocus)
         if tool_name == "SMART_CIRCLE":
-            QTimer.singleShot(0, self.setFocus)   # picked from the ribbon: the typed numbers must reach the view, not the button
             self.status_message.emit("Smart Circle: type the diameter, Enter. Then the distance to the nearest vertical line, Enter, "
                                      "then to the nearest horizontal line, Enter. Empty + Enter or a click takes the cursor position. "
                                      "Minus flips the side. Backspace on an empty field goes back.")

@@ -672,12 +672,13 @@ class RenderGLMixin:
             u2, v2 = self.sketch_current_uv
 
             preview_lines = []
-            if self.sketch_tool == "SPLINE":
+            if self.sketch_tool in ("SPLINE", "CONTROL_SPLINE"):
                 points = list(getattr(self, "_spline_points", []))
                 if points:
                     if math.hypot(u2 - points[-1][0], v2 - points[-1][1]) > 1e-4:
                         points.append((u2, v2))
-                    spline_preview = SketchSpline("preview", points)
+                    spline_preview = SketchSpline("preview", points,
+                                                  control_points=self.sketch_tool == "CONTROL_SPLINE")
                     for a, b in spline_preview.to_lines():
                         w1 = plane.uv_to_world(*a)
                         w2 = plane.uv_to_world(*b)

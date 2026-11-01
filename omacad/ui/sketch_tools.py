@@ -29,6 +29,7 @@ SKETCH_TOOLS = [
     _entry("SMART_CIRCLE", "smart_circle", "Create"),
     _entry("ARC", "arc", "Create"),
     _entry("SPLINE", "spline", "Create"),
+    _entry("CONTROL_SPLINE", "control_spline", "Create"),
     _entry("POLYGON", "polygon", "Create"),
     _entry("SLOT", "slot", "Create"),
     _entry("TEXT", "text", "Create"),

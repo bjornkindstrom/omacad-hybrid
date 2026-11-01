@@ -262,7 +262,8 @@ class SketchEditingMixin:
                 n = SketchArc(self._new_entity_id("arc"), mp(ent.p_start), mp(ent.p_mid), mp(ent.p_end), is_construction=c)
             elif isinstance(ent, SketchSpline):
                 n = SketchSpline(self._new_entity_id("spline"), [mp(p) for p in ent.points], is_construction=c,
-                                 tangents={k: tuple(a - b for a, b in zip(mp(v), mp((0.0, 0.0)))) for k, v in ent.tangents.items()})
+                                 tangents={k: tuple(a - b for a, b in zip(mp(v), mp((0.0, 0.0)))) for k, v in ent.tangents.items()},
+                                 control_points=ent.control_points)
             elif isinstance(ent, SketchSlot):
                 n = SketchSlot(self._new_entity_id("slot"), mp(ent.center1), mp(ent.center2), ent.radius, is_construction=c)
             elif isinstance(ent, SketchText):
@@ -664,10 +665,11 @@ class SketchEditingMixin:
         self.solve_profiles()
         return arc
 
-    def add_spline(self, points, is_construction: bool = False) -> SketchSpline:
+    def add_spline(self, points, is_construction: bool = False, control_points: bool = False) -> SketchSpline:
         if len(points) < 2:
             raise ValueError("A spline needs at least two points.")
-        spline = SketchSpline(self._new_entity_id("spline"), points, is_construction=is_construction)
+        spline = SketchSpline(self._new_entity_id("spline"), points, is_construction=is_construction,
+                              control_points=control_points)
         self.entities.append(spline)
         self.solve_profiles()
         return spline
@@ -687,6 +689,8 @@ class SketchEditingMixin:
 
     def set_spline_tangent(self, entity_id: str, index: int, vec) -> None:
         ent = self._editable_spline(entity_id)
+        if ent.control_points:
+            raise ValueError("Control point splines use their control polygon instead of tangent handles.")
         if not 0 <= index < len(ent.points):
             raise IndexError(index)
         ent.tangents[index] = (float(vec[0]), float(vec[1]))
@@ -695,6 +699,8 @@ class SketchEditingMixin:
     def insert_spline_point(self, entity_id: str, pos) -> int:
         """Inserts a fit point at the curve sample nearest `pos`, keeping the curve unchanged. Returns its index."""
         ent = self._editable_spline(entity_id)
+        if ent.control_points:
+            raise ValueError("Fit points cannot be inserted into a control point spline.")
         n = len(ent.points)
         samples = 16
         pts = ent.get_points(samples)

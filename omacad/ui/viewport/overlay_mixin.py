@@ -170,11 +170,18 @@ class OverlayMixin:
                 ent = sk.get_entity(ent_id)
                 if isinstance(ent, SketchSpline):
                     n_pts = len(ent.points)
+                    if ent.control_points and n_pts >= 2:
+                        control_scr = [self.world_to_screen(plane.uv_to_world(*pt)) for pt in ent.points]
+                        painter.setPen(QPen(QColor(80, 200, 220, 160), 1.2, Qt.PenStyle.DashLine))
+                        painter.setBrush(Qt.BrushStyle.NoBrush)
+                        for a, b in zip(control_scr, control_scr[1:]):
+                            if a and b:
+                                painter.drawLine(QPointF(*a), QPointF(*b))
                     # Draw tangent handles (lines and green circle endpoints)
                     handle_pen = QPen(QColor(80, 200, 120, 220), 1.6, Qt.PenStyle.DashLine)
                     tip_pen = QPen(QColor(255, 255, 255, 240), 1.5)
                     tip_brush = QBrush(QColor(40, 190, 80, 230))
-                    for i in range(n_pts):
+                    for i in range(0 if ent.control_points else n_pts):
                         pt = ent.points[i]
                         scr_pt = self.world_to_screen(plane.uv_to_world(*pt))
                         if not scr_pt:
@@ -321,7 +328,7 @@ class OverlayMixin:
                         dim_text = f"R: {params[1]:.1f} mm  (Pick Arc Point)"
                     else:
                         dim_text = "Pick Arc Point"
-            elif self.sketch_tool == "SPLINE":
+            elif self.sketch_tool in ("SPLINE", "CONTROL_SPLINE"):
                 dim_text = f"{len(getattr(self, '_spline_points', []))} points  ·  Enter or double-click to finish"
             elif self.sketch_tool == "SLOT":
                 if self.sketch_second_uv is None:

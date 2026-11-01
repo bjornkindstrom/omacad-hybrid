@@ -8,6 +8,11 @@ kantplockning**. Rust bygger ett BVH-index över trianglarna och svarar på muse
 stråltester. PySide6, OpenGL-renderingen, skisser, modellering, filer och ångra/gör
 om körs fortsatt med Omacads Python-kod. Det är alltså inte en omskriven CAD-app.
 
+I version 0.9.9.80.91 finns Control Point Spline i Sketch. Klicka kontrollpunkter
+och avsluta med Enter, dubbelklick eller högerklick; markera kurvan för att flytta
+punkterna. [Tre förslag för solfjädermenyn](design/request-138/layoutforslag.pdf)
+visar olika sätt att läsa knapptexterna.
+
 Utgångspunkt: Omacad `fdf4331` / `0.9.9.80.69`. Experimentet har eget Git-repo,
 egen miljö och egen profil. Ursprungliga Omacad och omacad-rs påverkas inte.
 

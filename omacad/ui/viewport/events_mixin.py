@@ -20,7 +20,7 @@ class ViewportEventsMixin:
     def mouseDoubleClickEvent(self, event):
         x = event.position().x()
         y = event.position().y()
-        if (self.doc.active_sketch and self.sketch_tool == "SPLINE"
+        if (self.doc.active_sketch and self.sketch_tool in ("SPLINE", "CONTROL_SPLINE")
                 and event.button() == Qt.MouseButton.LeftButton):
             if self.sketch_current_uv is not None:
                 self._commit_sketch_point(self.sketch_current_uv)
@@ -55,7 +55,7 @@ class ViewportEventsMixin:
             if ent is not None:
                 self._drag = None
                 from omacad.model.sketch_entities import SketchSpline
-                if isinstance(ent, SketchSpline) and not getattr(ent, "projected", False):
+                if isinstance(ent, SketchSpline) and not ent.control_points and not getattr(ent, "projected", False):
                     # Double-click on a spline inserts a point at cursor position
                     uv = self.get_sketch_plane_uv(x, y)
                     if uv is not None:
@@ -342,7 +342,7 @@ class ViewportEventsMixin:
                 if self._move:
                     self._end_move(False)
                 self.sketch_start_uv = None
-                if self.sketch_tool == "SPLINE":
+                if self.sketch_tool in ("SPLINE", "CONTROL_SPLINE"):
                     self._spline_points = []
                 self.dyn.reset()
                 self.update()

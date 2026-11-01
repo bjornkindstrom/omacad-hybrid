@@ -1,5 +1,4 @@
-"""Fill pattern: a margin wider than the original's own distance to the edge is held to that distance,
-so the original's row still fits (F9 report: 10 mm margin on a 22 mm tall box wall gave two slivers)."""
+"""Fill pattern respects the requested clearance even beyond the source's clearance."""
 from pathlib import Path
 
 import math
@@ -20,15 +19,21 @@ def _fill(margin):
     return feat, rem
 
 
-def test_margin_wider_than_the_original_keeps_its_row():
+def test_margin_wider_than_the_original_clips_its_row():
     feat, rem = _fill(10.0)
-    assert feat.margin_used == pytest.approx(8.0, abs=1e-2)   # hexagon spans z 8..14 on the 0..22 wall
-    assert feat.copies == 4
+    assert feat.margin_used == pytest.approx(10.0)
+    assert feat.copies == 2
     whole = [p for p in rem.decompose() if p.volume() == pytest.approx(HEX_AREA * WALL, rel=1e-3)]
-    assert len(whole) == 2                                     # the outer two are clipped by the side margins
+    assert len(whole) == 0
     for p in rem.decompose():
         bb = p.bounding_box()
-        assert bb[2] == pytest.approx(8.0, abs=1e-3) and bb[5] == pytest.approx(14.0, abs=1e-3)
+        assert bb[2] == pytest.approx(10.0, abs=1e-3) and bb[5] == pytest.approx(12.0, abs=1e-3)
+
+
+def test_increasing_margin_cannot_add_material():
+    _, narrow = _fill(3.0)
+    _, wide = _fill(10.0)
+    assert wide.volume() < narrow.volume()
 
 
 def test_margin_inside_the_original_clearance_is_kept():

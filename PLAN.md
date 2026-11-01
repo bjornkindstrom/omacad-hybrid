@@ -1,5 +1,8 @@
 # Hybrid experiment plan
 
+Version 0.9.9.80.91 adds Control Point Spline and the requested pattern and focus
+fixes. The fan menu proposals are documented for review.
+
 The current experiment replaces triangle ray testing with a Rust BVH behind the
 existing Omacad viewport. See `docs/HYBRID.md` for the complete boundary and test
 plan. Measure warm queries and cold index build separately; compare results with

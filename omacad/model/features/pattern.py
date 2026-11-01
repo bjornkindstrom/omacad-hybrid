@@ -261,7 +261,25 @@ class PatternFeature(Feature):
             if f.feature_id in self.source_ids:
                 sk = getattr(f, "sketch", None) or doc.sketches.get(getattr(f, "sketch_id", None))
                 if sk is not None:
-                    return sk.plane
+                    plane = sk.plane
+                    steps = doc.timeline.features
+                    source_index = steps.index(f)
+                    pattern_index = steps.index(self)
+                    owner = doc.object_history.owners.get(f.feature_id)
+                    placement = np.eye(4)
+                    for move in steps[source_index + 1:pattern_index]:
+                        applied = getattr(move, "applied", None)
+                        if (move.feature_type == "move" and not move.copy_body and not move.suppressed
+                                and not move.error and applied is not None
+                                and owner is not None and doc.object_history.owners.get(move.feature_id) == owner):
+                            placement = applied @ placement
+                    if not np.allclose(placement, np.eye(4), atol=1e-9):
+                        from omacad.model.sketch import SketchPlane
+                        frame = placement @ np.vstack([plane.get_transform_matrix_3x4(), [0, 0, 0, 1]])
+                        return SketchPlane(name=plane.name, origin=frame[:3, 3],
+                                           u_axis=frame[:3, 0], v_axis=frame[:3, 1],
+                                           normal=frame[:3, 2])
+                    return plane
                 edges = getattr(f, "edges", None)
                 if edges and before is not None:
                     from omacad.model.faces import compute_planar_faces
@@ -379,9 +397,8 @@ class PatternFeature(Feature):
             return []
         outline = unary_union([Polygon(p.exterior) for p in parts])
         inner = unary_union([Polygon(i) for p in parts for i in p.interiors] + ([all_obs] if all_obs and not all_obs.is_empty else []))
-        # The original sets the precedent: a margin wider than its own distance to the edge would
-        # leave no room for its row (a 10 mm margin on a 22 mm wall gave two clipped slivers).
-        margin = min(margin, max(float(outline.boundary.distance(foot)) - 1e-3, 0.0))
+        # Honor the requested clearance even when the source is closer to the edge.
+        # Capping it at the source's clearance made a larger margin produce more cells.
         self.margin_used = margin
         room = outline.buffer(-margin) if margin > 0 else outline
         if not inner.is_empty:

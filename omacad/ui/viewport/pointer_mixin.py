@@ -254,7 +254,7 @@ class PointerMixin:
         if self.doc.active_sketch and self.sketch_tool != "NONE":
             # Right click finishes current line chain or cancels step
             if event.button() == Qt.MouseButton.RightButton:
-                if self.sketch_tool == "SPLINE":
+                if self.sketch_tool in ("SPLINE", "CONTROL_SPLINE"):
                     self._finish_spline()
                     return
                 if self.sketch_tool == "DIMENSION":
@@ -281,9 +281,10 @@ class PointerMixin:
                 if self.sketch_start_uv is None:
                     # First click
                     self.sketch_start_uv = (snapped_u, snapped_v)
-                    if self.sketch_tool == "SPLINE":
+                    if self.sketch_tool in ("SPLINE", "CONTROL_SPLINE"):
                         self._spline_points = [self.sketch_start_uv]
-                        self.status_message.emit("Spline: click through-points; Enter or right-click finishes, Esc cancels.")
+                        kind = "control points" if self.sketch_tool == "CONTROL_SPLINE" else "through-points"
+                        self.status_message.emit(f"Spline: click {kind}; Enter or right-click finishes, Esc cancels.")
                     if self.sketch_tool == "MOVE":
                         self._begin_move(self.selected_entities)
                     self._arm_dyn()
@@ -534,7 +535,7 @@ class PointerMixin:
                 QToolTip.hideText()
         if hovered:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
-        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "SPLINE", "SLOT", "FILLET", "TRIM", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
+        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "TRIM", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
             self.setCursor(Qt.CursorShape.CrossCursor)
         else:
             self.setCursor(Qt.CursorShape.ArrowCursor)

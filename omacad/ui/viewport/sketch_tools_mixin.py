@@ -45,7 +45,7 @@ class SketchToolsMixin:
         tol_px = 9.0
         for spline in sel_splines:
             # 1. Tangent handles
-            for i in range(len(spline.points)):
+            for i in range(0 if spline.control_points else len(spline.points)):
                 pt = spline.points[i]
                 t_vec = spline.tangent_at(i)
                 # Show handle in positive and (if not start) negative direction
@@ -199,11 +199,12 @@ class SketchToolsMixin:
         points = list(getattr(self, "_spline_points", []))
         if sketch is not None and len(points) >= 2:
             before = sketch.to_dict()
-            sketch.add_spline(points, is_construction=self.construction_mode)
+            sketch.add_spline(points, is_construction=self.construction_mode,
+                              control_points=self.sketch_tool == "CONTROL_SPLINE")
             self.doc.record_sketch_change(sketch, before)
             self.doc.timeline.recompute(self.doc)
             self.doc.notify_changed()
-            self.status_message.emit(f"Spline: created through {len(points)} points.")
+            self.status_message.emit(f"Spline: created with {len(points)} points.")
         elif points:
             self.status_message.emit("Spline: add another point, or Esc to cancel.")
         self._spline_points = []
@@ -216,7 +217,7 @@ class SketchToolsMixin:
         """Second (or later) click of the active tool: create/advance the shape."""
         sketch = self.doc.active_sketch
         p1 = self.sketch_start_uv
-        if self.sketch_tool == "SPLINE":
+        if self.sketch_tool in ("SPLINE", "CONTROL_SPLINE"):
             points = getattr(self, "_spline_points", [])
             if points and math.hypot(p2[0] - points[-1][0], p2[1] - points[-1][1]) > 1e-4:
                 points.append(tuple(p2))
@@ -468,7 +469,7 @@ class SketchToolsMixin:
         if (key in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and self.doc.active_sketch
                 and self.sketch_start_uv is not None and self.sketch_tool != "NONE"
                 and not dyn_input.supports(self.sketch_tool)):
-            if self.sketch_tool == "SPLINE":
+            if self.sketch_tool in ("SPLINE", "CONTROL_SPLINE"):
                 self._finish_spline()
                 return True
             if self.sketch_current_uv is not None:  # ARC / SLOT: Enter confirms the current step

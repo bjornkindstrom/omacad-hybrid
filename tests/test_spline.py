@@ -14,6 +14,21 @@ def test_spline_interpolates_picked_points_and_roundtrips():
     assert SketchSpline.from_dict(spline.to_dict()).points == points
 
 
+def test_control_point_spline_bends_toward_interior_points_without_crossing_them():
+    points = [(0, 0), (0, 10), (10, 10), (10, 0)]
+    sketch = Sketch("control", plane=SketchPlane.create_named("XY"))
+    spline = sketch.add_spline(points, control_points=True)
+    curve = spline.get_points()
+    assert curve[0] == (0, 0) and curve[-1] == (10, 0)
+    assert max(p[1] for p in curve) == 7.5
+    assert (0, 10) not in curve and (10, 10) not in curve
+    assert Sketch.from_dict(sketch.to_dict()).entities[0].control_points
+    sketch.move_spline_point(spline.entity_id, 1, (0, 20))
+    assert max(p[1] for p in spline.get_points()) > 7.5
+    sketch.add_line((10, 0), (0, 0))
+    assert sketch.profiles
+
+
 def test_spline_sketch_serialization_and_transformations():
     sketch = Sketch("sketch_1", plane=SketchPlane.create_named("XY"))
     spline = sketch.add_spline([(0, 0), (5, 8), (10, 0)])

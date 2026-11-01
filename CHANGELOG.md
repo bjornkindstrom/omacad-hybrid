@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.91
+
+### Funktioner och rättningar
+- **Control Point Spline (#137)**: nytt skissverktyg med klämd B-spline och flyttbara kontrollpunkter. Kurvan och kontrollpunkterna sparas i dokumentet.
+- **Solfjädermenyn (#138)**: tre alternativ för textens riktning och placering finns i `design/request-138/layoutforslag.pdf` för beslut före menyändring.
+- **Skissverktygens fokus (#139, #140)**: efter val i bandet går fokus tillbaka till ritytan; textredigering behåller sitt fokus.
+- **Fill Pattern (#141, #142)**: kantmarginalen begränsas inte längre av källformens läge, och källskissens plan följer Move-steg som ligger före Pattern.
+
 # Hybrid-experiment — 0.9.9.80.90
 
 ### Funktioner och rättningar
