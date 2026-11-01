@@ -1,0 +1,195 @@
+{
+ "format_version": 2,
+ "object_history": {
+  "owners": {},
+  "names": {},
+  "outputs": {},
+  "dependencies": {},
+  "markers": {},
+  "active_id": null
+ },
+ "name": "Omacad - Untitled",
+ "units": "mm",
+ "parameters": [],
+ "timeline": [],
+ "marker_index": 0,
+ "sketches": [
+  {
+   "sketch_id": "sketch_1",
+   "name": "Sketch 1",
+   "plane": {
+    "name": "XZ",
+    "origin": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "u_axis": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "v_axis": [
+     0.0,
+     0.0,
+     1.0
+    ],
+    "normal": [
+     0.0,
+     -1.0,
+     0.0
+    ]
+   },
+   "entities": [
+    {
+     "entity_id": "spline_1",
+     "entity_type": "spline",
+     "points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       55.0,
+       20.0
+      ],
+      [
+       95.0,
+       55.0
+      ],
+      [
+       125.0,
+       110.0
+      ]
+     ],
+     "is_construction": false,
+     "control_points": true
+    },
+    {
+     "entity_id": "line_2",
+     "entity_type": "line",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      3.0
+     ],
+     "is_construction": false
+    },
+    {
+     "entity_id": "spline_3",
+     "entity_type": "spline",
+     "points": [
+      [
+       1.8369701987210297e-16,
+       3.0
+      ],
+      [
+       85.9488525390625,
+       42.883548736572266
+      ],
+      [
+       120.0,
+       110.0
+      ]
+     ],
+     "is_construction": false,
+     "control_points": true
+    },
+    {
+     "entity_id": "line_4",
+     "entity_type": "line",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      150.0,
+      0.0
+     ],
+     "is_construction": false
+    }
+   ],
+   "dimensions": [
+    {
+     "dim_id": "d1",
+     "name": "Length",
+     "dim_type": "LENGTH",
+     "target_entity_id": "line_2",
+     "value": 3.0,
+     "offset_distance": 12.0,
+     "refs": [],
+     "pts": [],
+     "expr": null
+    },
+    {
+     "dim_id": "d2",
+     "name": "Length",
+     "dim_type": "LENGTH",
+     "target_entity_id": "line_4",
+     "value": 150.0,
+     "offset_distance": 12.0,
+     "refs": [],
+     "pts": [],
+     "expr": null
+    }
+   ],
+   "constraints": [
+    {
+     "cid": "c1",
+     "ctype": "VERTICAL",
+     "refs": [
+      "line_2"
+     ],
+     "pts": []
+    },
+    {
+     "cid": "c2",
+     "ctype": "HORIZONTAL",
+     "refs": [
+      "line_4"
+     ],
+     "pts": []
+    },
+    {
+     "cid": "c3",
+     "ctype": "COINCIDENT",
+     "refs": [
+      "line_4",
+      "line_2"
+     ],
+     "pts": [
+      "p1",
+      "p1"
+     ]
+    }
+   ],
+   "face_key": null,
+   "parent_body_id": null,
+   "face_center": null,
+   "visible": true
+  }
+ ],
+ "active_sketch": "sketch_1",
+ "construction_planes": {},
+ "sections": {},
+ "origin_vis": {
+  "all": true,
+  "axes": {
+   "X": true,
+   "Y": true,
+   "Z": true
+  },
+  "planes": {
+   "XY": false,
+   "XZ": false,
+   "YZ": false
+  }
+ },
+ "body_colors": {},
+ "canvases": {},
+ "favorites": [],
+ "curve_segments": 192
+}

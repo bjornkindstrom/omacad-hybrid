@@ -159,9 +159,11 @@ class SketchEditingMixin:
             elif isinstance(ent, (SketchRect, SketchCenterRect, SketchSlot)):
                 segs.extend(ent.to_lines())
             elif isinstance(ent, SketchSpline):
-                from omacad.model.sketch_offset import offset_spline
-                for points in offset_spline(ent, distance):
-                    spline = SketchSpline(self._new_entity_id("spline"), points)
+                from omacad.model.sketch_offset import offset_control_spline, offset_spline
+                # a control point spline stays one with as many points when such a curve can follow the offset
+                same = offset_control_spline(ent, distance) if ent.control_points else None
+                for points in ([same] if same else offset_spline(ent, distance)):
+                    spline = SketchSpline(self._new_entity_id("spline"), points, control_points=bool(same))
                     self.entities.append(spline)
                     new.append(spline)
         # lines and arcs: whole chains, radii follow along, joints are remade
@@ -696,11 +698,34 @@ class SketchEditingMixin:
         ent.tangents[index] = (float(vec[0]), float(vec[1]))
         self.solve_profiles()
 
+    def _shift_spline_point_refs(self, entity_id: str, index: int) -> None:
+        """Dimensions and constraints on spline points (pt0, pt1, ...) keep their point after one is inserted at
+        `index`."""
+        def shifted(name):
+            if name.startswith("pt") and name[2:].isdigit() and int(name[2:]) >= index:
+                return f"pt{int(name[2:]) + 1}"
+            return name
+
+        for d in self.dimensions:
+            owners = [d.target_entity_id, *d.refs]
+            d.pts = [shifted(n) if i < len(owners) and owners[i] == entity_id else n for i, n in enumerate(d.pts)]
+        for c in self.constraints:
+            c.pts = [shifted(n) if i < len(c.refs) and c.refs[i] == entity_id else n for i, n in enumerate(c.pts)]
+
     def insert_spline_point(self, entity_id: str, pos) -> int:
-        """Inserts a fit point at the curve sample nearest `pos`, keeping the curve unchanged. Returns its index."""
+        """Inserts a fit point at the curve sample nearest `pos`, keeping the curve unchanged; a control point spline
+        gets a control point at `pos` itself, between the two neighbours where it adds the shortest detour to the
+        control polygon. Returns its index."""
         ent = self._editable_spline(entity_id)
         if ent.control_points:
-            raise ValueError("Fit points cannot be inserted into a control point spline.")
+            pos = (float(pos[0]), float(pos[1]))
+            pts = ent.points
+            detour = lambda i: math.dist(pts[i], pos) + math.dist(pos, pts[i + 1]) - math.dist(pts[i], pts[i + 1])
+            index = min(range(len(pts) - 1), key=detour) + 1
+            pts.insert(index, pos)
+            self._shift_spline_point_refs(entity_id, index)
+            self.solve_profiles()
+            return index
         n = len(ent.points)
         samples = 16
         pts = ent.get_points(samples)
@@ -723,6 +748,7 @@ class SketchEditingMixin:
         ent.tangents = {(k2 + 1 if k2 > span else k2): v for k2, v in ent.tangents.items()}
         ent.points.insert(span + 1, newp)
         ent.tangents[span + 1] = d
+        self._shift_spline_point_refs(entity_id, span + 1)
         self.solve_profiles()
         return span + 1
 

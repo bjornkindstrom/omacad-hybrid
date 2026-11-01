@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.96
+
+### Fixed
+- **Dimensions from control spline points (report 20261101-103242)**: the Dimension tool can now pick a spline's points (`pt0`, `pt1`, …) for distances to other points and lines. The solver includes only the points that have dimensions, so a spline without dimensions still adds no degrees of freedom. Dragging a dimensioned point snaps it back to where the dimension holds it.
+- **Offset of a control point spline** gives a new control point spline with as many points as the original (least-squares fit within the existing offset tolerance); if no such curve can follow the offset, the old fit-point offset is used.
+- **Add Control Point** in the right-click/fan menu: the point goes where you right-clicked, between the two neighbours where it adds the shortest detour. Dimensions on later points keep their point. Fixes the crash where the fan menu read the already deleted click event.
+- Test: `test_spline_point_dimension.py`.
+
 # Hybrid-experiment — 0.9.9.80.95
 
 ### Rättningar

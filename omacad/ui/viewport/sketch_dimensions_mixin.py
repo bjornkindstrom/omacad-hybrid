@@ -306,6 +306,8 @@ class SketchDimensionsMixin:
     def _show_element_menu(self, event, ent):
         """Right-click on a line/circle: dimensions and constraints for that element, with help text."""
         sk = self.doc.active_sketch
+        # The fan menu runs its items on a later mouse release, after Qt has deleted this event
+        click_x, click_y = event.position().x(), event.position().y()
         self.selected_entities = {ent.entity_id}
         self.selection_changed.emit()
         self.update()
@@ -370,7 +372,10 @@ class SketchDimensionsMixin:
             from omacad.model.sketch_entities import SketchSpline
             if isinstance(ent, SketchSpline):
                 heading("Spline")
-                add("insert_point", "➕ Insert Fit Point", "Adds a fit point to the curve at the cursor position.")
+                if ent.control_points:
+                    add("insert_point", "➕ Add Control Point", "Adds a control point where you right-clicked.")
+                else:
+                    add("insert_point", "➕ Insert Fit Point", "Adds a fit point to the curve at the cursor position.")
         menu.addSeparator()
         add("fillet", "╭ Fillet corner…  (F)", "Rounds a corner between lines with an arc.")
         add("offset", "↔️ Offset…  (O)", "Makes a parallel copy at a distance you type (select several, or double-click, to offset a whole shape).")
@@ -384,7 +389,7 @@ class SketchDimensionsMixin:
                 return
             pt = lambda name: [("pt", ent, name)]
             if key == "insert_point":
-                uv = self.get_sketch_plane_uv(event.position().x(), event.position().y())
+                uv = self.get_sketch_plane_uv(click_x, click_y)
                 if uv is not None:
                     before = sk.to_dict()
                     try:

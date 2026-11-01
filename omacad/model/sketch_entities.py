@@ -545,12 +545,25 @@ def ref_segment(ref: str):
         return None
     return (x1, y1), (x2, y2)
 def point_of(ent, name: str):
-    """A named point of an entity: line ends (p1, p2) or a circle centre."""
+    """A named point of an entity: line ends (p1, p2), a circle centre or a spline point (pt0, pt1, ...)."""
     if isinstance(ent, SketchLine):
         return ent.p1 if name == "p1" else ent.p2
     if isinstance(ent, SketchCircle) and name == "center":
         return ent.center
+    if isinstance(ent, SketchSpline) and name.startswith("pt") and name[2:].isdigit() and int(name[2:]) < len(ent.points):
+        return ent.points[int(name[2:])]
     return None
+
+
+def point_names(ent):
+    """The named points of an entity that dimensions can measure from (see point_of)."""
+    if isinstance(ent, SketchLine):
+        return ("p1", "p2")
+    if isinstance(ent, SketchCircle):
+        return ("center",)
+    if isinstance(ent, SketchSpline):
+        return tuple(f"pt{i}" for i in range(len(ent.points)))
+    return ()
 def arm_vector(line: "SketchLine", vertex_end: str):
     """Direction of a line pointing away from the end that sits at the angle's vertex."""
     a, b = (line.p1, line.p2) if vertex_end == "p1" else (line.p2, line.p1)

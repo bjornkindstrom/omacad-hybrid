@@ -38,6 +38,56 @@ def offset_spline(spline, distance: float):
             for points in [_fit_offset_spline(part, distance)] if points]
 
 
+def offset_control_spline(spline, distance: float):
+    """Control points for a control point spline offset by `distance` with as many control points as the original
+    (same degree and knots), or None when such a curve cannot follow the offset (a loop where the distance is larger
+    than the curvature radius, a split offset). Open: positive = left of the travel direction; closed: outward.
+
+    The curve is linear in its control points, so the points come from one least-squares fit of the curve's own
+    samples moved along their normals; the fit is accepted only within the tolerance of the true offset."""
+    import numpy as np
+    from shapely.geometry import LineString, Polygon
+    from omacad.model.sketch_entities import SketchSpline
+
+    count = len(spline.points)
+    if count < 2 or not math.isfinite(distance):
+        return None
+    per_span = 32
+    samples = np.asarray(spline.get_points(samples_per_span=per_span), dtype=float)
+    closed = _close(tuple(samples[0]), tuple(samples[-1]), EPS)
+    step = np.gradient(samples, axis=0)
+    if closed:
+        step[0] = step[-1] = samples[1] - samples[-2]
+    length = np.linalg.norm(step, axis=1)
+    if np.any(length < EPS):
+        return None
+    normal = np.stack([-step[:, 1], step[:, 0]], axis=1) / length[:, None]   # left of the travel direction
+    if closed:
+        x, y = samples[:, 0], samples[:, 1]
+        ccw = float(np.dot(x[:-1], y[1:]) - np.dot(x[1:], y[:-1])) > 0
+        normal = -normal if ccw else normal                                      # outward
+    target = samples + distance * normal
+    basis = np.empty((len(samples), count))
+    for i in range(count):
+        unit = [(1.0, 0.0) if j == i else (0.0, 0.0) for j in range(count)]
+        basis[:, i] = [p[0] for p in SketchSpline("", unit, control_points=True).get_points(samples_per_span=per_span)]
+    weight = np.ones(len(samples))
+    weight[[0, -1]] = 100.0                                                      # the ends lie on the curve
+    points, *_ = np.linalg.lstsq(basis * weight[:, None], target * weight[:, None], rcond=None)
+    points = [tuple(map(float, p)) for p in points]
+    if closed:
+        points[-1] = points[0]
+
+    curve = LineString(samples)
+    exact = (Polygon(samples).buffer(distance).exterior if closed else curve.offset_curve(distance))
+    if exact.is_empty or exact.geom_type != ("LinearRing" if closed else "LineString"):
+        return None
+    fitted = LineString(SketchSpline("", points, control_points=True).get_points())
+    if not fitted.is_simple or fitted.hausdorff_distance(exact) > max(0.18, abs(distance) * 0.08):   # as _fit_offset_spline
+        return None
+    return points
+
+
 def _fit_offset_spline(part, distance):
     """Avoid loops from interpolating unevenly spaced buffer/offset vertices and pick
     a compact set of control points (aiming for ~6-8 points on open splines) while

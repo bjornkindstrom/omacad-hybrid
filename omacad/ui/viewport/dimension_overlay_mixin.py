@@ -12,7 +12,7 @@ from omacad.ui.expr_spin import ExprDoubleSpinBox
 from omacad.model.dim_layout import pt_line_base_shift, PT_LINE_DEFAULT_OFFSET, lines_are_parallel, line_distance
 from omacad.model.sketch import (
     SketchLine, SketchRect, SketchCircle, SketchCenterRect, SketchArc, SketchSlot,
-    point_of, arm_vector, arm_angle_deg, nearest_ends_to_vertex, ref_id, ref_segment, EDGE_PTS
+    point_of, point_names, arm_vector, arm_angle_deg, nearest_ends_to_vertex, ref_id, ref_segment, EDGE_PTS
 )
 
 
@@ -396,13 +396,12 @@ class DimensionOverlayMixin:
         return ids
 
     def _dim_pick(self, u: float, v: float):
-        """('pt', entity, point name) near an end point/centre, else ('ent', entity), else None."""
+        """('pt', entity, point name) near an end point/centre/spline point, else ('ent', entity), else None."""
         sk = self.doc.active_sketch
         tol = self._entity_tolerance()
         best = None
         for e in sk.entities:
-            names = ("p1", "p2") if isinstance(e, SketchLine) else ("center",) if isinstance(e, SketchCircle) else ()
-            for n in names:
+            for n in point_names(e):
                 pt = point_of(e, n)
                 d = math.hypot(u - pt[0], v - pt[1])
                 if d <= tol * 1.3 and (best is None or d < best[0]):

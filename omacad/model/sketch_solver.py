@@ -5,6 +5,8 @@ Translates a Sketch (lines + circles, constraints, and the dimensions that apply
 into a SolveSpace system, solves it and writes the new coordinates back.
 Rectangles, arcs and slots are not part of the solver yet and keep their coordinates; a fillet arc's
 two lines are solved as the sharp corner it rounds (Sketch.refit_fillets puts the arc back after).
+A spline takes part only through the points that a dimension or constraint names (pt0, pt1, ...), so a
+spline without dimensions adds no degrees of freedom.
 """
 
 import math
@@ -13,7 +15,8 @@ from typing import Dict, Iterable, Optional, Tuple
 
 from python_solvespace import SolverSystem
 
-from omacad.model.sketch import Sketch, SketchLine, SketchCircle, SOLVER_DIM_TYPES, EDGE_PTS, point_of, ref_segment
+from omacad.model.sketch import (Sketch, SketchLine, SketchCircle, SketchSpline, SOLVER_DIM_TYPES, EDGE_PTS,
+                                 point_of, ref_segment)
 
 SUPPORTED = (SketchLine, SketchCircle)
 FIXED_GROUP, FREE_GROUP = 1, 2
@@ -35,7 +38,7 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
     dimension is being edited, so the line grows from that end.
     """
     _measure_from_walls(sketch)
-    ents = {e.entity_id: e for e in sketch.entities if isinstance(e, SUPPORTED)}
+    ents = _solver_entities(sketch)
     if not sketch.constraints and not any(d.dim_type in SOLVER_DIM_TYPES for d in sketch.dimensions):
         sketch.dof = None
         return SolveResult(True, None, "")
@@ -58,6 +61,9 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
     for eid, ent in ents.items():
         if isinstance(ent, SketchLine):
             ent.p1, ent.p2 = values[eid]
+        elif isinstance(ent, SketchSpline):
+            for name, uv in values[eid].items():
+                ent.points[int(name[2:])] = uv
         else:
             ent.center = values[eid]
             if f"{eid}#r" in values:
@@ -66,6 +72,31 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
     sketch.refit_fillets()
     sketch.solve_profiles()
     return SolveResult(True, dof, "")
+
+
+def _spline_points(sketch) -> Dict[str, set]:
+    """Spline id -> the point names that dimensions and constraints refer to."""
+    named: Dict[str, set] = {}
+    splines = {e.entity_id: e for e in sketch.entities if isinstance(e, SketchSpline)}
+
+    def note(eid, name):
+        if eid in splines and point_of(splines[eid], name) is not None:
+            named.setdefault(eid, set()).add(name)
+
+    for d in sketch.dimensions:
+        if d.pts:
+            note(d.target_entity_id, d.pts[0])
+        if d.refs and len(d.pts) > 1:
+            note(d.refs[0], d.pts[1])
+    for c in sketch.constraints:
+        for eid, name in zip(c.refs, c.pts):
+            note(eid, name)
+    return named
+
+
+def _solver_entities(sketch) -> Dict[str, object]:
+    named = _spline_points(sketch)
+    return {e.entity_id: e for e in sketch.entities if isinstance(e, SUPPORTED) or e.entity_id in named}
 
 
 def _measure_from_walls(sketch) -> None:
@@ -109,6 +140,8 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
         v = values[eid]
         if isinstance(ents[eid], SketchLine):
             return v[0] if name == "p1" else v[1]
+        if isinstance(ents[eid], SketchSpline):
+            return v[name]
         return v
 
     def line_vec(eid):
@@ -156,8 +189,9 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
 
 
 def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=()):
-    ents = {e.entity_id: e for e in sketch.entities if isinstance(e, SUPPORTED)}
+    ents = _solver_entities(sketch)
 
+    spline_points = _spline_points(sketch)
     sys_ = SolverSystem()
     wp = sys_.create_2d_base()
     pts: Dict[Tuple[str, str], object] = {}
@@ -177,6 +211,10 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=()):
             b = sys_.add_point_2d(p2[0], p2[1], wp)
             geo[ent.entity_id] = sys_.add_line_2d(a, b, wp)
             pts[(ent.entity_id, "p1")], pts[(ent.entity_id, "p2")] = a, b
+        elif isinstance(ent, SketchSpline):
+            for name in sorted(spline_points.get(ent.entity_id, ())):
+                uv = point_of(ent, name)
+                pts[(ent.entity_id, name)] = sys_.add_point_2d(uv[0], uv[1], wp)
         else:
             c = sys_.add_point_2d(ent.center[0], ent.center[1], wp)
             if normal is None:
@@ -323,6 +361,8 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=()):
     for eid, ent in ents.items():
         if isinstance(ent, SketchLine):
             values[eid] = (_xy(sys_, pts[(eid, "p1")]), _xy(sys_, pts[(eid, "p2")]))
+        elif isinstance(ent, SketchSpline):
+            values[eid] = {name: _xy(sys_, pts[(eid, name)]) for name in spline_points.get(eid, ())}
         else:
             values[eid] = _xy(sys_, pts[(eid, "center")])
             solved_r = float(sys_.params(radii[eid].params)[0])

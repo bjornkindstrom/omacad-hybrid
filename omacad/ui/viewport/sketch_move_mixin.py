@@ -221,6 +221,11 @@ class SketchMoveMixin:
         if not sk or sk.sketch_id != d["sketch_id"]:
             return
         if d["moved"]:
+            # a spline point with dimensions stays where they hold it (the solver puts it back)
+            if (sk.constraints or sk.dimensions) and not solve_sketch(sk).ok:
+                sk.restore_from_dict(d["before"])
+                self.update()
+                return
             if self.doc.record_sketch_change(sk, d["before"]):
                 self.doc.timeline.recompute(self.doc)
                 self.doc.notify_changed()
