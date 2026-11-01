@@ -28,8 +28,13 @@ class Body:
     color: List[float] = field(default_factory=lambda: [0.72, 0.77, 0.82, 1.0])  # Fusion 360 steel/aluminum
     visible: bool = True
     selected: bool = False
+    construction: bool = False   # a helper body: dull, see-through, never picked, never in the way
     faces: List[PlanarFace] = field(default_factory=list)
     edges: List[PlanarEdge] = field(default_factory=list)
+
+    @property
+    def pickable(self) -> bool:
+        return self.visible and not self.construction
 
     def update_render_mesh(self):
         self.render_mesh = CadKernel.extract_render_mesh(self.manifold)

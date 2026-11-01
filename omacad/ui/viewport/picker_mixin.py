@@ -40,7 +40,7 @@ class PickerMixin:
         origin, ray_dir = ray_from_screen(x, y, self.width(), self.height(), view, proj)
         best_t, best_id = float("inf"), None
         for bid, body in self.doc.bodies.items():
-            if not self._ray_hits_body_aabb(body, origin, ray_dir, best_t):
+            if body.construction or not self._ray_hits_body_aabb(body, origin, ray_dir, best_t):
                 continue
             mesh = body.render_mesh
             if mesh is not None and len(mesh.vertices) > 0:
@@ -87,7 +87,7 @@ class PickerMixin:
         xray = self.edge_xray or bool(QGuiApplication.keyboardModifiers() & Qt.KeyboardModifier.AltModifier)
         best, best_d, best_eye = None, 8.0, 1e18
         for body in self.doc.bodies.values():
-            if not body.visible:
+            if not body.pickable:
                 continue
             edges, pts, seg_edge, seg_start = self._edge_segments(body)
             if not edges:
@@ -208,7 +208,7 @@ class PickerMixin:
         origin, ray_dir = _vp_pkg.ray_from_screen(x, y, self.width(), self.height(), view, proj)
         best, best_t = None, float("inf")
         for body in self.doc.bodies.values():
-            if not body.visible or not self._ray_hits_body_aabb(body, origin, ray_dir, best_t):
+            if not body.pickable or not self._ray_hits_body_aabb(body, origin, ray_dir, best_t):
                 continue
             hits = ray_hit_faces(body.faces, origin, ray_dir, bary_tol=2e-4) if len(body.faces) else np.zeros(0)
             candidates = [(body.faces[i], float(hits[i])) for i in np.flatnonzero(np.isfinite(hits))]
@@ -231,7 +231,7 @@ class PickerMixin:
         from omacad.model.faces import ray_mesh_hit
         for body in self.doc.bodies.values():
             mesh = body.render_mesh
-            if not body.visible or mesh is None or not len(mesh.vertices) \
+            if not body.pickable or mesh is None or not len(mesh.vertices) \
                     or not self._ray_hits_body_aabb(body, origin, ray_dir, t - tol):
                 continue
             hit = ray_mesh_hit(mesh, origin, ray_dir)
@@ -302,7 +302,7 @@ class PickerMixin:
         best = None
         for body in self.doc.bodies.values():
             mesh = self._pick_mesh(body)
-            if not body.visible or mesh is None or not len(mesh.vertices) \
+            if not body.pickable or mesh is None or not len(mesh.vertices) \
                     or not self._ray_hits_body_aabb(body, origin, ray_dir, best[0] if best else float("inf")):
                 continue
             hit = ray_mesh_hit(mesh, origin, ray_dir)
@@ -456,7 +456,7 @@ class PickerMixin:
         us, vs = [], []
         for body in self.doc.bodies.values():
             mesh = body.render_mesh
-            if not body.visible or mesh is None or not len(mesh.vertices):
+            if not body.pickable or mesh is None or not len(mesh.vertices):
                 continue
             lo, hi = np.asarray(mesh.bounds_min), np.asarray(mesh.bounds_max)
             for x in (lo[0], hi[0]):
@@ -508,9 +508,9 @@ class PickerMixin:
             if shell_pick and self.shell_target_body_id:   # the body is hidden behind its preview; only its faces count
                 if body.body_id != self.shell_target_body_id:
                     continue
-            elif shell_pick and not body.visible:
+            elif shell_pick and not body.pickable:
                 continue
-            elif not body.visible:
+            elif not body.pickable:
                 continue
             if len(body.faces):
                 hits = ray_hit_faces(body.faces, origin, ray_dir, bary_tol=2e-4)
@@ -551,7 +551,7 @@ class PickerMixin:
         only = self.shell_target_body_id if self.plane_pick_purpose == "offset_face" else ""
         for body in self.doc.bodies.values():
             mesh = self._pick_mesh(body)
-            if (only and body.body_id != only) or (not only and not body.visible) or mesh is None or len(mesh.vertices) == 0:
+            if (only and body.body_id != only) or (not only and not body.pickable) or mesh is None or len(mesh.vertices) == 0:
                 continue
             hit = ray_mesh_hit(mesh, origin, ray_dir)
             if hit is not None and (best is None or hit[0] < best[0]):
@@ -639,7 +639,7 @@ class PickerMixin:
         only = self.shell_target_body_id if self.plane_pick_purpose == "offset_face" else ""
         for body in self.doc.bodies.values():
             mesh = self._pick_mesh(body)
-            if (only and body.body_id != only) or (not only and not body.visible) or mesh is None or len(mesh.vertices) == 0:
+            if (only and body.body_id != only) or (not only and not body.pickable) or mesh is None or len(mesh.vertices) == 0:
                 continue
             hit = ray_mesh_hit(mesh, origin, ray_dir)
             if hit is not None and (best is None or hit[0] < best[0]):

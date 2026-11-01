@@ -1,4 +1,5 @@
 """Object history presentation and editing helpers for the browser."""
+import re
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTreeWidgetItem
 from PySide6.QtGui import QColor
@@ -83,6 +84,17 @@ def _italic(item):
     font = item.font(0)
     font.setItalic(True)
     item.setFont(0, font)
+
+
+AUTO_BODY_NAME = re.compile(r'[A-Z][a-z]+( [A-Za-z]+)? \d+')     # "Extrude 1", "Revolve 2": named by its step, not by the user
+
+
+def _body_label(body, object_name, count, number):
+    """A body named after the step that made it ("Extrude 1") reads "Body of <object>", so it follows the object's name
+    (Body 2 -> "Body of Body 2", Bänk -> "Body of Bänk"); a name the user gave the body stays."""
+    if body.name == object_name or not AUTO_BODY_NAME.fullmatch(body.name):
+        return body.name
+    return f'Body of {object_name}' + (f' {number}' if count > 1 else '')
 
 
 def _add_object(browser, group, oid, features, excluded):
@@ -171,7 +183,7 @@ def _add_object(browser, group, oid, features, excluded):
         body = doc.bodies.get(bid)
         if body is None:
             continue
-        item = QTreeWidgetItem(parent, ['🧊 ' + body.name, ''])
+        item = QTreeWidgetItem(parent, ['🧊 ' + _body_label(body, label, len(obj.body_ids), obj.body_ids.index(bid) + 1), ''])
         item.setData(0, ROLE, ('body', bid))
         if linked:
             _italic(item)

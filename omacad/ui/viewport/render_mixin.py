@@ -362,9 +362,11 @@ class RenderGLMixin:
         from omacad.ui.settings import get_settings
         tangent = bool(get_settings().get("show_tangent_edges", False))
 
-        for body in self.doc.bodies.values():
+        # construction bodies last: see-through helpers drawn over what is solid
+        for body in sorted(self.doc.bodies.values(), key=lambda b: b.construction):
             if not body.visible or not body.render_mesh:
                 continue
+            helper = body.construction
 
             mesh = body.render_mesh
             override = getattr(self, "display_override", None)
@@ -451,7 +453,12 @@ class RenderGLMixin:
                 GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
 
                 # Color: Orange tint if selected, else body color
-                if is_selected:
+                if helper:
+                    GL.glDepthMask(GL.GL_FALSE)    # never hides anything, whatever the camera angle
+                    grey = 0.55 * (body.color[0] + body.color[1] + body.color[2]) / 3.0
+                    mix = [0.5 * c + 0.5 * grey for c in body.color[:3]]   # duller than a real body
+                    GL.glUniform4f(loc_col, mix[0], mix[1], mix[2], 0.3)
+                elif is_selected:
                     GL.glUniform4f(loc_col, *theme.palette().highlight01(0.1), 1.0)
                 else:
                     c = body.color
@@ -471,6 +478,7 @@ class RenderGLMixin:
                     self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, mesh.vertices, loc_norm, mesh.normals)
 
                 GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+                GL.glDepthMask(GL.GL_TRUE)
                 GL.glUseProgram(0)
 
             # 2. Crisp Sharp Feature Edges
@@ -484,6 +492,9 @@ class RenderGLMixin:
                 if is_selected:
                     GL.glUniform4f(loc_col, *theme.palette().highlight01(), 1.0)  # theme highlight
                     self.set_line_width(2.2)
+                elif helper:
+                    GL.glUniform4f(loc_col, 0.45, 0.47, 0.5, 0.45)  # faint edge on a helper body
+                    self.set_line_width(1.0)
                 else:
                     GL.glUniform4f(loc_col, 0.12, 0.13, 0.15, 1.0)  # Dark CAD Edge
                     self.set_line_width(1.6)

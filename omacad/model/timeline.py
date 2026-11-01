@@ -232,6 +232,9 @@ class Timeline:
         for bid in hidden:       # the rebuilt bodies are fresh objects: a body the user hid stays hidden
             if bid in doc.bodies:
                 doc.bodies[bid].visible = False
+        for bid in getattr(doc, "construction_bodies", ()):
+            if bid in doc.bodies:
+                doc.bodies[bid].construction = True
         body_colors = getattr(doc, "body_colors", {})
         for bid, col in body_colors.items():
             if bid in doc.bodies:

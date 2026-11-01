@@ -1,3 +1,12 @@
+# Hybrid-experiment — 0.9.9.80.107
+
+### Added
+- **Construction body (request #146)**: right-click a body in the browser > "Convert to construction body". It is drawn dull and see-through (no depth write, so it never hides anything from any camera angle), is never picked by the mouse, and is saved in the document; "Normal body" turns it back. Undoable.
+- **Click an object row to select it (request #147)**: the object's bodies light up in the view, so you no longer have to open its extrude to select it.
+
+### Changed
+- **Body rows read "Body of <object>" (request #144)**: a body still named after its step ("Extrude 1") shows as "Body of Body 2", or "Body of Bänk" when the object is renamed; a name the user gave the body stays.
+
 # Hybrid-experiment — 0.9.9.80.106
 
 ### Added

@@ -102,6 +102,8 @@ class Document:
 
         # Custom body colors: body_id -> [r, g, b, a]
         self.body_colors: Dict[str, List[float]] = {}
+        # Bodies the user made construction bodies (dull, see-through, never picked)
+        self.construction_bodies: set = set()
 
         # Canvases / calibrated reference images: id -> dict(name, plane_id, image_data, width_mm, height_mm, origin_uv, rotation_deg, opacity, visible)
         self.canvases: Dict[str, dict] = {}
@@ -1724,6 +1726,19 @@ class Document:
 
     DEFAULT_BODY_COLOR = [0.72, 0.77, 0.82, 1.0]
 
+    @undoable("Construction Body")
+    def set_body_construction(self, body_id: str, on: bool) -> None:
+        """A construction body stays in the model as a helper: drawn dull and see-through, never hit by the mouse."""
+        if on:
+            self.construction_bodies.add(body_id)
+        else:
+            self.construction_bodies.discard(body_id)
+        if body_id in self.bodies:
+            self.bodies[body_id].construction = on
+            if self.bodies[body_id].selected:
+                self.select_body(None)
+        self.notify_changed()
+
     @undoable("Change Body Color")
     def set_body_color(self, body_id: str, color: Optional[List[float]]) -> None:
         """Sets a body's color [r, g, b, a] (0..1) or resets to default if None."""
@@ -1898,6 +1913,15 @@ class Document:
 
     def object_visible(self, object_id: str) -> bool:
         return any(item.visible for item in self._object_items(object_id))
+
+    def select_object(self, object_id: str) -> None:
+        """Select all of an object's visible, pickable bodies (a click on its row in the browser)."""
+        obj = self.object_history.objects.get(object_id)
+        ids = [b for b in (obj.body_ids if obj else []) if b in self.bodies and self.bodies[b].pickable]
+        for b in self.bodies.values():
+            b.selected = b.body_id in ids
+        self.selected_body_ids = list(ids)
+        self.notify_changed()
 
     def set_object_visibility(self, object_id: str, visible: bool) -> None:
         for item in self._object_items(object_id):

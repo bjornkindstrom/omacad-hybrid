@@ -497,6 +497,7 @@ class BrowserTree(QWidget):
             return
         if item_type == "object":
             self.activate_object(item_id)
+            self.doc.select_object(item_id)       # the whole object lights up in the view
             return
         if item_type in ("feature", "feature_link"):
             self.activate_object(self.doc.object_history.owners.get(item_id))
@@ -685,6 +686,9 @@ class BrowserTree(QWidget):
             add("🗑️ Delete", lambda: self.doc.delete_construction_plane(item_id))
 
         elif item_type == "body":
+            body = self.doc.bodies.get(item_id)
+            add("🧱 Normal body" if body and body.construction else "🧱 Convert to construction body",
+                lambda: self.doc.set_body_construction(item_id, not (body and body.construction)))
             add("🎨 Appearance / Färg…", lambda: self.body_color_requested.emit(item_id))
             menu.addSeparator()
             add("✥ Move…", lambda: self.move_body_requested.emit(item_id))
