@@ -28,6 +28,51 @@ def _feature_studio_icon(feat) -> str:
     return (_STUDIO_KINDS.get((feat.feature_type, getattr(feat, "kind", "")))
             or _STUDIO_TYPES.get(feat.feature_type) or theme.EMOJI_TO_TOOL.get(symbol, ""))
 
+BOX_ROW_PARAMS_CONFIG = [
+    ("height", "Height (Z)", "mm"),
+    ("length", "Length (X)", "mm"),
+    ("width", "Width (Y)", "mm"),
+    ("count", "Boxes count", ""),
+    ("spacing", "Spacing", "mm"),
+    ("wall_thickness", "Wall thickness", "mm"),
+    ("bottom_thickness", "Bottom thickness", "mm"),
+    ("outer_round", "Outer round", "mm"),
+    ("inner_round", "Inner round", "mm"),
+]
+
+BOX_ROW_LID_PARAMS_CONFIG = [
+    ("clearance", "3D print clearance", "mm"),
+    ("tab_size", "Lid tab size (flärp)", "mm"),
+    ("lip_height", "Groove height from top", "mm"),
+    ("lip_step", "Groove depth into wall", "mm"),
+]
+
+
+def _add_box_row_group_settings(grow, doc, gid):
+    params = doc.box_row_group_params(gid)
+    if not params:
+        return
+    settings_node = QTreeWidgetItem(grow, ["⚙️ Settings", ""])
+    settings_node.setData(0, ROLE, ("group_settings", gid))
+    settings_node.setExpanded(True)
+
+    items_to_add = list(BOX_ROW_PARAMS_CONFIG)
+    if params.get("has_lid", False):
+        items_to_add.extend(BOX_ROW_LID_PARAMS_CONFIG)
+
+    for key, label, unit in items_to_add:
+        val = params.get(key)
+        if val is None:
+            continue
+        val_str = f"{val:g}" if isinstance(val, float) else f"{val}"
+        suffix = f" {unit}" if unit else ""
+        row = QTreeWidgetItem(settings_node, [f"{label}: {val_str}{suffix}", ""])
+        row.setData(0, ROLE, ("group_param", (gid, key)))
+        row.setFlags(row.flags() | Qt.ItemFlag.ItemIsEditable)
+        row.setToolTip(0, "Double-click or click the pencil to edit for all boxes in group")
+        _pencil(row)
+
+
 def add_histories(browser, root):
     doc = browser.doc
     history = doc.object_history
@@ -47,6 +92,8 @@ def add_histories(browser, root):
         grow.setFlags(grow.flags() | Qt.ItemFlag.ItemIsEditable)
         grow.setExpanded(True)
         browser._style_eye(grow, gvis)
+        if hasattr(doc, "is_box_row_group") and doc.is_box_row_group(gid):
+            _add_box_row_group_settings(grow, doc, gid)
         for oid in og.get("objects", []):
             if oid in history.objects and history.objects[oid].parent_id is None:
                 _add_object(browser, grow, oid, features, excluded)

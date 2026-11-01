@@ -615,6 +615,7 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.spn_height.setRange(1.0, 10000.0)
         self.spn_height.setValue(30.0)
         self.spn_height.setSuffix(" mm")
+        self.spn_height.setToolTip("Inner clear height (Z) from inside box floor to underside of lid.")
         self.spn_height.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("Height (Z):", self.spn_height)
 
@@ -810,3 +811,51 @@ class BoxInRowDialog(BaseFeatureDialog):
             "plane_u": self.plane_u if self.cmb_placement.currentData() == "on_face" else None,
             "plane_v": self.plane_v if self.cmb_placement.currentData() == "on_face" else None,
         }
+
+    def set_params(self, params: dict):
+        if "count" in params:
+            self.spn_count.setValue(int(params["count"]))
+        if "spacing" in params:
+            self.spn_spacing.setValue(float(params["spacing"]))
+        if "length" in params:
+            self.spn_length.setValue(float(params["length"]))
+        if "width" in params:
+            self.spn_width.setValue(float(params["width"]))
+        if "height" in params:
+            self.spn_height.setValue(float(params["height"]))
+        if "wall_thickness" in params:
+            self.spn_wall.setValue(float(params["wall_thickness"]))
+        if "bottom_thickness" in params:
+            self.spn_bottom.setValue(float(params["bottom_thickness"]))
+        if "outer_round" in params:
+            self.spn_outer_round.setValue(float(params["outer_round"]))
+        if "outer_round_kind" in params:
+            idx = self.cmb_outer_kind.findData(params["outer_round_kind"])
+            if idx >= 0:
+                self.cmb_outer_kind.setCurrentIndex(idx)
+        if "inner_round" in params:
+            self.spn_inner_round.setValue(float(params["inner_round"]))
+        if "inner_round_kind" in params:
+            idx = self.cmb_inner_kind.findData(params["inner_round_kind"])
+            if idx >= 0:
+                self.cmb_inner_kind.setCurrentIndex(idx)
+        if "honeycomb" in params:
+            self.chk_honeycomb.setChecked(bool(params["honeycomb"]))
+        if "honeycomb_size" in params:
+            self.spn_hc_size.setValue(float(params["honeycomb_size"]))
+        if "honeycomb_wall" in params:
+            self.spn_hc_wall.setValue(float(params["honeycomb_wall"]))
+        if "has_lid" in params:
+            self.chk_lid.setChecked(bool(params["has_lid"]))
+        if "lip_height" in params:
+            self.spn_lip_height.setValue(float(params["lip_height"]))
+        if "lip_step" in params:
+            self.spn_lip_step.setValue(float(params["lip_step"]))
+        if "clearance" in params:
+            self.spn_clearance.setValue(float(params["clearance"]))
+        if "tab_size" in params:
+            self.spn_tab_size.setValue(float(params["tab_size"]))
+        if "center" in params:
+            idx = self.cmb_placement.findData(params["center"])
+            if idx >= 0:
+                self.cmb_placement.setCurrentIndex(idx)

@@ -24,6 +24,46 @@ from omacad.model import expr as exprlib
 from omacad.model.faces import in_plane_edges
 
 
+def box_row_outer_height(
+    inner_z: float,
+    bottom_thickness: float = 2.0,
+    wall_thickness: float = 2.0,
+    has_lid: bool = False,
+    lip_height: float = 6.0,
+    clearance: float = 0.2,
+) -> float:
+    """Computes total outer box height so that clear vertical space from the inside box
+    floor to the underside of the lid (or top rim if no lid) equals inner_z exactly."""
+    t = wall_thickness if wall_thickness > 1e-4 else 2.0
+    tb = bottom_thickness if bottom_thickness > 1e-4 else t
+    if has_lid:
+        h_lip = lip_height if lip_height > 1e-4 else 6.0
+        c = clearance
+        return float(tb + inner_z - c / 2.0 + h_lip)
+    else:
+        return float(tb + inner_z)
+
+
+def box_row_inner_height(
+    outer_h: float,
+    bottom_thickness: float = 2.0,
+    wall_thickness: float = 2.0,
+    has_lid: bool = False,
+    lip_height: float = 6.0,
+    clearance: float = 0.2,
+) -> float:
+    """Computes the clear vertical space inside the box from the inside floor to the
+    underside of the lid (or top rim if no lid)."""
+    t = wall_thickness if wall_thickness > 1e-4 else 2.0
+    tb = bottom_thickness if bottom_thickness > 1e-4 else t
+    if has_lid:
+        h_lip = lip_height if lip_height > 1e-4 else 6.0
+        c = clearance
+        return float(outer_h - tb + c / 2.0 - h_lip)
+    else:
+        return float(outer_h - tb)
+
+
 def undoable(label: str):
     """Marks a Document method as one undo step. Only the outermost call counts (a step that calls other steps is one
     step), and only if it changed something; the whole document state before it is kept."""
@@ -1942,18 +1982,35 @@ class Document:
 
     # ---- Object groups in browser (Björn #149, #150, #151) ------------------------
     @undoable("New object group")
-    def create_object_group(self, name: str, object_ids: Optional[List[str]] = None) -> str:
+    def create_object_group(
+        self,
+        name: str,
+        object_ids: Optional[List[str]] = None,
+        kind: Optional[str] = None,
+        params: Optional[dict] = None,
+        box_features: Optional[List[str]] = None,
+        lid_features: Optional[List[str]] = None,
+    ) -> str:
         name = name.strip() or "Group"
         gid = f"group_{uuid.uuid4().hex[:8]}"
         if object_ids:
             for oid in object_ids:
                 self._remove_from_group_silent(oid)
-        self.object_groups.append({
+        entry = {
             "id": gid,
             "name": name,
             "objects": list(object_ids or []),
             "visible": True,
-        })
+        }
+        if kind is not None:
+            entry["kind"] = kind
+        if params is not None:
+            entry["params"] = dict(params)
+        if box_features is not None:
+            entry["box_features"] = list(box_features)
+        if lid_features is not None:
+            entry["lid_features"] = list(lid_features)
+        self.object_groups.append(entry)
         self.notify_changed()
         return gid
 
@@ -2061,6 +2118,295 @@ class Document:
         self.notify_changed()
         return target
 
+    def is_box_row_group(self, group_id: str) -> bool:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return False
+        return og.get("kind") == "box_row" or og.get("name", "").startswith("Box in a row")
+
+    def box_row_features(self, group_id: str) -> Tuple[List[Any], List[Any]]:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return [], []
+        feat_map = {f.feature_id: f for f in self.timeline.features if f.feature_type == "box"}
+        box_feats = []
+        lid_feats = []
+
+        if og.get("box_features") or og.get("lid_features"):
+            for fid in og.get("box_features", []):
+                if fid in feat_map:
+                    box_feats.append(feat_map[fid])
+            for fid in og.get("lid_features", []):
+                if fid in feat_map:
+                    lid_feats.append(feat_map[fid])
+            if box_feats:
+                return box_feats, lid_feats
+
+        self.object_history.sync(self)
+        for oid in og.get("objects", []):
+            obj = self.object_history.objects.get(oid)
+            if not obj:
+                continue
+            for fid in obj.feature_ids:
+                feat = feat_map.get(fid)
+                if feat:
+                    if getattr(feat, "is_lid", False):
+                        if feat not in lid_feats:
+                            lid_feats.append(feat)
+                    else:
+                        if feat not in box_feats:
+                            box_feats.append(feat)
+
+        box_feats.sort(key=lambda f: (getattr(f, "translation", [0])[0] if getattr(f, "translation", None) else 0.0))
+        lid_feats.sort(key=lambda f: (getattr(f, "translation", [0])[0] if getattr(f, "translation", None) else 0.0))
+        return box_feats, lid_feats
+
+    def box_row_group_params(self, group_id: str) -> dict:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return {}
+        if og.get("params"):
+            return dict(og["params"])
+
+        box_feats, lid_feats = self.box_row_features(group_id)
+        if not box_feats:
+            return {}
+        f0 = box_feats[0]
+        has_lid = bool(lid_feats)
+        inner_z = box_row_inner_height(
+            f0.height,
+            bottom_thickness=getattr(f0, "bottom_thickness", 2.0),
+            wall_thickness=getattr(f0, "wall_thickness", 2.0),
+            has_lid=has_lid,
+            lip_height=getattr(f0, "lip_height", 6.0),
+            clearance=getattr(f0, "clearance", 0.2),
+        )
+        spacing = 0.0
+        if len(box_feats) > 1:
+            x0 = f0.translation[0] if getattr(f0, "translation", None) else 0.0
+            x1 = box_feats[1].translation[0] if getattr(box_feats[1], "translation", None) else 0.0
+            spacing = max(0.0, abs(x1 - x0) - f0.length)
+
+        inferred = {
+            "count": len(box_feats),
+            "length": float(f0.length),
+            "width": float(f0.width),
+            "height": float(inner_z),
+            "spacing": float(spacing),
+            "wall_thickness": float(getattr(f0, "wall_thickness", 2.0)),
+            "bottom_thickness": float(getattr(f0, "bottom_thickness", 2.0)),
+            "outer_round": float(getattr(f0, "outer_round", 0.0)),
+            "outer_round_kind": str(getattr(f0, "outer_round_kind", "fillet")),
+            "inner_round": float(getattr(f0, "inner_round", 0.0)),
+            "inner_round_kind": str(getattr(f0, "inner_round_kind", "fillet")),
+            "honeycomb": bool(getattr(f0, "honeycomb", False)),
+            "honeycomb_size": float(getattr(f0, "honeycomb_size", 5.0)),
+            "honeycomb_wall": float(getattr(f0, "honeycomb_wall", 1.2)),
+            "honeycomb_margin": float(getattr(f0, "honeycomb_margin", 2.0)),
+            "has_lid": has_lid,
+            "lip_height": float(getattr(f0, "lip_height", 6.0)),
+            "lip_step": float(getattr(f0, "lip_step", 1.0)),
+            "clearance": float(getattr(f0, "clearance", 0.2)),
+            "lid_top": float(getattr(f0, "lid_top", 2.0)),
+            "tab_size": float(getattr(f0, "tab_size", 4.0)),
+            "center": getattr(f0, "center", "bottom_center"),
+            "plane_origin": getattr(f0, "plane_origin", None),
+            "plane_normal": getattr(f0, "plane_normal", None),
+            "plane_u": getattr(f0, "plane_u", None),
+            "plane_v": getattr(f0, "plane_v", None),
+            "translation": list(getattr(f0, "translation", [0.0, 0.0, 0.0])),
+        }
+        og["params"] = inferred
+        return inferred
+
+    @undoable("Edit Box in a row")
+    def update_box_row_group(self, group_id: str, **new_params) -> bool:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return False
+        params = dict(self.box_row_group_params(group_id))
+        params.update(new_params)
+        og["params"] = params
+
+        n = max(1, int(params.get("count", 1)))
+        length = float(params.get("length", 60.0))
+        width = float(params.get("width", 40.0))
+        height = float(params.get("height", 30.0))
+        spacing = float(params.get("spacing", 0.0))
+        wall_t = float(params.get("wall_thickness", 2.0))
+        bot_t = float(params.get("bottom_thickness", 2.0))
+        out_r = float(params.get("outer_round", 0.0))
+        out_rk = str(params.get("outer_round_kind", "fillet"))
+        in_r = float(params.get("inner_round", 0.0))
+        in_rk = str(params.get("inner_round_kind", "fillet"))
+        has_lid = bool(params.get("has_lid", False))
+        lip_h = float(params.get("lip_height", 6.0))
+        lip_s = float(params.get("lip_step", 1.0))
+        clearance = float(params.get("clearance", 0.2))
+        tab_sz = float(params.get("tab_size", 4.0))
+        center = params.get("center", "bottom_center")
+        base_trans = list(params.get("translation", [0.0, 0.0, 0.0]))
+
+        outer_h = box_row_outer_height(
+            height,
+            bottom_thickness=bot_t,
+            wall_thickness=wall_t,
+            has_lid=has_lid,
+            lip_height=lip_h,
+            clearance=clearance,
+        )
+
+        step_x = length + spacing
+        is_centered = (center is True or center == "center" or center == "bottom_center")
+        center_offset = -((n - 1) * step_x) / 2.0 if is_centered else 0.0
+
+        box_feats, lid_feats = self.box_row_features(group_id)
+
+        # Handle count increase if needed
+        while len(box_feats) < n:
+            idx = len(box_feats)
+            bx = base_trans[0] + center_offset + idx * step_x
+            t_box = [bx, base_trans[1], base_trans[2]]
+            b_feat_id = self._feature_id("box")
+            b_feat = BoxFeature(
+                b_feat_id, f"Box {idx + 1}", length, width, outer_h, center=center,
+                plane_origin=params.get("plane_origin"), plane_normal=params.get("plane_normal"),
+                plane_u=params.get("plane_u"), plane_v=params.get("plane_v"),
+                wall_thickness=wall_t, bottom_thickness=bot_t,
+                outer_round=out_r, outer_round_kind=out_rk,
+                inner_round=in_r, inner_round_kind=in_rk,
+                lip_height=(lip_h if has_lid else 0.0), lip_step=(lip_s if has_lid else 0.0),
+                honeycomb=params.get("honeycomb", False),
+                honeycomb_size=params.get("honeycomb_size", 5.0),
+                honeycomb_wall=params.get("honeycomb_wall", 1.2),
+                honeycomb_margin=params.get("honeycomb_margin", 2.0),
+                tab_size=tab_sz, translation=t_box,
+            )
+            self.timeline.add_feature(b_feat)
+            box_feats.append(b_feat)
+
+            if has_lid:
+                l_feat_id = self._feature_id("box")
+                l_feat = BoxFeature(
+                    l_feat_id, f"Box {idx + 1} Lid", length, width, outer_h, center=center,
+                    plane_origin=params.get("plane_origin"), plane_normal=params.get("plane_normal"),
+                    plane_u=params.get("plane_u"), plane_v=params.get("plane_v"),
+                    wall_thickness=wall_t, outer_round=out_r, outer_round_kind=out_rk,
+                    lip_height=lip_h, lip_step=lip_s, clearance=clearance,
+                    lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, is_lid=True,
+                    translation=t_box,
+                )
+                self.timeline.add_feature(l_feat)
+                lid_feats.append(l_feat)
+                self.lids.add(l_feat_id)
+
+        # Handle count decrease or lid removal if needed
+        while len(box_feats) > n:
+            extra_b = box_feats.pop()
+            self.timeline.features = [f for f in self.timeline.features if f.feature_id != extra_b.feature_id]
+            if extra_b.feature_id in self.bodies:
+                del self.bodies[extra_b.feature_id]
+
+        target_lids = n if has_lid else 0
+        while len(lid_feats) > target_lids:
+            extra_l = lid_feats.pop()
+            self.timeline.features = [f for f in self.timeline.features if f.feature_id != extra_l.feature_id]
+            if extra_l.feature_id in self.bodies:
+                del self.bodies[extra_l.feature_id]
+            self.lids.discard(extra_l.feature_id)
+
+        # If has_lid turned on from previously False:
+        while has_lid and len(lid_feats) < n:
+            idx = len(lid_feats)
+            bx = base_trans[0] + center_offset + idx * step_x
+            t_box = [bx, base_trans[1], base_trans[2]]
+            l_feat_id = self._feature_id("box")
+            l_feat = BoxFeature(
+                l_feat_id, f"Box {idx + 1} Lid", length, width, outer_h, center=center,
+                plane_origin=params.get("plane_origin"), plane_normal=params.get("plane_normal"),
+                plane_u=params.get("plane_u"), plane_v=params.get("plane_v"),
+                wall_thickness=wall_t, outer_round=out_r, outer_round_kind=out_rk,
+                lip_height=lip_h, lip_step=lip_s, clearance=clearance,
+                lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, is_lid=True,
+                translation=t_box,
+            )
+            self.timeline.add_feature(l_feat)
+            lid_feats.append(l_feat)
+            self.lids.add(l_feat_id)
+
+        # Update all active box features and lid features
+        for i in range(n):
+            bx = base_trans[0] + center_offset + i * step_x
+            t_box = [bx, base_trans[1], base_trans[2]]
+            bf = box_feats[i]
+            bf.length = length
+            bf.width = width
+            bf.height = outer_h
+            bf.wall_thickness = wall_t
+            bf.bottom_thickness = bot_t
+            bf.outer_round = out_r
+            bf.outer_round_kind = out_rk
+            bf.inner_round = in_r
+            bf.inner_round_kind = in_rk
+            bf.lip_height = (lip_h if has_lid else 0.0)
+            bf.lip_step = (lip_s if has_lid else 0.0)
+            bf.tab_size = tab_sz
+            bf.translation = t_box
+
+            if has_lid and i < len(lid_feats):
+                lf = lid_feats[i]
+                lf.length = length
+                lf.width = width
+                lf.height = outer_h
+                lf.wall_thickness = wall_t
+                lf.outer_round = out_r
+                lf.outer_round_kind = out_rk
+                lf.lip_height = lip_h
+                lf.lip_step = lip_s
+                lf.clearance = clearance
+                lf.tab_size = tab_sz
+                lf.translation = t_box
+
+        og["box_features"] = [bf.feature_id for bf in box_feats]
+        og["lid_features"] = [lf.feature_id for lf in lid_feats]
+
+        self.timeline.clear_cache()
+        self.timeline.recompute(self)
+
+        self.object_history.sync(self)
+        current_oids = []
+        for bf in box_feats:
+            oid = self.object_history.owners.get(bf.feature_id)
+            if oid and oid not in current_oids:
+                current_oids.append(oid)
+        for lf in lid_feats:
+            oid = self.object_history.owners.get(lf.feature_id)
+            if oid and oid not in current_oids:
+                current_oids.append(oid)
+        og["objects"] = current_oids
+
+        self.notify_changed()
+        return True
+
+    @undoable("Edit Box in a row")
+    def edit_box_row_group_param(self, group_id: str, key: str, expr_text: str) -> bool:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return False
+        from omacad.model import expr as exprlib
+        val = exprlib.evaluate(expr_text, self.parameter_values())
+        if not math.isfinite(val):
+            raise ValueError("Enter a finite value")
+        if key in ("length", "width", "height", "wall_thickness", "bottom_thickness", "count", "lip_height", "tab_size") and val <= 0:
+            raise ValueError("This dimension must be greater than zero")
+        if key in ("outer_round", "inner_round", "spacing", "clearance") and val < 0:
+            raise ValueError("This value cannot be negative")
+        if key == "count":
+            new_val = max(1, int(round(float(val))))
+        else:
+            new_val = float(val)
+        return self.update_box_row_group(group_id, **{key: new_val})
+
     @undoable("Box in a row")
     def add_box_row(
         self,
@@ -2100,8 +2446,19 @@ class Document:
         is_centered = (center is True or center == "center" or center == "bottom_center")
         center_offset = -((n - 1) * step_x) / 2.0 if is_centered else 0.0
 
+        outer_h = box_row_outer_height(
+            height,
+            bottom_thickness=bottom_thickness,
+            wall_thickness=wall_thickness,
+            has_lid=has_lid,
+            lip_height=lip_height,
+            clearance=clearance,
+        )
+
         created_bodies = []
         created_oids = []
+        box_feature_ids = []
+        lid_feature_ids = []
         existing_groups = len([g for g in self.object_groups if g["name"].startswith("Box in a row")])
         g_name = group_name or f"Box in a row {existing_groups + 1}"
 
@@ -2113,7 +2470,7 @@ class Document:
 
             box_name = f"Box {i + 1}"
             box_body = self.add_box(
-                length, width, height, center=center, name=box_name,
+                length, width, outer_h, center=center, name=box_name,
                 plane_origin=plane_origin, plane_normal=plane_normal, plane_u=plane_u, plane_v=plane_v,
                 wall_thickness=wall_thickness, bottom_thickness=bottom_thickness,
                 outer_round=outer_round, outer_round_kind=outer_round_kind,
@@ -2127,6 +2484,7 @@ class Document:
             )
             created_bodies.append(box_body)
             last_feat = self.timeline.features[-1]
+            box_feature_ids.append(last_feat.feature_id)
             self.object_history.sync(self)
             oid = self.object_history.owners.get(last_feat.feature_id)
             if oid and oid not in created_oids:
@@ -2135,7 +2493,7 @@ class Document:
             if has_lid:
                 lid_name = f"Box {i + 1} Lid"
                 lid_body = self.add_box(
-                    length, width, height, center=center, name=lid_name,
+                    length, width, outer_h, center=center, name=lid_name,
                     plane_origin=plane_origin, plane_normal=plane_normal, plane_u=plane_u, plane_v=plane_v,
                     wall_thickness=wall_thickness,
                     outer_round=outer_round, outer_round_kind=outer_round_kind,
@@ -2147,13 +2505,51 @@ class Document:
                 self.lids.add(lid_body.body_id)
                 created_bodies.append(lid_body)
                 last_feat = self.timeline.features[-1]
+                lid_feature_ids.append(last_feat.feature_id)
                 self.object_history.sync(self)
                 lid_oid = self.object_history.owners.get(last_feat.feature_id)
                 if lid_oid and lid_oid not in created_oids:
                     created_oids.append(lid_oid)
 
+        group_params = {
+            "count": n,
+            "length": float(length),
+            "width": float(width),
+            "height": float(height),
+            "spacing": float(spacing),
+            "wall_thickness": float(wall_thickness),
+            "bottom_thickness": float(bottom_thickness),
+            "outer_round": float(outer_round),
+            "outer_round_kind": str(outer_round_kind),
+            "inner_round": float(inner_round),
+            "inner_round_kind": str(inner_round_kind),
+            "honeycomb": bool(honeycomb),
+            "honeycomb_size": float(honeycomb_size),
+            "honeycomb_wall": float(honeycomb_wall),
+            "honeycomb_margin": float(honeycomb_margin),
+            "has_lid": bool(has_lid),
+            "lip_height": float(lip_height),
+            "lip_step": float(lip_step),
+            "clearance": float(clearance),
+            "lid_top": float(lid_top),
+            "tab_size": float(tab_size),
+            "center": center,
+            "plane_origin": plane_origin,
+            "plane_normal": plane_normal,
+            "plane_u": plane_u,
+            "plane_v": plane_v,
+            "translation": base_trans,
+        }
+
         if created_oids:
-            self.create_object_group(g_name, created_oids)
+            self.create_object_group(
+                g_name,
+                created_oids,
+                kind="box_row",
+                params=group_params,
+                box_features=box_feature_ids,
+                lid_features=lid_feature_ids,
+            )
 
         self.notify_changed()
         return created_bodies

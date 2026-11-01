@@ -155,6 +155,7 @@ class PrimitivePromptsMixin:
     @leaves_sketch
     def prompt_box_row(self):
         from omacad.model.features.primitives import BoxFeature
+        from omacad.model.document import box_row_outer_height
         import manifold3d as m3d
         dlg = BoxInRowDialog(self)
         self._apply_fan_origin(dlg)
@@ -166,11 +167,19 @@ class PrimitivePromptsMixin:
                 step_x = float(params["length"]) + float(params["spacing"])
                 is_centered = (params["center"] is True or params["center"] == "center" or params["center"] == "bottom_center")
                 center_offset = -((n - 1) * step_x) / 2.0 if is_centered else 0.0
+                outer_h = box_row_outer_height(
+                    params["height"],
+                    bottom_thickness=params.get("bottom_thickness", 2.0),
+                    wall_thickness=params.get("wall_thickness", 2.0),
+                    has_lid=params.get("has_lid", False),
+                    lip_height=params.get("lip_height", 6.0),
+                    clearance=params.get("clearance", 0.2),
+                )
                 solids = []
                 for i in range(n):
                     t_box = [center_offset + i * step_x, 0.0, 0.0]
                     box_feat = BoxFeature(
-                        "prev_b", "B", params["length"], params["width"], params["height"],
+                        "prev_b", "B", params["length"], params["width"], outer_h,
                         center=params["center"], plane_origin=params["plane_origin"],
                         plane_normal=params["plane_normal"], plane_u=params["plane_u"],
                         plane_v=params["plane_v"], wall_thickness=params["wall_thickness"],
@@ -186,7 +195,7 @@ class PrimitivePromptsMixin:
                     solids.append(box_feat.build_solid())
                     if params["has_lid"]:
                         lid_feat = BoxFeature(
-                            "prev_l", "L", params["length"], params["width"], params["height"],
+                            "prev_l", "L", params["length"], params["width"], outer_h,
                             center=params["center"], plane_origin=params["plane_origin"],
                             plane_normal=params["plane_normal"], plane_u=params["plane_u"],
                             plane_v=params["plane_v"], wall_thickness=params["wall_thickness"],

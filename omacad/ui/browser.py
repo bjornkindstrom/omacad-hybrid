@@ -592,6 +592,16 @@ class BrowserTree(QWidget):
         if ok and name.strip():
             self.doc.create_object_group(name.strip(), object_ids)
 
+    def edit_box_row_group_prompt(self, group_id: str):
+        from omacad.ui.dialogs.primitives_dlg import BoxInRowDialog
+        dlg = BoxInRowDialog(self)
+        params = self.doc.box_row_group_params(group_id)
+        if params:
+            dlg.set_params(params)
+        if dlg.exec():
+            new_params = dlg.get_params()
+            self.doc.update_box_row_group(group_id, **new_params)
+
     def new_favorite_group(self, ref):
         from PySide6.QtWidgets import QInputDialog
         name, ok = QInputDialog.getText(self, "New favorites group", "Group name:", text=self._owner_name(ref))
@@ -700,11 +710,13 @@ class BrowserTree(QWidget):
             add("Show complete object", lambda: self.doc.object_fast_forward(item_id))
             show_hide()
         elif item_type == "object_group":
+            if hasattr(self.doc, "is_box_row_group") and self.doc.is_box_row_group(item_id):
+                add("🍱 Edit Box in a Row…", lambda: self.edit_box_row_group_prompt(item_id))
             rename()
             add("🗑️ Ungroup objects", lambda: self.doc.remove_object_group(item_id))
             menu.addSeparator()
             show_hide()
-        elif item_type in ("parameter", "dimension", "polygon_sides", "hole_dim"):
+        elif item_type in ("parameter", "dimension", "polygon_sides", "hole_dim", "group_param"):
             from omacad.ui.object_browser import edit_parameter
             add("Edit value…", lambda: edit_parameter(self, item_type, item_id))
             if item_type in ("parameter", "dimension"):

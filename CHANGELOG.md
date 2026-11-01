@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.112
+
+### Added
+- **Specialinställningar i trädet för Box in a row-grupper**: Under varje `📁 Box in a row`-grupp i objekthierarkin visas nu en dedikerad gren `⚙️ Settings` med parametrarna för hela gruppen (`Height (Z)`, `Length (X)`, `Width (Y)`, `Boxes count`, `Spacing`, `Wall thickness`, `Bottom thickness`, `Outer round`, `Inner round`, `3D print clearance`, `Lid tab size (flärp)`, osv.). Klick på pennan eller dubbelklick öppnar direkt redigering i trädet (med stöd för matematiska uttryck) och uppdaterar alla lådor och lock i gruppen samtidigt. Högerklick på gruppen erbjuder även "🍱 Edit Box in a Row…" för att öppna den fullständiga dialogen för alla delar. Ändringar sparas med full ångra/gör om (undo/redo) och bevaras vid sparning till `.omacad`. Tester: `tests/test_box_row_settings.py`.
+
+### Changed
+- **Höjd Z beräknas från lådans insida till lockets undersida**: Vid inställning av mått för Box in a row är höjden Z nu det fria inre nyttoutrymmet – mätt från bottenytan inuti lådan upp till undersidan av locket (`outer_h = bottom_thickness + inner_z - clearance / 2.0 + lip_height`). Både förhandsgranskning, skapande och parameterredigering i trädet använder denna formel så att angiven höjd $Z$ exakt motsvarar det användbara vertikala utrymmet i lådan. Tester: `tests/test_box_row_settings.py`.
+
 # Hybrid-experiment — 0.9.9.80.111
 
 ### Fixed

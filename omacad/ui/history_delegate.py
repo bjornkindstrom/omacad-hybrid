@@ -18,7 +18,7 @@ def value_ref(data):
     """(kind, ids) of a value row: a parameter or sketch dimension, polygon sides, or a starred one (also "text"); else None."""
     if not data:
         return None
-    if data[0] in ('parameter', 'dimension', 'polygon_sides', 'hole_dim'):
+    if data[0] in ('parameter', 'dimension', 'polygon_sides', 'hole_dim', 'group_param'):
         return data
     if data[0] == 'fav':
         kind, a, b = data[1]
@@ -143,6 +143,11 @@ class HistoryDelegate(QStyledItemDelegate):
                         return
                 else:
                     return
+            elif kind == 'group_param':
+                gid, key = ids
+                params = doc.box_row_group_params(gid)
+                val = params.get(key, "")
+                value = f"{val:g}" if isinstance(val, float) else str(val)
             elif kind == 'polygon_sides':
                 sid, gid = ids
                 sketch = doc.sketches.get(sid)
@@ -191,6 +196,9 @@ class HistoryDelegate(QStyledItemDelegate):
 
 
 def apply_dimension(doc, kind, ids, text):
+    if kind == 'group_param':
+        gid, key = ids
+        return doc.edit_box_row_group_param(gid, key, text)
     if kind == 'parameter':
         return doc.edit_feature_dimension(*ids, text)
     if kind == 'hole_dim':

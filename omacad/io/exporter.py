@@ -434,7 +434,7 @@ class Exporter:
         doc.favorites = [{"name": g["name"], "items": [list(r) for r in g.get("items", [])]}
                          for g in data.get("favorites", []) if g.get("name")]
         doc.object_groups = [
-            {"id": g["id"], "name": g["name"], "objects": list(g.get("objects", [])), "visible": g.get("visible", True)}
+            {**g, "id": g["id"], "name": g["name"], "objects": list(g.get("objects", [])), "visible": g.get("visible", True)}
             for g in data.get("object_groups", []) if g.get("id") and g.get("name")
         ]
         doc.lids = set(data.get("lids", []))
