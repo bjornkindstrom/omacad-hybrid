@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.94
+
+### Funktioner
+- Ikonerna i solfjädermenyn kan skalas från 50 till 200 procent under Settings → Interface → Fan menu icon size. Stora ikoner anpassas till sektorns tillgängliga yta. Valet sparas och gäller direkt.
+
 # Hybrid-experiment — 0.9.9.80.93
 
 ### Fixed

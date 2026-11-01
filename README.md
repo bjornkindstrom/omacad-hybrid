@@ -14,6 +14,7 @@ punkterna. I **Settings → Interface → Fan menu text** kan du välja mellan b
 text, läsbar böjd text även i nedre bågen och horisontell text. Valet sparas och
 gäller direkt. [Jämför de tre varianterna](design/request-138/layoutforslag.pdf).
 Control Point Spline finns även i högerklicksmenyn under Sketch → Create (0.9.9.80.93).
+Ikonstorleken i solfjädermenyn kan ställas till 50–200 % under Settings → Interface (0.9.9.80.94).
 
 Utgångspunkt: Omacad `fdf4331` / `0.9.9.80.69`. Experimentet har eget Git-repo,
 egen miljö och egen profil. Ursprungliga Omacad och omacad-rs påverkas inte.

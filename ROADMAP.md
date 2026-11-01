@@ -1,5 +1,7 @@
 # Hybrid experiment roadmap
 
+Fan menu icon size is adjustable in Settings (0.9.9.80.94).
+
 Control Point Spline is available from the sketch right-click fan menu (0.9.9.80.93).
 
 The three fan menu text layouts are selectable in Hybrid settings (0.9.9.80.92).

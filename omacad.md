@@ -17,6 +17,7 @@ This fork does not publish Omacad releases or send requests in the background.
 # Omacad: guide för AI-agenter
 
 ## Senaste lösningar
+- **Ikonstorlek i solfjädermenyn (0.9.9.80.94)**: `fan_menu_icon_scale` (0,5–2,0) sparas i Hybrid-inställningarna och styr ikonens pixelstorlek i varje sektor; storleken begränsas efter sektorns radiella och vinklade utrymme. Settings → Interface erbjuder 50–200 % och Reset återgår till 100 %. Test: `test_fan_menu_icon_scale.py`.
 - **Control Point Spline i solfjädermenyn (0.9.9.80.93, #137)**: Sketch → Create listar `CONTROL_SPLINE` via samma kommandoregister som ribbon, med egen ikon och callback till `sketch_tool:CONTROL_SPLINE`. Test: `test_fan_menu.py`.
 - **Solfjädermenyns textval (0.9.9.80.92, #138)**: `fan_menu_label_style` i Hybrid-inställningarna väljer `curved`, `readable_curved` eller `horizontal`. `FanMenu._draw_sector_content` läser valet vid ritning; läsbar böjd text vänder riktning och teckenvinkel i nedre halvan. Settings → Interface sparar valet och Reset återgår till ursprunglig böjd text. Test: `test_fan_menu_label_style.py`.
 - **Requests #137–#142 (0.9.9.80.91)**: `SketchSpline.control_points` använder klämd B-spline av grad högst tre, med separat verktyg och flyttbara kontrollpunkter. Ribbon lämnar fokus i vyn efter verktygsval utom för TEXT. Fill Pattern använder begärd kantmarginal och källskissens plan efter Move-steg före Pattern. #138 har tre layoutförslag i PDF för solfjädermenyn. Test: `test_spline.py`, `test_fill_pattern_margin.py`, `test_pattern_moved_plane.py`.

@@ -1,5 +1,7 @@
 # Hybrid experiment plan
 
+Version 0.9.9.80.94 adds a persistent fan menu icon scale control.
+
 Version 0.9.9.80.93 exposes Control Point Spline in the sketch fan menu.
 
 Version 0.9.9.80.92 makes all three fan menu label layouts selectable in Settings.

@@ -306,6 +306,21 @@ class SettingsDialog(QDialog):
         fan_labels_row.addStretch()
         lay_ui.addLayout(fan_labels_row)
 
+        fan_icon_row = QHBoxLayout()
+        fan_icon_title = QLabel("Fan menu icon size:")
+        fan_icon_title.setMinimumWidth(200)
+        self.spn_fan_icon_scale = QDoubleSpinBox()
+        self.spn_fan_icon_scale.setRange(50, 200)
+        self.spn_fan_icon_scale.setSingleStep(10)
+        self.spn_fan_icon_scale.setDecimals(0)
+        self.spn_fan_icon_scale.setSuffix(" %")
+        self.spn_fan_icon_scale.setValue(100 * float(self.settings.get("fan_menu_icon_scale", 1.0)))
+        self.spn_fan_icon_scale.setToolTip("Scales icons in the right-click fan menu. Large icons are limited by their sector size.")
+        fan_icon_row.addWidget(fan_icon_title)
+        fan_icon_row.addWidget(self.spn_fan_icon_scale)
+        fan_icon_row.addStretch()
+        lay_ui.addLayout(fan_icon_row)
+
         # Palette position
         pos_row = QHBoxLayout()
         lbl_pos = QLabel("Sketch palette position:")
@@ -737,6 +752,7 @@ class SettingsDialog(QDialog):
         self.cmb_btn_size.setCurrentIndex(max(0, self.cmb_btn_size.findData(1.0)))
         self.chk_labels.setChecked(False)
         self.cmb_fan_labels.setCurrentIndex(self.cmb_fan_labels.findData("curved"))
+        self.spn_fan_icon_scale.setValue(100)
         self.chk_group_primitives.setChecked(True)
         self.chk_group_modify.setChecked(False)
         self.chk_group_inspect.setChecked(True)
@@ -792,6 +808,7 @@ class SettingsDialog(QDialog):
             "button_scale": float(self.cmb_btn_size.currentData() or 1.0),
             "show_button_labels": self.chk_labels.isChecked(),
             "fan_menu_label_style": self.cmb_fan_labels.currentData(),
+            "fan_menu_icon_scale": self.spn_fan_icon_scale.value() / 100.0,
             "group_primitives": self.chk_group_primitives.isChecked(),
             "group_modify": self.chk_group_modify.isChecked(),
             "group_inspect": self.chk_group_inspect.isChecked(),

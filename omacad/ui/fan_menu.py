@@ -555,13 +555,17 @@ class FanMenu(QObject):
         """Draws the curved label along the outer arc of the sector, with the icon placed below it."""
         item = sec.item
         has_icon = item.icon is not None and not item.icon.isNull()
+        settings = get_settings()
         mid_deg = sec.start_angle + sec.span_angle / 2.0
         mid_rad = math.radians(mid_deg)
 
         # 1. Place icon slightly inward from center radius
         if has_icon:
-            icon_size = 22
             r_icon = sec.r_inner + (sec.r_outer - sec.r_inner) * 0.38
+            scale = max(0.5, min(2.0, float(settings.get("fan_menu_icon_scale", 1.0))))
+            radial_space = 2 * min(r_icon - sec.r_inner, sec.r_outer - r_icon) - 8
+            angular_space = 2 * r_icon * math.sin(math.radians(min(sec.span_angle, 180)) / 2) - 8
+            icon_size = max(8, min(round(22 * scale), int(radial_space), int(angular_space)))
             icx = self.center_pos.x() + r_icon * math.cos(mid_rad)
             icy = self.center_pos.y() - r_icon * math.sin(mid_rad)
             pix = item.icon.pixmap(icon_size, icon_size)
@@ -579,7 +583,7 @@ class FanMenu(QObject):
         painter.setPen(text_col)
         fm = QFontMetrics(f)
 
-        style = get_settings().get("fan_menu_label_style", "curved")
+        style = settings.get("fan_menu_label_style", "curved")
         if style == "horizontal":
             r_label = sec.r_inner + (sec.r_outer - sec.r_inner) * (0.73 if has_icon else 0.5)
             x = self.center_pos.x() + r_label * math.cos(mid_rad)

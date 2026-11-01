@@ -48,6 +48,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "recent_files": [],                 # most recently opened/saved .omacad files, newest first (File > Open Recent)
     "show_button_labels": False,        # show the name under each ribbon button (off = icon only, name on hover)
     "fan_menu_label_style": "curved",   # curved, readable_curved, horizontal
+    "fan_menu_icon_scale": 1.0,       # 0.5..2.0 of the original 22 px fan menu icon size
     "group_primitives": True,           # group Box/Cylinder/Sphere/Thread into Primitives dropdown
     "group_modify": False,              # group Combine/Split/Shell/Move into Modify dropdown
     "group_inspect": True,              # group Measure/Section/Params into Inspect dropdown
