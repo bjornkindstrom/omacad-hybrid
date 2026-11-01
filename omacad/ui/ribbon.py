@@ -137,6 +137,7 @@ class Ribbon(QWidget):
     measure_clicked = Signal()
     parameters_clicked = Signal()
     box_clicked = Signal()
+    box_row_clicked = Signal()
     cylinder_clicked = Signal()
     hexagon_clicked = Signal()
     cone_clicked = Signal()

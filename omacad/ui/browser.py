@@ -136,6 +136,7 @@ class BrowserTree(QWidget):
         self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.show_context_menu)
         # F2 or a slow second click on a selected sketch/body renames it in place
+        self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tree.setEditTriggers(QAbstractItemView.EditTrigger.EditKeyPressed
                                   | QAbstractItemView.EditTrigger.SelectedClicked)
         self.tree.itemChanged.connect(self.on_item_renamed)
@@ -415,6 +416,13 @@ class BrowserTree(QWidget):
 
     def on_item_renamed(self, item: QTreeWidgetItem, column: int):
         data = item.data(0, Qt.ItemDataRole.UserRole)
+        if column == 0 and data and data[0] == "object_group":
+            new_name = item.text(0)
+            if new_name.startswith("📁 "):
+                new_name = new_name[3:]
+            if not self.doc.rename_object_group(data[1], new_name):
+                self.refresh_tree()
+            return
         if column == 0 and data and data[0] == "fav_group":
             if item.text(0) != data[1] and not self.doc.rename_favorite_group(data[1], item.text(0)):
                 self.refresh_tree()
@@ -450,6 +458,8 @@ class BrowserTree(QWidget):
             doc.toggle_sketch_visibility(item_id)
         elif item_type == "object":
             doc.set_object_visibility(item_id, not doc.object_visible(item_id))
+        elif item_type == "object_group":
+            doc.set_object_group_visibility(item_id, not doc.object_group_visible(item_id))
         elif item_type == "cplane":
             doc.toggle_construction_plane(item_id)
         elif item_type in ("origin", "axis", "plane"):
@@ -491,6 +501,12 @@ class BrowserTree(QWidget):
         fid = item.data(0, FEATURE_ROLE)
         pick = getattr(self, 'pick_feature', None)
         if fid and pick and pick(fid):
+            return
+        if item_type == "object_group" and column == 1:
+            self.toggle_visibility(item_type, item_id)
+            return
+        if item_type == "object_group":
+            self.doc.select_object_group(item_id)
             return
         if item_type == "object" and column == 1:
             self.toggle_visibility(item_type, item_id)
@@ -570,6 +586,12 @@ class BrowserTree(QWidget):
         obj = history.objects.get(history.owners.get(fid))
         return obj.name if obj else "Favorites"
 
+    def group_objects_prompt(self, object_ids: list):
+        from PySide6.QtWidgets import QInputDialog
+        name, ok = QInputDialog.getText(self, "New object group", "Group name:", text="Group 1")
+        if ok and name.strip():
+            self.doc.create_object_group(name.strip(), object_ids)
+
     def new_favorite_group(self, ref):
         from PySide6.QtWidgets import QInputDialog
         name, ok = QInputDialog.getText(self, "New favorites group", "Group name:", text=self._owner_name(ref))
@@ -646,8 +668,41 @@ class BrowserTree(QWidget):
                 add("Independent copy" + of, lambda checked=False, s=step, b=bid: self.doc.branch_object(s, b, linked=False))
             if sources:
                 menu.addSeparator()
+
+            # Grouping objects (Björn #149, #150, #151)
+            selected_items = self.tree.selectedItems()
+            selected_oids = []
+            for it in selected_items:
+                d = it.data(0, Qt.ItemDataRole.UserRole)
+                if d and d[0] == "object" and d[1] not in selected_oids:
+                    selected_oids.append(d[1])
+            if item_id not in selected_oids:
+                selected_oids = [item_id]
+            if len(selected_oids) > 1:
+                add(f"📁 Group {len(selected_oids)} objects…", lambda o=selected_oids: self.group_objects_prompt(o))
+            else:
+                curr_gid = self.doc.object_group_of(item_id)
+                if curr_gid:
+                    add("Ungroup object", lambda o=item_id: self.doc.remove_from_object_group(o))
+                else:
+                    add("📁 Group object…", lambda o=item_id: self.group_objects_prompt([o]))
+                if self.doc.object_groups:
+                    sub = menu.addMenu("Add to group")
+                    for og in self.doc.object_groups:
+                        if og["id"] != curr_gid:
+                            sub.addAction(og["name"]).triggered.connect(
+                                lambda checked=False, g=og["id"], o=item_id: self.doc.add_to_object_group(g, o))
+                    sub.addSeparator()
+                    sub.addAction("New group…").triggered.connect(lambda o=item_id: self.group_objects_prompt([o]))
+            menu.addSeparator()
+
             rename()
             add("Show complete object", lambda: self.doc.object_fast_forward(item_id))
+            show_hide()
+        elif item_type == "object_group":
+            rename()
+            add("🗑️ Ungroup objects", lambda: self.doc.remove_object_group(item_id))
+            menu.addSeparator()
             show_hide()
         elif item_type in ("parameter", "dimension", "polygon_sides", "hole_dim"):
             from omacad.ui.object_browser import edit_parameter
@@ -750,6 +805,9 @@ class BrowserTree(QWidget):
             self._favorite_menu(menu, ["text", s_id, ent_id])
 
         elif item_type in ("origin", "axis", "group"):
+            if item_type == "group" and item_id == "objects":
+                add("📁 New object group…", lambda: self.group_objects_prompt([]))
+                menu.addSeparator()
             show_hide()
 
         elif item_type == "view":

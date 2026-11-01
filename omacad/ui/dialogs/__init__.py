@@ -19,6 +19,7 @@ from omacad.ui.dialogs.revolve_dlg import (
 )
 from omacad.ui.dialogs.primitives_dlg import (
     BoxDialog,
+    BoxInRowDialog,
     CylinderDialog,
     PrismDialog,
     SphereDialog,
@@ -74,6 +75,7 @@ __all__ = [
     "ExtrudeDialog",
     "RevolveDialog",
     "BoxDialog",
+    "BoxInRowDialog",
     "CylinderDialog",
     "PrismDialog",
     "SphereDialog",

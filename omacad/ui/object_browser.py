@@ -37,8 +37,23 @@ def add_histories(browser, root):
     group.setExpanded(True)
     excluded = history.excluded()
     features = {f.feature_id: f for f in doc.timeline.features}
+    grouped_oids = set()
+    for og in getattr(doc, "object_groups", []):
+        gid = og["id"]
+        gname = og["name"]
+        gvis = og.get("visible", True)
+        grow = QTreeWidgetItem(group, [f"📁 {gname}", ""])
+        grow.setData(0, ROLE, ("object_group", gid))
+        grow.setFlags(grow.flags() | Qt.ItemFlag.ItemIsEditable)
+        grow.setExpanded(True)
+        browser._style_eye(grow, gvis)
+        for oid in og.get("objects", []):
+            if oid in history.objects and history.objects[oid].parent_id is None:
+                _add_object(browser, grow, oid, features, excluded)
+                grouped_oids.add(oid)
+
     for oid, obj in history.objects.items():
-        if obj.parent_id is None:
+        if obj.parent_id is None and oid not in grouped_oids:
             _add_object(browser, group, oid, features, excluded)
     # An unfinished sketch has not yet become a feature.
     sk = doc.active_sketch

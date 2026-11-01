@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.108
+
+### Added
+- **Object grouping in browser (requests #149, #150)**: multiple objects can now be grouped into folders (`📁 Group 1`) in the Objects hierarchy. Right-click an object or multi-select objects > "Group objects…", or right-click Objects > "New object group…". Clicking a group selects and highlights all member bodies in the 3D viewport and tree. Groups can be renamed (F2 / double click / right-click), ungrouped ("Ungroup objects"), and their visibility toggled via the eye icon. Persisted in `.omacad` files with undo/redo. Tests: `test_object_groups.py`.
+- **New primitive: Box in a row (request #151)**: *Create > Primitives > Box in a Row* (and ribbon command `🍱 Box in a Row`) creates $N$ boxes in a row with adjustable dimensions ($X, Y, Z$), spacing, wall and bottom thickness, corner fillet or chamfer, and optional honeycomb floor lattice. All boxes and lids are automatically grouped into an object group in the browser. Tests: `test_box_in_row.py`.
+- **Slide-over lids (request #151)**: creates matching lids for the boxes with a stepped collar/offset-face lip on the box and clearance offset for 3D printer tolerance so the lid slides snugly onto the shelf.
+- **Quick-toggle button for lids in viewport HUD (request #151)**: when lids are present, an `👁 Lock` button appears in the bottom HUD navigation bar in the viewport, toggling all lids hidden/visible with one click to easily inspect box interiors.
+
 # Hybrid-experiment — 0.9.9.80.107
 
 ### Added

@@ -9,6 +9,7 @@ from omacad.model import quality
 import copy
 import functools
 import math
+import uuid
 import numpy as np
 import manifold3d as m3d
 from omacad.model.timeline import (
@@ -110,6 +111,11 @@ class Document:
         # Starred values in named groups (Björn #110): [{"name": ..., "items": [["parameter", fid, key] |
         # ["dimension", sketch_id, dim_id] | ["text", sketch_id, entity_id], ...]}, ...]
         self.favorites: List[dict] = []
+
+        # Object groups in the browser (Björn #149, #150, #151): [{"id": ..., "name": ..., "objects": [...], "visible": bool}]
+        self.object_groups: List[dict] = []
+        # Lid bodies (can be quickly hidden/shown in viewport HUD) (Björn #151)
+        self.lids: set = set()
 
         # Active sketch when in Sketch Mode
         self.active_sketch: Optional[Sketch] = None
@@ -342,14 +348,20 @@ class Document:
                 plane_origin: Any = None, plane_normal: Any = None, plane_u: Any = None, plane_v: Any = None,
                 wall_thickness: float = 0.0, outer_round: float = 0.0, outer_round_kind: str = "fillet",
                 inner_round: float = 0.0, inner_round_kind: str = "fillet", taper_angle: float = 0.0,
-                translation: Any = None) -> Body:
+                translation: Any = None, lip_height: float = 0.0, lip_step: float = 0.0,
+                bottom_thickness: float = 0.0, honeycomb: bool = False, honeycomb_size: float = 4.0,
+                honeycomb_wall: float = 1.2, honeycomb_margin: float = 2.0, is_lid: bool = False,
+                clearance: float = 0.2, lid_top: float = 2.0) -> Body:
         feat_id = self._feature_id("box")
         feat_name = name or f"Box {len([f for f in self.timeline.features if f.feature_type == 'box']) + 1}"
         feat = BoxFeature(feat_id, feat_name, length, width, height, center,
                           plane_origin=plane_origin, plane_normal=plane_normal, plane_u=plane_u, plane_v=plane_v,
                           wall_thickness=wall_thickness, outer_round=outer_round, outer_round_kind=outer_round_kind,
                           inner_round=inner_round, inner_round_kind=inner_round_kind, taper_angle=taper_angle,
-                          translation=translation)
+                          translation=translation, lip_height=lip_height, lip_step=lip_step,
+                          bottom_thickness=bottom_thickness, honeycomb=honeycomb, honeycomb_size=honeycomb_size,
+                          honeycomb_wall=honeycomb_wall, honeycomb_margin=honeycomb_margin, is_lid=is_lid,
+                          clearance=clearance, lid_top=lid_top)
         feat.execute(self)
         self.timeline.add_feature(feat)
         self.notify_changed()
@@ -1927,6 +1939,221 @@ class Document:
         for item in self._object_items(object_id):
             item.visible = visible
         self.notify_changed()
+
+    # ---- Object groups in browser (Björn #149, #150, #151) ------------------------
+    @undoable("New object group")
+    def create_object_group(self, name: str, object_ids: Optional[List[str]] = None) -> str:
+        name = name.strip() or "Group"
+        gid = f"group_{uuid.uuid4().hex[:8]}"
+        if object_ids:
+            for oid in object_ids:
+                self._remove_from_group_silent(oid)
+        self.object_groups.append({
+            "id": gid,
+            "name": name,
+            "objects": list(object_ids or []),
+            "visible": True,
+        })
+        self.notify_changed()
+        return gid
+
+    @undoable("Remove object group")
+    def remove_object_group(self, group_id: str) -> bool:
+        idx = next((i for i, g in enumerate(self.object_groups) if g["id"] == group_id), None)
+        if idx is not None:
+            self.object_groups.pop(idx)
+            self.notify_changed()
+            return True
+        return False
+
+    @undoable("Rename object group")
+    def rename_object_group(self, group_id: str, new_name: str) -> bool:
+        new_name = new_name.strip()
+        if not new_name:
+            return False
+        for g in self.object_groups:
+            if g["id"] == group_id:
+                g["name"] = new_name
+                self.notify_changed()
+                return True
+        return False
+
+    def object_group_of(self, object_id: str) -> Optional[str]:
+        for g in self.object_groups:
+            if object_id in g.get("objects", []):
+                return g["id"]
+        return None
+
+    def _remove_from_group_silent(self, object_id: str) -> None:
+        for g in self.object_groups:
+            if object_id in g.get("objects", []):
+                g["objects"].remove(object_id)
+
+    @undoable("Add to object group")
+    def add_to_object_group(self, group_id: str, object_id: str) -> bool:
+        self._remove_from_group_silent(object_id)
+        for g in self.object_groups:
+            if g["id"] == group_id:
+                if object_id not in g["objects"]:
+                    g["objects"].append(object_id)
+                self.notify_changed()
+                return True
+        return False
+
+    @undoable("Remove from object group")
+    def remove_from_object_group(self, object_id: str) -> bool:
+        removed = False
+        for g in self.object_groups:
+            if object_id in g.get("objects", []):
+                g["objects"].remove(object_id)
+                removed = True
+        if removed:
+            self.notify_changed()
+        return removed
+
+    def object_group_visible(self, group_id: str) -> bool:
+        g = next((g for g in self.object_groups if g["id"] == group_id), None)
+        return bool(g and g.get("visible", True))
+
+    def set_object_group_visibility(self, group_id: str, visible: bool) -> None:
+        for g in self.object_groups:
+            if g["id"] == group_id:
+                g["visible"] = visible
+                for oid in g.get("objects", []):
+                    self.set_object_visibility(oid, visible)
+        self.notify_changed()
+
+    def select_object_group(self, group_id: str) -> None:
+        """Select all visible, pickable bodies belonging to all objects in the group (Björn #150)."""
+        g = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not g:
+            return
+        group_body_ids = set()
+        for oid in g.get("objects", []):
+            obj = self.object_history.objects.get(oid)
+            if obj:
+                group_body_ids.update(b for b in obj.body_ids if b in self.bodies and self.bodies[b].pickable)
+        for b in self.bodies.values():
+            b.selected = b.body_id in group_body_ids
+        self.selected_body_ids = [b for b in group_body_ids if b in self.bodies]
+        self.notify_changed()
+
+    def has_lids(self) -> bool:
+        """True if there are any lid bodies in the document (Björn #151)."""
+        return any(getattr(b, "is_lid", False) or b.body_id in self.lids or b.name.lower().endswith(" lid") or b.name.lower().endswith(" lock")
+                   for b in self.bodies.values())
+
+    def are_lids_visible(self) -> bool:
+        """True if at least one lid is visible."""
+        lids = [b for b in self.bodies.values() if getattr(b, "is_lid", False) or b.body_id in self.lids or b.name.lower().endswith(" lid") or b.name.lower().endswith(" lock")]
+        return any(b.visible for b in lids) if lids else True
+
+    @undoable("Toggle lids")
+    def toggle_lids_visibility(self) -> bool:
+        """Toggle visibility of all lid bodies (quick-hide button in viewport HUD) (Björn #151)."""
+        lids = [b for b in self.bodies.values() if getattr(b, "is_lid", False) or b.body_id in self.lids or b.name.lower().endswith(" lid") or b.name.lower().endswith(" lock")]
+        if not lids:
+            return False
+        any_vis = any(b.visible for b in lids)
+        target = not any_vis
+        for b in lids:
+            b.visible = target
+        self.notify_changed()
+        return target
+
+    @undoable("Box in a row")
+    def add_box_row(
+        self,
+        count: int = 2,
+        length: float = 60.0,
+        width: float = 40.0,
+        height: float = 30.0,
+        spacing: float = 0.0,
+        wall_thickness: float = 2.0,
+        bottom_thickness: float = 2.0,
+        outer_round: float = 0.0,
+        outer_round_kind: str = "fillet",
+        inner_round: float = 0.0,
+        inner_round_kind: str = "fillet",
+        honeycomb: bool = False,
+        honeycomb_size: float = 5.0,
+        honeycomb_wall: float = 1.2,
+        honeycomb_margin: float = 2.0,
+        has_lid: bool = False,
+        lip_height: float = 6.0,
+        lip_step: float = 1.0,
+        clearance: float = 0.2,
+        lid_top: float = 2.0,
+        center: Any = "bottom_center",
+        plane_origin: Any = None,
+        plane_normal: Any = None,
+        plane_u: Any = None,
+        plane_v: Any = None,
+        translation: Any = None,
+        group_name: Optional[str] = None,
+    ) -> List[Body]:
+        """Creates boxes in a row with optional slide-over lids, grouped into an object group (Björn #151)."""
+        n = max(1, int(count))
+        base_trans = [float(x) for x in ((0.0, 0.0, 0.0) if translation is None else translation)]
+        step_x = float(length) + float(spacing)
+        is_centered = (center is True or center == "center" or center == "bottom_center")
+        center_offset = -((n - 1) * step_x) / 2.0 if is_centered else 0.0
+
+        created_bodies = []
+        created_oids = []
+        existing_groups = len([g for g in self.object_groups if g["name"].startswith("Box in a row")])
+        g_name = group_name or f"Box in a row {existing_groups + 1}"
+
+        for i in range(n):
+            bx = base_trans[0] + center_offset + i * step_x
+            by = base_trans[1]
+            bz = base_trans[2]
+            t_box = [bx, by, bz]
+
+            box_name = f"Box {i + 1}"
+            box_body = self.add_box(
+                length, width, height, center=center, name=box_name,
+                plane_origin=plane_origin, plane_normal=plane_normal, plane_u=plane_u, plane_v=plane_v,
+                wall_thickness=wall_thickness, bottom_thickness=bottom_thickness,
+                outer_round=outer_round, outer_round_kind=outer_round_kind,
+                inner_round=inner_round, inner_round_kind=inner_round_kind,
+                lip_height=(lip_height if has_lid else 0.0),
+                lip_step=(lip_step if has_lid else 0.0),
+                honeycomb=honeycomb, honeycomb_size=honeycomb_size,
+                honeycomb_wall=honeycomb_wall, honeycomb_margin=honeycomb_margin,
+                translation=t_box,
+            )
+            created_bodies.append(box_body)
+            last_feat = self.timeline.features[-1]
+            self.object_history.sync(self)
+            oid = self.object_history.owners.get(last_feat.feature_id)
+            if oid and oid not in created_oids:
+                created_oids.append(oid)
+
+            if has_lid:
+                lid_name = f"Box {i + 1} Lid"
+                lid_body = self.add_box(
+                    length, width, height, center=center, name=lid_name,
+                    plane_origin=plane_origin, plane_normal=plane_normal, plane_u=plane_u, plane_v=plane_v,
+                    outer_round=outer_round, outer_round_kind=outer_round_kind,
+                    lip_height=lip_height, lip_step=lip_step,
+                    clearance=clearance, lid_top=lid_top, is_lid=True,
+                    translation=t_box,
+                )
+                lid_body.is_lid = True
+                self.lids.add(lid_body.body_id)
+                created_bodies.append(lid_body)
+                last_feat = self.timeline.features[-1]
+                self.object_history.sync(self)
+                lid_oid = self.object_history.owners.get(last_feat.feature_id)
+                if lid_oid and lid_oid not in created_oids:
+                    created_oids.append(lid_oid)
+
+        if created_oids:
+            self.create_object_group(g_name, created_oids)
+
+        self.notify_changed()
+        return created_bodies
 
     def toggle_sketch_visibility(self, sketch_id: str) -> None:
         if sketch_id in self.sketches:

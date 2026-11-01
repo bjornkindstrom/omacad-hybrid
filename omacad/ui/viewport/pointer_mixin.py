@@ -80,7 +80,9 @@ class PointerMixin:
         # Check HUD clicks
         h = self.height()
         w = self.width()
-        hud_w, hud_h = 260, 36
+        has_lids = self.doc.has_lids() if hasattr(self.doc, "has_lids") else False
+        hud_w = 325 if has_lids else 260
+        hud_h = 36
         hud_rect = QRectF((w - hud_w) / 2.0, h - 50, hud_w, hud_h)
         if hud_rect.contains(x, y):
             rel_x = x - hud_rect.x()
@@ -90,8 +92,10 @@ class PointerMixin:
                 self.nav_mode = "PAN"
             elif rel_x < 195:
                 self.zoom_fit()
-            else:
+            elif rel_x < 260:
                 self.show_grid = not self.show_grid
+            else:
+                self.doc.toggle_lids_visibility()
             self.update()
             return
 

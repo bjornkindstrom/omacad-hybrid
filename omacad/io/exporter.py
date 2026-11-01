@@ -342,6 +342,8 @@ class Exporter:
             "construction_bodies": sorted(getattr(doc, "construction_bodies", ())),
             "canvases": getattr(doc, "canvases", {}),
             "favorites": getattr(doc, "favorites", []),
+            "object_groups": getattr(doc, "object_groups", []),
+            "lids": sorted(getattr(doc, "lids", ())),
             "curve_segments": quality.circle_segments(),   # how finely circles were cut when profiles were numbered
         }
 
@@ -431,6 +433,11 @@ class Exporter:
         doc.construction_bodies = set(data.get("construction_bodies", []))
         doc.favorites = [{"name": g["name"], "items": [list(r) for r in g.get("items", [])]}
                          for g in data.get("favorites", []) if g.get("name")]
+        doc.object_groups = [
+            {"id": g["id"], "name": g["name"], "objects": list(g.get("objects", [])), "visible": g.get("visible", True)}
+            for g in data.get("object_groups", []) if g.get("id") and g.get("name")
+        ]
+        doc.lids = set(data.get("lids", []))
 
         # Load sketches
         for s_data in data.get("sketches", []):
@@ -461,6 +468,16 @@ class Exporter:
                     inner_round=f_data.get("inner_round", 0.0),
                     inner_round_kind=f_data.get("inner_round_kind", "fillet"),
                     translation=f_data.get("translation"),
+                    lip_height=f_data.get("lip_height", 0.0),
+                    lip_step=f_data.get("lip_step", 0.0),
+                    bottom_thickness=f_data.get("bottom_thickness", 0.0),
+                    honeycomb=f_data.get("honeycomb", False),
+                    honeycomb_size=f_data.get("honeycomb_size", 4.0),
+                    honeycomb_wall=f_data.get("honeycomb_wall", 1.2),
+                    honeycomb_margin=f_data.get("honeycomb_margin", 2.0),
+                    is_lid=f_data.get("is_lid", False),
+                    clearance=f_data.get("clearance", 0.2),
+                    lid_top=f_data.get("lid_top", 2.0),
                 )
                 doc.timeline.add_feature(feat)
             elif ft == "cylinder":

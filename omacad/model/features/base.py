@@ -29,6 +29,7 @@ class Body:
     visible: bool = True
     selected: bool = False
     construction: bool = False   # a helper body: dull, see-through, never picked, never in the way
+    is_lid: bool = False         # a slide-over or screw lid (toggleable via viewport HUD)
     faces: List[PlanarFace] = field(default_factory=list)
     edges: List[PlanarEdge] = field(default_factory=list)
 

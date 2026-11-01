@@ -235,6 +235,9 @@ class Timeline:
         for bid in getattr(doc, "construction_bodies", ()):
             if bid in doc.bodies:
                 doc.bodies[bid].construction = True
+        for bid in getattr(doc, "lids", ()):
+            if bid in doc.bodies:
+                doc.bodies[bid].is_lid = True
         body_colors = getattr(doc, "body_colors", {})
         for bid, col in body_colors.items():
             if bid in doc.bodies:

@@ -173,6 +173,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.revolve_clicked.connect(self.prompt_revolve)
         self.ribbon.emboss_clicked.connect(self.prompt_emboss)
         self.ribbon.box_clicked.connect(self.prompt_box)
+        self.ribbon.box_row_clicked.connect(self.prompt_box_row)
         self.ribbon.cylinder_clicked.connect(self.prompt_cylinder)
         self.ribbon.hexagon_clicked.connect(self.prompt_prism)
         self.ribbon.cone_clicked.connect(self.prompt_cone)

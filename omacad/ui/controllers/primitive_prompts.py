@@ -10,7 +10,7 @@ from omacad.model.timeline import (
 )
 from omacad.ui.dialogs import (
     RoundEdgesDialog, PatternDialog, OffsetPlaneDialog,
-    SketchPlaneDialog, ExtrudeDialog, BoxDialog, CylinderDialog, PrismDialog,
+    SketchPlaneDialog, ExtrudeDialog, BoxDialog, BoxInRowDialog, CylinderDialog, PrismDialog,
     SphereDialog, CombineDialog, SplitBodyDialog, ShellDialog, MoveBodyDialog,
     ThreadDialog
 )
@@ -149,6 +149,93 @@ class PrimitivePromptsMixin:
         dlg.finished.connect(on_finished)
         from omacad.ui.primitive_handles import attach_primitive_handles
         attach_primitive_handles(self.viewport, dlg, "box", refresh_preview)
+        self.dock(dlg)
+        refresh_preview()
+
+    @leaves_sketch
+    def prompt_box_row(self):
+        from omacad.model.features.primitives import BoxFeature
+        import manifold3d as m3d
+        dlg = BoxInRowDialog(self)
+        self._apply_fan_origin(dlg)
+
+        def refresh_preview():
+            params = dlg.get_params()
+            try:
+                n = max(1, int(params["count"]))
+                step_x = float(params["length"]) + float(params["spacing"])
+                is_centered = (params["center"] is True or params["center"] == "center" or params["center"] == "bottom_center")
+                center_offset = -((n - 1) * step_x) / 2.0 if is_centered else 0.0
+                solids = []
+                for i in range(n):
+                    t_box = [center_offset + i * step_x, 0.0, 0.0]
+                    box_feat = BoxFeature(
+                        "prev_b", "B", params["length"], params["width"], params["height"],
+                        center=params["center"], plane_origin=params["plane_origin"],
+                        plane_normal=params["plane_normal"], plane_u=params["plane_u"],
+                        plane_v=params["plane_v"], wall_thickness=params["wall_thickness"],
+                        bottom_thickness=params["bottom_thickness"], outer_round=params["outer_round"],
+                        outer_round_kind=params["outer_round_kind"], inner_round=params["inner_round"],
+                        inner_round_kind=params["inner_round_kind"],
+                        lip_height=(params["lip_height"] if params["has_lid"] else 0.0),
+                        lip_step=(params["lip_step"] if params["has_lid"] else 0.0),
+                        honeycomb=params["honeycomb"], honeycomb_size=params["honeycomb_size"],
+                        honeycomb_wall=params["honeycomb_wall"], translation=t_box
+                    )
+                    solids.append(box_feat.build_solid())
+                    if params["has_lid"]:
+                        lid_feat = BoxFeature(
+                            "prev_l", "L", params["length"], params["width"], params["height"],
+                            center=params["center"], plane_origin=params["plane_origin"],
+                            plane_normal=params["plane_normal"], plane_u=params["plane_u"],
+                            plane_v=params["plane_v"], outer_round=params["outer_round"],
+                            outer_round_kind=params["outer_round_kind"],
+                            lip_height=params["lip_height"], lip_step=params["lip_step"],
+                            clearance=params["clearance"], is_lid=True, translation=t_box
+                        )
+                        solids.append(lid_feat.build_solid())
+                solid = m3d.Manifold.batch_boolean(solids, m3d.OpType.Add) if solids else None
+                dlg.lbl_problem.clear()
+            except Exception as exc:
+                from omacad import applog
+                applog.log("ERROR", f"Box in a row preview: {exc}")
+                solid = None
+                dlg.lbl_problem.setText(str(exc))
+            self.viewport.set_preview(solid, "new_body")
+            self.viewport.update()
+
+        def on_pick_face():
+            self.viewport.begin_plane_pick("primitive_face")
+            self.status_label.setText("Box in a Row: Click the face or plane where the boxes should start (Esc to cancel).")
+
+        def on_face_picked(plane):
+            dlg.set_target_plane(plane)
+            dlg.activateWindow()
+
+        def on_finished(result):
+            for sig, slot in (
+                (dlg.pick_face_requested, on_pick_face),
+                (self.viewport.primitive_face_picked, on_face_picked),
+            ):
+                try:
+                    sig.disconnect(slot)
+                except (RuntimeError, TypeError):
+                    pass
+            if self.viewport.plane_pick_mode:
+                self.viewport.end_plane_pick()
+            self.viewport.set_preview(None)
+            self.viewport.update()
+            if result:
+                p = dlg.get_params()
+                self.doc.add_box_row(**p, translation=getattr(dlg, "placement_offset", (0, 0, 0)))
+                self.viewport.zoom_fit()
+                self.status_label.setText(f"Created Box in a Row ({p['count']} boxes).")
+
+        timer = self._connect_debounced_preview(dlg, refresh_preview, throttle=True)
+        dlg.finished.connect(lambda _: timer.stop())
+        dlg.pick_face_requested.connect(on_pick_face)
+        self.viewport.primitive_face_picked.connect(on_face_picked)
+        dlg.finished.connect(on_finished)
         self.dock(dlg)
         refresh_preview()
 

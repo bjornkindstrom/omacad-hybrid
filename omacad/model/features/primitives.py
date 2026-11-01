@@ -167,7 +167,10 @@ class BoxFeature(Feature):
                  plane_origin: Any = None, plane_normal: Any = None, plane_u: Any = None, plane_v: Any = None,
                  wall_thickness: float = 0.0, outer_round: float = 0.0, outer_round_kind: str = "fillet",
                  inner_round: float = 0.0, inner_round_kind: str = "fillet", taper_angle: float = 0.0,
-                 translation: Any = None):
+                 translation: Any = None, lip_height: float = 0.0, lip_step: float = 0.0,
+                 bottom_thickness: float = 0.0, honeycomb: bool = False, honeycomb_size: float = 4.0,
+                 honeycomb_wall: float = 1.2, honeycomb_margin: float = 2.0, is_lid: bool = False,
+                 clearance: float = 0.2, lid_top: float = 2.0):
         super().__init__(feature_id, "box", name)
         self.length = float(length)
         self.width = float(width)
@@ -184,6 +187,16 @@ class BoxFeature(Feature):
         self.inner_round_kind = str(inner_round_kind or "fillet")
         self.taper_angle = float(taper_angle)
         self.translation = [float(x) for x in ((0.0, 0.0, 0.0) if translation is None else translation)]
+        self.lip_height = float(lip_height)
+        self.lip_step = float(lip_step)
+        self.bottom_thickness = float(bottom_thickness)
+        self.honeycomb = bool(honeycomb)
+        self.honeycomb_size = float(honeycomb_size)
+        self.honeycomb_wall = float(honeycomb_wall)
+        self.honeycomb_margin = float(honeycomb_margin)
+        self.is_lid = bool(is_lid)
+        self.clearance = float(clearance)
+        self.lid_top = float(lid_top)
 
     def build_solid(self) -> m3d.Manifold:
         is_centered = (self.center is True or self.center == "center")
@@ -191,7 +204,69 @@ class BoxFeature(Feature):
         hollow = self.wall_thickness > 1e-4
         has_smart = hollow or self.outer_round > 1e-4 or self.inner_round > 1e-4
 
-        if self.taper_angle != 0.0:
+        if self.is_lid:
+            # Slide-over lid (Björn #151): outer box matching box profile, inner cavity matching lip + clearance
+            t_lid = self.lid_top if self.lid_top > 1e-4 else 2.0
+            h_lip = self.lip_height if self.lip_height > 1e-4 else 6.0
+            s = self.lip_step if self.lip_step > 1e-4 else 1.0
+            c = self.clearance
+            total_h = h_lip + t_lid
+            lid_outer = _rounded_prism(self.length, self.width, total_h, self.outer_round, self.outer_round_kind, round_top=False)
+            r_lip = max(0.0, self.outer_round - s)
+            r_cavity = max(0.0, r_lip + c)
+            cav_l = max(0.2, self.length - 2.0 * s + 2.0 * c)
+            cav_w = max(0.2, self.width - 2.0 * s + 2.0 * c)
+            cav_h = h_lip + 0.1
+            lid_cavity = _rounded_prism(cav_l, cav_w, cav_h, r_cavity, self.outer_round_kind, round_top=False)
+            solid = lid_outer - lid_cavity
+            # Sits on the shelf at Z = height - h_lip
+            solid = solid.translate((0.0, 0.0, self.height - h_lip))
+            if is_centered:
+                solid = solid.translate((0.0, 0.0, -self.height / 2.0))
+            elif not is_bottom:
+                solid = solid.translate((self.length / 2.0, self.width / 2.0, 0.0))
+        elif self.lip_height > 1e-4 and self.lip_step > 1e-4:
+            # Box with slide-over stepped lip (Björn #151)
+            h_lip = min(self.lip_height, self.height * 0.8)
+            s = min(self.lip_step, min(self.length, self.width) * 0.45)
+            h_lower = self.height - h_lip
+            lower = _rounded_prism(self.length, self.width, h_lower, self.outer_round, self.outer_round_kind, round_top=False)
+            r_lip = max(0.0, self.outer_round - s)
+            lip = _rounded_prism(self.length - 2.0 * s, self.width - 2.0 * s, h_lip, r_lip, self.outer_round_kind, round_top=False).translate((0.0, 0.0, h_lower))
+            outer = lower + lip
+
+            t = min(self.wall_thickness, min(self.length, self.width) * 0.45, self.height * 0.9)
+            tb = self.bottom_thickness if self.bottom_thickness > 1e-4 else t
+            in_l = max(0.2, self.length - 2.0 * t)
+            in_w = max(0.2, self.width - 2.0 * t)
+            in_h = max(0.2, self.height - tb) + 1.0
+            cavity = _rounded_prism(in_l, in_w, in_h, self.inner_round, self.inner_round_kind, round_top=False)
+            solid = outer - cavity.translate((0.0, 0.0, tb))
+
+            if self.honeycomb:
+                try:
+                    from shapely.geometry import box as sbox
+                    from shapely.ops import unary_union
+                    from omacad.model.features.honeycomb import lattice, fit_cells
+                    from omacad.model.features.base import region_cross_section
+                    margin = self.honeycomb_margin
+                    room_l = in_l - 2.0 * margin
+                    room_w = in_w - 2.0 * margin
+                    if room_l > self.honeycomb_size and room_w > self.honeycomb_size:
+                        room = sbox(-room_l / 2.0, -room_w / 2.0, room_l / 2.0, room_w / 2.0)
+                        cells = fit_cells(lattice("hexagon", self.honeycomb_size, self.honeycomb_wall, 0.0, room.bounds, (0.0, 0.0)), room, False)
+                        if cells:
+                            cs = region_cross_section(unary_union(cells))
+                            cutter = m3d.Manifold.extrude(cs, tb + 1.0).translate((0.0, 0.0, -0.5))
+                            solid = solid - cutter
+                except Exception as exc:
+                    applog.log("ERROR", f"Box honeycomb floor: {exc}")
+
+            if is_centered:
+                solid = solid.translate((0.0, 0.0, -self.height / 2.0))
+            elif not is_bottom:
+                solid = solid.translate((self.length / 2.0, self.width / 2.0, 0.0))
+        elif self.taper_angle != 0.0:
             solid = _tapered_primitive(self, "box")
             if is_centered:
                 solid = solid.translate((0., 0., -self.height/2))
@@ -207,11 +282,32 @@ class BoxFeature(Feature):
                                    round_top=not hollow)
             if hollow:
                 t = min(self.wall_thickness, min(self.length, self.width) * 0.45, self.height * 0.9)
+                tb = self.bottom_thickness if self.bottom_thickness > 1e-4 else t
                 in_l = max(0.2, self.length - 2.0 * t)
                 in_w = max(0.2, self.width - 2.0 * t)
-                in_h = max(0.2, self.height - t) + 1.0
+                in_h = max(0.2, self.height - tb) + 1.0
                 cavity = _rounded_prism(in_l, in_w, in_h, self.inner_round, self.inner_round_kind, round_top=False)
-                solid = solid - cavity.translate((0.0, 0.0, t))
+                solid = solid - cavity.translate((0.0, 0.0, tb))
+
+                if self.honeycomb:
+                    try:
+                        from shapely.geometry import box as sbox
+                        from shapely.ops import unary_union
+                        from omacad.model.features.honeycomb import lattice, fit_cells
+                        from omacad.model.features.base import region_cross_section
+                        margin = self.honeycomb_margin
+                        room_l = in_l - 2.0 * margin
+                        room_w = in_w - 2.0 * margin
+                        if room_l > self.honeycomb_size and room_w > self.honeycomb_size:
+                            room = sbox(-room_l / 2.0, -room_w / 2.0, room_l / 2.0, room_w / 2.0)
+                            cells = fit_cells(lattice("hexagon", self.honeycomb_size, self.honeycomb_wall, 0.0, room.bounds, (0.0, 0.0)), room, False)
+                            if cells:
+                                cs = region_cross_section(unary_union(cells))
+                                cutter = m3d.Manifold.extrude(cs, tb + 1.0).translate((0.0, 0.0, -0.5))
+                                solid = solid - cutter
+                    except Exception as exc:
+                        applog.log("ERROR", f"Box honeycomb floor: {exc}")
+
             if is_centered:
                 solid = solid.translate((0.0, 0.0, -self.height / 2.0))
             elif not is_bottom:
@@ -241,6 +337,9 @@ class BoxFeature(Feature):
     def execute(self, doc: Any) -> None:
         solid = self.build_solid()
         body = Body(body_id=f"body_{self.feature_id}", name=self.name, manifold=solid)
+        if self.is_lid:
+            body.is_lid = True
+            doc.lids.add(body.body_id)
         body.update_render_mesh()
         doc.bodies[body.body_id] = body
 
@@ -265,6 +364,16 @@ class BoxFeature(Feature):
             "outer_round_kind": self.outer_round_kind,
             "inner_round": self.inner_round,
             "inner_round_kind": self.inner_round_kind,
+            "lip_height": self.lip_height,
+            "lip_step": self.lip_step,
+            "bottom_thickness": self.bottom_thickness,
+            "honeycomb": self.honeycomb,
+            "honeycomb_size": self.honeycomb_size,
+            "honeycomb_wall": self.honeycomb_wall,
+            "honeycomb_margin": self.honeycomb_margin,
+            "is_lid": self.is_lid,
+            "clearance": self.clearance,
+            "lid_top": self.lid_top,
         }
 
 

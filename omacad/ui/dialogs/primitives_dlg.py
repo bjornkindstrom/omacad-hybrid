@@ -1,7 +1,7 @@
 """Dialogs for primitive 3D solid bodies: Box, Cylinder, Prism (hexagon), Sphere."""
 
 from typing import Optional, Tuple, Any
-from PySide6.QtWidgets import QFormLayout, QComboBox, QPushButton, QHBoxLayout, QLabel, QSpinBox
+from PySide6.QtWidgets import QFormLayout, QComboBox, QPushButton, QHBoxLayout, QLabel, QSpinBox, QCheckBox
 from PySide6.QtCore import Qt, Signal
 from omacad.ui.expr_spin import ExprDoubleSpinBox
 from omacad.ui.dialogs.base import BaseFeatureDialog
@@ -564,3 +564,240 @@ class SphereDialog(BaseFeatureDialog):
 
     def get_values(self):
         return self.spn_radius.value()
+
+
+class BoxInRowDialog(BaseFeatureDialog):
+    """Dialog for creating boxes in a row with fillets/chamfer, honeycomb, slide-over lids, and object grouping (Björn #151)."""
+
+    changed = Signal()
+    pick_face_requested = Signal()
+
+    def __init__(self, parent=None, embedded: bool = False):
+        super().__init__("Box in a Row", parent, embedded)
+        self.plane_origin = None
+        self.plane_normal = None
+        self.plane_u = None
+        self.plane_v = None
+
+        form = QFormLayout()
+
+        # Row configuration
+        self.spn_count = QSpinBox()
+        self.spn_count.setRange(1, 50)
+        self.spn_count.setValue(2)
+        self.spn_count.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Boxes count:", self.spn_count)
+
+        self.spn_spacing = ExprDoubleSpinBox()
+        self.spn_spacing.setRange(0.0, 1000.0)
+        self.spn_spacing.setValue(0.0)
+        self.spn_spacing.setSuffix(" mm")
+        self.spn_spacing.setToolTip("Distance between adjacent boxes (0 = side by side).")
+        self.spn_spacing.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Spacing:", self.spn_spacing)
+
+        # Box dimensions
+        self.spn_length = ExprDoubleSpinBox()
+        self.spn_length.setRange(1.0, 10000.0)
+        self.spn_length.setValue(60.0)
+        self.spn_length.setSuffix(" mm")
+        self.spn_length.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Length (X):", self.spn_length)
+
+        self.spn_width = ExprDoubleSpinBox()
+        self.spn_width.setRange(1.0, 10000.0)
+        self.spn_width.setValue(40.0)
+        self.spn_width.setSuffix(" mm")
+        self.spn_width.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Width (Y):", self.spn_width)
+
+        self.spn_height = ExprDoubleSpinBox()
+        self.spn_height.setRange(1.0, 10000.0)
+        self.spn_height.setValue(30.0)
+        self.spn_height.setSuffix(" mm")
+        self.spn_height.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Height (Z):", self.spn_height)
+
+        self.spn_wall = ExprDoubleSpinBox()
+        self.spn_wall.setRange(0.2, 500.0)
+        self.spn_wall.setValue(2.0)
+        self.spn_wall.setSuffix(" mm")
+        self.spn_wall.setToolTip("Shell wall thickness.")
+        self.spn_wall.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Wall thickness:", self.spn_wall)
+
+        self.spn_bottom = ExprDoubleSpinBox()
+        self.spn_bottom.setRange(0.2, 500.0)
+        self.spn_bottom.setValue(2.0)
+        self.spn_bottom.setSuffix(" mm")
+        self.spn_bottom.setToolTip("Bottom floor thickness.")
+        self.spn_bottom.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Bottom thickness:", self.spn_bottom)
+
+        # Outer edge
+        self.spn_outer_round = ExprDoubleSpinBox()
+        self.spn_outer_round.setRange(0.0, 500.0)
+        self.spn_outer_round.setValue(2.0)
+        self.spn_outer_round.setSuffix(" mm")
+        self.spn_outer_round.valueChanged.connect(lambda _: self.changed.emit())
+        self.cmb_outer_kind = QComboBox()
+        self.cmb_outer_kind.addItem("Fillet", "fillet")
+        self.cmb_outer_kind.addItem("Chamfer", "chamfer")
+        self.cmb_outer_kind.currentIndexChanged.connect(lambda _: self.changed.emit())
+        r_out = QHBoxLayout()
+        r_out.setContentsMargins(0, 0, 0, 0)
+        r_out.addWidget(self.spn_outer_round, 1)
+        r_out.addWidget(self.cmb_outer_kind)
+        form.addRow("Outer corners:", r_out)
+
+        # Inner edge
+        self.spn_inner_round = ExprDoubleSpinBox()
+        self.spn_inner_round.setRange(0.0, 500.0)
+        self.spn_inner_round.setValue(1.0)
+        self.spn_inner_round.setSuffix(" mm")
+        self.spn_inner_round.valueChanged.connect(lambda _: self.changed.emit())
+        self.cmb_inner_kind = QComboBox()
+        self.cmb_inner_kind.addItem("Fillet", "fillet")
+        self.cmb_inner_kind.addItem("Chamfer", "chamfer")
+        self.cmb_inner_kind.currentIndexChanged.connect(lambda _: self.changed.emit())
+        r_in = QHBoxLayout()
+        r_in.setContentsMargins(0, 0, 0, 0)
+        r_in.addWidget(self.spn_inner_round, 1)
+        r_in.addWidget(self.cmb_inner_kind)
+        form.addRow("Inner corners:", r_in)
+
+        # Honeycomb floor
+        self.chk_honeycomb = QCheckBox("Cut honeycomb into floor")
+        self.chk_honeycomb.setChecked(False)
+        self.chk_honeycomb.toggled.connect(lambda _: self.changed.emit())
+        form.addRow("Honeycomb:", self.chk_honeycomb)
+
+        self.spn_hc_size = ExprDoubleSpinBox()
+        self.spn_hc_size.setRange(1.0, 100.0)
+        self.spn_hc_size.setValue(5.0)
+        self.spn_hc_size.setSuffix(" mm")
+        self.spn_hc_size.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  Cell size:", self.spn_hc_size)
+
+        self.spn_hc_wall = ExprDoubleSpinBox()
+        self.spn_hc_wall.setRange(0.4, 20.0)
+        self.spn_hc_wall.setValue(1.2)
+        self.spn_hc_wall.setSuffix(" mm")
+        self.spn_hc_wall.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  Grid wall:", self.spn_hc_wall)
+
+        # Slide-over lid
+        self.chk_lid = QCheckBox("Create slide-over lid(s)")
+        self.chk_lid.setChecked(True)
+        self.chk_lid.toggled.connect(lambda _: self.changed.emit())
+        form.addRow("Lids:", self.chk_lid)
+
+        self.spn_lip_height = ExprDoubleSpinBox()
+        self.spn_lip_height.setRange(1.0, 500.0)
+        self.spn_lip_height.setValue(6.0)
+        self.spn_lip_height.setSuffix(" mm")
+        self.spn_lip_height.setToolTip("Height of the upper lip step that the lid slides over.")
+        self.spn_lip_height.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  Lip height:", self.spn_lip_height)
+
+        self.spn_lip_step = ExprDoubleSpinBox()
+        self.spn_lip_step.setRange(0.2, 50.0)
+        self.spn_lip_step.setValue(1.0)
+        self.spn_lip_step.setSuffix(" mm")
+        self.spn_lip_step.setToolTip("Offset face depth for the slide lip.")
+        self.spn_lip_step.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  Offset face step:", self.spn_lip_step)
+
+        self.spn_clearance = ExprDoubleSpinBox()
+        self.spn_clearance.setRange(0.0, 5.0)
+        self.spn_clearance.setValue(0.2)
+        self.spn_clearance.setSuffix(" mm")
+        self.spn_clearance.setToolTip("3D printer clearance gap between lip and lid.")
+        self.spn_clearance.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  3D print clearance:", self.spn_clearance)
+
+        # Placement
+        self.cmb_placement = QComboBox()
+        _add_placements(self.cmb_placement, (
+            ("Bottom on origin", "bottom_center", "Centred in X and Y, from Z 0 up to the height"),
+            ("Corner on origin", "corner", "X, Y and Z from 0 upwards"),
+            ("Centred on origin", "center", "Centred in X, Y and Z"),
+            ("On a face…", "on_face", "On a face or plane you pick in the 3D view")))
+        self.cmb_placement.currentIndexChanged.connect(self._on_placement_changed)
+        form.addRow("Placement:", self.cmb_placement)
+
+        self.btn_face = QPushButton("Pick face…")
+        self.btn_face.setAutoDefault(False)
+        self.btn_face.clicked.connect(self.pick_face_requested)
+        self.lbl_face = QLabel("Default: XY ground plane")
+        self.lbl_face.setStyleSheet("color: #9AA0A6; font-size: 11px;")
+        face_row = QHBoxLayout()
+        face_row.setContentsMargins(0, 0, 0, 0)
+        face_row.addWidget(self.btn_face)
+        face_row.addWidget(self.lbl_face, 1)
+        self.face_row_widget = face_row
+        form.addRow("Target Face:", face_row)
+
+        self.main_layout.addLayout(form)
+        self.lbl_problem = QLabel()
+        self.lbl_problem.setStyleSheet("color: #e06c75; font-size: 11px;")
+        self.lbl_problem.setWordWrap(True)
+        self.main_layout.addWidget(self.lbl_problem)
+        self.add_buttons()
+        self._update_face_row_visibility()
+
+    def _on_placement_changed(self):
+        self._update_face_row_visibility()
+        self.changed.emit()
+
+    def _update_face_row_visibility(self):
+        is_face = self.cmb_placement.currentData() == "on_face"
+        for i in range(self.face_row_widget.count()):
+            w = self.face_row_widget.itemAt(i).widget()
+            if w:
+                w.setVisible(is_face)
+
+    def set_target_plane(self, plane):
+        self.plane_origin = list(map(float, plane.origin))
+        self.plane_normal = list(map(float, plane.normal))
+        self.plane_u = list(map(float, plane.u_axis)) if hasattr(plane, "u_axis") else None
+        self.plane_v = list(map(float, plane.v_axis)) if hasattr(plane, "v_axis") else None
+        p_name = getattr(plane, "name", "Selected Face")
+        n = self.plane_normal
+        desc = "Horisontell" if abs(n[2]) > 0.8 else ("Vertikal" if abs(n[2]) < 0.2 else "Vinklad")
+        self.lbl_face.setText(f"{p_name} ({desc})")
+        if self.cmb_placement.currentData() != "on_face":
+            idx = self.cmb_placement.findData("on_face")
+            if idx >= 0:
+                self.cmb_placement.blockSignals(True)
+                self.cmb_placement.setCurrentIndex(idx)
+                self.cmb_placement.blockSignals(False)
+                self._update_face_row_visibility()
+        self.changed.emit()
+
+    def get_params(self) -> dict:
+        return {
+            "count": self.spn_count.value(),
+            "spacing": self.spn_spacing.value(),
+            "length": self.spn_length.value(),
+            "width": self.spn_width.value(),
+            "height": self.spn_height.value(),
+            "wall_thickness": self.spn_wall.value(),
+            "bottom_thickness": self.spn_bottom.value(),
+            "outer_round": self.spn_outer_round.value(),
+            "outer_round_kind": self.cmb_outer_kind.currentData(),
+            "inner_round": self.spn_inner_round.value(),
+            "inner_round_kind": self.cmb_inner_kind.currentData(),
+            "honeycomb": self.chk_honeycomb.isChecked(),
+            "honeycomb_size": self.spn_hc_size.value(),
+            "honeycomb_wall": self.spn_hc_wall.value(),
+            "has_lid": self.chk_lid.isChecked(),
+            "lip_height": self.spn_lip_height.value(),
+            "lip_step": self.spn_lip_step.value(),
+            "clearance": self.spn_clearance.value(),
+            "center": self.cmb_placement.currentData(),
+            "plane_origin": self.plane_origin if self.cmb_placement.currentData() == "on_face" else None,
+            "plane_normal": self.plane_normal if self.cmb_placement.currentData() == "on_face" else None,
+            "plane_u": self.plane_u if self.cmb_placement.currentData() == "on_face" else None,
+            "plane_v": self.plane_v if self.cmb_placement.currentData() == "on_face" else None,
+        }

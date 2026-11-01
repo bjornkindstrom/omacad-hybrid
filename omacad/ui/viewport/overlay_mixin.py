@@ -429,7 +429,8 @@ class OverlayMixin:
             self.tool_panel.set_hint(hint.split(": ", 1)[-1])   # in the tool panel, not over the drawing (#76)
 
         # 6. Bottom HUD Navigation Bar
-        hud_w = 260
+        has_lids = self.doc.has_lids() if hasattr(self.doc, "has_lids") else False
+        hud_w = 325 if has_lids else 260
         hud_h = 36
         hud_rect = QRectF((w - hud_w) / 2.0, h - 50, hud_w, hud_h)
         painter.setPen(QPen(qcolor(60, 65, 75), 1))
@@ -442,12 +443,15 @@ class OverlayMixin:
         font_hud.setBold(True)
         painter.setFont(font_hud)
 
-        labels = [("🔄 Orbit", 0), ("✋ Pan", 65), ("🔲 Fit", 130), ("📐 Grid", 195)]
+        labels = [("🔄 Orbit", 0, "orbit"), ("✋ Pan", 65, "pan"), ("🔲 Fit", 130, "fit"), ("📐 Grid", 195, "grid")]
+        if has_lids:
+            lids_vis = self.doc.are_lids_visible()
+            labels.append(("👁 Lock" if lids_vis else "🚫 Lock", 260, "lid"))
         studio = theme_icons._studio_icons()
-        for (text, x_off), name in zip(labels, ("orbit", "pan", "fit", "grid")):
+        for text, x_off, name in labels:
             btn_rect = QRectF(hud_rect.x() + x_off + 4, hud_rect.y() + 4, 60, 28)
             painter.setPen(QPen(qcolor(200, 205, 215)))
-            if studio:      # Studio line icon + the word, instead of an emoji in the text
+            if studio and name in ("orbit", "pan", "fit", "grid"):      # Studio line icon + the word, instead of an emoji in the text
                 theme_icons.tool_icon(name, 14).paint(painter, int(btn_rect.x()) + 2, int(btn_rect.y()) + 7, 14, 14)
                 painter.drawText(btn_rect.adjusted(18, 0, 0, 0), Qt.AlignmentFlag.AlignVCenter, text.split(" ", 1)[1])
             else:
