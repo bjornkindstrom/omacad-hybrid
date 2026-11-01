@@ -57,3 +57,39 @@ def test_object_stepped_back_is_copied_as_shown():
     doc = Exporter.load_project(DOC)
     doc.object_step_to(OID, "shell_3")
     assert doc.object_history.copy_sources(doc, OID) == [("shell_3", "body_extrude_2")]
+
+
+def test_a_primitive_just_made_can_be_copied_from_its_row_and_its_step(monkeypatch):
+    """A primitive is built on its own, without the full rebuild that records step states, so both menus left out
+    the copy entries until something else rebuilt the document."""
+    from omacad.model.document import Document
+    from omacad.ui.object_browser import FEATURE_ROLE
+    QApplication.instance() or QApplication([])
+    doc = Document()
+    box = doc.add_box(10, 10, 10)
+    fid = doc.timeline.last_added.feature_id
+    oid = doc.object_history.owners[fid]
+    assert not doc.step_states                                  # no rebuild has happened yet
+    browser = BrowserTree(doc)
+    actions, order = _object_menu(monkeypatch, browser, oid)
+    assert order[:2] == ["New linked object", "Independent copy"]
+    actions["New linked object"].trigger()
+    assert len(doc.bodies) == 2
+    for bid in doc.bodies:
+        assert doc.bodies[bid].manifold.volume() == pytest.approx(1000)
+
+    cyl = doc.add_cylinder(3, 5)
+    cfid = doc.timeline.last_added.feature_id
+    step = next(item for item, _ in browser._walk() if item.data(0, FEATURE_ROLE) == cfid)
+    shown = []
+
+    class Recorded(QMenu):
+        def exec(self, *args):
+            shown.append(self)
+
+    monkeypatch.setattr(browser_module, "QMenu", Recorded)
+    monkeypatch.setattr(browser.tree, "itemAt", lambda pos: step)
+    browser.show_context_menu(QPoint(0, 0))
+    texts = [a.text() for a in shown[-1].actions()]
+    assert "Independent copy of " + cyl.body_id in texts
+    assert box.body_id in doc.bodies

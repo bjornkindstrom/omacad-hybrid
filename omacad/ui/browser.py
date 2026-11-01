@@ -631,7 +631,7 @@ class BrowserTree(QWidget):
                 add("Show object after this step", lambda: self.doc.object_step_to(oid, fid))
                 add("Show complete object", lambda: self.doc.object_fast_forward(oid))
                 for bid in self.doc.object_history.outputs.get(fid, []):
-                    if bid not in self.doc.step_states.get(index + 1, {}):
+                    if not self.doc.object_history.has_result(self.doc, fid, bid):
                         continue
                     add("New linked object from " + bid, lambda checked=False, b=bid: self.doc.branch_object(fid, b))
                     add("Independent copy of " + bid, lambda checked=False, b=bid: self.doc.branch_object(fid, b, linked=False))

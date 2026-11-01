@@ -240,9 +240,21 @@ class ObjectHistory:
                     or doc.timeline.features[index].suppressed):
                 continue
             for bid in self.outputs.get(fid, []):
-                if bid in obj.body_ids and bid not in found and bid in doc.step_states.get(index + 1, {}):
+                if bid in obj.body_ids and bid not in found and self.has_result(doc, fid, bid):
                     found[bid] = fid
         return [(found[bid], bid) for bid in obj.body_ids if bid in found]
+
+    def has_result(self, doc, feature_id, body_id):
+        """Whether step `feature_id` left `body_id` behind, so it can be copied from there. A primitive just added
+        is built on its own without a full rebuild, so it has no step state yet: then its own result counts."""
+        index = self.index(doc, feature_id)
+        if index is None:
+            return False
+        if index + 1 in doc.step_states:
+            return body_id in doc.step_states[index + 1]
+        feat = doc.timeline.features[index]
+        return (index < doc.timeline.marker_index and not feat.suppressed and not getattr(feat, 'error', None)
+                and body_id in self.outputs.get(feature_id, []))
 
     def index(self, doc, feature_id):
         return next((i for i, f in enumerate(doc.timeline.features) if f.feature_id == feature_id), None)
