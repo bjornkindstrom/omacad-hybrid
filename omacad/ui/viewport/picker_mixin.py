@@ -15,13 +15,48 @@ from omacad.model.faces import ray_hit_face, ray_hit_faces, tangent_chain
 from omacad.model.faces_edges import loop_contains
 
 
+def trim_triangles_by_plane(tris: np.ndarray, normal: np.ndarray, ref: np.ndarray) -> np.ndarray:
+    """Trim triangles against the plane keep side: dot(v - ref, normal) >= 0."""
+    if not len(tris):
+        return tris
+    n = np.asarray(normal, dtype=np.float64)
+    r = np.asarray(ref, dtype=np.float64)
+    dists = np.einsum("ijk,k->ij", tris - r, n)
+    all_kept = (dists >= -1e-6).all(axis=1)
+    all_cut = (dists < -1e-6).all(axis=1)
+    res = [tris[all_kept]]
+    part = np.flatnonzero(~all_kept & ~all_cut)
+    for idx in part:
+        tri = tris[idx]
+        d = dists[idx]
+        kept_pts = []
+        for i in range(3):
+            cur_p = tri[i]
+            cur_d = d[i]
+            next_p = tri[(i + 1) % 3]
+            next_d = d[(i + 1) % 3]
+            if cur_d >= -1e-6:
+                kept_pts.append(cur_p)
+            if (cur_d >= -1e-6) != (next_d >= -1e-6):
+                denom = cur_d - next_d
+                t = cur_d / denom if abs(denom) > 1e-12 else 0.0
+                inter = cur_p + t * (next_p - cur_p)
+                kept_pts.append(inter)
+        if len(kept_pts) == 3:
+            res.append(np.array([kept_pts], dtype=np.float32))
+        elif len(kept_pts) == 4:
+            res.append(np.array([[kept_pts[0], kept_pts[1], kept_pts[2]],
+                                 [kept_pts[0], kept_pts[2], kept_pts[3]]], dtype=np.float32))
+    return np.concatenate(res, axis=0).astype(np.float32) if res else np.zeros((0, 3, 3), dtype=np.float32)
+
+
 class PickerMixin:
     """Mixin providing body, edge, and plane picking operations for Viewport3D."""
 
-    @staticmethod
-    def _ray_hits_body_aabb(body, origin: np.ndarray, ray_dir: np.ndarray, max_t: float = float("inf"), margin: float = 1e-3) -> bool:
+    def _ray_hits_body_aabb(self, body, origin: np.ndarray, ray_dir: np.ndarray, max_t: float = float("inf"), margin: float = 1e-3) -> bool:
         """Fast slab test against a body's 3D bounding box to skip all faces/triangles when the ray misses the body."""
-        mesh = getattr(body, "render_mesh", None)
+        pick_mesh = getattr(self, "_pick_mesh", lambda b: getattr(b, "render_mesh", None))
+        mesh = pick_mesh(body) if hasattr(self, "_pick_mesh") else getattr(body, "render_mesh", None)
         if mesh is None or getattr(mesh, "bounds_min", None) is None or getattr(mesh, "bounds_max", None) is None:
             return True
         bmin = np.asarray(mesh.bounds_min, dtype=float) - margin
@@ -103,13 +138,18 @@ class PickerMixin:
                 e = edges[k]
                 s = int(np.flatnonzero((seg_edge == k) & (seg_d == d))[0])
                 mid = (pts[seg_start[s]] + pts[seg_start[s] + 1]) / 2.0
+                if not getattr(self, "_section_keeps", lambda pt: True)(mid):
+                    continue
                 direction = mid - origin
                 dist = float(np.linalg.norm(direction))
                 direction = direction / dist if dist > 1e-9 else direction
-                blocked = (not xray) and any(
-                    self._ray_hits_body_aabb(bd, origin, direction, dist + 1e-3)
-                    and bool((ray_hit_faces(bd.faces, origin, direction) < dist - 2e-2).any())
-                    for bd in self.doc.bodies.values() if bd.visible and len(bd.faces)
+                blocked = (not xray) and (
+                    any(
+                        self._ray_hits_body_aabb(bd, origin, direction, dist + 1e-3)
+                        and bool((ray_hit_faces(bd.faces, origin, direction) < dist - 2e-2).any())
+                        for bd in self.doc.bodies.values() if bd.visible and len(bd.faces)
+                    )
+                    or getattr(self, "_surface_in_front", lambda *args: False)(origin, direction, dist)
                 )
                 if not blocked:
                     # near-ties: a single piece (line or arc) beats the whole outline it belongs to, so a click
@@ -207,6 +247,7 @@ class PickerMixin:
         proj, view, _ = self.get_matrices()
         origin, ray_dir = _vp_pkg.ray_from_screen(x, y, self.width(), self.height(), view, proj)
         best, best_t = None, float("inf")
+        section_keeps = getattr(self, "_section_keeps", lambda pt: True)
         for body in self.doc.bodies.values():
             if not body.pickable or not self._ray_hits_body_aabb(body, origin, ray_dir, best_t):
                 continue
@@ -220,8 +261,13 @@ class PickerMixin:
                     if t is not None:
                         candidates.append((replace(p, body_id=body.body_id), t))
             for face, t in candidates:
-                if t < best_t or (face.index < 0 and t <= best_t+1e-6):
-                    best, best_t = (body, face), t
+                if t >= best_t and not (face.index < 0 and t <= best_t + 1e-6):
+                    continue
+                if float(face.normal @ ray_dir) >= -1e-4:
+                    continue
+                if not section_keeps(origin + t * ray_dir):
+                    continue
+                best, best_t = (body, face), t
         if best is not None and self._surface_in_front(origin, ray_dir, best_t):
             return None                 # a curved surface (only planar faces are faces) hides it
         return best
@@ -229,8 +275,9 @@ class PickerMixin:
     def _surface_in_front(self, origin, ray_dir, t: float, tol: float = 2e-2) -> bool:
         """Any visible body surface is hit more than `tol` before `t` along the ray."""
         from omacad.model.faces import ray_mesh_hit
+        pick_mesh = getattr(self, "_pick_mesh", lambda b: getattr(b, "render_mesh", None))
         for body in self.doc.bodies.values():
-            mesh = body.render_mesh
+            mesh = pick_mesh(body)
             if not body.pickable or mesh is None or not len(mesh.vertices) \
                     or not self._ray_hits_body_aabb(body, origin, ray_dir, t - tol):
                 continue
@@ -327,6 +374,15 @@ class PickerMixin:
         self.edges_selection_changed.emit()
         self.update()
 
+    def _trim_tris_by_section(self, tris: np.ndarray) -> np.ndarray:
+        sec = getattr(self, "section", None)
+        if sec is None or not len(tris):
+            return tris
+        n = sec["normal"]
+        keep = n if sec["flip"] else -n
+        ref = sec["origin"] + n * sec["offset"]
+        return trim_triangles_by_plane(tris.reshape(-1, 3, 3), keep, ref)
+
     def render_edge_pick(self, mvp: np.ndarray):
         if not (self.edge_pick_mode or self._idle_hover_ok()):
             return
@@ -338,13 +394,16 @@ class PickerMixin:
             loc_pos = GL.glGetAttribLocation(self.prog_flat, "in_pos")
             GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
             GL.glDepthMask(GL.GL_FALSE)
-            GL.glDisable(GL.GL_DEPTH_TEST)
-            lift = self.hover_face.normal * 0.05
-            tris = (self.hover_face.tris + lift).reshape(-1, 3).astype(np.float32)
-            GL.glUniform4f(loc_col, *theme.palette().highlight01(0.1), 0.35)
-            self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris)
-            GL.glDepthMask(GL.GL_TRUE)
             GL.glEnable(GL.GL_DEPTH_TEST)
+            GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+            GL.glPolygonOffset(-2.0, -2.0)
+            lift = self.hover_face.normal * 0.05
+            tris = self._trim_tris_by_section(self.hover_face.tris + lift)
+            if len(tris):
+                GL.glUniform4f(loc_col, *theme.palette().highlight01(0.1), 0.35)
+                self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris.reshape(-1, 3).astype(np.float32))
+            GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+            GL.glDepthMask(GL.GL_TRUE)
         if self.hover_surface is not None and self.hover_edge is None and self.prog_flat is not None:
             # depth-tested (the back of a round wall stays hidden), pulled forward so it is not lost in the body
             GL.glUseProgram(self.prog_flat)
@@ -504,8 +563,10 @@ class PickerMixin:
         # Body faces take priority over origin planes (a plane passing through a body
         # would otherwise hide the faces behind it)
         face_best, face_t = None, float("inf")
+        section_keeps = getattr(self, "_section_keeps", lambda pt: True)
+        surface_in_front = getattr(self, "_surface_in_front", lambda *args: False)
         for body in ([] if only_origin else self.doc.bodies.values()):
-            if shell_pick and self.shell_target_body_id:   # the body is hidden behind its preview; only its faces count
+            if shell_pick and getattr(self, "shell_target_body_id", None):   # the body is hidden behind its preview; only its faces count
                 if body.body_id != self.shell_target_body_id:
                     continue
             elif shell_pick and not body.pickable:
@@ -514,10 +575,17 @@ class PickerMixin:
                 continue
             if len(body.faces):
                 hits = ray_hit_faces(body.faces, origin, ray_dir, bary_tol=2e-4)
-                i = int(np.argmin(hits))
-                if hits[i] < face_t:
-                    face_best, face_t = ("face", body.faces[i]), float(hits[i])
-        if face_best is not None:
+                for i in np.flatnonzero(np.isfinite(hits)):
+                    t = float(hits[i])
+                    if t >= face_t:
+                        continue
+                    face = body.faces[i]
+                    if float(face.normal @ ray_dir) >= -1e-4:
+                        continue
+                    if not section_keeps(origin + t * ray_dir):
+                        continue
+                    face_best, face_t = ("face", face), t
+        if face_best is not None and not surface_in_front(origin, ray_dir, face_t):
             return face_best
         return best
 
@@ -568,13 +636,14 @@ class PickerMixin:
 
     def _pick_mesh(self, body):
         """The mesh the user sees: the part left of a section view, so clicks reach the cut face, not the half that is cut away."""
-        if self.section is not None and body.body_id in self.section["meshes"]:
-            return self.section["meshes"][body.body_id]
-        return body.render_mesh
+        sec = getattr(self, "section", None)
+        if sec is not None and body.body_id in sec.get("meshes", {}):
+            return sec["meshes"][body.body_id]
+        return getattr(body, "render_mesh", None)
 
     def _section_keeps(self, point) -> bool:
         """False for a point on the side of the section plane that is cut away."""
-        sec = self.section
+        sec = getattr(self, "section", None)
         if sec is None:
             return True
         n = sec["normal"]
@@ -595,7 +664,7 @@ class PickerMixin:
                 proj, view, _ = self.get_matrices()
                 origin, ray_dir = _vp_pkg.ray_from_screen(x, y, self.width(), self.height(), view, proj)
                 t_face = ray_hit_face(target[1], origin, ray_dir)
-                if t_face is not None and t_face <= surf["t"] + 1e-4:
+                if t_face is not None and t_face <= surf["t"] + 1e-4 and self._section_keeps(origin + t_face * ray_dir):
                     face = target[1]
             if face is None:
                 patch = surf["patch"]
@@ -717,10 +786,16 @@ class PickerMixin:
         shown = self.hover_plane if self.plane_pick_mode else (("face", self.ctx_face) if self.ctx_face is not None else None)
         if shown and shown[0] == "face":
             face = shown[1]
+            GL.glEnable(GL.GL_DEPTH_TEST)
+            GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+            GL.glPolygonOffset(-2.0, -2.0)
             lift = face.normal * 0.05  # avoid z-fighting with the body surface
-            tris = (face.tris + lift).reshape(-1, 3).astype(np.float32)
-            GL.glUniform4f(loc_col, *theme.palette().highlight01(0.1), 0.55)
-            self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris)
+            tris = self._trim_tris_by_section(face.tris + lift)
+            if len(tris):
+                GL.glUniform4f(loc_col, *theme.palette().highlight01(0.1), 0.55)
+                self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris.reshape(-1, 3).astype(np.float32))
+            GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+            GL.glDisable(GL.GL_DEPTH_TEST)
         if self.plane_pick_mode and self.hover_patch is not None and len(self.hover_patch):
             GL.glEnable(GL.GL_DEPTH_TEST)
             GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)

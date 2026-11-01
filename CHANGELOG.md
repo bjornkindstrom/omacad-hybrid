@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.111
+
+### Fixed
+- **Dolda och bortskurna ytor kan inte längre väljas (rapport 20261101-192758)**: Vid aktiv Section View (snittvy) fanns modellens ursprungliga plana ytor kvar i `body.faces`, vilket gjorde att `_pick_face` och `_pick_plane_target` träffade och valde ytor som låg i den bortskurna halvan (t.ex. vid mätning eller val av skiss-/snittyta). Dessutom saknade `_pick_plane_target` skymningstest (`_surface_in_front`) och back-face-test, och ytmarkeringen i viewporten (`render_edge_pick`, `render_plane_pick`) ritades med avstängt djoptest vilket fick markeringen att lysa igenom solida objekt och sväva i tomma luften i den bortskurna delen. Nu filtreras bortskurna ytor bort med `_section_keeps`, bakåtvända ytor med `normal @ ray_dir < -1e-4`, skymda ytor med `_surface_in_front(..., mesh=self._pick_mesh(body))`, och ytmarkeringen ritas med djoptest samt trimmas mot snittplanet (`trim_triangles_by_plane`). Tester: `tests/test_hidden_face_pick.py`.
+
 # Hybrid-experiment — 0.9.9.80.110
 
 ### Changed

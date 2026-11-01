@@ -717,9 +717,9 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self.render_profile_fills(mvp)
         if self.section is None:
             self.render_preview(mvp)
+        self.render_section_cap(mvp)
         self.render_plane_pick(mvp)
         self.render_edge_pick(mvp)
-        self.render_section_cap(mvp)
         if self.section is not None:
             self.render_preview(mvp)      # after the opaque cut face, so a cut preview shows through it
         self.render_step_edges(mvp)       # on top of the preview: which edges the step being edited rounds
