@@ -351,7 +351,7 @@ class Document:
                 translation: Any = None, lip_height: float = 0.0, lip_step: float = 0.0,
                 bottom_thickness: float = 0.0, honeycomb: bool = False, honeycomb_size: float = 4.0,
                 honeycomb_wall: float = 1.2, honeycomb_margin: float = 2.0, is_lid: bool = False,
-                clearance: float = 0.2, lid_top: float = 2.0) -> Body:
+                clearance: float = 0.2, lid_top: float = 2.0, tab_size: float = 4.0) -> Body:
         feat_id = self._feature_id("box")
         feat_name = name or f"Box {len([f for f in self.timeline.features if f.feature_type == 'box']) + 1}"
         feat = BoxFeature(feat_id, feat_name, length, width, height, center,
@@ -361,7 +361,7 @@ class Document:
                           translation=translation, lip_height=lip_height, lip_step=lip_step,
                           bottom_thickness=bottom_thickness, honeycomb=honeycomb, honeycomb_size=honeycomb_size,
                           honeycomb_wall=honeycomb_wall, honeycomb_margin=honeycomb_margin, is_lid=is_lid,
-                          clearance=clearance, lid_top=lid_top)
+                          clearance=clearance, lid_top=lid_top, tab_size=tab_size)
         feat.execute(self)
         self.timeline.add_feature(feat)
         self.notify_changed()
@@ -2084,6 +2084,7 @@ class Document:
         lip_step: float = 1.0,
         clearance: float = 0.2,
         lid_top: float = 2.0,
+        tab_size: float = 4.0,
         center: Any = "bottom_center",
         plane_origin: Any = None,
         plane_normal: Any = None,
@@ -2121,6 +2122,7 @@ class Document:
                 lip_step=(lip_step if has_lid else 0.0),
                 honeycomb=honeycomb, honeycomb_size=honeycomb_size,
                 honeycomb_wall=honeycomb_wall, honeycomb_margin=honeycomb_margin,
+                tab_size=tab_size,
                 translation=t_box,
             )
             created_bodies.append(box_body)
@@ -2138,7 +2140,7 @@ class Document:
                     wall_thickness=wall_thickness,
                     outer_round=outer_round, outer_round_kind=outer_round_kind,
                     lip_height=lip_height, lip_step=lip_step,
-                    clearance=clearance, lid_top=lid_top, is_lid=True,
+                    clearance=clearance, lid_top=lid_top, tab_size=tab_size, is_lid=True,
                     translation=t_box,
                 )
                 lid_body.is_lid = True

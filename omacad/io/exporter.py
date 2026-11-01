@@ -478,6 +478,7 @@ class Exporter:
                     is_lid=f_data.get("is_lid", False),
                     clearance=f_data.get("clearance", 0.2),
                     lid_top=f_data.get("lid_top", 2.0),
+                    tab_size=f_data.get("tab_size", 4.0),
                 )
                 doc.timeline.add_feature(feat)
             elif ft == "cylinder":

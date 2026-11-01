@@ -716,6 +716,14 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.spn_clearance.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("  3D print clearance:", self.spn_clearance)
 
+        self.spn_tab_size = ExprDoubleSpinBox()
+        self.spn_tab_size.setRange(1.0, 50.0)
+        self.spn_tab_size.setValue(4.0)
+        self.spn_tab_size.setSuffix(" mm")
+        self.spn_tab_size.setToolTip("Size/height of the front pull tab (flärp) that holds and opens the lid.")
+        self.spn_tab_size.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("  Lid tab size (flärp):", self.spn_tab_size)
+
         # Placement
         self.cmb_placement = QComboBox()
         _add_placements(self.cmb_placement, (
@@ -795,6 +803,7 @@ class BoxInRowDialog(BaseFeatureDialog):
             "lip_height": self.spn_lip_height.value(),
             "lip_step": self.spn_lip_step.value(),
             "clearance": self.spn_clearance.value(),
+            "tab_size": self.spn_tab_size.value(),
             "center": self.cmb_placement.currentData(),
             "plane_origin": self.plane_origin if self.cmb_placement.currentData() == "on_face" else None,
             "plane_normal": self.plane_normal if self.cmb_placement.currentData() == "on_face" else None,

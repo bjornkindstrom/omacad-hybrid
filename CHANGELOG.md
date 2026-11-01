@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.110
+
+### Changed
+- **Fasade skjutspår, öppen öppning och ställbar flärp för Box in a row**: Lockets kortsidor och lådans inre spår har nu 45°-fasning (laxstjärtsprofil) som är helt självbärande och lätt att skriva ut på 3D-skrivare utan supports. Den långa överhängande läppen ovanför öppningen på lådans långsida har tagits bort helt (väggen skärs ren ner till spårnivån). Locket hålls på plats och öppnas med en främre flärp med grepp och snäpp, vars storlek är ställbar via `tab_size` ("Lid tab size (flärp)") i dialogen. Test: `tests/test_box_in_row.py`.
+
 # Hybrid-experiment — 0.9.9.80.109
 
 ### Fixed

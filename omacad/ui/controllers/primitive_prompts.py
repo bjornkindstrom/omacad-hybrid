@@ -180,7 +180,8 @@ class PrimitivePromptsMixin:
                         lip_height=(params["lip_height"] if params["has_lid"] else 0.0),
                         lip_step=(params["lip_step"] if params["has_lid"] else 0.0),
                         honeycomb=params["honeycomb"], honeycomb_size=params["honeycomb_size"],
-                        honeycomb_wall=params["honeycomb_wall"], translation=t_box
+                        honeycomb_wall=params["honeycomb_wall"],
+                        tab_size=params.get("tab_size", 4.0), translation=t_box
                     )
                     solids.append(box_feat.build_solid())
                     if params["has_lid"]:
@@ -192,7 +193,8 @@ class PrimitivePromptsMixin:
                             outer_round=params["outer_round"],
                             outer_round_kind=params["outer_round_kind"],
                             lip_height=params["lip_height"], lip_step=params["lip_step"],
-                            clearance=params["clearance"], is_lid=True, translation=t_box
+                            clearance=params["clearance"], tab_size=params.get("tab_size", 4.0),
+                            is_lid=True, translation=t_box
                         )
                         solids.append(lid_feat.build_solid())
                 solid = m3d.Manifold.batch_boolean(solids, m3d.OpType.Add) if solids else None

@@ -170,7 +170,7 @@ class BoxFeature(Feature):
                  translation: Any = None, lip_height: float = 0.0, lip_step: float = 0.0,
                  bottom_thickness: float = 0.0, honeycomb: bool = False, honeycomb_size: float = 4.0,
                  honeycomb_wall: float = 1.2, honeycomb_margin: float = 2.0, is_lid: bool = False,
-                 clearance: float = 0.2, lid_top: float = 2.0):
+                 clearance: float = 0.2, lid_top: float = 2.0, tab_size: float = 4.0):
         super().__init__(feature_id, "box", name)
         self.length = float(length)
         self.width = float(width)
@@ -197,6 +197,7 @@ class BoxFeature(Feature):
         self.is_lid = bool(is_lid)
         self.clearance = float(clearance)
         self.lid_top = float(lid_top)
+        self.tab_size = float(tab_size)
 
     def build_solid(self) -> m3d.Manifold:
         is_centered = (self.center is True or self.center == "center")
@@ -205,14 +206,17 @@ class BoxFeature(Feature):
         has_smart = hollow or self.outer_round > 1e-4 or self.inner_round > 1e-4
 
         if self.is_lid:
-            # Sliding lid in groove (Björn #151, problem report 20261101-185047)
-            # Fits into the inner horizontal groove with clearance, front rounded pull bead (arc_9) and snap detent
+            # Sliding lid in groove (Björn #151, problem report 20261101-185047, chamfer update)
+            # Fits into the inner chamfered horizontal groove with clearance, front pull tab (flärp) and snap detent
+            from shapely.geometry import Polygon
+            from omacad.model.features.base import region_cross_section
             t_lid = self.lid_top if self.lid_top > 1e-4 else 2.0
             h_lip = self.lip_height if self.lip_height > 1e-4 else 6.0
             s = self.lip_step if self.lip_step > 1e-4 else 1.0
             c = self.clearance
             t = min(self.wall_thickness if self.wall_thickness > 1e-4 else 2.0, min(self.length, self.width) * 0.45, self.height * 0.9)
             tb = self.bottom_thickness if self.bottom_thickness > 1e-4 else t
+            tab_sz = getattr(self, "tab_size", 4.0) or 4.0
 
             in_l = max(0.2, self.length - 2.0 * t)
             in_w = max(0.2, self.width - 2.0 * t)
@@ -221,31 +225,54 @@ class BoxFeature(Feature):
             z_g = self.height - h_lip
             z_g = max(tb + 1.0, min(self.height - h_g - 1.0, z_g))
 
-            lid_l = max(0.2, in_l + 2.0 * d_g - 2.0 * c)
-            y_lid_back = in_w / 2.0 + d_g - c
-            y_lid_front = -self.width / 2.0
-            lid_w = max(0.2, y_lid_back - y_lid_front)
-            z_lid = z_g + c / 2.0
+            lid_z = z_g + c / 2.0
+            poly_lid_xz = Polygon([
+                (-(in_l / 2.0 + d_g - c), lid_z),
+                ((in_l / 2.0 + d_g - c), lid_z),
+                ((in_l / 2.0 - c), lid_z + t_lid),
+                (-(in_l / 2.0 - c), lid_z + t_lid),
+            ])
+            cs_lid = region_cross_section(poly_lid_xz)
+            lid_y_front = -self.width / 2.0
+            lid_y_back = in_w / 2.0 + d_g - c
+            lid_len_y = lid_y_back - lid_y_front
+            lid_plate = m3d.Manifold.extrude(cs_lid, lid_len_y).rotate((90, 0, 0)).translate((0, lid_y_back, 0))
 
-            lid_plate = m3d.Manifold.cube((lid_l, lid_w, t_lid), False).translate((-lid_l / 2.0, y_lid_front, z_lid))
+            # Chamfer back edge of lid so it fits the back wall chamfer
+            poly_back_lid = Polygon([
+                (lid_y_back, lid_z - 0.1),
+                (lid_y_back, lid_z + t_lid + 0.1),
+                (lid_y_back - d_g, lid_z + t_lid + 0.1),
+            ])
+            cs_back_cut = region_cross_section(poly_back_lid)
+            cutter_lid_back = m3d.Manifold.extrude(cs_back_cut, in_l + 2.0 * d_g).rotate((0, 90, 0)).rotate((0, 0, 90)).translate((-in_l / 2.0 - d_g, 0, 0))
+            lid_plate = lid_plate - cutter_lid_back
 
-            # Front grip bead on lid (from user sketch arc_9)
-            r_bead = min(1.0, t_lid / 2.0)
-            bead = m3d.Manifold.cylinder(lid_l, r_bead, r_bead, circular_segments=16).rotate((0, 90, 0)).translate((-lid_l / 2.0, y_lid_front, z_lid + t_lid / 2.0))
+            # Flärpen på locket (front pull tab / flap, adjustable tab_size)
+            flarp_w = max(0.2, in_l - 2.0 * c)
+            flarp_t = t
+            flarp_h = max(1.0, tab_sz)
+            flarp = m3d.Manifold.cube((flarp_w, flarp_t, flarp_h), False).translate((-flarp_w / 2.0, lid_y_front, lid_z))
 
-            # Snap detent ridge on underside of lid
-            r_detent = min(0.4, c * 1.5, t_lid * 0.2)
-            y_detent = -self.width / 2.0 + t / 2.0
-            detent_ridge = m3d.Manifold.cylinder(lid_l, r_detent * 0.85, r_detent * 0.85, circular_segments=16).rotate((0, 90, 0)).translate((-lid_l / 2.0, y_detent, z_lid))
+            r_flarp = min(1.0, flarp_t / 2.0)
+            flarp_grip = m3d.Manifold.cylinder(flarp_w, r_flarp, r_flarp, circular_segments=16).rotate((0, 90, 0)).translate((-flarp_w / 2.0, lid_y_front + flarp_t / 2.0, lid_z + flarp_h))
 
-            solid = lid_plate + bead + detent_ridge
+            # Snap detent ridge on underside of flärp
+            r_det = min(0.35, c * 1.5, t_lid * 0.2)
+            y_det = -self.width / 2.0 + t / 2.0
+            det_ridge = m3d.Manifold.cylinder(flarp_w, r_det * 0.85, r_det * 0.85, circular_segments=16).rotate((0, 90, 0)).translate((-flarp_w / 2.0, y_det, lid_z))
+
+            solid = lid_plate + flarp + flarp_grip + det_ridge
             if is_centered:
                 solid = solid.translate((0.0, 0.0, -self.height / 2.0))
             elif not is_bottom:
                 solid = solid.translate((self.length / 2.0, self.width / 2.0, 0.0))
         elif self.lip_height > 1e-4 and self.lip_step > 1e-4:
-            # Box with slide lid groove (Björn #151, problem report 20261101-185047)
-            # Outer box with bottom/corner rounding, inner hollow cavity, and internal groove with front entry slot
+            # Box with slide lid groove (Björn #151, problem report 20261101-185047, chamfer update)
+            # Outer box with bottom/corner rounding, inner cavity, chamfered grooves on short sides and back,
+            # and open front (no hanging lip) for supportless 3D printing
+            from shapely.geometry import Polygon
+            from omacad.model.features.base import region_cross_section
             box_outer = _rounded_prism(self.length, self.width, self.height, self.outer_round, self.outer_round_kind, round_top=False)
             t = min(self.wall_thickness, min(self.length, self.width) * 0.45, self.height * 0.9)
             tb = self.bottom_thickness if self.bottom_thickness > 1e-4 else t
@@ -264,26 +291,47 @@ class BoxFeature(Feature):
             z_g = self.height - h_lip
             z_g = max(tb + 1.0, min(self.height - h_g - 1.0, z_g))
 
-            g_l = in_l + 2.0 * d_g
-            y_back = in_w / 2.0 + d_g
-            y_front = -self.width / 2.0 - 1.0
-            g_w = y_back - y_front
+            # Cut front wall from z_g all the way to top: removes the long hanging lip above opening
+            front_open_w = in_l + 2.0 * d_g
+            y_front_cut = -self.width / 2.0 - 1.0
+            y_front_inner = -in_w / 2.0
+            front_cutter = m3d.Manifold.cube(
+                (front_open_w, y_front_inner - y_front_cut, self.height - z_g + 1.0), False
+            ).translate((-front_open_w / 2.0, y_front_cut, z_g))
 
-            cutter_slot = m3d.Manifold.cube((g_l, g_w, h_g), False).translate((-g_l / 2.0, y_front, z_g))
+            # Chamfered grooves along short sides (left and right walls)
+            poly_xz = Polygon([
+                (-in_l / 2.0 - d_g, z_g),
+                (in_l / 2.0 + d_g, z_g),
+                (in_l / 2.0, z_g + h_g),
+                (-in_l / 2.0, z_g + h_g),
+            ])
+            cs_xz = region_cross_section(poly_xz)
+            y_back_cut = in_w / 2.0 + d_g
+            cutter_sides = m3d.Manifold.extrude(cs_xz, y_back_cut - y_front_cut).rotate((90, 0, 0)).translate((0, y_back_cut, 0))
 
-            # Snap detent notch in the slot sill
-            r_detent = min(0.4, c * 1.5, t_lid * 0.2)
-            y_detent = -self.width / 2.0 + t / 2.0
-            detent_notch = m3d.Manifold.cylinder(g_l, r_detent, r_detent, circular_segments=16).rotate((0, 90, 0)).translate((-g_l / 2.0, y_detent, z_g))
+            # Back wall chamfered groove
+            poly_yz = Polygon([
+                (in_w / 2.0 - 0.1, z_g),
+                (in_w / 2.0 + d_g, z_g),
+                (in_w / 2.0, z_g + h_g),
+                (in_w / 2.0 - 0.1, z_g + h_g),
+            ])
+            cs_yz = region_cross_section(poly_yz)
+            cutter_back = m3d.Manifold.extrude(cs_yz, in_l + 2.0 * d_g).rotate((0, 90, 0)).rotate((0, 0, 90)).translate((-in_l / 2.0 - d_g, 0, 0))
 
-            solid = solid - cutter_slot - detent_notch
+            # Snap detent notch in front wall sill at z_g
+            r_det = min(0.35, c * 1.5, t_lid * 0.2)
+            y_det = -self.width / 2.0 + t / 2.0
+            det_notch = m3d.Manifold.cylinder(front_open_w, r_det, r_det, circular_segments=16).rotate((0, 90, 0)).translate((-front_open_w / 2.0, y_det, z_g))
+
+            solid = solid - front_cutter - cutter_sides - cutter_back - det_notch
 
             if self.honeycomb:
                 try:
                     from shapely.geometry import box as sbox
                     from shapely.ops import unary_union
                     from omacad.model.features.honeycomb import lattice, fit_cells
-                    from omacad.model.features.base import region_cross_section
                     margin = self.honeycomb_margin
                     room_l = in_l - 2.0 * margin
                     room_w = in_w - 2.0 * margin
@@ -409,6 +457,7 @@ class BoxFeature(Feature):
             "is_lid": self.is_lid,
             "clearance": self.clearance,
             "lid_top": self.lid_top,
+            "tab_size": getattr(self, "tab_size", 4.0),
         }
 
 

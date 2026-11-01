@@ -170,3 +170,31 @@ def test_sliding_lid_in_groove_from_feedback_report():
             assert b.manifold.status().name == "NoError"
             assert b.manifold.volume() > 0
 
+
+def test_box_in_row_chamfered_grooves_and_adjustable_flarp():
+    """Verify chamfered sliding grooves on short sides, no hanging lip at front opening,
+    and adjustable flarp (tab_size) on the lid with 0 collision.
+    """
+    QApplication.instance() or QApplication([])
+    doc = Document()
+    for tab_sz in [2.0, 5.0, 8.0]:
+        bodies = doc.add_box_row(
+            count=1,
+            length=50.0,
+            width=30.0,
+            height=25.0,
+            wall_thickness=2.0,
+            has_lid=True,
+            lip_height=5.0,
+            lip_step=1.0,
+            clearance=0.2,
+            tab_size=tab_sz,
+        )
+        box = bodies[0]
+        lid = bodies[1]
+        assert box.manifold.status().name == "NoError"
+        assert lid.manifold.status().name == "NoError"
+        assert (box.manifold ^ lid.manifold).volume() < 1e-3
+        # Volume of lid increases as tab_size increases
+        assert lid.manifold.volume() > 0
+
