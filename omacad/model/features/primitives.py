@@ -315,18 +315,8 @@ class BoxFeature(Feature):
             # XY corner rounding/chamfer mask
             # The back corners are inserted first into the box. A lead-in chamfer
             # facilitates insertion into the tracks without catching (report 20261102-183235).
-            if self.inner_round > 1e-4:
-                r_back = max(0.6, self.inner_round - c) if self.inner_round_kind == "chamfer" else max(0.2, self.inner_round - c)
-                kind_back = self.inner_round_kind
-            elif self.inner_round_kind == "chamfer":
-                r_back = max(0.8, r_out - c)
-                kind_back = "chamfer"
-            elif r_out > t + c + 0.2:
-                r_back = r_out - t - c
-                kind_back = self.inner_round_kind
-            else:
-                r_back = min(1.0, max(0.6, y_shelf_lid * 0.1))
-                kind_back = "chamfer"
+            r_back = max(1.5, self.inner_round if (self.inner_round > 1e-4 and self.inner_round_kind == "chamfer") else min(2.0, max(1.5, r_out)))
+            kind_back = "chamfer"
 
             poly_xy_mask = _lid_xy_mask_poly(
                 x_back_lid, x_front_lid, y_shelf_lid,

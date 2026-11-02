@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.119
+
+### Fixed
+- **Tydlig fasning (chamfer) på skjutlockets införingskant (rapport 20261102-183235)**: Bakkanten på skjutlocket får nu alltid en tydlig 45°-införingsfas (chamfer, 1.5–2.0 mm) oavsett om innerhörnen på lådan är skarpa eller avrundade, så att fasningen syns tydligt och gör att locket styrs rakt in i skenorna.
+
 # Hybrid-experiment — 0.9.9.80.118
 
 ### Fixed
