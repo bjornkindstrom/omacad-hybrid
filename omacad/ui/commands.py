@@ -44,6 +44,7 @@ _ALL = [
     _c("pipe", "Pipe", "🧪", "A round rod or tube along a path (lines and arcs in a sketch)", signal="pipe_clicked"),
     _c("box", "Box", "📦", "A rectangular box; the panel can also hollow, round and taper it", signal="box_clicked"),
     _c("box_row", "Box in a Row", "🍱", "Boxes in a row with fillets/chamfer, honeycomb, slide-over lids, and object grouping", signal="box_row_clicked"),
+    _c("star_brackets", "Star Brackets", "⭐", "Parametric 3D printable brackets and foot supports for square aluminum tubes (julstjärna)", signal="star_brackets_clicked"),
     _c("cylinder", "Cylinder", "🥫", "A cylinder; the panel can also hollow, round and taper it", signal="cylinder_clicked"),
     _c("cone", "Cone", "🔺", "A cone or frustum: bottom and top radius (0 = a point) and height", signal="cone_clicked"),
     _c("hexagon", "Prism", "⬢", "A regular prism (6 sides = hexagon), sized across flats", signal="hexagon_clicked"),
@@ -147,8 +148,8 @@ COMMANDS: Dict[str, Command] = {c.cid: c for c in _ALL}
 
 # A dropdown in the ribbon: (dropdown id, label, icon, tip, [command ids]). With the matching setting off its
 # commands stand as separate buttons instead (Settings > ribbon layout).
-PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Cylinder, Cone, Prism, Pipe, Thread / Coil, Jar with Lid (each "
-              "panel can hollow, round and taper)", ["box", "box_row", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"])
+PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Pipe, Thread / Coil, Jar with Lid (each "
+              "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"])
 INSERT = ("insert", "Insert", "🖼️", "Canvas (Image) and Import 3MF", ["canvas", "import_3mf"])
 MODIFY_BODY = ("modify_body", "Body", "🔗", "Combine, Split Body, Shell, Offset Face, Move",
                ["combine", "split_body", "shell", "offset_face", "move"])
@@ -174,7 +175,7 @@ SKETCH_GROUPS: List[Tuple[str, list]] = [
 
 # Menu bar, in the ribbon's order (None = separator). File, Edit, View and Help are built in menu_setup.
 MENUS: List[Tuple[str, list]] = [
-    ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", None, "box", "box_row", "cylinder", "cone",
+    ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", None, "box", "box_row", "star_brackets", "cylinder", "cone",
                 "hexagon", "pipe", "thread", "jar",
                 None, "pattern_linear", "pattern_circular", "mirror", "pattern_fill", "honeycomb", None,
                 "offset_plane", "canvas"]),

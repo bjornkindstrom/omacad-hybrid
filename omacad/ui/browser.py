@@ -602,6 +602,16 @@ class BrowserTree(QWidget):
             new_params = dlg.get_params()
             self.doc.update_box_row_group(group_id, **new_params)
 
+    def edit_star_bracket_group_prompt(self, group_id: str):
+        from omacad.ui.dialogs.primitives_dlg import StarBracketsDialog
+        dlg = StarBracketsDialog(self)
+        params = self.doc.star_bracket_group_params(group_id)
+        if params:
+            dlg.set_params(params)
+        if dlg.exec():
+            new_params = dlg.get_params()
+            self.doc.update_star_bracket_group(group_id, **new_params)
+
     def new_favorite_group(self, ref):
         from PySide6.QtWidgets import QInputDialog
         name, ok = QInputDialog.getText(self, "New favorites group", "Group name:", text=self._owner_name(ref))
@@ -712,6 +722,8 @@ class BrowserTree(QWidget):
         elif item_type == "object_group":
             if hasattr(self.doc, "is_box_row_group") and self.doc.is_box_row_group(item_id):
                 add("🍱 Edit Box in a Row…", lambda: self.edit_box_row_group_prompt(item_id))
+            elif hasattr(self.doc, "is_star_bracket_group") and self.doc.is_star_bracket_group(item_id):
+                add("⭐ Edit Star Brackets…", lambda: self.edit_star_bracket_group_prompt(item_id))
             rename()
             add("🗑️ Ungroup objects", lambda: self.doc.remove_object_group(item_id))
             menu.addSeparator()

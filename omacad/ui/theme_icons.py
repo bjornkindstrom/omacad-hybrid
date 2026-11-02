@@ -74,7 +74,7 @@ EMOJI_TO_TOOL = {
     "🔳": "edges", "📁": "folder", "🔍": "analysis", "🔎": "find", "🧭": "locate", "🧱": "parametric",
     "🧊": "body", "●": "history_end", "🕳️": "hole", "💥": "explode", "📍": "point", "🎯": "look_at",
     "🗑": "delete", "✋": "pan", "👆": "pointer", "📋": "overview", "🛠️": "settings",
-    "🍱": "box_row",
+    "🍱": "box_row", "⭐": "star_brackets",
 }
 
 # Where one emoji stands for several commands, Studio draws each its own icon (other sets keep the emoji's icon)
@@ -83,7 +83,7 @@ COMMAND_ICONS = {
     "pattern_circular": "pattern_circular", "pattern_fill": "pattern_fill", "offset_face": "offset_face",
     "section": "section", "finish_sketch": "finish", "move_sketch": "move", "modify_body": "move",
     "scale_sketch": "scale", "screenshot": "screenshot", "copy_image": "copy_image", "turntable": "turntable",
-    "box_row": "box_row",
+    "box_row": "box_row", "star_brackets": "star_brackets",
 }
 
 STUDIO_ICONS = "studio"   # line icons in one colour (the text), blue while the tool is active

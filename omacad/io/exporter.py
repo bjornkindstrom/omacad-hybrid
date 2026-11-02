@@ -515,6 +515,28 @@ class Exporter:
             elif ft == "sphere":
                 feat = SphereFeature(fid, fname, f_data["radius"], translation=f_data.get("translation"))
                 doc.timeline.add_feature(feat)
+            elif ft == "star_bracket":
+                from omacad.model.features.star_bracket import StarBracketFeature
+                feat = StarBracketFeature(
+                    fid, fname, f_data.get("part_type", "outer"),
+                    tube_size=f_data.get("tube_size", 10.0),
+                    tube_length=f_data.get("tube_length", 250.0),
+                    clearance=f_data.get("clearance", 0.25),
+                    wall_thickness=f_data.get("wall_thickness", 2.5),
+                    socket_depth=f_data.get("socket_depth", 25.0),
+                    hole_diameter=f_data.get("hole_diameter", 3.5),
+                    hole_offset=f_data.get("hole_offset", 12.0),
+                    angle=f_data.get("angle", 36.0),
+                    outer_angle=f_data.get("outer_angle"),
+                    inner_angle=f_data.get("inner_angle"),
+                    foot_width=f_data.get("foot_width", 40.0),
+                    foot_length=f_data.get("foot_length", 70.0),
+                    foot_thickness=f_data.get("foot_thickness", 4.0),
+                    foot_tube_angle=f_data.get("foot_tube_angle", 36.0),
+                    assembled=f_data.get("assembled", False),
+                    translation=f_data.get("translation"),
+                )
+                doc.timeline.add_feature(feat)
             elif ft == "cone":
                 feat = ConeFeature(fid, fname, f_data["radius"], f_data["height"], f_data.get("center", False),
                                    top_radius=f_data.get("top_radius", 0.0), wall_thickness=f_data.get("wall_thickness", 0.0),

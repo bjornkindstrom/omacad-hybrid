@@ -45,6 +45,7 @@ from omacad.model.features.thread import ThreadFeature
 from omacad.model.features.offset_face import OffsetFaceFeature
 from omacad.model.features.honeycomb import HoneycombFeature
 from omacad.model.features.sweep import SweepFeature, LoftFeature, PipeFeature
+from omacad.model.features.star_bracket import StarBracketFeature
 
 __all__ = [
     "OffsetFaceFeature",
@@ -62,6 +63,7 @@ __all__ = [
     "_planes_coincide",
     "profile_polygon_in",
     "BoxFeature",
+    "StarBracketFeature",
     "CylinderFeature",
     "PrismFeature",
     "ConeFeature",

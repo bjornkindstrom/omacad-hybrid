@@ -138,6 +138,7 @@ class Ribbon(QWidget):
     parameters_clicked = Signal()
     box_clicked = Signal()
     box_row_clicked = Signal()
+    star_brackets_clicked = Signal()
     cylinder_clicked = Signal()
     hexagon_clicked = Signal()
     cone_clicked = Signal()

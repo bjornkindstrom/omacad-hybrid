@@ -42,12 +42,58 @@ BOX_ROW_PARAMS_CONFIG = [
 
 BOX_ROW_LID_PARAMS_CONFIG = [
     ("clearance", "3D print clearance", "mm"),
-    ("snap_size", "Snap detent (snäpp)", "mm"),
     ("slot_length", "Slot length (0 = auto)", "mm"),
     ("slot_width", "Slot width (0 = auto)", "mm"),
     ("lip_height", "Groove height from top", "mm"),
     ("lip_step", "Groove depth into wall", "mm"),
 ]
+
+BOX_ROW_HONEYCOMB_PARAMS_CONFIG = [
+    ("honeycomb", "Honeycomb (1 = on, 0 = off)", ""),
+    ("honeycomb_size", "Honeycomb cell size", "mm"),
+    ("honeycomb_wall", "Honeycomb rib thickness", "mm"),
+    ("honeycomb_margin", "Honeycomb margin", "mm"),
+]
+
+STAR_BRACKET_PARAMS_CONFIG = [
+    ("assembled", "Assembled view (1 = star, 0 = parts)", ""),
+    ("tube_length", "Tube length", "mm"),
+    ("tube_size", "Tube size", "mm"),
+    ("clearance", "3D print clearance", "mm"),
+    ("wall_thickness", "Wall thickness", "mm"),
+    ("socket_depth", "Socket depth", "mm"),
+    ("hole_diameter", "Screw hole diameter", "mm"),
+    ("hole_offset", "Screw hole offset", "mm"),
+    ("outer_angle", "Outer angle (tip)", "°"),
+    ("inner_angle", "Inner angle (valley)", "°"),
+    ("foot_width", "Foot width", "mm"),
+    ("foot_length", "Foot length", "mm"),
+    ("foot_thickness", "Foot thickness", "mm"),
+    ("foot_tube_angle", "Foot tube angle", "°"),
+]
+
+
+def _add_star_bracket_group_settings(grow, doc, gid):
+    params = doc.star_bracket_group_params(gid)
+    if not params:
+        return
+    settings_node = QTreeWidgetItem(grow, ["⚙️ Settings", ""])
+    settings_node.setData(0, ROLE, ("group_settings", gid))
+    settings_node.setExpanded(True)
+
+    for key, label, unit in STAR_BRACKET_PARAMS_CONFIG:
+        val = params.get(key)
+        if val is None:
+            continue
+        if isinstance(val, bool):
+            val = int(val)
+        val_str = f"{val:g}" if isinstance(val, float) else f"{val}"
+        suffix = f" {unit}" if unit else ""
+        row = QTreeWidgetItem(settings_node, [f"{label}: {val_str}{suffix}", ""])
+        row.setData(0, ROLE, ("group_param", (gid, key)))
+        row.setFlags(row.flags() | Qt.ItemFlag.ItemIsEditable)
+        row.setToolTip(0, "Double-click or click the pencil to edit for all brackets in group")
+        _pencil(row)
 
 
 def _add_box_row_group_settings(grow, doc, gid):
@@ -58,7 +104,7 @@ def _add_box_row_group_settings(grow, doc, gid):
     settings_node.setData(0, ROLE, ("group_settings", gid))
     settings_node.setExpanded(True)
 
-    items_to_add = list(BOX_ROW_PARAMS_CONFIG)
+    items_to_add = list(BOX_ROW_PARAMS_CONFIG) + list(BOX_ROW_HONEYCOMB_PARAMS_CONFIG)
     if params.get("has_lid", False):
         items_to_add.extend(BOX_ROW_LID_PARAMS_CONFIG)
 
@@ -66,6 +112,8 @@ def _add_box_row_group_settings(grow, doc, gid):
         val = params.get(key)
         if val is None:
             continue
+        if isinstance(val, bool):
+            val = int(val)
         val_str = f"{val:g}" if isinstance(val, float) else f"{val}"
         suffix = f" {unit}" if unit else ""
         row = QTreeWidgetItem(settings_node, [f"{label}: {val_str}{suffix}", ""])
@@ -96,6 +144,8 @@ def add_histories(browser, root):
         browser._style_eye(grow, gvis)
         if hasattr(doc, "is_box_row_group") and doc.is_box_row_group(gid):
             _add_box_row_group_settings(grow, doc, gid)
+        elif hasattr(doc, "is_star_bracket_group") and doc.is_star_bracket_group(gid):
+            _add_star_bracket_group_settings(grow, doc, gid)
         for oid in og.get("objects", []):
             if oid in history.objects and history.objects[oid].parent_id is None:
                 _add_object(browser, grow, oid, features, excluded)

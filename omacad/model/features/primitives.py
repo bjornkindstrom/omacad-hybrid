@@ -197,18 +197,6 @@ def _lid_xy_mask_poly(x_min, x_max, y_half, r_back, r_front, kind_back="fillet",
 
 
 
-SNAP_MIN_OUTER = 0.6  # mm of material that always stays outside the snap pocket
-
-
-def _snap_center_x(length: float, wall: float, radius: float) -> float:
-    """Snap pocket centre: at least SNAP_MIN_OUTER mm of wall stays on the outer (front) side.
-
-    A bigger snap moves the pocket back into the sill instead of eating the outer skin
-    (report 20261101-212302)."""
-    near_cavity = length / 2.0 - wall + radius + 0.2
-    keep_outer = length / 2.0 - SNAP_MIN_OUTER - radius
-    return max(length / 2.0 - wall, min(near_cavity, keep_outer))
-
 class BoxFeature(Feature):
     def __init__(self, feature_id: str, name: str, length: float, width: float, height: float, center: Any = False,
                  plane_origin: Any = None, plane_normal: Any = None, plane_u: Any = None, plane_v: Any = None,
@@ -250,6 +238,11 @@ class BoxFeature(Feature):
         self.slot_length = float(slot_length)  # lid finger slot, 0 = automatic
         self.slot_width = float(slot_width)
 
+    def _lid_back_chamfer(self) -> float:
+        """Size of the lid's chamfered back corners; the box groove matches it (#161)."""
+        r_out = self.outer_round
+        return max(1.5, self.inner_round if (self.inner_round > 1e-4 and self.inner_round_kind == "chamfer") else min(2.0, max(1.5, r_out)))
+
     def build_solid(self) -> m3d.Manifold:
         is_centered = (self.center is True or self.center == "center")
         is_bottom = (self.center == "bottom_center")
@@ -260,7 +253,7 @@ class BoxFeature(Feature):
             # Cool small box slide lid (Björn, report 20261101-202026)
             # Sliding plate with side V-grooves matching the triangular wall rails,
             # corner filleting/chamfering matching the box corners,
-            # compliant thumb slot, raised grip rib and underside snap pip
+            # compliant thumb slot
             from shapely.geometry import Polygon, box as sbox
             from omacad.model.features.base import region_cross_section
 
@@ -315,7 +308,7 @@ class BoxFeature(Feature):
             # XY corner rounding/chamfer mask
             # The back corners are inserted first into the box. A lead-in chamfer
             # facilitates insertion into the tracks without catching (report 20261102-183235).
-            r_back = max(1.5, self.inner_round if (self.inner_round > 1e-4 and self.inner_round_kind == "chamfer") else min(2.0, max(1.5, r_out)))
+            r_back = self._lid_back_chamfer()
             kind_back = "chamfer"
 
             poly_xy_mask = _lid_xy_mask_poly(
@@ -327,7 +320,7 @@ class BoxFeature(Feature):
             lid_mask = m3d.Manifold.extrude(cs_mask, t_lid + 2.0).translate((0.0, 0.0, lid_z - 1.0))
             lid_plate = lid_plate ^ lid_mask
 
-            # Thumb slot (compliant flexure) and snap features
+            # Thumb slot (compliant flexure)
             solid = lid_plate
             if in_l > 12.0 and in_w > 8.0:
                 user_w = float(getattr(self, "slot_width", 0.0) or 0.0)
@@ -350,18 +343,25 @@ class BoxFeature(Feature):
                 cs_slot = region_cross_section(slot_poly)
                 slot_cutter = m3d.Manifold.extrude(cs_slot, t_lid + 2.0).translate((0.0, 0.0, lid_z - 1.0))
                 solid = solid - slot_cutter
+            else:
+                slot_poly = None
 
-                # Underside snap pip
-                snap_s = getattr(self, "snap_size", None)
-                if snap_s is None or snap_s <= 1e-4:
-                    snap_s = 0.6
-                r_det = min(snap_s, t_lid * 0.6, t * 0.8)
-                w_det = min(8.0, in_w * 0.3)
-                x_det = _snap_center_x(self.length, t, r_det)
-                r_pip = max(0.2, r_det * 0.75)
-                w_pip = max(0.5, w_det - 2.0 * c)
-                snap_pip = m3d.Manifold.cylinder(w_pip, r_pip, r_pip, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_pip / 2.0, lid_z))
-                solid = solid + snap_pip
+            if self.honeycomb:
+                # Honeycomb in the lid too (report #155), kept clear of the thumb slot.
+                try:
+                    from shapely.ops import unary_union
+                    from omacad.model.features.honeycomb import lattice, fit_cells
+                    m_hc = max(self.honeycomb_margin, 1.5)
+                    room = sbox(x_back_lid + m_hc, -(y_shelf_lid - m_hc), x_front_lid - m_hc, y_shelf_lid - m_hc)
+                    if slot_poly is not None:
+                        room = room.difference(slot_poly.buffer(m_hc))
+                    if not room.is_empty and room.area > self.honeycomb_size ** 2:
+                        cells = fit_cells(lattice("hexagon", self.honeycomb_size, self.honeycomb_wall, 0.0, room.bounds, (0.0, 0.0)), room, False)
+                        if cells:
+                            cs = region_cross_section(unary_union(cells))
+                            solid = solid - m3d.Manifold.extrude(cs, t_lid + 2.0).translate((0.0, 0.0, lid_z - 1.0))
+                except Exception as exc:
+                    applog.log("ERROR", f"Lid honeycomb: {exc}")
 
             if is_centered:
                 solid = solid.translate((0.0, 0.0, -self.height / 2.0))
@@ -418,6 +418,16 @@ class BoxFeature(Feature):
             channel_len = x_front - x_back
             channel_cutter = m3d.Manifold.extrude(cs_channel, channel_len).rotate((90, 0, 90)).translate((x_back, 0.0, 0.0))
 
+            # The groove's back corners are chamfered like the lid's back corners, so the box
+            # meets the lid with a chamfer - only up at lid level, not in the whole box (#161).
+            d_ch = min(self._lid_back_chamfer() + c * (2.0 - math.sqrt(2.0)), y_shelf, channel_len * 0.4)
+            ch_poly = Polygon([
+                (x_back + d_ch, -y_shelf), (x_front, -y_shelf), (x_front, y_shelf),
+                (x_back + d_ch, y_shelf), (x_back, y_shelf - d_ch), (x_back, -y_shelf + d_ch),
+            ])
+            ch_mask = m3d.Manifold.extrude(region_cross_section(ch_poly), self.height + 2.0).translate((0.0, 0.0, -1.0))
+            channel_cutter = channel_cutter ^ ch_mask
+
             solid = box_outer - cavity - channel_cutter
 
             # The rails stop where the front wall starts: left running through the front
@@ -426,22 +436,6 @@ class BoxFeature(Feature):
             x_clear = self.length / 2.0 - t - r_front
             front_clear = m3d.Manifold.cube((self.length / 2.0 + 1.0 - x_clear, 2.0 * y_shelf, self.height + 1.0 - z_shelf)).translate((x_clear, -y_shelf, z_shelf))
             solid = solid - front_clear
-
-            # Snap detent notch in front sill
-            if in_l > 12.0 and in_w > 8.0:
-                snap_s = getattr(self, "snap_size", None)
-                if snap_s is None or snap_s <= 1e-4:
-                    snap_s = 0.6
-                r_det = min(snap_s, t_lid * 0.6, t * 0.8)
-                w_det = min(8.0, in_w * 0.3)
-                x_det = _snap_center_x(self.length, t, r_det)
-                # Round pocket on the outer side, opened with a ramp towards the
-                # cavity so it prints without an overhang (report 20261101-211334).
-                pocket = m3d.Manifold.cylinder(w_det, r_det, r_det, circular_segments=16).rotate((90, 0, 0)).translate((x_det, w_det / 2.0, z_shelf))
-                ramp_x = self.length / 2.0 - t - 0.5
-                ramp_end = m3d.Manifold.cube((0.5, w_det, 0.01)).translate((ramp_x, -w_det / 2.0, z_shelf - 0.01))
-                notch = m3d.Manifold.batch_hull([pocket, ramp_end])
-                solid = solid - notch
 
             if self.honeycomb:
                 try:
@@ -460,6 +454,34 @@ class BoxFeature(Feature):
                             solid = solid - cutter
                 except Exception as exc:
                     applog.log("ERROR", f"Box honeycomb floor: {exc}")
+
+                # Honeycomb in the side walls and the back wall, below the lid groove (report #155)
+                try:
+                    from shapely.geometry import box as sbox
+                    from shapely.ops import unary_union
+                    from omacad.model.features.honeycomb import lattice, fit_cells
+                    m_hc = max(self.honeycomb_margin, 1.5)
+                    z0, z1 = tb + m_hc, z_shelf - m_hc
+                    if z1 - z0 > self.honeycomb_size:
+                        def cells_in(u0, u1):
+                            room = sbox(u0, z0, u1, z1)
+                            cells = fit_cells(lattice("hexagon", self.honeycomb_size, self.honeycomb_wall, 0.0, room.bounds, (0.0, 0.0)), room, False)
+                            return region_cross_section(unary_union(cells)) if cells else None
+                        x0, x1 = -in_l / 2.0 + m_hc, x_clear - m_hc
+                        if x1 - x0 > self.honeycomb_size:
+                            cs = cells_in(x0, x1)
+                            if cs is not None:
+                                span = self.width + 2.0
+                                sides = m3d.Manifold.extrude(cs, span).rotate((90, 0, 0)).translate((0.0, span / 2.0, 0.0))
+                                solid = solid - sides
+                        y1 = in_w / 2.0 - m_hc
+                        if 2.0 * y1 > self.honeycomb_size:
+                            cs = cells_in(-y1, y1)
+                            if cs is not None:
+                                back = m3d.Manifold.extrude(cs, t + 2.0).rotate((90, 0, 90)).translate((-self.length / 2.0 - 1.0, 0.0, 0.0))
+                                solid = solid - back
+                except Exception as exc:
+                    applog.log("ERROR", f"Box honeycomb walls: {exc}")
 
             if is_centered:
                 solid = solid.translate((0.0, 0.0, -self.height / 2.0))

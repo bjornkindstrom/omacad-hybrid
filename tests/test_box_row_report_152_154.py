@@ -1,22 +1,11 @@
-"""Reports 20261101-205314 (stub), -212302 (snap skin), -221011 (slot size) for Box in a row."""
+"""Reports 20261101-205314 (stub), -221011 (slot size) for Box in a row (the snap skin test left with the snap, #162)."""
 import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import numpy as np
-from omacad.model.features.primitives import BoxFeature, _snap_center_x, SNAP_MIN_OUTER
+from omacad.model.features.primitives import BoxFeature
 
 BOX = dict(center="bottom_center", length=60.0, width=40.0, height=34.1, wall_thickness=2.0,
            bottom_thickness=2.0, outer_round=2.0, inner_round=1.0, lip_height=2.2, lip_step=1.0, clearance=0.2)
-
-
-def test_snap_always_leaves_min_outer_skin_and_moves_back_when_bigger():
-    length, wall = 60.0, 2.0
-    prev = None
-    for r in (0.6, 0.8, 1.0, 1.2):
-        x = _snap_center_x(length, wall, r)
-        assert length / 2.0 - (x + r) >= SNAP_MIN_OUTER - 1e-9
-        if prev is not None:
-            assert x <= prev + 1e-9  # bigger pip -> pocket moves back
-        prev = x
 
 
 def test_front_rail_stub_is_gone():

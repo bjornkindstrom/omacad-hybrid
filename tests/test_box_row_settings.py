@@ -110,7 +110,7 @@ def test_box_row_group_settings_in_browser_tree():
     assert any("Boxes count: 2" in l for l in param_labels)
     assert any("Spacing: 5 mm" in l for l in param_labels)
     assert any("Wall thickness: 2 mm" in l for l in param_labels)
-    assert any("Snap detent (snäpp): 0.6 mm" in l for l in param_labels)
+    assert not any("Snap detent" in l for l in param_labels)
 
     # Check that value_ref recognizes group_param
     item = next(it[0] for it in tree_items if it[0].data(0, Qt.ItemDataRole.UserRole) == ("group_param", (gid, "height")))
@@ -243,8 +243,8 @@ def test_pencil_click_on_box_row_group_param_opens_editor():
     assert len(doc.box_row_features(gid)[0]) == 3
 
 
-def test_lid_is_flat_without_raised_rib_and_snap_size_scales():
-    """Verify that lid top has no protruding square/rib and that snap detent scales with snap_size."""
+def test_lid_is_flat_without_raised_rib():
+    """Verify that lid top has no protruding square/rib and that box and lid still slide without overlap."""
     QApplication.instance() or QApplication([])
     doc = Document()
     bodies = doc.add_box_row(
@@ -269,19 +269,9 @@ def test_lid_is_flat_without_raised_rib_and_snap_size_scales():
     # Max Z of lid must not exceed box top Z
     assert bb_lid[5] <= bb_box[5] + 1e-3, f"Lid max Z {bb_lid[5]} exceeds box top {bb_box[5]}"
 
-    # Problem 2: Snap detent size is 0.6 mm by default (twice standard)
+    # The snap detent is gone (#162): no setting in the group
     gid = doc.object_groups[0]["id"]
-    params = doc.box_row_group_params(gid)
-    assert params["snap_size"] == 0.6
-
-    # Increase snap size to 1.0 mm
-    apply_dimension(doc, "group_param", (gid, "snap_size"), "1.0")
-    params_after = doc.box_row_group_params(gid)
-    assert params_after["snap_size"] == 1.0
-
     box_feats, lid_feats = doc.box_row_features(gid)
-    assert box_feats[0].snap_size == 1.0
-    assert lid_feats[0].snap_size == 1.0
 
     # Overlap between box and lid remains 0 (clean sliding fit)
     box_after = doc.bodies[f"body_{box_feats[0].feature_id}"]
@@ -299,9 +289,8 @@ def test_feedback_report_20261101_205055_document():
         assert len(doc.object_groups) == 1
         gid = doc.object_groups[0]["id"]
         params = doc.box_row_group_params(gid)
-        assert "snap_size" in params
-        # Browser tree lists Snap detent
+        # Browser tree no longer lists a Snap detent (#162)
         browser = BrowserTree(doc)
         tree_items = list(browser._walk())
         param_labels = [it[0].text(0) for it in tree_items if it[0].data(0, Qt.ItemDataRole.UserRole) and it[0].data(0, Qt.ItemDataRole.UserRole)[0] == "group_param"]
-        assert any("Snap detent (snäpp)" in l for l in param_labels)
+        assert not any("Snap detent" in l for l in param_labels)

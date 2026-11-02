@@ -145,8 +145,13 @@ class HistoryDelegate(QStyledItemDelegate):
                     return
             elif kind == 'group_param':
                 gid, key = ids
-                params = doc.box_row_group_params(gid)
+                if hasattr(doc, "is_star_bracket_group") and doc.is_star_bracket_group(gid):
+                    params = doc.star_bracket_group_params(gid)
+                else:
+                    params = doc.box_row_group_params(gid)
                 val = params.get(key, "")
+                if isinstance(val, bool):
+                    val = int(val)
                 value = f"{val:g}" if isinstance(val, float) else str(val)
             elif kind == 'polygon_sides':
                 sid, gid = ids
@@ -198,6 +203,8 @@ class HistoryDelegate(QStyledItemDelegate):
 def apply_dimension(doc, kind, ids, text):
     if kind == 'group_param':
         gid, key = ids
+        if hasattr(doc, "is_star_bracket_group") and doc.is_star_bracket_group(gid):
+            return doc.edit_star_bracket_group_param(gid, key, text)
         return doc.edit_box_row_group_param(gid, key, text)
     if kind == 'parameter':
         return doc.edit_feature_dimension(*ids, text)

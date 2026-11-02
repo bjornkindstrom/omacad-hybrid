@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.121
+
+### Fixed
+- **Star Brackets: exakt rör- och fästeinriktning för alla stjärnvinklar (rapport 20261102-205851)**: Rörvinklar och radier i den monterade stjärnvyn följer nu exakt vald yttervinkel via fullständig trigonometrisk beräkning (`star_radii`), så att rören styrs rakt in i fästenas hylsor utan snedställning oavsett vinkelval. Även glidreglagen i inställningsdialogen hålls synkroniserade mellan ytter- och innervinkel. Test: `tests/test_star_brackets.py`.
+
+# Hybrid-experiment — 0.9.9.80.120
+
+### Fixed
+- **Box in a row: ingen snäpp, införingsfas i lådan, honeycomb i väggar och lock (requests #162, #161, #155)**: Snäppet (pip på locket + urtag i tröskeln) och inställningen "Snap detent" är borttagna, friktionen håller locket. Lådans spår får samma 45°-fas i bakhörnen som locket, bara på lockets nivå (inte i hela lådan), så lådan möter locket med en fas. Honeycomb-valet skär nu även sidoväggar, bakvägg (under spåret) och lock, utanför fingerslitsen. Honeycomb (on/off, cell size, rib thickness, margin) is also editable in the group's Settings in the object browser and updates all boxes and lids. Test: `tests/test_box_row_report_155_161_162.py`.
+
 # Hybrid-experiment — 0.9.9.80.119
 
 ### Fixed

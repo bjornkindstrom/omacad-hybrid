@@ -668,7 +668,7 @@ class BoxInRowDialog(BaseFeatureDialog):
         form.addRow("Inner corners:", r_in)
 
         # Honeycomb floor
-        self.chk_honeycomb = QCheckBox("Cut honeycomb into floor")
+        self.chk_honeycomb = QCheckBox("Cut honeycomb into floor, walls and lid")
         self.chk_honeycomb.setChecked(False)
         self.chk_honeycomb.toggled.connect(lambda _: self.changed.emit())
         form.addRow("Honeycomb:", self.chk_honeycomb)
@@ -716,14 +716,6 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.spn_clearance.setToolTip("3D printer clearance gap for smooth sliding.")
         self.spn_clearance.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("  3D print clearance:", self.spn_clearance)
-
-        self.spn_snap_size = ExprDoubleSpinBox()
-        self.spn_snap_size.setRange(0.1, 5.0)
-        self.spn_snap_size.setValue(0.6)
-        self.spn_snap_size.setSuffix(" mm")
-        self.spn_snap_size.setToolTip("Size of the snap detent pip and notch locking the lid.")
-        self.spn_snap_size.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("  Snap detent (snäpp):", self.spn_snap_size)
 
         self.spn_slot_length = ExprDoubleSpinBox()
         self.spn_slot_length.setRange(0.0, 500.0)
@@ -820,8 +812,8 @@ class BoxInRowDialog(BaseFeatureDialog):
             "lip_height": self.spn_lip_height.value(),
             "lip_step": self.spn_lip_step.value(),
             "clearance": self.spn_clearance.value(),
-            "snap_size": self.spn_snap_size.value(),
-            "tab_size": self.spn_snap_size.value(),
+            "snap_size": 0.6,  # no snap detent any more (#162); only feeds the automatic slot size
+            "tab_size": 0.6,
             "slot_length": self.spn_slot_length.value(),
             "slot_width": self.spn_slot_width.value(),
             "center": self.cmb_placement.currentData(),
@@ -876,13 +868,222 @@ class BoxInRowDialog(BaseFeatureDialog):
             self.spn_slot_length.setValue(float(params["slot_length"]))
         if "slot_width" in params:
             self.spn_slot_width.setValue(float(params["slot_width"]))
-        if "snap_size" in params:
-            self.spn_snap_size.setValue(float(params["snap_size"]))
-        elif "tab_size" in params:
-            t_val = float(params["tab_size"])
-            if t_val <= 2.5:
-                self.spn_snap_size.setValue(t_val)
         if "center" in params:
             idx = self.cmb_placement.findData(params["center"])
             if idx >= 0:
                 self.cmb_placement.setCurrentIndex(idx)
+
+
+class StarBracketsDialog(BaseFeatureDialog):
+    """Dialog for creating parametric 3D-printable star brackets and foot supports (Björn)."""
+
+    changed = Signal()
+
+    def __init__(self, parent=None, embedded: bool = False):
+        super().__init__("Star Brackets", parent, embedded)
+        form = QFormLayout()
+
+        self.chk_assembled = QCheckBox("Show assembled star")
+        self.chk_assembled.setToolTip("Show the full assembled star (10 tubes + 10 brackets + 2 feet). Off: 3D-printable parts layout.")
+        self.chk_assembled.setChecked(False)
+        self.chk_assembled.toggled.connect(lambda _: self.changed.emit())
+        form.addRow("View mode:", self.chk_assembled)
+
+        self.spn_tube_length = ExprDoubleSpinBox()
+        self.spn_tube_length.setRange(20.0, 3000.0)
+        self.spn_tube_length.setValue(250.0)
+        self.spn_tube_length.setSuffix(" mm")
+        self.spn_tube_length.setToolTip("Length of each square aluminum tube.")
+        self.spn_tube_length.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Tube length:", self.spn_tube_length)
+
+        self.spn_tube_size = ExprDoubleSpinBox()
+        self.spn_tube_size.setRange(2.0, 100.0)
+        self.spn_tube_size.setValue(10.0)
+        self.spn_tube_size.setSuffix(" mm")
+        self.spn_tube_size.setToolTip("Square aluminum tube nominal width and height.")
+        self.spn_tube_size.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Tube size:", self.spn_tube_size)
+
+        self.spn_clearance = ExprDoubleSpinBox()
+        self.spn_clearance.setRange(0.0, 5.0)
+        self.spn_clearance.setValue(0.25)
+        self.spn_clearance.setSuffix(" mm")
+        self.spn_clearance.setToolTip("Fit tolerance for 3D printer (inner socket size = tube + clearance).")
+        self.spn_clearance.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Clearance:", self.spn_clearance)
+
+        self.spn_wall = ExprDoubleSpinBox()
+        self.spn_wall.setRange(0.8, 20.0)
+        self.spn_wall.setValue(2.5)
+        self.spn_wall.setSuffix(" mm")
+        self.spn_wall.setToolTip("Plastic wall thickness around the socket.")
+        self.spn_wall.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Wall thickness:", self.spn_wall)
+
+        self.spn_depth = ExprDoubleSpinBox()
+        self.spn_depth.setRange(5.0, 200.0)
+        self.spn_depth.setValue(25.0)
+        self.spn_depth.setSuffix(" mm")
+        self.spn_depth.setToolTip("How far the tube inserts into the bracket socket.")
+        self.spn_depth.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Socket depth:", self.spn_depth)
+
+        self.spn_hole_dia = ExprDoubleSpinBox()
+        self.spn_hole_dia.setRange(1.0, 20.0)
+        self.spn_hole_dia.setValue(3.5)
+        self.spn_hole_dia.setSuffix(" mm")
+        self.spn_hole_dia.setToolTip("Screw hole diameter (e.g. 3.5 mm for M3/M3.5).")
+        self.spn_hole_dia.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Screw hole diameter:", self.spn_hole_dia)
+
+        self.spn_hole_offset = ExprDoubleSpinBox()
+        self.spn_hole_offset.setRange(2.0, 100.0)
+        self.spn_hole_offset.setValue(12.0)
+        self.spn_hole_offset.setSuffix(" mm")
+        self.spn_hole_offset.setToolTip("Distance from open arm end to center of screw hole.")
+        self.spn_hole_offset.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Screw hole offset:", self.spn_hole_offset)
+
+        self.spn_outer_angle = ExprDoubleSpinBox()
+        self.spn_outer_angle.setRange(10.0, 160.0)
+        self.spn_outer_angle.setValue(36.0)
+        self.spn_outer_angle.setSuffix(" °")
+        self.spn_outer_angle.setToolTip("Outer apex angle (36° for 5-pointed star). Changing this automatically updates the inner angle.")
+        self.spn_outer_angle.valueChanged.connect(self._on_outer_angle_changed)
+        form.addRow("Outer angle (tip):", self.spn_outer_angle)
+
+        self.spn_inner_angle = ExprDoubleSpinBox()
+        self.spn_inner_angle.setRange(10.0, 170.0)
+        self.spn_inner_angle.setValue(108.0)
+        self.spn_inner_angle.setSuffix(" °")
+        self.spn_inner_angle.setToolTip("Inner valley angle (108° for 5-pointed star). Changing this automatically updates the outer angle.")
+        self.spn_inner_angle.valueChanged.connect(self._on_inner_angle_changed)
+        form.addRow("Inner angle (valley):", self.spn_inner_angle)
+
+        self.spn_foot_width = ExprDoubleSpinBox()
+        self.spn_foot_width.setRange(15.0, 200.0)
+        self.spn_foot_width.setValue(40.0)
+        self.spn_foot_width.setSuffix(" mm")
+        self.spn_foot_width.setToolTip("Width of the ground base plate.")
+        self.spn_foot_width.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Foot width:", self.spn_foot_width)
+
+        self.spn_foot_length = ExprDoubleSpinBox()
+        self.spn_foot_length.setRange(20.0, 300.0)
+        self.spn_foot_length.setValue(70.0)
+        self.spn_foot_length.setSuffix(" mm")
+        self.spn_foot_length.setToolTip("Length of the ground base plate (front-to-back stability).")
+        self.spn_foot_length.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Foot length:", self.spn_foot_length)
+
+        self.spn_foot_thickness = ExprDoubleSpinBox()
+        self.spn_foot_thickness.setRange(2.0, 50.0)
+        self.spn_foot_thickness.setValue(4.0)
+        self.spn_foot_thickness.setSuffix(" mm")
+        self.spn_foot_thickness.setToolTip("Thickness of the ground base plate.")
+        self.spn_foot_thickness.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Foot thickness:", self.spn_foot_thickness)
+
+        self.spn_foot_angle = ExprDoubleSpinBox()
+        self.spn_foot_angle.setRange(5.0, 85.0)
+        self.spn_foot_angle.setValue(36.0)
+        self.spn_foot_angle.setSuffix(" °")
+        self.spn_foot_angle.setToolTip("Angle of the bottom tube to the ground (36° for 5-pointed star).")
+        self.spn_foot_angle.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Foot tube angle:", self.spn_foot_angle)
+
+        self.main_layout.addLayout(form)
+        self.lbl_problem = QLabel()
+        self.lbl_problem.setStyleSheet("color: #e06c75; font-size: 11px;")
+        self.lbl_problem.setWordWrap(True)
+        self.main_layout.addWidget(self.lbl_problem)
+        self.add_buttons()
+
+    def _on_outer_angle_changed(self, val):
+        if getattr(self, "_syncing_angles", False):
+            return
+        self._syncing_angles = True
+        try:
+            outer_val = float(val)
+            inner_val = max(10.0, min(170.0, round(outer_val + 72.0, 2)))
+            self.spn_inner_angle.setValue(inner_val)
+            fta = max(5.0, min(85.0, round(54.0 - outer_val / 2.0, 2)))
+            self.spn_foot_angle.setValue(fta)
+        finally:
+            self._syncing_angles = False
+        self.changed.emit()
+
+    def _on_inner_angle_changed(self, val):
+        if getattr(self, "_syncing_angles", False):
+            return
+        self._syncing_angles = True
+        try:
+            inner_val = float(val)
+            outer_val = max(10.0, min(160.0, round(inner_val - 72.0, 2)))
+            self.spn_outer_angle.setValue(outer_val)
+            fta = max(5.0, min(85.0, round(54.0 - outer_val / 2.0, 2)))
+            self.spn_foot_angle.setValue(fta)
+        finally:
+            self._syncing_angles = False
+        self.changed.emit()
+
+    def get_params(self) -> dict:
+        return {
+            "assembled": self.chk_assembled.isChecked(),
+            "tube_length": self.spn_tube_length.value(),
+            "tube_size": self.spn_tube_size.value(),
+            "clearance": self.spn_clearance.value(),
+            "wall_thickness": self.spn_wall.value(),
+            "socket_depth": self.spn_depth.value(),
+            "hole_diameter": self.spn_hole_dia.value(),
+            "hole_offset": self.spn_hole_offset.value(),
+            "outer_angle": self.spn_outer_angle.value(),
+            "inner_angle": self.spn_inner_angle.value(),
+            "foot_width": self.spn_foot_width.value(),
+            "foot_length": self.spn_foot_length.value(),
+            "foot_thickness": self.spn_foot_thickness.value(),
+            "foot_tube_angle": self.spn_foot_angle.value(),
+        }
+
+    def set_params(self, params: dict):
+        if getattr(self, "_syncing_angles", False):
+            return
+        self._syncing_angles = True
+        try:
+            if "assembled" in params:
+                self.chk_assembled.setChecked(bool(params["assembled"]))
+            if "tube_length" in params:
+                self.spn_tube_length.setValue(float(params["tube_length"]))
+            if "tube_size" in params:
+                self.spn_tube_size.setValue(float(params["tube_size"]))
+            if "clearance" in params:
+                self.spn_clearance.setValue(float(params["clearance"]))
+            if "wall_thickness" in params:
+                self.spn_wall.setValue(float(params["wall_thickness"]))
+            if "socket_depth" in params:
+                self.spn_depth.setValue(float(params["socket_depth"]))
+            if "hole_diameter" in params:
+                self.spn_hole_dia.setValue(float(params["hole_diameter"]))
+            if "hole_offset" in params:
+                self.spn_hole_offset.setValue(float(params["hole_offset"]))
+            if "outer_angle" in params:
+                outer_a = float(params["outer_angle"])
+                self.spn_outer_angle.setValue(outer_a)
+                self.spn_inner_angle.setValue(round(outer_a + 72.0, 2))
+                self.spn_foot_angle.setValue(round(54.0 - outer_a / 2.0, 2))
+            elif "inner_angle" in params:
+                inner_a = float(params["inner_angle"])
+                self.spn_inner_angle.setValue(inner_a)
+                self.spn_outer_angle.setValue(round(inner_a - 72.0, 2))
+                self.spn_foot_angle.setValue(round(54.0 - (inner_a - 72.0) / 2.0, 2))
+            if "foot_width" in params:
+                self.spn_foot_width.setValue(float(params["foot_width"]))
+            if "foot_length" in params:
+                self.spn_foot_length.setValue(float(params["foot_length"]))
+            if "foot_thickness" in params:
+                self.spn_foot_thickness.setValue(float(params["foot_thickness"]))
+            if "foot_tube_angle" in params:
+                self.spn_foot_angle.setValue(float(params["foot_tube_angle"]))
+        finally:
+            self._syncing_angles = False

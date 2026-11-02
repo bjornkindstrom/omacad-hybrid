@@ -67,7 +67,7 @@ class ContextMenuMixin:
 
             # Primitives Sub-fan
             prim_items = []
-            for cid in ("box", "box_row", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"):
+            for cid in ("box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"):
                 c = commands.get(cid)
                 prim_items.append(FanItem(
                     id=cid,

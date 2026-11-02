@@ -206,6 +206,8 @@ class PrimitivePromptsMixin:
                             inner_round=params.get("inner_round", 0.0),
                             inner_round_kind=params.get("inner_round_kind", "fillet"),
                             lip_height=params["lip_height"], lip_step=params["lip_step"],
+                            honeycomb=params["honeycomb"], honeycomb_size=params["honeycomb_size"],
+                            honeycomb_wall=params["honeycomb_wall"],
                             clearance=params["clearance"], tab_size=params.get("tab_size", 4.0),
                             snap_size=params.get("snap_size", 0.6),
                             slot_length=params.get("slot_length", 0.0), slot_width=params.get("slot_width", 0.0),
@@ -253,6 +255,64 @@ class PrimitivePromptsMixin:
         dlg.finished.connect(lambda _: timer.stop())
         dlg.pick_face_requested.connect(on_pick_face)
         self.viewport.primitive_face_picked.connect(on_face_picked)
+        dlg.finished.connect(on_finished)
+        self.dock(dlg)
+        refresh_preview()
+
+    @leaves_sketch
+    def prompt_star_brackets(self):
+        from omacad.ui.dialogs.primitives_dlg import StarBracketsDialog
+        from omacad.model.features.star_bracket import StarBracketFeature
+        from omacad.ui.settings import get_settings
+        import math
+        dlg = StarBracketsDialog(self)
+        saved = get_settings().get("star_brackets", {})
+        if saved:
+            dlg.set_params(saved)
+        self._apply_fan_origin(dlg)
+
+        def refresh_preview():
+            p = dlg.get_params()
+            try:
+                import manifold3d as m3d
+                outer_s = float(p["tube_size"]) + float(p["clearance"]) + 2.0 * float(p["wall_thickness"])
+                span_outer = (outer_s / 2.0) / math.tan(math.radians(max(10.0, float(p["outer_angle"])) / 2.0)) + float(p["socket_depth"]) + 10.0
+                span_inner = (outer_s / 2.0) / math.tan(math.radians(max(10.0, float(p["inner_angle"])) / 2.0)) + float(p["socket_depth"]) + 10.0
+                step1 = span_outer + 30.0
+                step2 = step1 + span_inner + 30.0
+                step3 = step2 + 50.0 + 30.0
+
+                is_ass = bool(p.get("assembled", False))
+                t1 = [0.0, 0.0, 0.0] if is_ass else [0.0, 0.0, 0.0]
+                t2 = [0.0, 0.0, 0.0] if is_ass else [step1, 0.0, 0.0]
+                t3 = [0.0, 0.0, 0.0] if is_ass else [step2, 0.0, 0.0]
+                t4 = [0.0, 0.0, 0.0] if is_ass else [step3, 0.0, 0.0]
+
+                f1 = StarBracketFeature("preview_1", "Outer", part_type="outer", angle=p["outer_angle"], **p, translation=t1)
+                f2 = StarBracketFeature("preview_2", "Inner", part_type="inner", angle=p["inner_angle"], **p, translation=t2)
+                f3 = StarBracketFeature("preview_3", "Foot", part_type="foot", angle=p["foot_tube_angle"], **p, translation=t3)
+                f4 = StarBracketFeature("preview_4", "Tubes", part_type="tubes", **p, translation=t4)
+                parts = [f1.build_solid(), f2.build_solid(), f3.build_solid(), f4.build_solid()]
+                parts = [pt for pt in parts if pt is not None and not pt.is_empty()]
+                solid = m3d.Manifold.compose(parts) if parts else None
+                self.viewport.set_preview(solid)
+                dlg.lbl_problem.setText("")
+            except Exception as exc:
+                dlg.lbl_problem.setText(str(exc))
+            self.viewport.update()
+
+        def on_finished(result):
+            self.viewport.set_preview(None)
+            self.viewport.update()
+            if result:
+                p = dlg.get_params()
+                get_settings().set("star_brackets", p)
+                self.doc.add_star_brackets(**p, translation=getattr(dlg, "placement_offset", (0, 0, 0)))
+                self.viewport.zoom_fit()
+                self.status_label.setText("Created Star Brackets.")
+
+        timer = self._connect_debounced_preview(dlg, refresh_preview, interval_ms=25, throttle=False)
+        dlg.finished.connect(lambda _: timer.stop())
         dlg.finished.connect(on_finished)
         self.dock(dlg)
         refresh_preview()

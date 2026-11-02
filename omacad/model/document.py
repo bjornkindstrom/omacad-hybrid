@@ -1992,6 +1992,7 @@ class Document:
         params: Optional[dict] = None,
         box_features: Optional[List[str]] = None,
         lid_features: Optional[List[str]] = None,
+        star_bracket_features: Optional[List[str]] = None,
     ) -> str:
         name = name.strip() or "Group"
         gid = f"group_{uuid.uuid4().hex[:8]}"
@@ -2012,6 +2013,8 @@ class Document:
             entry["box_features"] = list(box_features)
         if lid_features is not None:
             entry["lid_features"] = list(lid_features)
+        if star_bracket_features is not None:
+            entry["star_bracket_features"] = list(star_bracket_features)
         self.object_groups.append(entry)
         self.notify_changed()
         return gid
@@ -2125,6 +2128,290 @@ class Document:
         if not og:
             return False
         return og.get("kind") == "box_row" or og.get("name", "").startswith("Box in a row")
+
+    def is_star_bracket_group(self, group_id: str) -> bool:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return False
+        return og.get("kind") == "star_brackets" or og.get("name", "").startswith("Star brackets") or og.get("name", "").startswith("Julstjärna fästen")
+
+    def star_bracket_features(self, group_id: str) -> List[Any]:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return []
+        feat_map = {f.feature_id: f for f in self.timeline.features if f.feature_type == "star_bracket"}
+        feats = []
+        if og.get("star_bracket_features"):
+            for fid in og["star_bracket_features"]:
+                if fid in feat_map:
+                    feats.append(feat_map[fid])
+            if feats:
+                return feats
+        self.object_history.sync(self)
+        for oid in og.get("objects", []):
+            obj = self.object_history.objects.get(oid)
+            if not obj:
+                continue
+            for fid in obj.feature_ids:
+                f = feat_map.get(fid)
+                if f and f not in feats:
+                    feats.append(f)
+        feats.sort(key=lambda f: (getattr(f, "translation", [0])[0] if getattr(f, "translation", None) else 0.0))
+        return feats
+
+    def star_bracket_group_params(self, group_id: str) -> dict:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return {}
+        if og.get("params"):
+            return dict(og["params"])
+        feats = self.star_bracket_features(group_id)
+        if not feats:
+            return {}
+        f0 = feats[0]
+        inferred = {
+            "assembled": bool(getattr(f0, "assembled", False)),
+            "tube_length": float(getattr(f0, "tube_length", 250.0)),
+            "tube_size": float(getattr(f0, "tube_size", 10.0)),
+            "clearance": float(getattr(f0, "clearance", 0.25)),
+            "wall_thickness": float(getattr(f0, "wall_thickness", 2.5)),
+            "socket_depth": float(getattr(f0, "socket_depth", 25.0)),
+            "hole_diameter": float(getattr(f0, "hole_diameter", 3.5)),
+            "hole_offset": float(getattr(f0, "hole_offset", 12.0)),
+            "outer_angle": float(getattr(f0, "angle", 36.0)),
+            "inner_angle": 108.0,
+            "foot_width": float(getattr(f0, "foot_width", 40.0)),
+            "foot_length": float(getattr(f0, "foot_length", 70.0)),
+            "foot_thickness": float(getattr(f0, "foot_thickness", 4.0)),
+            "foot_tube_angle": float(getattr(f0, "foot_tube_angle", 36.0)),
+            "spacing": 30.0,
+            "translation": list(getattr(f0, "translation", [0.0, 0.0, 0.0])),
+        }
+        for f in feats:
+            if getattr(f, "part_type", "") == "inner":
+                inferred["inner_angle"] = float(getattr(f, "angle", 108.0))
+            elif getattr(f, "part_type", "") == "foot":
+                inferred["foot_tube_angle"] = float(getattr(f, "foot_tube_angle", 36.0))
+                inferred["foot_width"] = float(getattr(f, "foot_width", 40.0))
+                inferred["foot_length"] = float(getattr(f, "foot_length", 70.0))
+                inferred["foot_thickness"] = float(getattr(f, "foot_thickness", 4.0))
+        og["params"] = inferred
+        return inferred
+
+    @undoable("Edit Star Brackets")
+    def update_star_bracket_group(self, group_id: str, **new_params) -> bool:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return False
+        params = dict(self.star_bracket_group_params(group_id))
+        params.update(new_params)
+        og["params"] = params
+
+        assembled = bool(params.get("assembled", False))
+        tube_len = float(params.get("tube_length", 250.0))
+        tube_s = float(params.get("tube_size", 10.0))
+        clr = float(params.get("clearance", 0.25))
+        wall_t = float(params.get("wall_thickness", 2.5))
+        depth = float(params.get("socket_depth", 25.0))
+        h_dia = float(params.get("hole_diameter", 3.5))
+        h_off = float(params.get("hole_offset", 12.0))
+        outer_a = float(params.get("outer_angle", 36.0))
+        inner_a = float(params.get("inner_angle", 108.0))
+        fw = float(params.get("foot_width", 40.0))
+        fl = float(params.get("foot_length", 70.0))
+        ft = float(params.get("foot_thickness", 4.0))
+        fta = float(params.get("foot_tube_angle", 36.0))
+        spacing = float(params.get("spacing", 30.0))
+        base_trans = list(params.get("translation", [0.0, 0.0, 0.0]))
+
+        feats = self.star_bracket_features(group_id)
+        outer_s = tube_s + clr + 2.0 * wall_t
+        span_outer = (outer_s / 2.0) / math.tan(math.radians(max(10.0, outer_a) / 2.0)) + depth + 10.0
+        span_inner = (outer_s / 2.0) / math.tan(math.radians(max(10.0, inner_a) / 2.0)) + depth + 10.0
+        step1 = span_outer + spacing
+        step2 = step1 + span_inner + spacing
+        step3 = step2 + 50.0 + spacing
+
+        for f in feats:
+            f.assembled = assembled
+            f.tube_length = tube_len
+            f.tube_size = tube_s
+            f.clearance = clr
+            f.wall_thickness = wall_t
+            f.socket_depth = depth
+            f.hole_diameter = h_dia
+            f.hole_offset = h_off
+            f.foot_width = fw
+            f.foot_length = fl
+            f.foot_thickness = ft
+            f.foot_tube_angle = fta
+            f.outer_angle = outer_a
+            f.inner_angle = inner_a
+            if f.part_type == "outer":
+                f.angle = outer_a
+                f.name = "Outer Brackets (5x)" if assembled else "Outer Bracket"
+                f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0], base_trans[1], base_trans[2]]
+            elif f.part_type == "inner":
+                f.angle = inner_a
+                f.name = "Inner Brackets (5x)" if assembled else "Inner Bracket"
+                f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step1, base_trans[1], base_trans[2]]
+            elif f.part_type == "foot":
+                f.angle = fta
+                f.name = "Foot Supports (2x)" if assembled else "Foot Support"
+                f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step2, base_trans[1], base_trans[2]]
+            elif f.part_type == "tubes":
+                f.name = "Aluminum Tubes (10x)" if assembled else "Aluminum Tube (sample)"
+                f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step3, base_trans[1], base_trans[2]]
+
+        self.timeline.clear_cache()
+        self.timeline.recompute(self)
+
+        self.object_history.sync(self)
+        current_oids = []
+        for f in feats:
+            oid = self.object_history.owners.get(f.feature_id)
+            if oid and oid not in current_oids:
+                current_oids.append(oid)
+        og["objects"] = current_oids
+
+        self.notify_changed()
+        return True
+
+    @undoable("Edit Star Brackets")
+    def edit_star_bracket_group_param(self, group_id: str, key: str, expr_text: str) -> bool:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og:
+            return False
+        from omacad.model import expr as exprlib
+        val = exprlib.evaluate(expr_text, self.parameter_values())
+        if not math.isfinite(val):
+            raise ValueError("Enter a finite value")
+        if key in ("tube_length", "tube_size", "wall_thickness", "socket_depth", "hole_diameter", "foot_width", "foot_length", "foot_thickness") and val <= 0:
+            raise ValueError("This dimension must be greater than zero")
+        if key in ("clearance", "spacing", "hole_offset") and val < 0:
+            raise ValueError("This value cannot be negative")
+        if key in ("outer_angle", "inner_angle", "foot_tube_angle") and (val < 5 or val > 175):
+            raise ValueError("Angle must be between 5 and 175 degrees")
+        if key == "assembled":
+            new_val = bool(round(float(val)))
+            return self.update_star_bracket_group(group_id, **{key: new_val})
+        elif key == "outer_angle":
+            outer_val = float(val)
+            inner_val = max(10.0, min(170.0, outer_val + 72.0))
+            foot_ang = max(5.0, min(85.0, 54.0 - outer_val / 2.0))
+            return self.update_star_bracket_group(group_id, outer_angle=outer_val, inner_angle=inner_val, foot_tube_angle=foot_ang)
+        elif key == "inner_angle":
+            inner_val = float(val)
+            outer_val = max(10.0, min(160.0, inner_val - 72.0))
+            foot_ang = max(5.0, min(85.0, 54.0 - outer_val / 2.0))
+            return self.update_star_bracket_group(group_id, outer_angle=outer_val, inner_angle=inner_val, foot_tube_angle=foot_ang)
+        else:
+            new_val = float(val)
+            return self.update_star_bracket_group(group_id, **{key: new_val})
+
+    @undoable("Star Brackets")
+    def add_star_brackets(
+        self,
+        tube_size: float = 10.0,
+        tube_length: float = 250.0,
+        clearance: float = 0.25,
+        wall_thickness: float = 2.5,
+        socket_depth: float = 25.0,
+        hole_diameter: float = 3.5,
+        hole_offset: float = 12.0,
+        outer_angle: float = 36.0,
+        inner_angle: float = 108.0,
+        foot_width: float = 40.0,
+        foot_length: float = 70.0,
+        foot_thickness: float = 4.0,
+        foot_tube_angle: float = 36.0,
+        assembled: bool = False,
+        spacing: float = 30.0,
+        translation: Any = None,
+        group_name: Optional[str] = None,
+    ) -> List[Body]:
+        from omacad.model.features.star_bracket import StarBracketFeature
+        base_trans = [float(x) for x in ((0.0, 0.0, 0.0) if translation is None else translation)]
+        outer_s = float(tube_size) + float(clearance) + 2.0 * float(wall_thickness)
+        span_outer = (outer_s / 2.0) / math.tan(math.radians(max(10.0, float(outer_angle)) / 2.0)) + float(socket_depth) + 10.0
+        span_inner = (outer_s / 2.0) / math.tan(math.radians(max(10.0, float(inner_angle)) / 2.0)) + float(socket_depth) + 10.0
+        step1 = span_outer + float(spacing)
+        step2 = step1 + span_inner + float(spacing)
+        step3 = step2 + 50.0 + float(spacing)
+
+        created_bodies = []
+        created_oids = []
+        feature_ids = []
+        existing_groups = len([g for g in self.object_groups if g["name"].startswith("Star brackets") or g["name"].startswith("Julstjärna fästen")])
+        g_name = group_name or f"Star brackets {existing_groups + 1}"
+
+        if assembled:
+            specs = [
+                ("outer", "Outer Brackets (5x)", float(outer_angle), [0.0, 0.0, 0.0]),
+                ("inner", "Inner Brackets (5x)", float(inner_angle), [0.0, 0.0, 0.0]),
+                ("foot", "Foot Supports (2x)", float(foot_tube_angle), [0.0, 0.0, 0.0]),
+                ("tubes", "Aluminum Tubes (10x)", 0.0, [0.0, 0.0, 0.0]),
+            ]
+        else:
+            specs = [
+                ("outer", "Outer Bracket", float(outer_angle), [base_trans[0], base_trans[1], base_trans[2]]),
+                ("inner", "Inner Bracket", float(inner_angle), [base_trans[0] + step1, base_trans[1], base_trans[2]]),
+                ("foot", "Foot Support", float(foot_tube_angle), [base_trans[0] + step2, base_trans[1], base_trans[2]]),
+                ("tubes", "Aluminum Tube (sample)", 0.0, [base_trans[0] + step3, base_trans[1], base_trans[2]]),
+            ]
+
+        for p_type, name, ang, trans in specs:
+            fid = self._feature_id("star_bracket")
+            feat = StarBracketFeature(
+                fid, name, part_type=p_type,
+                tube_size=tube_size, tube_length=tube_length, clearance=clearance, wall_thickness=wall_thickness,
+                socket_depth=socket_depth, hole_diameter=hole_diameter, hole_offset=hole_offset,
+                angle=ang, outer_angle=outer_angle, inner_angle=inner_angle,
+                foot_width=foot_width, foot_length=foot_length,
+                foot_thickness=foot_thickness, foot_tube_angle=foot_tube_angle,
+                assembled=assembled, translation=trans,
+            )
+            self.timeline.add_feature(feat)
+            feature_ids.append(fid)
+            feat.execute(self)
+            body = self.bodies.get(f"body_{fid}")
+            if body:
+                created_bodies.append(body)
+            self.object_history.sync(self)
+            oid = self.object_history.owners.get(fid)
+            if oid and oid not in created_oids:
+                created_oids.append(oid)
+
+        group_params = {
+            "assembled": bool(assembled),
+            "tube_length": float(tube_length),
+            "tube_size": float(tube_size),
+            "clearance": float(clearance),
+            "wall_thickness": float(wall_thickness),
+            "socket_depth": float(socket_depth),
+            "hole_diameter": float(hole_diameter),
+            "hole_offset": float(hole_offset),
+            "outer_angle": float(outer_angle),
+            "inner_angle": float(inner_angle),
+            "foot_width": float(foot_width),
+            "foot_length": float(foot_length),
+            "foot_thickness": float(foot_thickness),
+            "foot_tube_angle": float(foot_tube_angle),
+            "spacing": float(spacing),
+            "translation": list(base_trans),
+        }
+
+        if created_oids:
+            self.create_object_group(
+                g_name,
+                created_oids,
+                kind="star_brackets",
+                params=group_params,
+                star_bracket_features=feature_ids,
+            )
+
+        self.notify_changed()
+        return created_bodies
 
     def box_row_features(self, group_id: str) -> Tuple[List[Any], List[Any]]:
         og = next((g for g in self.object_groups if g["id"] == group_id), None)
@@ -2318,6 +2605,8 @@ class Document:
                     wall_thickness=wall_t, outer_round=out_r, outer_round_kind=out_rk,
                     inner_round=in_r, inner_round_kind=in_rk,
                     lip_height=lip_h, lip_step=lip_s, clearance=clearance,
+                    honeycomb=params.get("honeycomb", False), honeycomb_size=params.get("honeycomb_size", 5.0),
+                    honeycomb_wall=params.get("honeycomb_wall", 1.2), honeycomb_margin=params.get("honeycomb_margin", 2.0),
                     lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, snap_size=snap_sz, is_lid=True,
                     slot_length=slot_l, slot_width=slot_w, translation=t_box,
                 )
@@ -2353,7 +2642,9 @@ class Document:
                 wall_thickness=wall_t, outer_round=out_r, outer_round_kind=out_rk,
                 inner_round=in_r, inner_round_kind=in_rk,
                 lip_height=lip_h, lip_step=lip_s, clearance=clearance,
-                lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, snap_size=snap_sz, is_lid=True,
+                honeycomb=params.get("honeycomb", False), honeycomb_size=params.get("honeycomb_size", 5.0),
+                    honeycomb_wall=params.get("honeycomb_wall", 1.2), honeycomb_margin=params.get("honeycomb_margin", 2.0),
+                    lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, snap_size=snap_sz, is_lid=True,
                 slot_length=slot_l, slot_width=slot_w, translation=t_box,
             )
             self.timeline.add_feature(l_feat)
@@ -2380,6 +2671,10 @@ class Document:
             bf.snap_size = snap_sz
             bf.slot_length = slot_l
             bf.slot_width = slot_w
+            bf.honeycomb = bool(params.get("honeycomb", False))
+            bf.honeycomb_size = float(params.get("honeycomb_size", 5.0))
+            bf.honeycomb_wall = float(params.get("honeycomb_wall", 1.2))
+            bf.honeycomb_margin = float(params.get("honeycomb_margin", 2.0))
             bf.translation = t_box
 
             if has_lid and i < len(lid_feats):
@@ -2399,6 +2694,10 @@ class Document:
                 lf.snap_size = snap_sz
                 lf.slot_length = slot_l
                 lf.slot_width = slot_w
+                lf.honeycomb = bool(params.get("honeycomb", False))
+                lf.honeycomb_size = float(params.get("honeycomb_size", 5.0))
+                lf.honeycomb_wall = float(params.get("honeycomb_wall", 1.2))
+                lf.honeycomb_margin = float(params.get("honeycomb_margin", 2.0))
                 lf.translation = t_box
 
         og["box_features"] = [bf.feature_id for bf in box_feats]
@@ -2431,12 +2730,14 @@ class Document:
         val = exprlib.evaluate(expr_text, self.parameter_values())
         if not math.isfinite(val):
             raise ValueError("Enter a finite value")
-        if key in ("length", "width", "height", "wall_thickness", "bottom_thickness", "count", "lip_height", "tab_size", "snap_size") and val <= 0:
+        if key in ("length", "width", "height", "wall_thickness", "bottom_thickness", "count", "lip_height", "tab_size", "snap_size", "honeycomb_size", "honeycomb_wall") and val <= 0:
             raise ValueError("This dimension must be greater than zero")
-        if key in ("outer_round", "inner_round", "spacing", "clearance", "slot_length", "slot_width") and val < 0:
+        if key in ("outer_round", "inner_round", "spacing", "clearance", "slot_length", "slot_width", "honeycomb_margin") and val < 0:
             raise ValueError("This value cannot be negative")
         if key == "count":
             new_val = max(1, int(round(float(val))))
+        elif key == "honeycomb":
+            new_val = bool(round(float(val)))
         else:
             new_val = float(val)
         return self.update_box_row_group(group_id, **{key: new_val})
@@ -2537,6 +2838,7 @@ class Document:
                     outer_round=outer_round, outer_round_kind=outer_round_kind,
                     inner_round=inner_round, inner_round_kind=inner_round_kind,
                     lip_height=lip_height, lip_step=lip_step,
+                    honeycomb=honeycomb, honeycomb_size=honeycomb_size, honeycomb_wall=honeycomb_wall, honeycomb_margin=honeycomb_margin,
                     clearance=clearance, lid_top=lid_top, tab_size=tab_size, snap_size=snap_size, is_lid=True,
                     slot_length=slot_length, slot_width=slot_width, translation=t_box,
                 )
