@@ -2316,6 +2316,7 @@ class Document:
                     plane_origin=params.get("plane_origin"), plane_normal=params.get("plane_normal"),
                     plane_u=params.get("plane_u"), plane_v=params.get("plane_v"),
                     wall_thickness=wall_t, outer_round=out_r, outer_round_kind=out_rk,
+                    inner_round=in_r, inner_round_kind=in_rk,
                     lip_height=lip_h, lip_step=lip_s, clearance=clearance,
                     lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, snap_size=snap_sz, is_lid=True,
                     slot_length=slot_l, slot_width=slot_w, translation=t_box,
@@ -2350,9 +2351,10 @@ class Document:
                 plane_origin=params.get("plane_origin"), plane_normal=params.get("plane_normal"),
                 plane_u=params.get("plane_u"), plane_v=params.get("plane_v"),
                 wall_thickness=wall_t, outer_round=out_r, outer_round_kind=out_rk,
+                inner_round=in_r, inner_round_kind=in_rk,
                 lip_height=lip_h, lip_step=lip_s, clearance=clearance,
-                lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, is_lid=True,
-                translation=t_box,
+                lid_top=params.get("lid_top", 2.0), tab_size=tab_sz, snap_size=snap_sz, is_lid=True,
+                slot_length=slot_l, slot_width=slot_w, translation=t_box,
             )
             self.timeline.add_feature(l_feat)
             lid_feats.append(l_feat)
@@ -2388,6 +2390,8 @@ class Document:
                 lf.wall_thickness = wall_t
                 lf.outer_round = out_r
                 lf.outer_round_kind = out_rk
+                lf.inner_round = in_r
+                lf.inner_round_kind = in_rk
                 lf.lip_height = lip_h
                 lf.lip_step = lip_s
                 lf.clearance = clearance
@@ -2531,6 +2535,7 @@ class Document:
                     plane_origin=plane_origin, plane_normal=plane_normal, plane_u=plane_u, plane_v=plane_v,
                     wall_thickness=wall_thickness,
                     outer_round=outer_round, outer_round_kind=outer_round_kind,
+                    inner_round=inner_round, inner_round_kind=inner_round_kind,
                     lip_height=lip_height, lip_step=lip_step,
                     clearance=clearance, lid_top=lid_top, tab_size=tab_size, snap_size=snap_size, is_lid=True,
                     slot_length=slot_length, slot_width=slot_width, translation=t_box,

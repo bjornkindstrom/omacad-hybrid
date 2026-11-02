@@ -115,3 +115,73 @@ def test_cool_small_box_chamfer_and_honeycomb():
     # Overlap of each pair is 0
     assert (bodies[0].manifold ^ bodies[1].manifold).volume() < 1e-3
     assert (bodies[2].manifold ^ bodies[3].manifold).volume() < 1e-3
+
+
+def test_box_lid_lead_in_chamfer_and_feedback_report():
+    """Verify lead-in chamfer on the insertion end of the slide lid (problem report 20261102-183235)."""
+    QApplication.instance() or QApplication([])
+
+    # 1. Feedback report reproduction
+    feedback_file = "/home/kindstrom/Work/omacad-hybrid/.state/data/feedback/20261102-183235/document.omacad"
+    if os.path.exists(feedback_file):
+        rep_doc = Exporter.load_project(feedback_file)
+        rep_doc.timeline.recompute(rep_doc)
+        box = rep_doc.bodies["body_box_1"]
+        lid = rep_doc.bodies["body_box_2"]
+        assert box.manifold.status().name == "NoError"
+        assert lid.manifold.status().name == "NoError"
+        assert (box.manifold ^ lid.manifold).volume() < 1e-3
+        # Check that the lid's insertion corners are chamfered
+        m = lid.manifold.to_mesh()
+        min_x = min(v[0] for v in m.vert_properties)
+        max_y = max(v[1] for v in m.vert_properties)
+        back_y = max(v[1] for v in m.vert_properties if abs(v[0] - min_x) < 0.05)
+        assert back_y < max_y - 0.5, f"Expected chamfer on back corners: back_y={back_y}, max_y={max_y}"
+
+    # 2. Creating Box in a row with inner chamfer passes to the lid
+    doc = Document()
+    bodies = doc.add_box_row(
+        count=1,
+        length=60.0,
+        width=40.0,
+        height=30.0,
+        wall_thickness=2.0,
+        bottom_thickness=2.0,
+        outer_round=2.0,
+        outer_round_kind="fillet",
+        inner_round=1.0,
+        inner_round_kind="chamfer",
+        has_lid=True,
+        lip_height=2.2,
+        lip_step=1.0,
+        clearance=0.2,
+    )
+    box, lid = bodies[0], bodies[1]
+    lid_feat = doc.timeline.features[1]
+    assert lid_feat.inner_round == 1.0
+    assert lid_feat.inner_round_kind == "chamfer"
+
+    m = lid.manifold.to_mesh()
+    min_x = min(v[0] for v in m.vert_properties)
+    max_y = max(v[1] for v in m.vert_properties)
+    back_y = max(v[1] for v in m.vert_properties if abs(v[0] - min_x) < 0.05)
+    assert back_y < max_y - 0.5, f"Expected chamfered back corners: back_y={back_y}, max_y={max_y}"
+    assert (box.manifold ^ lid.manifold).volume() < 1e-3
+
+    # 3. Default inner_round=0 still provides a lead-in chamfer to ease insertion
+    doc_sq = Document()
+    sq_bodies = doc_sq.add_box_row(count=1, inner_round=0.0, outer_round=0.0, has_lid=True)
+    sq_box, sq_lid = sq_bodies[0], sq_bodies[1]
+    m_sq = sq_lid.manifold.to_mesh()
+    min_x = min(v[0] for v in m_sq.vert_properties)
+    max_y = max(v[1] for v in m_sq.vert_properties)
+    back_y = max(v[1] for v in m_sq.vert_properties if abs(v[0] - min_x) < 0.05)
+    assert back_y < max_y - 0.5, f"Expected default lead-in chamfer on square box lid: back_y={back_y}, max_y={max_y}"
+    assert (sq_box.manifold ^ sq_lid.manifold).volume() < 1e-3
+
+    # 4. update_box_row_group propagates inner_round and inner_round_kind to lids
+    gid = doc.object_groups[0]["id"]
+    doc.update_box_row_group(gid, inner_round=1.5, inner_round_kind="chamfer")
+    assert doc.timeline.features[1].inner_round == 1.5
+    assert doc.timeline.features[1].inner_round_kind == "chamfer"
+

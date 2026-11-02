@@ -203,6 +203,8 @@ class PrimitivePromptsMixin:
                             plane_v=params["plane_v"], wall_thickness=params["wall_thickness"],
                             outer_round=params["outer_round"],
                             outer_round_kind=params["outer_round_kind"],
+                            inner_round=params.get("inner_round", 0.0),
+                            inner_round_kind=params.get("inner_round_kind", "fillet"),
                             lip_height=params["lip_height"], lip_step=params["lip_step"],
                             clearance=params["clearance"], tab_size=params.get("tab_size", 4.0),
                             snap_size=params.get("snap_size", 0.6),

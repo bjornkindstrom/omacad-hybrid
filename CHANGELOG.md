@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.118
+
+### Fixed
+- **Införingsfas (chamfer) på skjutlock för Box in a row (rapport 20261102-183235)**: 1) `add_box_row`, `update_box_row_group` och dialogens förhandsvisning skickade inte vidare `inner_round` och `inner_round_kind` till lockets `BoxFeature`, vilket gav locket skarpa 90°-hörn i bakkant även när innerhörnen valts som fasade. 2) `BoxFeature.build_solid` för skjutlock (`is_lid`) applicerar nu vald innerfasning/rundning på lockets bakkant och tillhandahåller en automatisk införingsfas (chamfer, ~1.0 mm) även vid skarpa innerhörn, så att locket smidigt styrs in i skenorna vid montering. Test: `tests/test_cool_small_box.py`.
+
 # Hybrid-experiment — 0.9.9.80.117
 
 ### Fixed

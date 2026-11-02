@@ -313,10 +313,25 @@ class BoxFeature(Feature):
             lid_plate = m3d.Manifold.extrude(cs_lid_yz, lid_len).rotate((90, 0, 90)).translate((x_back_lid, 0.0, 0.0))
 
             # XY corner rounding/chamfer mask
+            # The back corners are inserted first into the box. A lead-in chamfer
+            # facilitates insertion into the tracks without catching (report 20261102-183235).
+            if self.inner_round > 1e-4:
+                r_back = max(0.6, self.inner_round - c) if self.inner_round_kind == "chamfer" else max(0.2, self.inner_round - c)
+                kind_back = self.inner_round_kind
+            elif self.inner_round_kind == "chamfer":
+                r_back = max(0.8, r_out - c)
+                kind_back = "chamfer"
+            elif r_out > t + c + 0.2:
+                r_back = r_out - t - c
+                kind_back = self.inner_round_kind
+            else:
+                r_back = min(1.0, max(0.6, y_shelf_lid * 0.1))
+                kind_back = "chamfer"
+
             poly_xy_mask = _lid_xy_mask_poly(
                 x_back_lid, x_front_lid, y_shelf_lid,
-                r_in - c, r_out - c,
-                self.inner_round_kind, self.outer_round_kind,
+                r_back, r_out - c,
+                kind_back, self.outer_round_kind,
             )
             cs_mask = region_cross_section(poly_xy_mask)
             lid_mask = m3d.Manifold.extrude(cs_mask, t_lid + 2.0).translate((0.0, 0.0, lid_z - 1.0))
