@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.117
+
+### Fixed
+- **CI / Byggfixar för Windows EXE**: 1) Importerade `applog` i `primitives.py` som orsakade fel i `test_no_undefined_names`. 2) Lade till ikoner för `box_row` i alla ikonteman (studio, solid, blueprint, semantic) och registrerade i `theme_icons.py` så att `test_studio_theme` passerar. 3) Återställde kantplockning i `picker_mixin.py` så att runda kanter inte felaktigt blockeras av egen triangulering (`test_extrude_ring_edge_pick`).
+
 # Hybrid-experiment — 0.9.9.80.116
 
 ### Fixed

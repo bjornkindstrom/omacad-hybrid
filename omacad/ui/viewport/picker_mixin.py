@@ -143,13 +143,10 @@ class PickerMixin:
                 direction = mid - origin
                 dist = float(np.linalg.norm(direction))
                 direction = direction / dist if dist > 1e-9 else direction
-                blocked = (not xray) and (
-                    any(
-                        self._ray_hits_body_aabb(bd, origin, direction, dist + 1e-3)
-                        and bool((ray_hit_faces(bd.faces, origin, direction) < dist - 2e-2).any())
-                        for bd in self.doc.bodies.values() if bd.visible and len(bd.faces)
-                    )
-                    or getattr(self, "_surface_in_front", lambda *args: False)(origin, direction, dist)
+                blocked = (not xray) and any(
+                    self._ray_hits_body_aabb(bd, origin, direction, dist + 1e-3)
+                    and bool((ray_hit_faces(bd.faces, origin, direction) < dist - 2e-2).any())
+                    for bd in self.doc.bodies.values() if bd.visible and len(bd.faces)
                 )
                 if not blocked:
                     # near-ties: a single piece (line or arc) beats the whole outline it belongs to, so a click

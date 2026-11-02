@@ -10,6 +10,7 @@ import manifold3d as m3d
 from omacad.model.kernel import CadKernel
 from omacad.model.sketch import Sketch
 from omacad.model.features.base import Feature, Body
+from omacad import applog
 
 
 def _rect_cross_section(lx: float, wy: float, r: float, kind: str) -> m3d.CrossSection:
