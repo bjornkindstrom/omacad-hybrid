@@ -1,16 +1,18 @@
-# Hybrid-experiment — Unreleased
+# Hybrid-experiment — 0.9.9.80.126
 
 ### Added
 - **Högerklick på en grupp: Move group… (request #158)**: flyttar alla objekt i gruppen med ett skrivet X/Y/Z-avstånd, ett ångra-steg (`Document.move_object_group`).
 - **Star Brackets: två fält per rad (request #168)**: längd/storlek, spel/vägg, djup/hålstorlek, vinklar och fotmått ligger sida vid sida (`BaseFeatureDialog.pair_form_rows`).
-
 - **Fillet/Chamfer: grön bockknapp (request #160)**: en grön ✓-knapp följer pilen i vyn och tillämpar rundningen/fasen med ett klick, utan att flytta musen till OK eller trycka Enter. Samma knapp finns nu på primitives som kan formas med handtag i vyn (Box, Cylinder, Cone, Prism, Sphere); `omacad/ui/apply_button.py`.
+
+### Changed
+- **Create-menyn: Primitives som undermeny åt höger (request #157)**: Box, Box in a Row, Star Brackets, Cylinder m.fl. ligger i en undermeny i stället för i en lång lista. Test: `tests/test_requests_157_158_168.py`.
 
 ### Removed
 - **Star Brackets: fotstödet är borttaget tills vidare**: fotdelarna skapas inte längre, och fotfälten är borta ur dialogen och trädets `⚙️ Settings`. Värdena sparas ändå i modellen så gamla filer laddas som förut.
 
-### Changed
-- **Create-menyn: Primitives som undermeny åt höger (request #157)**: Box, Box in a Row, Star Brackets, Cylinder m.fl. ligger i en undermeny i stället för i en lång lista. Test: `tests/test_requests_157_158_168.py`.
+### Fixed
+- **Star Brackets: bortkapad bakre "fiskstjärt" på ytterfästet för att spara filament (request #171)**: På spetsiga fästen (< 90°) korsade de två rektangulära armboxarna varandra i midjan (`x = 0`) och bredde ut sig bakåt (`x < 0`) som en onödig massiv klump långt bakom rörstoppet (~6 000 mm³ per fäste). Bakänden kapas nu rakt i midjan vid `x = 0` (med minst `stop_margin` massiv vägg bakom rörhålrummet), precis vid snittet i rapporten. Test: `tests/test_star_brackets.py`.
 
 # Hybrid-experiment — 0.9.9.80.125
 

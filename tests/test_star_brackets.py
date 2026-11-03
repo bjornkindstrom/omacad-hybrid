@@ -414,6 +414,25 @@ def test_connector_post_clears_screw_holes_reports_169_170():
             assert _min_corner_angle(m_post, z) > 40.0, (part, z)
 
 
+def test_outer_bracket_fishtail_truncated_report_171():
+    """Request #171: the flared fishtail behind the waist (x < 0) on acute outer brackets
+    is truncated at x = 0 to save ~6000 mm^3 of filament per bracket."""
+    f = StarBracketFeature(
+        "s1", "Outer Bracket", part_type="outer",
+        tube_size=10.0, tube_length=1000.0, clearance=0.2, wall_thickness=3.0,
+        socket_depth=40.0, hole_diameter=4.2, hole_offset=8.0,
+        double_holes=True, hole_spacing=26.0, reinforcement=True,
+        post=True, post_height=25.0, angle=44.0, outer_angle=44.0, inner_angle=116.0,
+        assembled=False,
+    )
+    m = f.build_solid()
+    bb = m.bounding_box()
+    assert abs(bb[0] - 0.0) < 1e-5
+    assert abs(m.volume() - 25530.57) < 50.0
+    for z in (1.0, 8.0, 15.5):
+        assert _min_corner_angle(m, z) > 40.0, z
+
+
 def test_connector_post_is_saved_and_editable(tmp_path):
     QApplication.instance() or QApplication([])
     doc = Document("post")

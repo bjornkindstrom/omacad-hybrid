@@ -134,10 +134,16 @@ class StarBracketFeature(Feature):
         arm2_out = outer_box.rotate([0, 0, -math.degrees(half_a)])
         solid = arm1_out + arm2_out
 
-        # Truncate needle beak if unnecessarily long (past outer cavity corner + stop margin) (#164)
-        x_tip_limit = -(inner_s / 2.0) / math.tan(half_a) - stop_margin
-        if x_outer < x_tip_limit:
-            clip_box = m3d.Manifold.cube([100.0, 200.0, outer_s + 10.0], center=False).translate([x_tip_limit - 100.0, -100.0, -5.0])
+        # Truncate unnecessary fishtail / needle beak behind the waist (x = 0 for acute
+        # brackets) while keeping at least stop_margin of solid wall behind the cavity (#164, #171).
+        if ang < 90.0:
+            x_cav_back = x_stop * math.cos(half_a) - (inner_s / 2.0) * math.sin(half_a)
+            x_tip_limit = min(0.0, x_cav_back - stop_margin)
+        else:
+            x_tip_limit = -(inner_s / 2.0) / math.tan(half_a) - stop_margin
+        x_back_min = x_outer * math.cos(half_a) - (outer_s / 2.0) * math.sin(half_a)
+        if x_back_min < x_tip_limit:
+            clip_box = m3d.Manifold.cube([200.0, 200.0, outer_s + 10.0], center=False).translate([x_tip_limit - 200.0, -100.0, -5.0])
             solid = solid - clip_box
 
         # Connector post on top of the plate (#167): needs the web to stand on, shifted
