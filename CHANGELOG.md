@@ -12,6 +12,11 @@
 ### Changed
 - **Create-menyn: Primitives som undermeny åt höger (request #157)**: Box, Box in a Row, Star Brackets, Cylinder m.fl. ligger i en undermeny i stället för i en lång lista. Test: `tests/test_requests_157_158_168.py`.
 
+# Hybrid-experiment — 0.9.9.80.125
+
+### Fixed
+- **Star Brackets: kopplingsstolpen flyttad ur vägen för skruvhålen (requests #169, #170)**: De inre dubbla skruvhålen låg dikt an mot (eller skar in i) kopplingsstolpens fasade bas på både det inre och det yttre fästet. Kopplingsstolpen är nu framflyttad 4 mm i pilens riktning ut i vinkelvecket mellan armarna och förstärkningswebben är motsvarande förlängd (med bibehållen avfasning vid armändarna så inga spetsar uppstår), vilket ger ~4–5 mm fritt utrymme runt skruvhålen på båda fästtyperna. Test: `tests/test_star_brackets.py`.
+
 # Hybrid-experiment — 0.9.9.80.124
 
 ### Fixed

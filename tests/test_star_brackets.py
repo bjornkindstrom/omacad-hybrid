@@ -362,7 +362,7 @@ def test_connector_post_report_167():
         pb = plain.bounding_box()
         qb = posted.bounding_box()
         assert abs(qb[5] - (outer_s + 25.0)) < 1e-6          # top of the post
-        assert abs(qb[2] - pb[2]) < 1e-6 and abs(qb[0] - pb[0]) < 1e-6 and abs(qb[3] - pb[3]) < 1e-6
+        assert abs(qb[2] - pb[2]) < 1e-6 and abs(qb[0] - pb[0]) < 1e-6 and qb[3] >= pb[3] - 1e-6
         assert posted.genus() >= plain.genus()
         assert posted.volume() > plain.volume()
         # Socket: the post interior is hollow for a 10 mm tube, walls = wall thickness
@@ -373,6 +373,45 @@ def test_connector_post_report_167():
         assert posted.slice(outer_s + 0.5).area() > posted.slice(outer_s + 8.0).area() + 5.0
         assert _min_corner_angle(posted, 8.0) > 40.0
         assert _min_corner_angle(posted, 14.0) > 40.0
+
+
+def test_connector_post_clears_screw_holes_reports_169_170():
+    """Requests #169 and #170: connector post and its base chamfer are shifted 4 mm
+    forward into the V-crotch (with the reinforcement web extended to support it) so the
+    inner screw holes do not encroach on the post on either bracket type."""
+    import math
+    import numpy as np
+
+    params = dict(
+        tube_size=10.0, clearance=0.2, wall_thickness=3.0, socket_depth=40.0,
+        hole_diameter=4.0, hole_offset=8.0, double_holes=True, hole_spacing=26.0,
+        reinforcement=True, post=True, post_height=25.0,
+        outer_angle=44.0, inner_angle=116.0, assembled=False,
+    )
+    outer_s = 10.2 + 6.0  # 16.4
+    for part, ang in (("inner", 116.0), ("outer", 44.0)):
+        m_post = StarBracketFeature("p", "p", part_type=part, angle=ang, **params).build_solid()
+        m_plain = StarBracketFeature("pl", "pl", part_type=part, angle=ang, **{**params, "post": False}).build_solid()
+
+        half_a = math.radians(ang / 2.0)
+        x_stop = (10.2 / 2.0) / math.tan(half_a) + 3.0
+        x_end = x_stop + 40.0
+        hole_x2 = x_end - 8.0 - 26.0
+        hx2_max = hole_x2 * math.cos(half_a) + 4.0 / 2.0
+
+        # Slice at the bottom of the post chamfer (just above the bracket plate):
+        # its back edge (xmin) must clear the inner screw hole by > 3.5 mm.
+        post_base_polys = m_post.slice(outer_s + 0.05).to_polygons()
+        pts = np.vstack(post_base_polys)
+        x_min_post_base = float(pts[:, 0].min())
+        assert x_min_post_base >= hx2_max + 3.5, (part, x_min_post_base, hx2_max)
+
+        # And on the inner bracket (#169), the reinforcement web extends ~3-4 mm in +X to support the post
+        if part == "inner":
+            assert m_post.bounding_box()[3] > m_plain.bounding_box()[3] + 2.5
+
+        for z in (1.0, 8.0, 15.5):
+            assert _min_corner_angle(m_post, z) > 40.0, (part, z)
 
 
 def test_connector_post_is_saved_and_editable(tmp_path):

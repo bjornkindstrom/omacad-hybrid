@@ -140,41 +140,68 @@ class StarBracketFeature(Feature):
             clip_box = m3d.Manifold.cube([100.0, 200.0, outer_s + 10.0], center=False).translate([x_tip_limit - 100.0, -100.0, -5.0])
             solid = solid - clip_box
 
-        # Connector post on top of the plate (#167): needs the web to stand on
+        # Connector post on top of the plate (#167): needs the web to stand on, shifted
+        # forward (#169, #170) so the post and its base chamfer clear the inner screw holes.
         post_s = outer_s
         flare = max(1.0, wall * 0.75)
         post_h = max(10.0, self.post_height)
+        hs = post_s / 2.0
+        hb = hs + flare
+        post_shift = 4.0
         x_vertex = (outer_s / 2.0) / math.sin(half_a)
         want_web = self.reinforcement or self.post
         web_len = min(depth * 0.5, 20.0)
-        if self.post:
-            web_len = max(web_len, post_s + 2.0 * flare + 1.0)
-        # The web's front corners must stay inside the arms: along an arm the corner
+        # The web's arm-side corners must stay inside the arms: along an arm the corner
         # lies at x/cos(a) - k*sin(a) and may not pass the arm end (spike, #166).
         k_embed = (outer_s / 2.0) / math.cos(half_a) - (wall * 0.5) / math.cos(half_a)
         x_front_max = math.cos(half_a) * (x_end - 1.0 + k_embed * math.sin(half_a))
-        web_len = max(1.0, min(web_len, x_front_max - x_vertex))
+        if self.post:
+            web_len = max(web_len, post_s + 2.0 * flare + post_shift)
+        else:
+            web_len = max(1.0, min(web_len, x_front_max - x_vertex))
 
-        # Reinforcement web between arms on both brackets (#165). Its front corners end
-        # half-way inside the arm walls, so they never poke out as a spike (#166).
+        # Reinforcement web between arms on both brackets (#165). Its arm-side corners end
+        # half-way inside the arm walls so they never poke out as a spike (#166), while the
+        # middle section extends forward when needed to carry the shifted post (#169, #170).
         if want_web:
             x_front = x_vertex + web_len
-            y_gap = x_front * math.tan(half_a) - (outer_s / 2.0) / math.cos(half_a)
+            x_arm = min(x_front, x_front_max)
+            y_gap = x_arm * math.tan(half_a) - (outer_s / 2.0) / math.cos(half_a)
             y_embed = max(0.0, y_gap) + (wall * 0.5) / math.cos(half_a)
-            pts = np.array([
-                [x_vertex - 0.5, 0.0],
-                [x_front, -y_embed],
-                [x_front, y_embed]
-            ])
+            x_in_end = x_end * math.cos(half_a) + (outer_s / 2.0) * math.sin(half_a)
+            y_in_end = x_end * math.sin(half_a) - (outer_s / 2.0) * math.cos(half_a)
+            if x_front > x_in_end and y_in_end > hb:
+                pts = np.array([
+                    [x_vertex - 0.5, 0.0],
+                    [x_arm, -y_embed],
+                    [x_in_end, -y_in_end],
+                    [x_front, -hb],
+                    [x_front, hb],
+                    [x_in_end, y_in_end],
+                    [x_arm, y_embed],
+                ])
+            elif x_front > x_arm + 1e-6:
+                y_front = max(hb, x_front * math.tan(half_a) - (outer_s / 2.0) / math.cos(half_a))
+                pts = np.array([
+                    [x_vertex - 0.5, 0.0],
+                    [x_arm, -y_embed],
+                    [x_front, -y_front],
+                    [x_front, y_front],
+                    [x_arm, y_embed],
+                ])
+            else:
+                pts = np.array([
+                    [x_vertex - 0.5, 0.0],
+                    [x_front, -y_embed],
+                    [x_front, y_embed]
+                ])
             cs = m3d.CrossSection([pts])
             web = m3d.Manifold.extrude(cs, outer_s)
             solid = solid + web
 
         post_cut = None
         if self.post:
-            hs = post_s / 2.0
-            hb = hs + flare
-            x_c = min(x_vertex + flare + hs, x_vertex + web_len - hb)
+            x_c = min(x_vertex + hb + post_shift, x_vertex + web_len - hb)
             z0 = outer_s - 0.01
             sleeve = m3d.Manifold.cube([post_s, post_s, post_h + 0.01], center=False).translate([x_c - hs, -hs, z0])
             base_pts = []
