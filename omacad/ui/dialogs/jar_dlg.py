@@ -56,6 +56,11 @@ class JarDialog(BaseFeatureDialog):
         self.chk_beside.setChecked(spec.lid_beside)
         self.chk_beside.toggled.connect(lambda *_: self.changed.emit())
         form.addRow("Lid:", self.chk_beside)
+        sp = self.spins
+        self.pair_form_rows(form, [      # two fields per row to save vertical space
+            (sp["diameter"], sp["height"]), (sp["wall"], sp["inside_chamfer"]),
+            (sp["neck_diameter"], sp["neck_height"]), (sp["pitch"], sp["tolerance"]),
+            (sp["thread_chamfer"], sp["lid_top"])])
         self.main_layout.addLayout(form)
         reset_row = QHBoxLayout()
         reset_row.addStretch()

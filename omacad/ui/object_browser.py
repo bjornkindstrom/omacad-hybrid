@@ -71,10 +71,6 @@ STAR_BRACKET_PARAMS_CONFIG = [
     ("post_height", "Connector post height", "mm"),
     ("outer_angle", "Outer angle (tip)", "°"),
     ("inner_angle", "Inner angle (valley)", "°"),
-    ("foot_width", "Foot width", "mm"),
-    ("foot_length", "Foot length", "mm"),
-    ("foot_thickness", "Foot thickness", "mm"),
-    ("foot_tube_angle", "Foot tube angle", "°"),
 ]
 
 

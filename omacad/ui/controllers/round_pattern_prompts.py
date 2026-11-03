@@ -62,6 +62,18 @@ class RoundPatternPromptsMixin:
         self.viewport.begin_edge_pick()
         self.status_label.setText("Fillet/Chamfer: click an edge (joined edges follow, double-click = loop, Shift+double-click = loop on the other face, X or Alt = see-through, Ctrl+click = remove, Backspace = undo last, Ctrl+Backspace = clear). Esc cancels.")
 
+        # A green check next to the arrow: accepts the Fillet/Chamfer without moving the mouse to OK (Björn #160)
+        from omacad.ui.apply_button import add_apply_button
+
+        def arrow_tip():
+            h = self.viewport.extrude_handle
+            if not h:
+                return None
+            return self.viewport.world_to_screen(np.asarray(h["origin"], dtype=float)
+                                                 + np.asarray(h["axis"], dtype=float) * float(h["dist"]))
+
+        add_apply_button(self.viewport, dlg, arrow_tip)
+
         def update_arrow():
             edges = self.viewport.selected_edges
             if edges:
@@ -123,6 +135,7 @@ class RoundPatternPromptsMixin:
             edges = self.viewport.selected_edges
             dlg.set_count(len(edges))
             if not edges:
+                self.viewport.fillet_rail_offset = 0.0
                 self.viewport.set_display_override(None)
                 update_arrow()
                 return
@@ -150,7 +163,7 @@ class RoundPatternPromptsMixin:
                 return
             changed = {bid: t.manifold for bid, t in tmp_bodies.items()
                        if t.manifold is not self.doc.bodies[bid].manifold}
-            self.viewport.fillet_rail_offset = 0.0
+            self.viewport.fillet_rail_offset = max(0.0, float(v["size"]))
             self.viewport.set_display_override(changed)
             if tmp.skipped:
                 self.status_label.setText(f"Fillet/Chamfer: {tmp.skipped} edge(s) cannot be rounded with that size.")

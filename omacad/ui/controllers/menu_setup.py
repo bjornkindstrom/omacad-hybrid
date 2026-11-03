@@ -84,21 +84,30 @@ class MenuSetupMixin:
         self.command_actions = {}
         for title, cids in commands.MENUS:
             menu = menubar.addMenu(title)
-            for cid in cids:
-                if cid is None:
-                    menu.addSeparator()
-                    continue
-                c = commands.get(cid)
-                act = QAction(theme.named_icon(theme.COMMAND_ICONS[cid], c.icon, 24) if cid in theme.COMMAND_ICONS
-                              else theme.emoji_icon(c.icon, 24) if c.icon != "dimension" else theme.tool_icon(c.icon, 24),
-                              c.label, menu)
-                keys = [k for k in (c.shortcut, *c.extra_shortcuts) if k]
-                if keys:
-                    act.setShortcuts([QKeySequence(k) for k in keys])
-                act.setToolTip(c.tip)
-                act.triggered.connect(lambda _=False, cid=cid: self.ribbon._emit_command(cid))
-                menu.addAction(act)
-                self.command_actions[cid] = act
+
+            def add_entries(target, entries):
+                for cid in entries:
+                    if cid is None:
+                        target.addSeparator()
+                        continue
+                    if isinstance(cid, tuple):      # (id, label, icon, tip, members): a submenu opening to the right
+                        sub = target.addMenu(cid[1])
+                        sub.setToolTipsVisible(True)
+                        add_entries(sub, cid[4])
+                        continue
+                    c = commands.get(cid)
+                    act = QAction(theme.named_icon(theme.COMMAND_ICONS[cid], c.icon, 24) if cid in theme.COMMAND_ICONS
+                                  else theme.emoji_icon(c.icon, 24) if c.icon != "dimension" else theme.tool_icon(c.icon, 24),
+                                  c.label, target)
+                    keys = [k for k in (c.shortcut, *c.extra_shortcuts) if k]
+                    if keys:
+                        act.setShortcuts([QKeySequence(k) for k in keys])
+                    act.setToolTip(c.tip)
+                    act.triggered.connect(lambda _=False, cid=cid: self.ribbon._emit_command(cid))
+                    target.addAction(act)
+                    self.command_actions[cid] = act
+
+            add_entries(menu, cids)
             menu.setToolTipsVisible(True)       # hovering an entry shows what it does
 
         # View Menu

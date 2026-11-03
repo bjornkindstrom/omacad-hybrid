@@ -175,8 +175,7 @@ SKETCH_GROUPS: List[Tuple[str, list]] = [
 
 # Menu bar, in the ribbon's order (None = separator). File, Edit, View and Help are built in menu_setup.
 MENUS: List[Tuple[str, list]] = [
-    ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", None, "box", "box_row", "star_brackets", "cylinder", "cone",
-                "hexagon", "pipe", "thread", "jar",
+    ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", None, PRIMITIVES,       # a tuple is a submenu that opens to the right (saves vertical space)
                 None, "pattern_linear", "pattern_circular", "mirror", "pattern_fill", "honeycomb", None,
                 "offset_plane", "canvas"]),
     ("Modify", ["fillet", "chamfer", "shell", "offset_face", None, "combine", "split_body", "move", None,

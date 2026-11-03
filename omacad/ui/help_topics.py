@@ -158,9 +158,17 @@ _GROUP_ORDER = ["SOLID · CREATE", "SOLID · MODIFY", "SOLID · INSPECT", "SKETC
                 "WORKING TIPS"]
 
 
+def _flat(cids) -> list:
+    """Menu entries with submenus (tuples) expanded to their members."""
+    out: list = []
+    for c in cids:
+        out.extend(c[4] if isinstance(c, tuple) else [c])
+    return out
+
+
 def _where(cid: str, tab: str, group: str, dropdown: str = "") -> str:
     parts = [f"{tab} › {group}" + (f" › {dropdown}" if dropdown else "")]
-    menu = next((title for title, cids in commands.MENUS if cid in cids), None)
+    menu = next((title for title, cids in commands.MENUS if cid in _flat(cids)), None)
     if menu:
         parts.append(f"{menu} menu")
     return ", ".join(parts)

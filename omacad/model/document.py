@@ -2100,6 +2100,25 @@ class Document:
         self.selected_body_ids = [b for b in group_body_ids if b in self.bodies]
         self.notify_changed()
 
+    def object_group_body_ids(self, group_id: str) -> List[str]:
+        """Ids of every body that belongs to the objects of a group (Björn #158)."""
+        g = next((g for g in self.object_groups if g["id"] == group_id), None)
+        out: List[str] = []
+        for oid in (g or {}).get("objects", []):
+            obj = self.object_history.objects.get(oid)
+            if obj:
+                out.extend(b for b in obj.body_ids if b in self.bodies and b not in out)
+        return out
+
+    @undoable("Move group")
+    def move_object_group(self, group_id: str, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0) -> int:
+        """Move every body of a group by the same offset, as one undo step (Björn #158). Returns how many moved."""
+        n = 0
+        for bid in self.object_group_body_ids(group_id):
+            if self.move_body(bid, dx, dy, dz) is not None:
+                n += 1
+        return n
+
     def has_lids(self) -> bool:
         """True if there are any lid bodies in the document (Björn #151)."""
         return any(getattr(b, "is_lid", False) or b.body_id in self.lids or b.name.lower().endswith(" lid") or b.name.lower().endswith(" lock")
@@ -2276,7 +2295,7 @@ class Document:
                 f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step2, base_trans[1], base_trans[2]]
             elif f.part_type == "tubes":
                 f.name = "Aluminum Tubes (10x)" if assembled else "Aluminum Tube (sample)"
-                f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step3, base_trans[1], base_trans[2]]
+                f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step2, base_trans[1], base_trans[2]]
 
         self.timeline.clear_cache()
         self.timeline.recompute(self)
@@ -2369,15 +2388,13 @@ class Document:
             specs = [
                 ("outer", "Outer Brackets (5x)", float(outer_angle), [0.0, 0.0, 0.0]),
                 ("inner", "Inner Brackets (5x)", float(inner_angle), [0.0, 0.0, 0.0]),
-                ("foot", "Foot Supports (2x)", float(foot_tube_angle), [0.0, 0.0, 0.0]),
                 ("tubes", "Aluminum Tubes (10x)", 0.0, [0.0, 0.0, 0.0]),
             ]
         else:
             specs = [
                 ("outer", "Outer Bracket", float(outer_angle), [base_trans[0], base_trans[1], base_trans[2]]),
                 ("inner", "Inner Bracket", float(inner_angle), [base_trans[0] + step1, base_trans[1], base_trans[2]]),
-                ("foot", "Foot Support", float(foot_tube_angle), [base_trans[0] + step2, base_trans[1], base_trans[2]]),
-                ("tubes", "Aluminum Tube (sample)", 0.0, [base_trans[0] + step3, base_trans[1], base_trans[2]]),
+                ("tubes", "Aluminum Tube (sample)", 0.0, [base_trans[0] + step2, base_trans[1], base_trans[2]]),
             ]
 
         for p_type, name, ang, trans in specs:

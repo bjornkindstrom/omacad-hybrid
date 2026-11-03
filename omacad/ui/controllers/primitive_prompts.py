@@ -290,9 +290,8 @@ class PrimitivePromptsMixin:
 
                 f1 = StarBracketFeature("preview_1", "Outer", part_type="outer", angle=p["outer_angle"], **p, translation=t1)
                 f2 = StarBracketFeature("preview_2", "Inner", part_type="inner", angle=p["inner_angle"], **p, translation=t2)
-                f3 = StarBracketFeature("preview_3", "Foot", part_type="foot", angle=p["foot_tube_angle"], **p, translation=t3)
                 f4 = StarBracketFeature("preview_4", "Tubes", part_type="tubes", **p, translation=t4)
-                parts = [f1.build_solid(), f2.build_solid(), f3.build_solid(), f4.build_solid()]
+                parts = [f1.build_solid(), f2.build_solid(), f4.build_solid()]
                 parts = [pt for pt in parts if pt is not None and not pt.is_empty()]
                 solid = m3d.Manifold.compose(parts) if parts else None
                 self.viewport.set_preview(solid)

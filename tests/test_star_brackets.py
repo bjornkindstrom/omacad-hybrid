@@ -32,13 +32,12 @@ def test_star_brackets_creation_and_bounds():
         foot_thickness=4.0,
         foot_tube_angle=36.0,
     )
-    assert len(bodies) == 4
-    outer_b, inner_b, foot_b, tube_b = bodies
+    assert len(bodies) == 3      # the foot supports are switched off for now
+    outer_b, inner_b, tube_b = bodies
 
     # Check that volumes are positive and meshes are valid
     assert outer_b.manifold.volume() > 10000.0
     assert inner_b.manifold.volume() > 5000.0
-    assert foot_b.manifold.volume() > 10000.0
     assert tube_b.manifold.volume() > 5000.0
 
     # Check that object group was created
@@ -77,7 +76,7 @@ def test_star_brackets_group_settings_in_browser_tree():
     assert any("Socket depth: 25 mm" in l for l in param_labels)
     assert any("Outer angle (tip): 36 °" in l for l in param_labels)
     assert any("Inner angle (valley): 108 °" in l for l in param_labels)
-    assert any("Foot width: 40 mm" in l for l in param_labels)
+    assert not any("Foot" in l for l in param_labels)
 
     # Check value_ref
     item = next(it[0] for it in tree_items if it[0].data(0, Qt.ItemDataRole.UserRole) == ("group_param", (gid, "tube_size")))
@@ -110,7 +109,7 @@ def test_star_brackets_edit_param_and_recompute():
     assert v_assembled_out > 4.5 * v_deep
 
     # Check that tubes volume in assembled view is 10 * 12 * 12 * 250 = 360,000
-    v_tubes = doc.bodies["body_star_bracket_4"].manifold.volume()
+    v_tubes = doc.bodies["body_star_bracket_3"].manifold.volume()
     assert abs(v_tubes - 360000.0) < 1.0
 
     # Test angle coupling: changing outer_angle to 40 updates inner to 112 and foot to 34
@@ -227,7 +226,7 @@ def test_star_brackets_save_and_load(tmp_path):
     assert os.path.exists(project_file)
 
     loaded = Exporter.load_project(project_file)
-    assert len(loaded.bodies) == 4
+    assert len(loaded.bodies) == 3
     assert len(loaded.object_groups) == 1
     gid = loaded.object_groups[0]["id"]
     assert loaded.is_star_bracket_group(gid)

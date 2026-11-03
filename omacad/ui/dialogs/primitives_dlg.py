@@ -148,6 +148,7 @@ class BoxDialog(BaseFeatureDialog):
         inner_row.addWidget(self.cmb_inner_kind)
         form.addRow("Inner Edge:", inner_row)
 
+        self.pair_form_rows(form, [(self.spn_length, self.spn_width)])      # two fields per row
         self.main_layout.addLayout(form)
         self.lbl_problem = QLabel("")
         self.lbl_problem.setWordWrap(True)
@@ -699,7 +700,7 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.spn_lip_height.setSuffix(" mm")
         self.spn_lip_height.setToolTip("Distance from the top rim down to the sliding groove shelf.")
         self.spn_lip_height.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("  Groove height from top:", self.spn_lip_height)
+        form.addRow("  Groove height:", self.spn_lip_height)
 
         self.spn_lip_step = ExprDoubleSpinBox()
         self.spn_lip_step.setRange(0.2, 50.0)
@@ -707,7 +708,7 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.spn_lip_step.setSuffix(" mm")
         self.spn_lip_step.setToolTip("Depth of the sliding groove into the box walls.")
         self.spn_lip_step.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("  Groove depth into wall:", self.spn_lip_step)
+        form.addRow("  Groove depth:", self.spn_lip_step)
 
         self.spn_clearance = ExprDoubleSpinBox()
         self.spn_clearance.setRange(0.0, 5.0)
@@ -755,6 +756,10 @@ class BoxInRowDialog(BaseFeatureDialog):
         self.face_row_widget = face_row
         form.addRow("Target Face:", face_row)
 
+        self.pair_form_rows(form, [      # two fields per row to save vertical space
+            (self.spn_count, self.spn_spacing), (self.spn_length, self.spn_width),
+            (self.spn_wall, self.spn_bottom), (self.spn_hc_size, self.spn_hc_wall),
+            (self.spn_lip_height, self.spn_lip_step), (self.spn_slot_length, self.spn_slot_width)])
         self.main_layout.addLayout(form)
         self.lbl_problem = QLabel()
         self.lbl_problem.setStyleSheet("color: #e06c75; font-size: 11px;")
@@ -1002,7 +1007,6 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.spn_foot_width.setSuffix(" mm")
         self.spn_foot_width.setToolTip("Width of the ground base plate.")
         self.spn_foot_width.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("Foot width:", self.spn_foot_width)
 
         self.spn_foot_length = ExprDoubleSpinBox()
         self.spn_foot_length.setRange(20.0, 300.0)
@@ -1010,7 +1014,6 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.spn_foot_length.setSuffix(" mm")
         self.spn_foot_length.setToolTip("Length of the ground base plate (front-to-back stability).")
         self.spn_foot_length.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("Foot length:", self.spn_foot_length)
 
         self.spn_foot_thickness = ExprDoubleSpinBox()
         self.spn_foot_thickness.setRange(2.0, 50.0)
@@ -1018,7 +1021,6 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.spn_foot_thickness.setSuffix(" mm")
         self.spn_foot_thickness.setToolTip("Thickness of the ground base plate.")
         self.spn_foot_thickness.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("Foot thickness:", self.spn_foot_thickness)
 
         self.spn_foot_angle = ExprDoubleSpinBox()
         self.spn_foot_angle.setRange(5.0, 85.0)
@@ -1026,7 +1028,13 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.spn_foot_angle.setSuffix(" °")
         self.spn_foot_angle.setToolTip("Angle of the bottom tube to the ground (36° for 5-pointed star).")
         self.spn_foot_angle.valueChanged.connect(lambda _: self.changed.emit())
-        form.addRow("Foot tube angle:", self.spn_foot_angle)
+
+        # The foot supports are switched off for now: their fields stay as hidden values (old files keep theirs).
+        # Two fields per row to save vertical space (Björn #168)
+        self.pair_form_rows(form, [
+            (self.spn_tube_length, self.spn_tube_size), (self.spn_clearance, self.spn_wall),
+            (self.spn_depth, self.spn_hole_dia), (self.spn_hole_offset, self.spn_hole_spacing),
+            (self.spn_outer_angle, self.spn_inner_angle)])
 
         self.main_layout.addLayout(form)
         self.lbl_problem = QLabel()

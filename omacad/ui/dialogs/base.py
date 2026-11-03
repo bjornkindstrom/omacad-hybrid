@@ -55,6 +55,37 @@ def studio_layout(dlg) -> None:
 class BaseFeatureDialog(QDialog):
     """Base modal dialog with Fusion 360 styling, docked in the right side panel."""
 
+    @staticmethod
+    def pair_form_rows(form, pairs) -> None:
+        """Put two fields of a QFormLayout side by side, label above each field, to save vertical space (Björn #168).
+        `pairs` is a list of (field_a, field_b); the pair takes the place of field_a's row and field_b's row goes."""
+        from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFormLayout
+        for fa, fb in pairs:
+            texts = []
+            for f in (fa, fb):
+                lab = form.labelForField(f)
+                texts.append(lab.text().strip() if lab is not None else "")
+            row_a = next(i for i in range(form.rowCount()) if form.itemAt(i, QFormLayout.FieldRole) is not None
+                         and form.itemAt(i, QFormLayout.FieldRole).widget() is fa)
+            for f in (fb, fa):
+                taken = form.takeRow(f)
+                if taken.labelItem is not None and taken.labelItem.widget() is not None:
+                    taken.labelItem.widget().deleteLater()      # the row's own label; each column gets a new one
+            box = QWidget()
+            hbox = QHBoxLayout(box)
+            hbox.setContentsMargins(0, 0, 0, 0)
+            hbox.setSpacing(8)
+            for text, f in zip(texts, (fa, fb)):
+                col = QVBoxLayout()
+                col.setContentsMargins(0, 0, 0, 0)
+                col.setSpacing(2)
+                lab = QLabel(text)
+                lab.setBuddy(f)
+                col.addWidget(lab)
+                col.addWidget(f)
+                hbox.addLayout(col, 1)
+            form.insertRow(row_a, box)
+
     def __init__(self, title: str, parent=None, embedded: bool = False):
         super().__init__(parent)
         self.setWindowTitle(title)

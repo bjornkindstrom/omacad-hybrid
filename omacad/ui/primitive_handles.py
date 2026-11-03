@@ -205,4 +205,17 @@ def attach_primitive_handles(viewport, dialog, kind, preview=None):
 
     dialog.finished.connect(clear)
     dialog.destroyed.connect(clear)
+
+    def anchor():
+        """Beside the first drag handle, so OK is one click from where the shape is being shaped (Björn #160)."""
+        if viewport.primitive_handles is not handles:
+            return None
+        tips = handles.geometry()
+        if not tips:
+            return None
+        tip = min(tips, key=lambda t: t[1][1])[1]       # the highest handle on screen
+        return float(tip[0]) + 90.0, float(tip[1])
+
+    from omacad.ui.apply_button import add_apply_button
+    add_apply_button(viewport, dialog, anchor)
     return handles

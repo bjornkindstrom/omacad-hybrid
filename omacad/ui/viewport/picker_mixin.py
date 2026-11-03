@@ -98,6 +98,7 @@ class PickerMixin:
         self.hover_edge = None
         self.hover_face = self.hover_surface = None
         self.selected_edges = []
+        self.fillet_rail_offset = 0.0
         self.setFocus()
         self.update()
 
@@ -418,23 +419,23 @@ class PickerMixin:
         if self.prog_thick is None:
             return
         GL.glDisable(GL.GL_DEPTH_TEST)
-        def flat(edges):
-            out = []
-            for e in edges:
-                pts = e.polyline()
-                for i in range(len(pts) - 1):
-                    out += [*pts[i], *pts[i + 1]]
-            return out
-
         if self.edge_xray:   # every pickable edge, also the hidden ones
-            self.draw_thick_lines(mvp, flat([e for b in self.doc.bodies.values() if b.visible for e in b.edges]), (0.75, 0.8, 0.9, 0.55), 1.6)
+            self.draw_thick_lines(mvp, self._edge_render_lines([e for b in self.doc.bodies.values() if b.visible for e in b.edges]), (0.75, 0.8, 0.9, 0.55), 1.6)
         if self.hover_edge is not None and not any(self._same_edge(self.hover_edge, s) for s in self.selected_edges):
             from omacad.ui.settings import hover_line_style
             hv_col, hv_w = hover_line_style()
-            self.draw_thick_lines(mvp, flat([self.hover_edge]), hv_col, hv_w)
+            self.draw_thick_lines(mvp, self._edge_render_lines([self.hover_edge]), hv_col, hv_w)
         if self.selected_edges:
-            self.draw_thick_lines(mvp, flat(self.selected_edges), (*theme.palette().highlight01(), 1.0), 4.0)
+            self.draw_thick_lines(mvp, self._edge_render_lines(self.selected_edges, getattr(self, "fillet_rail_offset", 0.0)), (*theme.palette().highlight01(), 1.0), 4.0)
         GL.glEnable(GL.GL_DEPTH_TEST)
+
+    def _edge_render_lines(self, edges, offset: float = 0.0) -> list:
+        out = []
+        for e in edges:
+            pts = self._offset_edge_polyline(e, offset) if offset > 0.0 else e.polyline()
+            for i in range(len(pts) - 1):
+                out += [*pts[i], *pts[i + 1]]
+        return out
 
     def set_step_edges(self, edges):
         self.step_edges = list(edges or [])

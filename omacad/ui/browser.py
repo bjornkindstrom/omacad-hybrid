@@ -592,6 +592,33 @@ class BrowserTree(QWidget):
         if ok and name.strip():
             self.doc.create_object_group(name.strip(), object_ids)
 
+    def move_group_prompt(self, group_id: str):
+        """Move all objects of a group at once by a typed offset (Björn #158)."""
+        from PySide6.QtWidgets import QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout
+        if not self.doc.object_group_body_ids(group_id):
+            self.status_message.emit("The group has no bodies to move.")
+            return
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Move group")
+        form = QFormLayout(dlg)
+        spins = []
+        for label in ("X", "Y", "Z"):
+            spn = QDoubleSpinBox(dlg)
+            spn.setRange(-100000.0, 100000.0)
+            spn.setDecimals(3)
+            spn.setSuffix(" mm")
+            form.addRow(f"Move {label}:", spn)
+            spins.append(spn)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, parent=dlg)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        form.addRow(buttons)
+        if dlg.exec() == QDialog.Accepted:
+            dx, dy, dz = (s.value() for s in spins)
+            if any(abs(v) > 1e-9 for v in (dx, dy, dz)):
+                n = self.doc.move_object_group(group_id, dx, dy, dz)
+                self.status_message.emit(f"Moved {n} bodies of the group.")
+
     def edit_box_row_group_prompt(self, group_id: str):
         from omacad.ui.dialogs.primitives_dlg import BoxInRowDialog
         dlg = BoxInRowDialog(self)
@@ -724,6 +751,7 @@ class BrowserTree(QWidget):
                 add("🍱 Edit Box in a Row…", lambda: self.edit_box_row_group_prompt(item_id))
             elif hasattr(self.doc, "is_star_bracket_group") and self.doc.is_star_bracket_group(item_id):
                 add("⭐ Edit Star Brackets…", lambda: self.edit_star_bracket_group_prompt(item_id))
+            add("✥ Move group…", lambda: self.move_group_prompt(item_id))
             rename()
             add("🗑️ Ungroup objects", lambda: self.doc.remove_object_group(item_id))
             menu.addSeparator()
