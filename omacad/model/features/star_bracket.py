@@ -16,14 +16,13 @@ def star_radii(tube_len: float, tube_s: float, clr: float, wall_t: float, outer_
     out_a = max(10.0, min(160.0, float(outer_a)))
     in_a = max(10.0, min(170.0, (out_a + 72.0) if inner_a is None else float(inner_a)))
     inner_s = tube_s + clr
-    outer_s = inner_s + 2.0 * wall_t
     half_out = math.radians(out_a / 2.0)
-    x_inner_out = (outer_s / 2.0) / math.tan(half_out)
-    stop_margin = max(2.5, wall_t)
+    x_inner_out = (inner_s / 2.0) / math.tan(half_out)
+    stop_margin = max(2.0, wall_t)
     x_stop_out = x_inner_out + stop_margin
 
     half_in = math.radians(in_a / 2.0)
-    x_inner_in = (outer_s / 2.0) / math.tan(half_in)
+    x_inner_in = (inner_s / 2.0) / math.tan(half_in)
     x_stop_in = x_inner_in + stop_margin
 
     D = max(10.0, tube_len) + x_stop_out + x_stop_in
@@ -46,6 +45,11 @@ class StarBracketFeature(Feature):
         socket_depth: float = 25.0,
         hole_diameter: float = 3.5,
         hole_offset: float = 12.0,
+        double_holes: bool = False,
+        hole_spacing: float = 15.0,
+        reinforcement: bool = True,
+        post: bool = False,
+        post_height: float = 25.0,
         angle: float = 36.0,
         outer_angle: Optional[float] = None,
         inner_angle: Optional[float] = None,
@@ -66,6 +70,11 @@ class StarBracketFeature(Feature):
         self.socket_depth = float(socket_depth)
         self.hole_diameter = float(hole_diameter)
         self.hole_offset = float(hole_offset)
+        self.double_holes = bool(double_holes)
+        self.hole_spacing = float(hole_spacing)
+        self.reinforcement = bool(reinforcement)
+        self.post = bool(post)
+        self.post_height = float(post_height)
 
         if outer_angle is not None:
             self.outer_angle = float(outer_angle)
@@ -110,12 +119,13 @@ class StarBracketFeature(Feature):
         ang = max(10.0, min(170.0, self.angle if bracket_angle is None else bracket_angle))
         half_a = math.radians(ang / 2.0)
 
-        x_outer = -(outer_s / 2.0) / math.tan(half_a)
-        x_inner = (outer_s / 2.0) / math.tan(half_a)
-
-        stop_margin = max(2.5, wall)
-        x_stop = x_inner + stop_margin
+        # Cavity inner corner - where inner corners of the two tube cavities meet
+        x_cav_inner = (inner_s / 2.0) / math.tan(half_a)
+        stop_margin = max(2.0, wall)
+        x_stop = x_cav_inner + stop_margin
         x_end = x_stop + depth
+
+        x_outer = -(outer_s / 2.0) / math.tan(half_a)
         arm_len = x_end - x_outer
 
         outer_box = m3d.Manifold.cube([arm_len, outer_s, outer_s], center=False).translate([x_outer, -outer_s / 2.0, 0.0])
@@ -124,16 +134,87 @@ class StarBracketFeature(Feature):
         arm2_out = outer_box.rotate([0, 0, -math.degrees(half_a)])
         solid = arm1_out + arm2_out
 
+        # Truncate needle beak if unnecessarily long (past outer cavity corner + stop margin) (#164)
+        x_tip_limit = -(inner_s / 2.0) / math.tan(half_a) - stop_margin
+        if x_outer < x_tip_limit:
+            clip_box = m3d.Manifold.cube([100.0, 200.0, outer_s + 10.0], center=False).translate([x_tip_limit - 100.0, -100.0, -5.0])
+            solid = solid - clip_box
+
+        # Connector post on top of the plate (#167): needs the web to stand on
+        post_s = outer_s
+        flare = max(1.0, wall * 0.75)
+        post_h = max(10.0, self.post_height)
+        x_vertex = (outer_s / 2.0) / math.sin(half_a)
+        want_web = self.reinforcement or self.post
+        web_len = min(depth * 0.5, 20.0)
+        if self.post:
+            web_len = max(web_len, post_s + 2.0 * flare + 1.0)
+        # The web's front corners must stay inside the arms: along an arm the corner
+        # lies at x/cos(a) - k*sin(a) and may not pass the arm end (spike, #166).
+        k_embed = (outer_s / 2.0) / math.cos(half_a) - (wall * 0.5) / math.cos(half_a)
+        x_front_max = math.cos(half_a) * (x_end - 1.0 + k_embed * math.sin(half_a))
+        web_len = max(1.0, min(web_len, x_front_max - x_vertex))
+
+        # Reinforcement web between arms on both brackets (#165). Its front corners end
+        # half-way inside the arm walls, so they never poke out as a spike (#166).
+        if want_web:
+            x_front = x_vertex + web_len
+            y_gap = x_front * math.tan(half_a) - (outer_s / 2.0) / math.cos(half_a)
+            y_embed = max(0.0, y_gap) + (wall * 0.5) / math.cos(half_a)
+            pts = np.array([
+                [x_vertex - 0.5, 0.0],
+                [x_front, -y_embed],
+                [x_front, y_embed]
+            ])
+            cs = m3d.CrossSection([pts])
+            web = m3d.Manifold.extrude(cs, outer_s)
+            solid = solid + web
+
+        post_cut = None
+        if self.post:
+            hs = post_s / 2.0
+            hb = hs + flare
+            x_c = min(x_vertex + flare + hs, x_vertex + web_len - hb)
+            z0 = outer_s - 0.01
+            sleeve = m3d.Manifold.cube([post_s, post_s, post_h + 0.01], center=False).translate([x_c - hs, -hs, z0])
+            base_pts = []
+            for sx in (-1, 1):
+                for sy in (-1, 1):
+                    base_pts.append([x_c + sx * hb, sy * hb, z0])
+                    base_pts.append([x_c + sx * hs, sy * hs, z0 + flare + 0.01])
+            chamfer = m3d.Manifold.hull_points(np.array(base_pts))
+            solid = solid + sleeve + chamfer
+            z_top = outer_s + post_h
+            socket = m3d.Manifold.cube([inner_s, inner_s, post_h + 1.0], center=False).translate(
+                [x_c - inner_s / 2.0, -inner_s / 2.0, outer_s])
+            z_hole = outer_s + max(flare + 2.0 + h_dia / 2.0, post_h * 0.5)
+            z_hole = min(z_hole, z_top - h_dia / 2.0 - 2.0)
+            side_hole = m3d.Manifold.cylinder(post_s + 2.0 * flare + 4.0, h_dia / 2.0, h_dia / 2.0, 32).rotate(
+                [90, 0, 0]).translate([x_c, (post_s + 2.0 * flare + 4.0) / 2.0, z_hole])
+            post_cut = socket + side_hole
+
         cav_len = depth + 1.0
         cavity = m3d.Manifold.cube([cav_len, inner_s, inner_s], center=False).translate([x_stop, -inner_s / 2.0, wall])
 
-        hole_x = x_end - h_off
-        hole = m3d.Manifold.cylinder(outer_s + 4.0, h_dia / 2.0, h_dia / 2.0, 32).translate([hole_x, 0.0, -2.0])
+        # Screw holes (with optional double holes, #165)
+        holes = []
+        hole_x1 = x_end - h_off
+        hole_h = outer_s + 4.0 + (flare + 1.0 if self.post else 0.0)
+        h1 = m3d.Manifold.cylinder(hole_h, h_dia / 2.0, h_dia / 2.0, 32).translate([hole_x1, 0.0, -2.0])
+        holes.append(h1)
+        if self.double_holes:
+            hole_x2 = hole_x1 - self.hole_spacing
+            if hole_x2 >= x_stop + 3.0:
+                h2 = m3d.Manifold.cylinder(hole_h, h_dia / 2.0, h_dia / 2.0, 32).translate([hole_x2, 0.0, -2.0])
+                holes.append(h2)
 
-        cutter1 = (cavity + hole).rotate([0, 0, math.degrees(half_a)])
-        cutter2 = (cavity + hole).rotate([0, 0, -math.degrees(half_a)])
+        hole_solid = m3d.Manifold.batch_boolean(holes, m3d.OpType.Add) if len(holes) > 1 else holes[0]
+        cutter1 = (cavity + hole_solid).rotate([0, 0, math.degrees(half_a)])
+        cutter2 = (cavity + hole_solid).rotate([0, 0, -math.degrees(half_a)])
 
         result = solid - cutter1 - cutter2
+        if post_cut is not None:
+            result = result - post_cut
         trans = self.translation if translation is None else translation
         if any(abs(x) > 1e-9 for x in trans):
             result = result.translate(tuple(trans))
@@ -164,9 +245,17 @@ class StarBracketFeature(Feature):
         solid = base + rot_socket + gusset
 
         cavity = m3d.Manifold.cube([depth + 1.0, inner_s, inner_s], center=False).translate([socket_len - depth, -inner_s / 2.0, wall])
-        hole = m3d.Manifold.cylinder(outer_s + 4.0, h_dia / 2.0, h_dia / 2.0, 32).rotate([90, 0, 0]).translate([socket_len - h_off, (outer_s + 4.0) / 2.0, outer_s / 2.0])
+        holes = []
+        hole1 = m3d.Manifold.cylinder(outer_s + 4.0, h_dia / 2.0, h_dia / 2.0, 32).rotate([90, 0, 0]).translate([socket_len - h_off, (outer_s + 4.0) / 2.0, outer_s / 2.0])
+        holes.append(hole1)
+        if self.double_holes:
+            h2_x = socket_len - h_off - self.hole_spacing
+            if h2_x >= socket_len - depth + 3.0:
+                hole2 = m3d.Manifold.cylinder(outer_s + 4.0, h_dia / 2.0, h_dia / 2.0, 32).rotate([90, 0, 0]).translate([h2_x, (outer_s + 4.0) / 2.0, outer_s / 2.0])
+                holes.append(hole2)
+        hole_solid = m3d.Manifold.batch_boolean(holes, m3d.OpType.Add) if len(holes) > 1 else holes[0]
 
-        cutter = (cavity + hole).rotate([0, -ang, 0]).translate([-fw / 4.0, 0.0, ft])
+        cutter = (cavity + hole_solid).rotate([0, -ang, 0]).translate([-fw / 4.0, 0.0, ft])
 
         clip_box = m3d.Manifold.cube([fw * 3.0, fl * 3.0, 50.0], center=False).translate([-fw * 1.5, -fl * 1.5, -50.0])
         solid = (solid - clip_box) - cutter
@@ -248,16 +337,6 @@ class StarBracketFeature(Feature):
         foot_r = proto.translate([p_r[0], p_r[1], 0.0])
         foot_l = proto.scale([-1.0, 1.0, 1.0]).translate([p_l[0], p_l[1], 0.0])
         return foot_r + foot_l
-        a3 = math.radians(-126.0)
-        t3 = np.array([R_out * math.cos(a3), R_out * math.sin(a3)])
-
-        p_r = v2 + 0.65 * (t2 - v2)
-        p_l = v2 + 0.65 * (t3 - v2)
-
-        proto = self._build_foot(inner_s, wall, outer_s, depth, h_dia, h_off, translation=[0, 0, 0])
-        foot_r = proto.translate([p_r[0], p_r[1], 0.0])
-        foot_l = proto.scale([-1.0, 1.0, 1.0]).translate([p_l[0], p_l[1], 0.0])
-        return foot_r + foot_l
 
     def build_solid(self) -> m3d.Manifold:
         inner_s = max(1.0, self.tube_size + self.clearance)
@@ -311,6 +390,11 @@ class StarBracketFeature(Feature):
             "socket_depth": self.socket_depth,
             "hole_diameter": self.hole_diameter,
             "hole_offset": self.hole_offset,
+            "double_holes": self.double_holes,
+            "hole_spacing": self.hole_spacing,
+            "reinforcement": self.reinforcement,
+            "post": self.post,
+            "post_height": self.post_height,
             "angle": self.angle,
             "outer_angle": self.outer_angle,
             "inner_angle": self.inner_angle,

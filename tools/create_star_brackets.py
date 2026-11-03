@@ -57,6 +57,11 @@ def main():
     parser.add_argument("--socket-depth", type=float, default=25.0, help="Depth of tube socket (mm)")
     parser.add_argument("--hole-dia", type=float, default=3.5, help="Screw hole diameter (mm)")
     parser.add_argument("--hole-offset", type=float, default=12.0, help="Screw hole distance from arm end (mm)")
+    parser.add_argument("--double-holes", action="store_true", help="Add second screw hole on each arm for stability")
+    parser.add_argument("--hole-spacing", type=float, default=15.0, help="Spacing between double screw holes (mm)")
+    parser.add_argument("--post", action="store_true", help="Add a vertical connector post (with base chamfer and screw hole) to both bracket types")
+    parser.add_argument("--post-height", type=float, default=25.0, help="Height of the connector post in mm")
+    parser.add_argument("--no-reinforcement", action="store_false", dest="reinforcement", default=True, help="Disable reinforcement web between bracket arms")
     parser.add_argument("--outer-angle", type=float, default=36.0, help="Outer apex angle in degrees (36° for 5-pointed star)")
     parser.add_argument("--inner-angle", type=float, default=108.0, help="Inner valley angle in degrees (108° for 5-pointed star)")
     parser.add_argument("--foot-width", type=float, default=40.0, help="Base plate width (mm)")
@@ -78,6 +83,11 @@ def main():
         socket_depth=args.socket_depth,
         hole_diameter=args.hole_dia,
         hole_offset=args.hole_offset,
+        double_holes=args.double_holes,
+        hole_spacing=args.hole_spacing,
+        reinforcement=args.reinforcement,
+        post=args.post,
+        post_height=args.post_height,
         outer_angle=args.outer_angle,
         inner_angle=args.inner_angle,
         foot_width=args.foot_width,

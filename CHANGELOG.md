@@ -1,3 +1,21 @@
+# Hybrid-experiment — 0.9.9.80.123
+
+### Fixed
+- **Star Brackets: onödig spets på förstärkningen (request #166)**: Förstärkningswebbens främre hörn hamnade bortom armens ände (längs armen 47,7 mm mot ändan på 46,2 mm vid 116°) och stack ut som en 28°-spets. Webben begränsas nu så att hörnen stannar innanför armänden och halvvägs in i armväggen (aldrig ända in i hålrummet).
+
+### Added
+- **Star Brackets: kopplingsstolpe för att sätta ihop två stjärnor (request #167)**: Ny inställning `post` (+ `post_height`, standard 25 mm) ger både yttre och inre fästet en lodrät fyrkantig hylsa ovanpå plattan (vägg = väggtjockleken, hålrum för röret), en fasad bas runt hylsan för styrka (fas = 0,75 × vägg) och ett tvärgående skruvhål som de andra. Stolpen står på förstärkningswebben (som då görs tillräckligt lång) och skruvhålen i plattan skärs igenom fasen så de förblir åtkomliga. Finns i dialogen (påslagen som standard för nya), `⚙️ Settings` i trädet och `tools/create_star_brackets.py --post --post-height`. Gamla filer får `post=False` och ser ut som förut.
+  Test: `tests/test_star_brackets.py`.
+
+# Hybrid-experiment — 0.9.9.80.122
+
+### Fixed
+- **Star Brackets: kompakt fästeslängd, dubbla skruvhål & förstärkning på båda fästena (requests #164, #165)**:
+  1) **Kompakt längd (#164)**: Rörstoppet beräknades tidigare baserat på ytterdimensionen `outer_s` i stället för hålrummet `inner_s`, vilket skapade en onödigt lång massiv plastklump före sockeln och gav enorm armlängd (~140 mm vid spetsiga vinklar). Rörstoppet beräknas nu mot hålrummets inre hörn plus stoppvägg (`inner_s / (2 tan(α/2)) + wall`), och spetsiga ytterhörn kapas snyggt så att fästet inte sticker ut onödigt långt.
+  2) **Dubbla skruvhål (#165)**: Ny inställning för dubbla skruvhål (`double_holes`) med ställbart hålavstånd (`hole_spacing`), tillgängligt i dialogen, verktygsskriptet och under `⚙️ Settings` i objektträdet. Placerar två skruvhål per arm så att fyrkantsrören låses stabilt utan vridning.
+  3) **Förstärkning på båda fästena (#165)**: Ny inställning (`reinforcement`, standard: på) som genererar en massiv förstärkningsribba/web i vinkelvecket mellan fästarmarna på både ytter- (spets) och inner- (dal) fästena, vilket gör fästena betydligt styvare och förhindrar att de sviktar eller spricker.
+  Test: `tests/test_star_brackets.py`.
+
 # Hybrid-experiment — 0.9.9.80.121
 
 ### Fixed

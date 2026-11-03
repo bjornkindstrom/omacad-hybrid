@@ -945,6 +945,41 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.spn_hole_offset.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("Screw hole offset:", self.spn_hole_offset)
 
+        self.chk_double_holes = QCheckBox("Double screw holes")
+        self.chk_double_holes.setToolTip("Place two screw holes along each socket arm for extra stability.")
+        self.chk_double_holes.setChecked(False)
+        self.chk_double_holes.toggled.connect(self._on_double_holes_toggled)
+        form.addRow("Double holes:", self.chk_double_holes)
+
+        self.spn_hole_spacing = ExprDoubleSpinBox()
+        self.spn_hole_spacing.setRange(5.0, 100.0)
+        self.spn_hole_spacing.setValue(15.0)
+        self.spn_hole_spacing.setSuffix(" mm")
+        self.spn_hole_spacing.setToolTip("Center-to-center distance between double screw holes.")
+        self.spn_hole_spacing.setEnabled(False)
+        self.spn_hole_spacing.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Hole spacing:", self.spn_hole_spacing)
+
+        self.chk_reinforcement = QCheckBox("Reinforcement web")
+        self.chk_reinforcement.setToolTip("Add solid structural stiffening web between socket arms on both brackets.")
+        self.chk_reinforcement.setChecked(True)
+        self.chk_reinforcement.toggled.connect(lambda _: self.changed.emit())
+        form.addRow("Reinforcement:", self.chk_reinforcement)
+
+        self.chk_post = QCheckBox("Connector post")
+        self.chk_post.setToolTip("Add a vertical square socket with a chamfered base and a screw hole on both bracket types, so two stars can be joined with tubes.")
+        self.chk_post.setChecked(True)
+        self.chk_post.toggled.connect(self._on_post_toggled)
+        form.addRow("Connector post:", self.chk_post)
+
+        self.spn_post_height = ExprDoubleSpinBox()
+        self.spn_post_height.setRange(10.0, 100.0)
+        self.spn_post_height.setValue(25.0)
+        self.spn_post_height.setSuffix(" mm")
+        self.spn_post_height.setToolTip("Height of the connector post above the bracket plate.")
+        self.spn_post_height.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Post height:", self.spn_post_height)
+
         self.spn_outer_angle = ExprDoubleSpinBox()
         self.spn_outer_angle.setRange(10.0, 160.0)
         self.spn_outer_angle.setValue(36.0)
@@ -1000,6 +1035,14 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.main_layout.addWidget(self.lbl_problem)
         self.add_buttons()
 
+    def _on_post_toggled(self, checked: bool):
+        self.spn_post_height.setEnabled(checked)
+        self.changed.emit()
+
+    def _on_double_holes_toggled(self, checked: bool):
+        self.spn_hole_spacing.setEnabled(checked)
+        self.changed.emit()
+
     def _on_outer_angle_changed(self, val):
         if getattr(self, "_syncing_angles", False):
             return
@@ -1038,6 +1081,11 @@ class StarBracketsDialog(BaseFeatureDialog):
             "socket_depth": self.spn_depth.value(),
             "hole_diameter": self.spn_hole_dia.value(),
             "hole_offset": self.spn_hole_offset.value(),
+            "double_holes": self.chk_double_holes.isChecked(),
+            "hole_spacing": self.spn_hole_spacing.value(),
+            "reinforcement": self.chk_reinforcement.isChecked(),
+            "post": self.chk_post.isChecked(),
+            "post_height": self.spn_post_height.value(),
             "outer_angle": self.spn_outer_angle.value(),
             "inner_angle": self.spn_inner_angle.value(),
             "foot_width": self.spn_foot_width.value(),
@@ -1067,6 +1115,17 @@ class StarBracketsDialog(BaseFeatureDialog):
                 self.spn_hole_dia.setValue(float(params["hole_diameter"]))
             if "hole_offset" in params:
                 self.spn_hole_offset.setValue(float(params["hole_offset"]))
+            if "double_holes" in params:
+                self.chk_double_holes.setChecked(bool(params["double_holes"]))
+                self.spn_hole_spacing.setEnabled(bool(params["double_holes"]))
+            if "hole_spacing" in params:
+                self.spn_hole_spacing.setValue(float(params["hole_spacing"]))
+            if "reinforcement" in params:
+                self.chk_reinforcement.setChecked(bool(params["reinforcement"]))
+            self.chk_post.setChecked(bool(params.get("post", False)))
+            self.spn_post_height.setEnabled(self.chk_post.isChecked())
+            if "post_height" in params:
+                self.spn_post_height.setValue(float(params["post_height"]))
             if "outer_angle" in params:
                 outer_a = float(params["outer_angle"])
                 self.spn_outer_angle.setValue(outer_a)

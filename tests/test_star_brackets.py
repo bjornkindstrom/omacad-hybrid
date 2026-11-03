@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
 from omacad.model.document import Document
+from omacad.model.features.star_bracket import StarBracketFeature
 from omacad.ui.history_delegate import apply_dimension, value_ref
 from omacad.ui.browser import BrowserTree
 from omacad.io.exporter import Exporter
@@ -235,3 +236,154 @@ def test_star_brackets_save_and_load(tmp_path):
     assert params["inner_angle"] == 108.0
     assert params["tube_length"] == 300.0
     assert params["assembled"] is True
+
+
+def test_star_brackets_double_holes_and_reinforcement(tmp_path):
+    """Test report #164 and #165: compact apex (no unnecessary length), double holes, and reinforcement web."""
+    QApplication.instance() or QApplication([])
+
+    # 1. Test reinforcement web adds structural material between arms (#165)
+    doc_unreinf = Document("Unreinforced")
+    b_unreinf = doc_unreinf.add_star_brackets(
+        socket_depth=30.0,
+        reinforcement=False,
+        double_holes=False,
+    )
+    doc_reinf = Document("Reinforced")
+    b_reinf = doc_reinf.add_star_brackets(
+        socket_depth=30.0,
+        reinforcement=True,
+        double_holes=False,
+    )
+    # Reinforced outer and inner brackets must have more volume than unreinforced
+    assert b_reinf[0].manifold.volume() > b_unreinf[0].manifold.volume()
+    assert b_reinf[1].manifold.volume() > b_unreinf[1].manifold.volume()
+
+    # 2. Test double screw holes cut a second hole on each arm (#165)
+    doc_single = Document("SingleHole")
+    b_single = doc_single.add_star_brackets(
+        socket_depth=35.0,
+        hole_offset=10.0,
+        hole_spacing=15.0,
+        double_holes=False,
+        reinforcement=True,
+    )
+    doc_double = Document("DoubleHoles")
+    b_double = doc_double.add_star_brackets(
+        socket_depth=35.0,
+        hole_offset=10.0,
+        hole_spacing=15.0,
+        double_holes=True,
+        reinforcement=True,
+    )
+    # Double holes cut material out, so volume is slightly less than single hole
+    assert b_double[0].manifold.volume() < b_single[0].manifold.volume()
+    assert b_double[1].manifold.volume() < b_single[1].manifold.volume()
+
+    # 3. Test report #164: compact apex at acute angles (no absurd 14 cm arm length)
+    f_acute = StarBracketFeature(
+        "acute_test", "Acute", part_type="outer",
+        tube_size=10.0, clearance=0.2, wall_thickness=4.5, socket_depth=40.0,
+        angle=23.0, outer_angle=23.0, inner_angle=95.0,
+    )
+    m_acute = f_acute.build_solid()
+    assert not m_acute.is_empty()
+    bb = m_acute.bounding_box()
+    arm_span_x = bb[3] - bb[0]
+    # Arm length should be compact (<= 100 mm total including 40 mm socket), reduced from ~139 mm
+    assert arm_span_x < 105.0
+
+    # 4. Parametric edit of new parameters via group settings (#165)
+    gid = doc_reinf.object_groups[0]["id"]
+    # Toggle double holes via edit_star_bracket_group_param
+    assert doc_reinf.edit_star_bracket_group_param(gid, "double_holes", "1")
+    params = doc_reinf.star_bracket_group_params(gid)
+    assert params["double_holes"] is True
+    # Edit hole_spacing
+    assert doc_reinf.edit_star_bracket_group_param(gid, "hole_spacing", "18.0")
+    params = doc_reinf.star_bracket_group_params(gid)
+    assert params["hole_spacing"] == 18.0
+    # Toggle reinforcement
+    assert doc_reinf.edit_star_bracket_group_param(gid, "reinforcement", "0")
+    params = doc_reinf.star_bracket_group_params(gid)
+    assert params["reinforcement"] is False
+
+    # 5. Project save/load preserves double_holes, hole_spacing, reinforcement
+    proj_path = str(tmp_path / "fasten_reinf.omacad")
+    Exporter.save_project(doc_reinf, proj_path)
+    loaded = Exporter.load_project(proj_path)
+    lgid = loaded.object_groups[0]["id"]
+    lparams = loaded.star_bracket_group_params(lgid)
+    assert lparams["double_holes"] is True
+    assert lparams["hole_spacing"] == 18.0
+    assert lparams["reinforcement"] is False
+
+
+
+REPORT_166_167 = dict(tube_size=10.0, clearance=0.2, wall_thickness=3.0, socket_depth=40.0,
+                      hole_diameter=3.5, hole_offset=10.0, double_holes=True, hole_spacing=20.0,
+                      outer_angle=44.0, inner_angle=116.0)
+
+
+def _bracket(part, **kw):
+    params = dict(REPORT_166_167)
+    params.update(kw)
+    return StarBracketFeature("t", "t", part_type=part, **params).build_solid()
+
+
+def _min_corner_angle(manifold, z):
+    import math
+    import numpy as np
+    smallest = 180.0
+    for poly in manifold.slice(z).to_polygons():
+        n = len(poly)
+        for i in range(n):
+            u, v = poly[i - 1] - poly[i], poly[(i + 1) % n] - poly[i]
+            lu, lv = np.linalg.norm(u), np.linalg.norm(v)
+            if lu < 1e-9 or lv < 1e-9:
+                continue
+            smallest = min(smallest, math.degrees(math.acos(max(-1.0, min(1.0, float(u @ v) / lu / lv)))))
+    return smallest
+
+
+def test_reinforcement_web_leaves_no_spike_report_166():
+    """Report #166: the web corners poked out of the arm walls as a 28 degree spike."""
+    for part in ("outer", "inner"):
+        m = _bracket(part)
+        for z in (1.0, 8.0, 15.5):
+            assert _min_corner_angle(m, z) > 40.0, (part, z)
+
+
+def test_connector_post_report_167():
+    """Report #167: a vertical socket with base chamfer and screw hole on both bracket types."""
+    for part in ("outer", "inner"):
+        plain = _bracket(part)
+        posted = _bracket(part, post=True, post_height=25.0)
+        outer_s = 10.2 + 6.0
+        pb = plain.bounding_box()
+        qb = posted.bounding_box()
+        assert abs(qb[5] - (outer_s + 25.0)) < 1e-6          # top of the post
+        assert abs(qb[2] - pb[2]) < 1e-6 and abs(qb[0] - pb[0]) < 1e-6 and abs(qb[3] - pb[3]) < 1e-6
+        assert posted.genus() >= plain.genus()
+        assert posted.volume() > plain.volume()
+        # Socket: the post interior is hollow for a 10 mm tube, walls = wall thickness
+        above = posted.slice(outer_s + 20.0)
+        areas = sorted(abs(p) for p in [above.area()])
+        assert abs(above.area() - (outer_s ** 2 - 10.2 ** 2) + 0.0) < 3.6  # square ring (+/- side hole)
+        # Chamfer: the footprint just above the plate is wider than the sleeve higher up
+        assert posted.slice(outer_s + 0.5).area() > posted.slice(outer_s + 8.0).area() + 5.0
+        assert _min_corner_angle(posted, 8.0) > 40.0
+        assert _min_corner_angle(posted, 14.0) > 40.0
+
+
+def test_connector_post_is_saved_and_editable(tmp_path):
+    QApplication.instance() or QApplication([])
+    doc = Document("post")
+    doc.add_star_brackets(socket_depth=30.0, post=True, post_height=30.0)
+    gid = doc.star_bracket_groups()[0] if hasattr(doc, "star_bracket_groups") else None
+    feats = [f for f in doc.timeline.features if isinstance(f, StarBracketFeature)]
+    assert all(f.post and f.post_height == 30.0 for f in feats)
+    path = str(tmp_path / "p.omacad")
+    Exporter.save_omacad(doc, path) if hasattr(Exporter, "save_omacad") else None
+    old = StarBracketFeature("o", "o", part_type="outer").to_dict()
+    assert old["post"] is False

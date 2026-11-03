@@ -2178,6 +2178,11 @@ class Document:
             "socket_depth": float(getattr(f0, "socket_depth", 25.0)),
             "hole_diameter": float(getattr(f0, "hole_diameter", 3.5)),
             "hole_offset": float(getattr(f0, "hole_offset", 12.0)),
+            "double_holes": bool(getattr(f0, "double_holes", False)),
+            "hole_spacing": float(getattr(f0, "hole_spacing", 15.0)),
+            "reinforcement": bool(getattr(f0, "reinforcement", True)),
+            "post": bool(getattr(f0, "post", False)),
+            "post_height": float(getattr(f0, "post_height", 25.0)),
             "outer_angle": float(getattr(f0, "angle", 36.0)),
             "inner_angle": 108.0,
             "foot_width": float(getattr(f0, "foot_width", 40.0)),
@@ -2215,6 +2220,11 @@ class Document:
         depth = float(params.get("socket_depth", 25.0))
         h_dia = float(params.get("hole_diameter", 3.5))
         h_off = float(params.get("hole_offset", 12.0))
+        double_h = bool(params.get("double_holes", False))
+        h_spacing = float(params.get("hole_spacing", 15.0))
+        reinf = bool(params.get("reinforcement", True))
+        post = bool(params.get("post", False))
+        post_h = float(params.get("post_height", 25.0))
         outer_a = float(params.get("outer_angle", 36.0))
         inner_a = float(params.get("inner_angle", 108.0))
         fw = float(params.get("foot_width", 40.0))
@@ -2225,9 +2235,9 @@ class Document:
         base_trans = list(params.get("translation", [0.0, 0.0, 0.0]))
 
         feats = self.star_bracket_features(group_id)
-        outer_s = tube_s + clr + 2.0 * wall_t
-        span_outer = (outer_s / 2.0) / math.tan(math.radians(max(10.0, outer_a) / 2.0)) + depth + 10.0
-        span_inner = (outer_s / 2.0) / math.tan(math.radians(max(10.0, inner_a) / 2.0)) + depth + 10.0
+        inner_s = tube_s + clr
+        span_outer = (inner_s / 2.0) / math.tan(math.radians(max(10.0, outer_a) / 2.0)) + depth + 10.0
+        span_inner = (inner_s / 2.0) / math.tan(math.radians(max(10.0, inner_a) / 2.0)) + depth + 10.0
         step1 = span_outer + spacing
         step2 = step1 + span_inner + spacing
         step3 = step2 + 50.0 + spacing
@@ -2241,6 +2251,11 @@ class Document:
             f.socket_depth = depth
             f.hole_diameter = h_dia
             f.hole_offset = h_off
+            f.double_holes = double_h
+            f.hole_spacing = h_spacing
+            f.reinforcement = reinf
+            f.post = post
+            f.post_height = post_h
             f.foot_width = fw
             f.foot_length = fl
             f.foot_thickness = ft
@@ -2286,13 +2301,13 @@ class Document:
         val = exprlib.evaluate(expr_text, self.parameter_values())
         if not math.isfinite(val):
             raise ValueError("Enter a finite value")
-        if key in ("tube_length", "tube_size", "wall_thickness", "socket_depth", "hole_diameter", "foot_width", "foot_length", "foot_thickness") and val <= 0:
+        if key in ("tube_length", "tube_size", "wall_thickness", "socket_depth", "hole_diameter", "foot_width", "foot_length", "foot_thickness", "hole_spacing", "post_height") and val <= 0:
             raise ValueError("This dimension must be greater than zero")
         if key in ("clearance", "spacing", "hole_offset") and val < 0:
             raise ValueError("This value cannot be negative")
         if key in ("outer_angle", "inner_angle", "foot_tube_angle") and (val < 5 or val > 175):
             raise ValueError("Angle must be between 5 and 175 degrees")
-        if key == "assembled":
+        if key in ("assembled", "double_holes", "reinforcement", "post"):
             new_val = bool(round(float(val)))
             return self.update_star_bracket_group(group_id, **{key: new_val})
         elif key == "outer_angle":
@@ -2319,6 +2334,11 @@ class Document:
         socket_depth: float = 25.0,
         hole_diameter: float = 3.5,
         hole_offset: float = 12.0,
+        double_holes: bool = False,
+        hole_spacing: float = 15.0,
+        reinforcement: bool = True,
+        post: bool = False,
+        post_height: float = 25.0,
         outer_angle: float = 36.0,
         inner_angle: float = 108.0,
         foot_width: float = 40.0,
@@ -2332,9 +2352,9 @@ class Document:
     ) -> List[Body]:
         from omacad.model.features.star_bracket import StarBracketFeature
         base_trans = [float(x) for x in ((0.0, 0.0, 0.0) if translation is None else translation)]
-        outer_s = float(tube_size) + float(clearance) + 2.0 * float(wall_thickness)
-        span_outer = (outer_s / 2.0) / math.tan(math.radians(max(10.0, float(outer_angle)) / 2.0)) + float(socket_depth) + 10.0
-        span_inner = (outer_s / 2.0) / math.tan(math.radians(max(10.0, float(inner_angle)) / 2.0)) + float(socket_depth) + 10.0
+        inner_s = float(tube_size) + float(clearance)
+        span_outer = (inner_s / 2.0) / math.tan(math.radians(max(10.0, float(outer_angle)) / 2.0)) + float(socket_depth) + 10.0
+        span_inner = (inner_s / 2.0) / math.tan(math.radians(max(10.0, float(inner_angle)) / 2.0)) + float(socket_depth) + 10.0
         step1 = span_outer + float(spacing)
         step2 = step1 + span_inner + float(spacing)
         step3 = step2 + 50.0 + float(spacing)
@@ -2366,6 +2386,8 @@ class Document:
                 fid, name, part_type=p_type,
                 tube_size=tube_size, tube_length=tube_length, clearance=clearance, wall_thickness=wall_thickness,
                 socket_depth=socket_depth, hole_diameter=hole_diameter, hole_offset=hole_offset,
+                double_holes=double_holes, hole_spacing=hole_spacing, reinforcement=reinforcement,
+                post=post, post_height=post_height,
                 angle=ang, outer_angle=outer_angle, inner_angle=inner_angle,
                 foot_width=foot_width, foot_length=foot_length,
                 foot_thickness=foot_thickness, foot_tube_angle=foot_tube_angle,
