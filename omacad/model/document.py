@@ -2202,6 +2202,8 @@ class Document:
             "reinforcement": bool(getattr(f0, "reinforcement", True)),
             "post": bool(getattr(f0, "post", False)),
             "post_height": float(getattr(f0, "post_height", 25.0)),
+            "second_star": bool(getattr(f0, "second_star", False)),
+            "cross_tube_length": float(getattr(f0, "cross_tube_length", 150.0)),
             "outer_angle": float(getattr(f0, "angle", 36.0)),
             "inner_angle": 108.0,
             "foot_width": float(getattr(f0, "foot_width", 40.0)),
@@ -2242,7 +2244,11 @@ class Document:
         double_h = bool(params.get("double_holes", False))
         h_spacing = float(params.get("hole_spacing", 15.0))
         reinf = bool(params.get("reinforcement", True))
-        post = bool(params.get("post", False))
+        second_star = bool(params.get("second_star", False))
+        cross_tube_len = float(params.get("cross_tube_length", 150.0))
+        post = bool(params.get("post", False)) or second_star
+        if second_star:
+            params["post"] = True
         post_h = float(params.get("post_height", 25.0))
         outer_a = float(params.get("outer_angle", 36.0))
         inner_a = float(params.get("inner_angle", 108.0))
@@ -2261,6 +2267,8 @@ class Document:
         step2 = step1 + span_inner + spacing
         step3 = step2 + 50.0 + spacing
 
+        n_br = "10x" if second_star else "5x"
+        n_tubes = "30x" if second_star else "10x"
         for f in feats:
             f.assembled = assembled
             f.tube_length = tube_len
@@ -2275,6 +2283,8 @@ class Document:
             f.reinforcement = reinf
             f.post = post
             f.post_height = post_h
+            f.second_star = second_star
+            f.cross_tube_length = cross_tube_len
             f.foot_width = fw
             f.foot_length = fl
             f.foot_thickness = ft
@@ -2283,18 +2293,18 @@ class Document:
             f.inner_angle = inner_a
             if f.part_type == "outer":
                 f.angle = outer_a
-                f.name = "Outer Brackets (5x)" if assembled else "Outer Bracket"
+                f.name = f"Outer Brackets ({n_br})" if assembled else "Outer Bracket"
                 f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0], base_trans[1], base_trans[2]]
             elif f.part_type == "inner":
                 f.angle = inner_a
-                f.name = "Inner Brackets (5x)" if assembled else "Inner Bracket"
+                f.name = f"Inner Brackets ({n_br})" if assembled else "Inner Bracket"
                 f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step1, base_trans[1], base_trans[2]]
             elif f.part_type == "foot":
                 f.angle = fta
                 f.name = "Foot Supports (2x)" if assembled else "Foot Support"
                 f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step2, base_trans[1], base_trans[2]]
             elif f.part_type == "tubes":
-                f.name = "Aluminum Tubes (10x)" if assembled else "Aluminum Tube (sample)"
+                f.name = f"Aluminum Tubes ({n_tubes})" if assembled else "Aluminum Tube (sample)"
                 f.translation = [0.0, 0.0, 0.0] if assembled else [base_trans[0] + step2, base_trans[1], base_trans[2]]
 
         self.timeline.clear_cache()
@@ -2320,14 +2330,16 @@ class Document:
         val = exprlib.evaluate(expr_text, self.parameter_values())
         if not math.isfinite(val):
             raise ValueError("Enter a finite value")
-        if key in ("tube_length", "tube_size", "wall_thickness", "socket_depth", "hole_diameter", "foot_width", "foot_length", "foot_thickness", "hole_spacing", "post_height") and val <= 0:
+        if key in ("tube_length", "tube_size", "wall_thickness", "socket_depth", "hole_diameter", "foot_width", "foot_length", "foot_thickness", "hole_spacing", "post_height", "cross_tube_length") and val <= 0:
             raise ValueError("This dimension must be greater than zero")
         if key in ("clearance", "spacing", "hole_offset") and val < 0:
             raise ValueError("This value cannot be negative")
         if key in ("outer_angle", "inner_angle", "foot_tube_angle") and (val < 5 or val > 175):
             raise ValueError("Angle must be between 5 and 175 degrees")
-        if key in ("assembled", "double_holes", "reinforcement", "post"):
+        if key in ("assembled", "double_holes", "reinforcement", "post", "second_star"):
             new_val = bool(round(float(val)))
+            if key == "second_star" and new_val:
+                return self.update_star_bracket_group(group_id, second_star=True, post=True, assembled=True)
             return self.update_star_bracket_group(group_id, **{key: new_val})
         elif key == "outer_angle":
             outer_val = float(val)
@@ -2358,6 +2370,8 @@ class Document:
         reinforcement: bool = True,
         post: bool = False,
         post_height: float = 25.0,
+        second_star: bool = False,
+        cross_tube_length: float = 150.0,
         outer_angle: float = 36.0,
         inner_angle: float = 108.0,
         foot_width: float = 40.0,
@@ -2370,6 +2384,8 @@ class Document:
         group_name: Optional[str] = None,
     ) -> List[Body]:
         from omacad.model.features.star_bracket import StarBracketFeature
+        second_star = bool(second_star)
+        post = bool(post) or second_star
         base_trans = [float(x) for x in ((0.0, 0.0, 0.0) if translation is None else translation)]
         inner_s = float(tube_size) + float(clearance)
         span_outer = (inner_s / 2.0) / math.tan(math.radians(max(10.0, float(outer_angle)) / 2.0)) + float(socket_depth) + 10.0
@@ -2384,11 +2400,13 @@ class Document:
         existing_groups = len([g for g in self.object_groups if g["name"].startswith("Star brackets") or g["name"].startswith("Julstjärna fästen")])
         g_name = group_name or f"Star brackets {existing_groups + 1}"
 
+        n_br = "10x" if second_star else "5x"
+        n_tubes = "30x" if second_star else "10x"
         if assembled:
             specs = [
-                ("outer", "Outer Brackets (5x)", float(outer_angle), [0.0, 0.0, 0.0]),
-                ("inner", "Inner Brackets (5x)", float(inner_angle), [0.0, 0.0, 0.0]),
-                ("tubes", "Aluminum Tubes (10x)", 0.0, [0.0, 0.0, 0.0]),
+                ("outer", f"Outer Brackets ({n_br})", float(outer_angle), [0.0, 0.0, 0.0]),
+                ("inner", f"Inner Brackets ({n_br})", float(inner_angle), [0.0, 0.0, 0.0]),
+                ("tubes", f"Aluminum Tubes ({n_tubes})", 0.0, [0.0, 0.0, 0.0]),
             ]
         else:
             specs = [
@@ -2405,6 +2423,7 @@ class Document:
                 socket_depth=socket_depth, hole_diameter=hole_diameter, hole_offset=hole_offset,
                 double_holes=double_holes, hole_spacing=hole_spacing, reinforcement=reinforcement,
                 post=post, post_height=post_height,
+                second_star=second_star, cross_tube_length=cross_tube_length,
                 angle=ang, outer_angle=outer_angle, inner_angle=inner_angle,
                 foot_width=foot_width, foot_length=foot_length,
                 foot_thickness=foot_thickness, foot_tube_angle=foot_tube_angle,
@@ -2430,6 +2449,13 @@ class Document:
             "socket_depth": float(socket_depth),
             "hole_diameter": float(hole_diameter),
             "hole_offset": float(hole_offset),
+            "double_holes": bool(double_holes),
+            "hole_spacing": float(hole_spacing),
+            "reinforcement": bool(reinforcement),
+            "post": bool(post),
+            "post_height": float(post_height),
+            "second_star": bool(second_star),
+            "cross_tube_length": float(cross_tube_length),
             "outer_angle": float(outer_angle),
             "inner_angle": float(inner_angle),
             "foot_width": float(foot_width),

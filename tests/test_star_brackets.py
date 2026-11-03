@@ -444,3 +444,70 @@ def test_connector_post_is_saved_and_editable(tmp_path):
     Exporter.save_omacad(doc, path) if hasattr(Exporter, "save_omacad") else None
     old = StarBracketFeature("o", "o", part_type="outer").to_dict()
     assert old["post"] is False
+
+
+def test_second_star_and_connecting_tubes(tmp_path):
+    """Test second star with adjustable connecting tubes ('mellanrör') in assembled view,
+    dialog toggle, group settings, and save/load."""
+    from omacad.ui.dialogs.primitives_dlg import StarBracketsDialog
+    QApplication.instance() or QApplication([])
+
+    doc1 = Document("OneStar")
+    b1 = doc1.add_star_brackets(
+        tube_size=10.0, tube_length=250.0, clearance=0.25, wall_thickness=2.5,
+        socket_depth=25.0, post=True, post_height=25.0,
+        second_star=False, cross_tube_length=150.0, assembled=True,
+    )
+
+    doc2 = Document("TwoStars")
+    b2 = doc2.add_star_brackets(
+        tube_size=10.0, tube_length=250.0, clearance=0.25, wall_thickness=2.5,
+        socket_depth=25.0, post=False, post_height=25.0,
+        second_star=True, cross_tube_length=150.0, assembled=True,
+    )
+    assert [b.name for b in b2] == ["Outer Brackets (10x)", "Inner Brackets (10x)", "Aluminum Tubes (30x)"]
+
+    # Outer and inner brackets must have exactly double the volume of one star (with posts)
+    assert abs(b2[0].manifold.volume() - 2.0 * b1[0].manifold.volume()) < 1.0
+    assert abs(b2[1].manifold.volume() - 2.0 * b1[1].manifold.volume()) < 1.0
+
+    # Top of the second star's plate is at 2 * outer_s + cross_tube_length
+    outer_s = 10.0 + 0.25 + 2.0 * 2.5  # 15.25
+    bb_out = b2[0].manifold.bounding_box()
+    assert abs(bb_out[2] - 0.0) < 1e-5
+    assert abs(bb_out[5] - (2.0 * outer_s + 150.0)) < 1e-5
+
+    # Zero solid overlap between all 30 tubes (20 star tubes + 10 connecting tubes) and brackets
+    assert (b2[0].manifold ^ b2[2].manifold).volume() == 0.0
+    assert (b2[1].manifold ^ b2[2].manifold).volume() == 0.0
+
+    # Adjusting cross_tube_length via group param updates the height between the two stars
+    gid = doc2.object_groups[0]["id"]
+    assert doc2.edit_star_bracket_group_param(gid, "cross_tube_length", "220.0")
+    bb_out_220 = doc2.bodies[b2[0].body_id].manifold.bounding_box()
+    assert abs(bb_out_220[5] - (2.0 * outer_s + 220.0)) < 1e-5
+
+    # Dialog checkbox enables cross_tube_length, post, and assembled
+    dlg = StarBracketsDialog()
+    assert dlg.chk_second_star.isChecked() is False
+    assert dlg.spn_cross_tube_length.isEnabled() is False
+    dlg.chk_post.setChecked(False)
+    dlg.chk_assembled.setChecked(False)
+    dlg.chk_second_star.setChecked(True)
+    assert dlg.spn_cross_tube_length.isEnabled() is True
+    assert dlg.chk_post.isChecked() is True
+    assert dlg.chk_assembled.isChecked() is True
+    dlg.spn_cross_tube_length.setValue(180.0)
+    p = dlg.get_params()
+    assert p["second_star"] is True
+    assert p["cross_tube_length"] == 180.0
+
+    # Save and load preserves second_star and cross_tube_length
+    proj_path = str(tmp_path / "two_stars.omacad")
+    Exporter.save_project(doc2, proj_path)
+    loaded = Exporter.load_project(proj_path)
+    lgid = loaded.object_groups[0]["id"]
+    lparams = loaded.star_bracket_group_params(lgid)
+    assert lparams["second_star"] is True
+    assert lparams["cross_tube_length"] == 220.0
+

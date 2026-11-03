@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.127
+
+### Added
+- **Star Brackets: knapp för andra stjärnan med ställbara mellanrör**: Nytt val **Second star + connecting tubes** (`second_star`) och ställbar mellanrörslängd **Connecting tube length** (`cross_tube_length`, standard 150 mm) i verktygsmenyn/dialogen (`StarBracketsDialog`), i objektträdets `⚙️ Settings` och i högerklicksmenyn på gruppen (`⭐ Add Second Star with Connecting Tubes`). När den andra stjärnan läggs till monteras de 10 övre fästena (5 ytter- och 5 innerfästen) med sina kopplingsstolpar nedåt mot den undre stjärnan, sammanbundna av 10 ställbara vertikala mellanrör i stolparnas hylsor samt den övre stjärnans 10 horisontella rör (totalt 10 ytterfästen, 10 innerfästen och 30 rör). Test: `tests/test_star_brackets.py`.
+
 # Hybrid-experiment — 0.9.9.80.126
 
 ### Added

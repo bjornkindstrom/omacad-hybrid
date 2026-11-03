@@ -531,6 +531,8 @@ class Exporter:
                     reinforcement=f_data.get("reinforcement", True),
                     post=f_data.get("post", False),
                     post_height=f_data.get("post_height", 25.0),
+                    second_star=f_data.get("second_star", False),
+                    cross_tube_length=f_data.get("cross_tube_length", 150.0),
                     angle=f_data.get("angle", 36.0),
                     outer_angle=f_data.get("outer_angle"),
                     inner_angle=f_data.get("inner_angle"),

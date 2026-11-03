@@ -751,6 +751,16 @@ class BrowserTree(QWidget):
                 add("🍱 Edit Box in a Row…", lambda: self.edit_box_row_group_prompt(item_id))
             elif hasattr(self.doc, "is_star_bracket_group") and self.doc.is_star_bracket_group(item_id):
                 add("⭐ Edit Star Brackets…", lambda: self.edit_star_bracket_group_prompt(item_id))
+                sb_params = self.doc.star_bracket_group_params(item_id)
+                has_second = bool(sb_params.get("second_star", False))
+                add(
+                    "⭐ Remove Second Star" if has_second else "⭐ Add Second Star with Connecting Tubes",
+                    lambda: self.doc.update_star_bracket_group(
+                        item_id,
+                        second_star=not has_second,
+                        **({"post": True, "assembled": True} if not has_second else {}),
+                    ),
+                )
             add("✥ Move group…", lambda: self.move_group_prompt(item_id))
             rename()
             add("🗑️ Ungroup objects", lambda: self.doc.remove_object_group(item_id))

@@ -50,6 +50,8 @@ class StarBracketFeature(Feature):
         reinforcement: bool = True,
         post: bool = False,
         post_height: float = 25.0,
+        second_star: bool = False,
+        cross_tube_length: float = 150.0,
         angle: float = 36.0,
         outer_angle: Optional[float] = None,
         inner_angle: Optional[float] = None,
@@ -75,6 +77,8 @@ class StarBracketFeature(Feature):
         self.reinforcement = bool(reinforcement)
         self.post = bool(post)
         self.post_height = float(post_height)
+        self.second_star = bool(second_star)
+        self.cross_tube_length = float(cross_tube_length)
 
         if outer_angle is not None:
             self.outer_angle = float(outer_angle)
@@ -148,6 +152,7 @@ class StarBracketFeature(Feature):
 
         # Connector post on top of the plate (#167): needs the web to stand on, shifted
         # forward (#169, #170) so the post and its base chamfer clear the inner screw holes.
+        want_post = self.post or self.second_star
         post_s = outer_s
         flare = max(1.0, wall * 0.75)
         post_h = max(10.0, self.post_height)
@@ -155,13 +160,13 @@ class StarBracketFeature(Feature):
         hb = hs + flare
         post_shift = 4.0
         x_vertex = (outer_s / 2.0) / math.sin(half_a)
-        want_web = self.reinforcement or self.post
+        want_web = self.reinforcement or want_post
         web_len = min(depth * 0.5, 20.0)
         # The web's arm-side corners must stay inside the arms: along an arm the corner
         # lies at x/cos(a) - k*sin(a) and may not pass the arm end (spike, #166).
         k_embed = (outer_s / 2.0) / math.cos(half_a) - (wall * 0.5) / math.cos(half_a)
         x_front_max = math.cos(half_a) * (x_end - 1.0 + k_embed * math.sin(half_a))
-        if self.post:
+        if want_post:
             web_len = max(web_len, post_s + 2.0 * flare + post_shift)
         else:
             web_len = max(1.0, min(web_len, x_front_max - x_vertex))
@@ -206,7 +211,7 @@ class StarBracketFeature(Feature):
             solid = solid + web
 
         post_cut = None
-        if self.post:
+        if want_post:
             x_c = min(x_vertex + hb + post_shift, x_vertex + web_len - hb)
             z0 = outer_s - 0.01
             sleeve = m3d.Manifold.cube([post_s, post_s, post_h + 0.01], center=False).translate([x_c - hs, -hs, z0])
@@ -232,7 +237,7 @@ class StarBracketFeature(Feature):
         # Screw holes (with optional double holes, #165)
         holes = []
         hole_x1 = x_end - h_off
-        hole_h = outer_s + 4.0 + (flare + 1.0 if self.post else 0.0)
+        hole_h = outer_s + 4.0 + (flare + 1.0 if want_post else 0.0)
         h1 = m3d.Manifold.cylinder(hole_h, h_dia / 2.0, h_dia / 2.0, 32).translate([hole_x1, 0.0, -2.0])
         holes.append(h1)
         if self.double_holes:
@@ -298,9 +303,24 @@ class StarBracketFeature(Feature):
             solid = solid.translate(tuple(trans))
         return solid
 
+    def _post_center_x(self, outer_s: float, wall: float, depth: float, bracket_angle: float) -> float:
+        ang = max(10.0, min(170.0, bracket_angle))
+        half_a = math.radians(ang / 2.0)
+        flare = max(1.0, wall * 0.75)
+        hs = outer_s / 2.0
+        hb = hs + flare
+        post_shift = 4.0
+        x_vertex = (outer_s / 2.0) / math.sin(half_a)
+        web_len = max(min(depth * 0.5, 20.0), outer_s + 2.0 * flare + post_shift)
+        return min(x_vertex + hb + post_shift, x_vertex + web_len - hb)
+
     def _build_assembled_outer(self, inner_s: float, wall: float, outer_s: float, depth: float, h_dia: float, h_off: float) -> m3d.Manifold:
         R_out, R_in, xs_out, xs_in = star_radii(self.tube_length, self.tube_size, self.clearance, self.wall_thickness, self.outer_angle, self.inner_angle)
         proto = self._build_v_bracket(inner_s, wall, outer_s, depth, h_dia, h_off, bracket_angle=self.outer_angle, translation=[0, 0, 0])
+        proto_top = None
+        if self.second_star:
+            cross_L = max(10.0, self.cross_tube_length)
+            proto_top = proto.rotate([180.0, 0.0, 0.0]).translate([0.0, 0.0, 2.0 * outer_s + cross_L])
         brackets = []
         for k in range(5):
             a_deg = 90.0 - k * 72.0
@@ -309,11 +329,17 @@ class StarBracketFeature(Feature):
             ty = R_out * math.sin(rad)
             placed = proto.rotate([0, 0, 180.0 + a_deg]).translate([tx, ty, 0.0])
             brackets.append(placed)
+            if proto_top is not None:
+                brackets.append(proto_top.rotate([0, 0, 180.0 + a_deg]).translate([tx, ty, 0.0]))
         return m3d.Manifold.batch_boolean(brackets, m3d.OpType.Add)
 
     def _build_assembled_inner(self, inner_s: float, wall: float, outer_s: float, depth: float, h_dia: float, h_off: float) -> m3d.Manifold:
         R_out, R_in, xs_out, xs_in = star_radii(self.tube_length, self.tube_size, self.clearance, self.wall_thickness, self.outer_angle, self.inner_angle)
         proto = self._build_v_bracket(inner_s, wall, outer_s, depth, h_dia, h_off, bracket_angle=self.inner_angle, translation=[0, 0, 0])
+        proto_top = None
+        if self.second_star:
+            cross_L = max(10.0, self.cross_tube_length)
+            proto_top = proto.rotate([180.0, 0.0, 0.0]).translate([0.0, 0.0, 2.0 * outer_s + cross_L])
         brackets = []
         for k in range(5):
             a_deg = 90.0 - 36.0 - k * 72.0
@@ -322,6 +348,8 @@ class StarBracketFeature(Feature):
             vy = R_in * math.sin(rad)
             placed = proto.rotate([0, 0, a_deg]).translate([vx, vy, 0.0])
             brackets.append(placed)
+            if proto_top is not None:
+                brackets.append(proto_top.rotate([0, 0, a_deg]).translate([vx, vy, 0.0]))
         return m3d.Manifold.batch_boolean(brackets, m3d.OpType.Add)
 
     def _build_assembled_tubes(self, inner_s: float, wall: float, outer_s: float, depth: float, h_dia: float, h_off: float) -> m3d.Manifold:
@@ -352,6 +380,26 @@ class StarBracketFeature(Feature):
             ang2 = math.degrees(math.atan2(vec2[1], vec2[0]))
             p2 = v_pt + (vec2 / np.linalg.norm(vec2)) * xs_in
             tubes.append(tube_box.rotate([0, 0, ang2]).translate([p2[0], p2[1], 0.0]))
+
+        if self.second_star:
+            cross_L = max(10.0, self.cross_tube_length)
+            z_shift = outer_s + cross_L
+            top_tubes = [tb.translate([0.0, 0.0, z_shift]) for tb in tubes]
+            tubes.extend(top_tubes)
+
+            vert_h = max(1.0, cross_L - self.clearance)
+            vert_z = outer_s + self.clearance / 2.0
+            xc_out = self._post_center_x(outer_s, wall, depth, self.outer_angle)
+            xc_in = self._post_center_x(outer_s, wall, depth, self.inner_angle)
+            v_out_proto = m3d.Manifold.cube([t_s, t_s, vert_h], center=False).translate([xc_out - t_s / 2.0, -t_s / 2.0, vert_z])
+            v_in_proto = m3d.Manifold.cube([t_s, t_s, vert_h], center=False).translate([xc_in - t_s / 2.0, -t_s / 2.0, vert_z])
+            for k in range(5):
+                a_out_deg = 90.0 - k * 72.0
+                tx, ty = tips[k]
+                tubes.append(v_out_proto.rotate([0, 0, 180.0 + a_out_deg]).translate([tx, ty, 0.0]))
+                a_in_deg = 90.0 - 36.0 - k * 72.0
+                vx, vy = valleys[k]
+                tubes.append(v_in_proto.rotate([0, 0, a_in_deg]).translate([vx, vy, 0.0]))
 
         return m3d.Manifold.batch_boolean(tubes, m3d.OpType.Add)
 
@@ -428,6 +476,8 @@ class StarBracketFeature(Feature):
             "reinforcement": self.reinforcement,
             "post": self.post,
             "post_height": self.post_height,
+            "second_star": self.second_star,
+            "cross_tube_length": self.cross_tube_length,
             "angle": self.angle,
             "outer_angle": self.outer_angle,
             "inner_angle": self.inner_angle,

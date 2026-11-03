@@ -985,6 +985,21 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.spn_post_height.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("Post height:", self.spn_post_height)
 
+        self.chk_second_star = QCheckBox("Second star + connecting tubes")
+        self.chk_second_star.setToolTip("Add the second star above the first, joined by 10 adjustable connecting tubes in the connector posts.")
+        self.chk_second_star.setChecked(False)
+        self.chk_second_star.toggled.connect(self._on_second_star_toggled)
+        form.addRow("Second star:", self.chk_second_star)
+
+        self.spn_cross_tube_length = ExprDoubleSpinBox()
+        self.spn_cross_tube_length.setRange(20.0, 2000.0)
+        self.spn_cross_tube_length.setValue(150.0)
+        self.spn_cross_tube_length.setSuffix(" mm")
+        self.spn_cross_tube_length.setToolTip("Length of the 10 connecting tubes between the first and second star.")
+        self.spn_cross_tube_length.setEnabled(False)
+        self.spn_cross_tube_length.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Connecting tube length:", self.spn_cross_tube_length)
+
         self.spn_outer_angle = ExprDoubleSpinBox()
         self.spn_outer_angle.setRange(10.0, 160.0)
         self.spn_outer_angle.setValue(36.0)
@@ -1034,6 +1049,7 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.pair_form_rows(form, [
             (self.spn_tube_length, self.spn_tube_size), (self.spn_clearance, self.spn_wall),
             (self.spn_depth, self.spn_hole_dia), (self.spn_hole_offset, self.spn_hole_spacing),
+            (self.spn_post_height, self.spn_cross_tube_length),
             (self.spn_outer_angle, self.spn_inner_angle)])
 
         self.main_layout.addLayout(form)
@@ -1045,6 +1061,13 @@ class StarBracketsDialog(BaseFeatureDialog):
 
     def _on_post_toggled(self, checked: bool):
         self.spn_post_height.setEnabled(checked)
+        self.changed.emit()
+
+    def _on_second_star_toggled(self, checked: bool):
+        self.spn_cross_tube_length.setEnabled(checked)
+        if checked:
+            self.chk_post.setChecked(True)
+            self.chk_assembled.setChecked(True)
         self.changed.emit()
 
     def _on_double_holes_toggled(self, checked: bool):
@@ -1094,6 +1117,8 @@ class StarBracketsDialog(BaseFeatureDialog):
             "reinforcement": self.chk_reinforcement.isChecked(),
             "post": self.chk_post.isChecked(),
             "post_height": self.spn_post_height.value(),
+            "second_star": self.chk_second_star.isChecked(),
+            "cross_tube_length": self.spn_cross_tube_length.value(),
             "outer_angle": self.spn_outer_angle.value(),
             "inner_angle": self.spn_inner_angle.value(),
             "foot_width": self.spn_foot_width.value(),
@@ -1134,6 +1159,10 @@ class StarBracketsDialog(BaseFeatureDialog):
             self.spn_post_height.setEnabled(self.chk_post.isChecked())
             if "post_height" in params:
                 self.spn_post_height.setValue(float(params["post_height"]))
+            self.chk_second_star.setChecked(bool(params.get("second_star", False)))
+            self.spn_cross_tube_length.setEnabled(self.chk_second_star.isChecked())
+            if "cross_tube_length" in params:
+                self.spn_cross_tube_length.setValue(float(params["cross_tube_length"]))
             if "outer_angle" in params:
                 outer_a = float(params["outer_angle"])
                 self.spn_outer_angle.setValue(outer_a)

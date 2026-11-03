@@ -69,6 +69,8 @@ STAR_BRACKET_PARAMS_CONFIG = [
     ("reinforcement", "Reinforcement web (1 = yes, 0 = no)", ""),
     ("post", "Connector post (1 = yes, 0 = no)", ""),
     ("post_height", "Connector post height", "mm"),
+    ("second_star", "Second star (1 = yes, 0 = no)", ""),
+    ("cross_tube_length", "Connecting tube length", "mm"),
     ("outer_angle", "Outer angle (tip)", "°"),
     ("inner_angle", "Inner angle (valley)", "°"),
 ]
