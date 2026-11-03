@@ -28,6 +28,14 @@ def row(browser, key):
                 if item.data(0, Qt.ItemDataRole.UserRole) == ('parameter', (browser.doc.timeline.features[0].feature_id, key)))
 
 
+def wait_for(condition, timeout_ms=5000):
+    """Pump the event loop until condition() holds (PySide6 has no QTest.qWaitFor)."""
+    waited = 0
+    while not condition() and waited < timeout_ms:
+        QTest.qWait(10)
+        waited += 10
+
+
 def test_value_edited_inside_tree_enter_commits_and_escape_cancels(browser, monkeypatch):
     def no_dialog(*args, **kwargs):
         pytest.fail('Numeric editing opened a modal dialog')
@@ -42,7 +50,7 @@ def test_value_edited_inside_tree_enter_commits_and_escape_cancels(browser, monk
     assert editor is not None and editor.isVisible()
     editor.setText('2*8')
     QTest.keyClick(editor, Qt.Key.Key_Return)
-    QTest.qWait(20)
+    wait_for(lambda: browser.doc.timeline.features[0].height == 16, 5000)   # applied on a deferred tick; slow CI needs more than a fixed 20 ms
     assert browser.doc.timeline.features[0].height == 16
     assert browser.doc.timeline.features[0].exprs['height'] == '2*8'
     browser.on_item_double_clicked(row(browser, 'height'), 0)
@@ -152,7 +160,7 @@ def test_row_editor_keeps_label_in_sight_and_suggests_parameters(browser):
     QTest.keyClicks(editor, '/2')
     assert editor._list.isVisible() and editor._list.item(0).text() == '= 10'
     QTest.keyClick(editor, Qt.Key.Key_Return)
-    QTest.qWait(20)
+    wait_for(lambda: browser.doc.timeline.features[0].exprs.get('height') == 'width/2', 5000)
     feature = browser.doc.timeline.features[0]
     assert feature.height == 10 and feature.exprs['height'] == 'width/2'
 
