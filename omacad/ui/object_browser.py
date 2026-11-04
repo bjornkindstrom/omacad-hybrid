@@ -155,7 +155,9 @@ def add_histories(browser, root):
                 grouped_oids.add(oid)
 
     for oid, obj in history.objects.items():
-        if obj.parent_id is None and oid not in grouped_oids:
+        # a split half with no steps of its own that is gone (removed from a copy, or the split did nothing) has nothing to show
+        gone = not obj.feature_ids and not any(b in doc.bodies for b in obj.body_ids)
+        if obj.parent_id is None and oid not in grouped_oids and not gone:
             _add_object(browser, group, oid, features, excluded)
     # An unfinished sketch has not yet become a feature.
     sk = doc.active_sketch

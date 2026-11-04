@@ -1065,7 +1065,14 @@ class Document:
         else:
             from omacad.model.features.branch import free_offset
             others = [b.manifold for b in self.bodies.values() if b.visible and b.manifold is not None]
-            mesh = source.translate((free_offset(source, others), 0.0, 0.0)).to_mesh()   # free of everything
+            offset = free_offset(source, others)    # free of everything
+            # its own steps, as the body stood after the source step, so all its settings can be changed
+            self.timeline.marker_index = len(self.timeline.features)
+            copied = self._copy_body_steps(body_id, upto=index + 1)
+            if copied is not None:
+                self.move_body(copied, dx=offset)
+                return self.bodies.get(copied)
+            mesh = source.translate((offset, 0.0, 0.0)).to_mesh()   # a plain body: nothing to rebuild it from
             feature = ImportMeshFeature(fid, name, mesh.vert_properties[:, :3].tolist(), mesh.tri_verts.tolist())
         self.timeline.marker_index = len(self.timeline.features)
         self.timeline.add_feature(feature)
@@ -1665,15 +1672,17 @@ class Document:
         self.notify_changed()
         return feat
 
-    def _copy_body_steps(self, body_id: str) -> Optional[str]:
-        """Copies every step that built `body_id` (its sketches too) as a new object at the marker, with new ids, so
-        the copy has its own parameters and editing it leaves the original alone (Björn #108). Returns the copy's
-        body id, or None when the body has no steps to copy."""
+    def _copy_body_steps(self, body_id: str, upto: Optional[int] = None) -> Optional[str]:
+        """Copies every step that built `body_id` (its sketches too; only the first `upto` steps count, else those
+        before the marker) as a new object at the marker, with new ids, so the copy has its own parameters and editing
+        it leaves the original alone (Björn #108). A linked copy's original is copied along, so the copy no longer
+        follows it. Any other body those steps leave (a link's original, the other half of a split) is removed after
+        them: the copy is one body. Returns the copy's body id, or None when the body has no steps to copy."""
         from omacad.io.exporter import Exporter
         self.timeline.recompute(self)
         history = self.object_history
         marker = self.timeline.marker_index
-        feats = self.timeline.features[:marker]
+        feats = self.timeline.features[:marker if upto is None else upto]
         needed, sketches, picked = {body_id}, set(), []
         for f in reversed(feats):
             sid = f.sketch.sketch_id if f.feature_type == "sketch" else None
@@ -1682,6 +1691,8 @@ class Document:
             picked.append(f)
             needed |= set(history.body_inputs(f))
             sketches |= set(history.sketch_inputs(f))
+            if f.feature_type == "branch":
+                needed.add(f.source_body_id)
         if not picked or not any(body_id in history.outputs.get(f.feature_id, []) and
                                  (getattr(f, "created_body_id", f"body_{f.feature_id}") == body_id) for f in picked):
             return None
@@ -1727,6 +1738,9 @@ class Document:
             elif getattr(f, "created_body_id", f"body_{f.feature_id}") == body_id:
                 c["name"] = f"{f.name} Copy"
             clones.append(c)
+        for n, other in enumerate(self._bodies_left_by(picked, body_id), 1):
+            clones.append({"feature_id": fresh("delete", taken_f, len(self.timeline.features) + 1), "feature_type": "delete_body",
+                           "name": f"Remove other body {n}", "suppressed": False, "target_body_id": ids[other]})
         source = history.owners.get(next(f.feature_id for f in picked if f.feature_type != "sketch"))
         object_id = f"object_{clones[0]['feature_id']}"
         owners = data["object_history"]["owners"]
@@ -1739,6 +1753,23 @@ class Document:
         data["marker_index"] = marker + len(clones)
         Exporter.apply_dict(self, data)
         return ids[body_id]
+
+    def _bodies_left_by(self, steps, body_id: str) -> List[str]:
+        """The bodies `steps` make that still stand after them, other than `body_id`. Only bodies made by the steps
+        themselves: a step can also touch a body it did not make, and that one belongs to the original."""
+        left = {}
+        for f in steps:
+            if f.suppressed:
+                continue
+            created = getattr(f, "created_body_id", f"body_{f.feature_id}")
+            if created in self.object_history.outputs.get(f.feature_id, []):
+                left[created] = True
+            if f.feature_type == "delete_body":
+                left.pop(f.target_body_id, None)
+            elif f.feature_type == "combine" and not f.keep_tool:
+                left.pop(f.tool_body_id, None)
+        left.pop(body_id, None)
+        return list(left)
 
     @undoable("Lay flat")
     def lay_face_on(self, body_id: str, face_normal, face_origin, plane_point, plane_normal) -> Optional[MoveFeature]:

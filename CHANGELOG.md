@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.135
+
+### Fixed
+- **A copy of a sliced body is only that slice (report 20261104-221433)**: Copying one half of a split body, with Move or Independent copy, also brought back the other half as an extra body, even when it had been deleted. The copy now ends with a step that removes every other body its copied steps leave, and the browser shows no empty row for the removed half. Bodies already made by the old behaviour stay in the file and can be deleted by hand. Test: `tests/test_independent_copy_steps.py`.
+
+# Hybrid-experiment — 0.9.9.80.134
+
+### Changed
+- **Independent copy keeps all its settings**: The copy used to be a frozen mesh with nothing to edit. It now gets its own copies of every step that built the body, sketches included, followed by a Move that places it beside the original. Every value can be changed on the copy without touching the original, and the other way round. A copy made from an earlier step stops at that step. A copy of a linked copy also gets the original's steps and no longer follows it. Bodies with no steps to rebuild from are still copied as a mesh. Test: `tests/test_independent_copy_steps.py`.
+
 # Hybrid-experiment — 0.9.9.80.133
 
 ### Added
