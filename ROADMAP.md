@@ -73,9 +73,11 @@ This file lists what has been built, step by step, and what is left. (Swedish fe
 - **Fillet / Chamfer**: straight edges, full circles (screw holes, countersinks), whole outlines with rounded corners (also radii larger than the corners), inside and outside corners, double-click selects a loop, live preview.
 - **Pattern / Mirror**: linear, mirror (auto: corners / round bodies along the diameter with N evenly spaced copies), circular, and **Fill the face** (fixed gap, edge margin / frame, grid or honeycomb, partial copies cut at the frame, avoids bosses and other features on the face), all with live preview.
 - **Jar with Lid**: threaded jar + screw lid generator (sizes, pitch, profile, thread tolerance -0.2 by default, sliders, live preview); builds ordinary editable steps, one undo step; lid laid out upside down for printing.
-- **Honeycomb**: hexagon / circle / square / diamond / triangle cells cut into picked flat and cylindrical faces (inside or out), cell size, wall, edge margin, depth or Through (to the air behind each cell), rotation, optional cut cells at the edge; placed for the most whole cells and closed seamlessly round a cylinder.
+- **Surface Texture › Cells** (formerly Honeycomb): hexagon / circle / square / diamond / triangle / Voronoi cells cut into picked flat and cylindrical faces (inside or out), cell size, wall, edge margin, depth or Through (to the air behind each cell), rotation, optional cut cells at the edge; placed for the most whole cells and closed seamlessly round a cylinder.
 - **Revolve** (axis = construction/any sketch line or sketch X/Y axis, angle, one side / symmetric / two sides, Auto/New/Join/Cut/Intersect, live preview).
 - **Shell**: Inside / Outside / Both, open faces (outer skin trimmed flush).
+- **Surface Texture › Knurl**: diamond, straight, right and left grip patterns cut into whole outer round faces.
+- **Surface Texture › Wavy Slices**: rebuilds a body as stacked layers with wavy edges (waves, slice height, amplitude, phase shift, offset).
 - **Hole** exists as a model feature (simple / counterbore / countersink, flat or 118° tip, through); dialog and placement are next.
 - **Offset Plane** (pick XY/XZ/YZ, then any surface incl. cylinders), **Section View** (draggable offset, saved in the tree, toggled with the eye).
 

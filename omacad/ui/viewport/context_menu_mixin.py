@@ -105,7 +105,7 @@ class ContextMenuMixin:
                 children=pat_items
             ))
 
-            for cid in ("honeycomb", "offset_plane", "canvas"):
+            for cid in ("offset_plane", "canvas"):
                 c = commands.get(cid)
                 create_items.append(FanItem(
                     id=cid,
@@ -132,7 +132,7 @@ class ContextMenuMixin:
 
             # Solid Modify
             modify_items = []
-            for cid in ("fillet", "chamfer", "shell", "offset_face", "combine", "split_body", "move", "parameters", "delete"):
+            for cid in ("fillet", "chamfer", "shell", "surface_texture", "offset_face", "combine", "split_body", "move", "parameters", "delete"):
                 c = commands.get(cid)
                 modify_items.append(FanItem(
                     id=cid,
@@ -536,6 +536,8 @@ class ContextMenuMixin:
             self.round_requested.emit(*arg)
         elif kind == "offset_face":
             self.offset_face_requested.emit(arg)
+        elif kind == "surface_texture":
+            self.surface_texture_requested.emit(arg)
         elif kind == "offset_plane":
             self.offset_base_picked.emit(arg)
         elif kind == "body_color":
@@ -760,6 +762,7 @@ class ContextMenuMixin:
         self._add_tool_entries(menu, acts)
         if not self.active_tool_title():
             acts[theme.action_with_icon(menu, "↔️ Offset Face…")] = ("offset_face", face)
+            acts[theme.action_with_icon(menu, "🧵 Surface Texture…")] = ("surface_texture", face)
             acts[theme.action_with_icon(menu, "📐 Offset Plane from this Face…")] = ("offset_plane", self.plane_from_target(("face", face)))
         body = self.doc.bodies.get(face.body_id)
         if body is not None:
@@ -774,6 +777,7 @@ class ContextMenuMixin:
             FanItem("sk_on_face", "Sketch on Face", theme.named_icon("sketch", "✏️", 20), callback=lambda: self.plane_picked.emit(self.plane_from_target(("face", face)))),
             FanItem("extrude_face", "Extrude Face", theme.named_icon("extrude", "⬆️", 20), shortcut="E", tooltip="Pull face into body to cut, or out to add material", callback=lambda: self.face_extrude_requested.emit(face)),
             FanItem("offset_face", "Offset Face", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(face)),
+            FanItem("surface_texture", "Surface Texture", theme.command_icon("surface_texture", "🧵", 20), callback=lambda: self.surface_texture_requested.emit(face)),
             FanItem("canvas_face", "Insert Canvas", theme.named_icon("canvas", "🖼️", 20), callback=lambda: self.canvas_face_requested.emit(face)),
             FanItem("offset_plane_face", "Offset Plane", theme.named_icon("offset_plane", "📐", 20), callback=lambda: self.offset_base_picked.emit(self.plane_from_target(("face", face)))),
         ]

@@ -16,8 +16,9 @@ from omacad.model.timeline import (
     PatternFeature, FilletFeature, Body, Timeline, BoxFeature, CylinderFeature, PrismFeature,
     SphereFeature, ExtrudeFeature, EmbossFeature, RevolveFeature, HoleFeature, DeleteBodyFeature, SketchFeature, SplitBodyFeature, ShellFeature, MoveFeature,
     ImportMeshFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature, ConeFeature, SweepFeature, LoftFeature,
-    PipeFeature
+    PipeFeature, WavySlicesFeature, KnurlFeature
 )
+from omacad.model.features.knurl import apply_knurl
 from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint
 from omacad.model.sketch_solver import solve_sketch, SolveResult
 from omacad.model import expr as exprlib
@@ -1294,6 +1295,8 @@ class Document:
                     "mirror_mode", "about", "angle", "rotation_axis", "axis_origin", "axis_direction"),
         "split_body": ("target_body_id", "plane_id", "plane_origin", "plane_normal"),
         "shell": ("thickness", "direction", "thickness2", "open_faces"),
+        "wavy_slices": WavySlicesFeature.PARAMS,
+        "knurl": KnurlFeature.PARAMS,
         "offset_face": ("distance",),
         "honeycomb": HoneycombFeature.PARAMS,
         "hole": ("points", "hole_type", "diameter", "depth", "through", "cb_diameter", "cb_depth", "cs_diameter", "cs_angle", "tip", "tip_angle", "chamfer", "chamfer_angle", "chamfer_depth"),
@@ -1524,6 +1527,44 @@ class Document:
         self.notify_changed()
         return feat
 
+    @undoable("Knurl")
+    def add_knurl(self, body_id: str, faces, exprs=None, **params) -> Optional[KnurlFeature]:
+        """Cuts a knurl into round faces of a body. Raises ValueError, and adds no step, if no face can take it."""
+        target = self.bodies.get(body_id)
+        if target is None or not faces:
+            return None
+        n = len([f for f in self.timeline.features if f.feature_type == "knurl"]) + 1
+        feat = KnurlFeature(self._feature_id("knurl"), f"Knurl {n}", body_id, faces, **params)
+        solid, feat.teeth, feat.notes = apply_knurl(target.manifold, feat.faces, feat.params())
+        if not feat.teeth:
+            raise ValueError(feat.notes[0] if feat.notes else "No face could take a knurl.")
+        feat.exprs = dict(exprs or {})
+        self.timeline.add_feature(feat)
+        target.manifold = solid
+        target.update_render_mesh()
+        self.notify_changed()
+        return feat
+
+    @undoable("Wavy Slices")
+    def add_wavy_slices(self, body_id: str, waves: int = 12, slice_height: float = 2.0, amplitude: float = 2.0,
+                        phase_shift: float = 15.0, offset: float = 0.0, exprs=None) -> Optional[WavySlicesFeature]:
+        """Rebuilds the body as stacked layers with wavy edges. Raises ValueError, and adds no step, if the values
+        give no usable body."""
+        target = self.bodies.get(body_id)
+        if target is None:
+            return None
+        n = len([f for f in self.timeline.features if f.feature_type == "wavy_slices"]) + 1
+        feat = WavySlicesFeature(self._feature_id("wavy_slices"), f"Wavy Slices {n}", body_id, waves, slice_height,
+                                 amplitude, phase_shift, offset)
+        solid = feat.build(target.manifold)
+        feat.exprs = dict(exprs or {})
+        self.timeline.add_feature(feat)
+        target.manifold = solid
+        target.update_render_mesh()
+        self.hide_used_sketches()
+        self.notify_changed()
+        return feat
+
     def _thread_offset(self, faces):
         """(thread feature, sign, shift) when every picked face belongs to the same thread: its coil, or the wall between
         the turns (a coaxial cylinder inside the threaded length). Else None."""
@@ -1576,13 +1617,13 @@ class Document:
         from omacad.model.jar import build_jar
         return build_jar(self, spec)
 
-    @undoable("Honeycomb")
+    @undoable("Cells")
     def add_honeycomb(self, body_id: str, faces, exprs=None, **params) -> Optional[HoneycombFeature]:
         """Cuts a lattice of cells (shape, size, wall, margin, depth or through, angle) into faces of a body."""
         if body_id not in self.bodies or not faces:
             return None
         n = len([f for f in self.timeline.features if f.feature_type == "honeycomb"]) + 1
-        feat = HoneycombFeature(self._feature_id("honeycomb"), f"Honeycomb {n}", body_id, faces, **params)
+        feat = HoneycombFeature(self._feature_id("honeycomb"), f"Cells {n}", body_id, faces, **params)
         feat.exprs = dict(exprs or {})
         self.timeline.add_feature(feat)
         feat.execute(self)

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QLabel, QMessa
 from omacad.ui.main_window import MainWindow
 
 PROMPTS = ["prompt_move_body", "prompt_box", "prompt_cylinder", "prompt_prism", "prompt_sphere", "prompt_thread",
-           "prompt_jar", "prompt_shell", "prompt_split_body", "prompt_offset_face", "prompt_honeycomb", "prompt_pattern",
+           "prompt_jar", "prompt_shell", "prompt_split_body", "prompt_offset_face", "prompt_surface_texture", "prompt_pattern",
            "prompt_extrude", "prompt_revolve", "prompt_emboss"]
 
 

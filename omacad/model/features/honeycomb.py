@@ -8,17 +8,82 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import manifold3d as m3d
-from shapely import affinity, segmentize
-from shapely.geometry import Point, Polygon, box
+from shapely import affinity, segmentize, voronoi_polygons
+from shapely.geometry import MultiPoint, Point, Polygon, box
 from shapely.ops import unary_union
 
 from omacad.model.features.base import Feature, region_cross_section
 from omacad.model.features.offset_face import _frame, cylinder_face_ref, find_plane_face
+from omacad.model.features.revolved_surface import RevolvedSurface, revolved_surface
 
-SHAPES = ("hexagon", "circle", "square", "diamond", "triangle")
+SHAPES = ("hexagon", "circle", "square", "diamond", "triangle", "voronoi")
 AIR = 0.05          # the tool starts this far out in the air: never a face coinciding with the body's
 OVERSHOOT = 0.05    # and a Through cell ends this far past the far side
+REVOLVED_AIR = 0.5  # a revolved wall is read at some heights only, and can bulge past the line between them
 FULL_GAP = math.radians(22.5)   # a cylinder whose widest angular gap is smaller than this goes all the way round
+VORONOI_MAX_SITES = 20000
+VORONOI_MAX_JITTER = 0.45       # of the cell spacing, at 100 % randomness: keeps two sites from nearly coinciding
+VORONOI_MIN_AREA = 0.05         # of size²: a smaller cell would only be a speck in the wall
+
+
+def _site_random(i: np.ndarray, j: np.ndarray, seed: int, salt: int) -> np.ndarray:
+    """A number in [0, 1) for each lattice index (splitmix64). It depends only on the index and the seed, not on how
+    many sites are drawn, so a cell stays where it is when the face grows, and files rebuild alike on any machine."""
+    z = (i.astype(np.int64).astype(np.uint64) * np.uint64(0x9E3779B97F4A7C15)
+         ^ j.astype(np.int64).astype(np.uint64) * np.uint64(0xC2B2AE3D27D4EB4F)
+         ^ np.uint64((int(seed) * 0x165667B19E3779F9 + salt) & 0xFFFFFFFFFFFFFFFF))
+    z = (z ^ (z >> np.uint64(30))) * np.uint64(0xBF58476D1CE4E5B9)
+    z = (z ^ (z >> np.uint64(27))) * np.uint64(0x94D049BB133111EB)
+    return (z ^ (z >> np.uint64(31))).astype(np.float64) / 2.0 ** 64
+
+
+def voronoi_cells(size: float, wall: float, angle: float, bounds, anchor, period: Optional[float] = None,
+                  randomness: float = 100.0, seed: int = 1):
+    """Voronoi cells of a hexagonal lattice of sites moved at random, each shrunk wall/2, so two neighbours are always
+    `wall` apart. At 0 % randomness they are hexagons `size` across their flats; `size` stays the average width.
+    With `period` the indices repeat round the cylinder, so the pattern closes without a seam (and is not turned)."""
+    ax, ay = float(anchor[0]), float(anchor[1])
+    minx, miny, maxx, maxy = bounds
+    pitch = size + wall
+    columns = max(1, int(round(period / pitch))) if period is not None else 0
+    step_x = period / columns if period is not None else pitch
+    step_y = pitch * math.sqrt(3) / 2.0
+    pad = 3.0 * pitch               # sites past the edge: the cells inside must be bounded by their real neighbours
+    if period is not None:
+        reach_x, reach_y = period / 2.0 + pad, max(maxy - ay, ay - miny) + pad
+    else:
+        reach_x = reach_y = math.hypot(max(maxx - ax, ax - minx), max(maxy - ay, ay - miny)) + pad
+    ni, nj = int(reach_x / step_x) + 1, int(reach_y / step_y) + 1
+    if (2 * ni + 1) * (2 * nj + 1) > VORONOI_MAX_SITES:
+        raise ValueError(f"{(2 * ni + 1) * (2 * nj + 1)} Voronoi cells is too many. Use a larger cell size.")
+    jj, ii = np.meshgrid(np.arange(-nj, nj + 1), np.arange(-ni, ni + 1), indexing="ij")
+    ii, jj = ii.ravel(), jj.ravel()
+    wrapped = np.mod(ii, columns) if period is not None else ii
+    reach = np.clip(randomness, 0.0, 100.0) / 100.0 * VORONOI_MAX_JITTER * pitch * np.sqrt(_site_random(wrapped, jj, seed, 1))
+    turn = 2.0 * math.pi * _site_random(wrapped, jj, seed, 2)
+    x = step_x * (ii + 0.5 * np.mod(jj, 2)) + reach * np.cos(turn)
+    y = step_y * jj + reach * np.sin(turn)
+    if period is None and angle:
+        rad = math.radians(angle)
+        x, y = x * math.cos(rad) - y * math.sin(rad), x * math.sin(rad) + y * math.cos(rad)
+    x, y = x + ax, y + ay
+    sites = MultiPoint(np.column_stack((x, y)))
+    outlines = voronoi_polygons(sites, extend_to=sites.envelope.buffer(pitch), ordered=True).geoms
+    if period is not None:
+        keep = (x >= ax - period / 2.0 - 1e-6) & (x < ax + period / 2.0 - 1e-6)
+    else:
+        keep = np.ones(len(x), dtype=bool)
+    cells, area = [], VORONOI_MIN_AREA * size * size
+    for outline, kept in zip(outlines, keep):
+        if not kept:
+            continue
+        x0, y0, x1, y1 = outline.bounds
+        if y1 < miny or y0 > maxy or (period is None and (x1 < minx or x0 > maxx)):
+            continue
+        cell = outline.buffer(-wall / 2.0, join_style="mitre", mitre_limit=10.0) if wall > 0 else outline
+        if cell.geom_type == "Polygon" and cell.area >= area:
+            cells.append(cell)
+    return cells
 
 
 def _templates(shape: str, size: float, wall: float):
@@ -42,9 +107,12 @@ def _templates(shape: str, size: float, wall: float):
     return [up, down], ((s, 0.0), (s / 2.0, hgt)), [(0.0, 0.0, 0), (s / 2.0, rho_t, 1)], (s, 2.0 * hgt)
 
 
-def lattice(shape: str, size: float, wall: float, angle: float, bounds, anchor, period: Optional[float] = None):
+def lattice(shape: str, size: float, wall: float, angle: float, bounds, anchor, period: Optional[float] = None,
+            randomness: float = 100.0, seed: int = 1):
     """Cells (shapely polygons) covering `bounds` with one cell centred on `anchor`. With `period` (the length of a
     cylinder's circumference) the lattice is fitted to repeat exactly along x, and only one turn is made."""
+    if shape == "voronoi":
+        return voronoi_cells(size, wall, angle, bounds, anchor, period, randomness, seed)
     templates, (a1, a2), motif, (px, py) = _templates(shape, size, wall)
     a1, a2 = np.array(a1), np.array(a2)
     ax, ay = float(anchor[0]), float(anchor[1])
@@ -101,9 +169,11 @@ def best_fit(params, room, anchor, period=None):
     a step along and/or across (a wall that takes two rows when centred between them). Ties keep the centred one."""
     half = (params["size"] + params["wall"]) / 2.0
     best = []
-    for dx, dy in ((0.0, 0.0), (0.0, half), (half, 0.0), (half, half)):
+    shifts = ((0.0, 0.0), (0.0, half), (half, 0.0), (half, half))
+    for dx, dy in shifts[:1] if params["shape"] == "voronoi" else shifts:   # shifting would only reshuffle it
         cells = fit_cells(lattice(params["shape"], params["size"], params["wall"], params["angle"], room.bounds,
-                                  (anchor[0] + dx, anchor[1] + dy), period), room, params["partial"])
+                                  (anchor[0] + dx, anchor[1] + dy), period, params.get("randomness", 100.0),
+                                  int(round(params.get("seed", 1)))), room, params["partial"])
         if len(cells) > len(best):
             best = cells
     return best
@@ -257,10 +327,91 @@ def _refitted(manifold, ref):
     return cylinder_face_ref(cyl)
 
 
+def revolved_voronoi_cells(surface: RevolvedSurface, s_low: float, s_high: float, size: float, wall: float,
+                           randomness: float = 100.0, seed: int = 1):
+    """Voronoi cells on the flat pattern of a surface of revolution, of even true size everywhere: every row has as many
+    sites as fit its own circumference, and each cell shrinks by the wall at its own scale."""
+    pitch = size + wall
+    row = pitch * math.sqrt(3) / 2.0
+    middle = (s_low + s_high) / 2.0
+    rows = int((s_high - s_low) / 2.0 / row) + 4
+    xs, ys, scales = [], [], []
+    for j in range(-rows, rows + 1):
+        s = middle + j * row
+        radius = float(surface.radius_at(np.clip(s, s_low, s_high)))
+        columns = max(3, int(round(2.0 * math.pi * radius / pitch)))
+        ii = np.arange(columns)
+        jj = np.full(columns, j)
+        scale = radius / surface.R
+        reach = np.clip(randomness, 0.0, 100.0) / 100.0 * VORONOI_MAX_JITTER * pitch * np.sqrt(_site_random(ii, jj, seed, 1))
+        turn = 2.0 * math.pi * _site_random(ii, jj, seed, 2)
+        xs.append((ii + 0.5 * (j % 2)) / columns * surface.period + reach * np.cos(turn) / scale)
+        ys.append(surface.y_at(s) + reach * np.sin(turn) / scale)
+        scales.append(np.full(columns, scale))
+    x, y, scale = np.concatenate(xs), np.concatenate(ys), np.concatenate(scales)
+    count = len(x)
+    if 3 * count > VORONOI_MAX_SITES:
+        raise ValueError(f"{count} Voronoi cells is too many. Use a larger cell size.")
+    # a turn on either side, so the pattern closes round the surface; only the middle turn is kept
+    tiled = MultiPoint(np.column_stack((np.concatenate((x, x - surface.period, x + surface.period)), np.tile(y, 3))))
+    outlines = voronoi_polygons(tiled, extend_to=tiled.envelope.buffer(pitch), ordered=True).geoms
+    cells = []
+    for outline, local in zip(list(outlines)[:count], scale):
+        cell = outline.buffer(-wall / 2.0 / local, join_style="mitre", mitre_limit=10.0) if wall > 0 else outline
+        if cell.geom_type == "Polygon" and cell.area * local * local >= VORONOI_MIN_AREA * size * size:
+            cells.append(cell)
+    return cells
+
+
+def revolved_tool(surface: RevolvedSurface, M, params, rays: _Rays) -> Tuple[Optional[m3d.Manifold], int]:
+    """The cells cut along the surface's normals: straight in, so a sloping wall is pierced where it stands and a cell
+    near the foot of a pot doesn't run across the whole floor. Stops `2 cells` short of a point, where they would pinch."""
+    margin, pitch = params["margin"], params["size"] + params["wall"]
+    span = surface.usable(pitch)
+    if span is None or span[1] - span[0] <= 2.0 * margin:
+        return None, 0
+    s_low, s_high = span[0] + margin, span[1] - margin
+    y_low, y_high = surface.y_at(s_low), surface.y_at(s_high)
+    room = box(-surface.period, y_low, 2.0 * surface.period, y_high)
+    anchor = (surface.period / 2.0, (y_low + y_high) / 2.0)
+    if params["shape"] == "voronoi":
+        made = revolved_voronoi_cells(surface, s_low, s_high, params["size"], params["wall"],
+                                      params.get("randomness", 100.0), int(round(params.get("seed", 1))))
+        cells = fit_cells(made, room, params["partial"])
+    else:
+        cells = best_fit(params, room, anchor, surface.period)
+    if not cells:
+        return None, 0
+    side = 1.0 if surface.internal else -1.0            # from the surface into the material, as a sign on the normal
+    centres, inward = [], []
+    for c in cells:
+        point, normal = surface.centre(c.centroid.x, c.centroid.y)
+        centres.append((M @ np.append(point, 1.0))[:3])
+        inward.append(M[:3, :3] @ (side * normal))
+    depths = _depths(centres, inward, rays, None if params["through"] else params["depth"])
+    if params["through"]:       # a wall curving away inside the cell is thicker at its edge than at its centre
+        depths = [d * 1.2 for d in depths]
+    step = max(0.2, surface.R * math.radians(3.0))
+    tools = []
+    for d, group in _grouped(cells, depths).items():
+        for part in group:
+            # never so deep that opposite sides of the tool would cross at the axis
+            limit = 0.9 * float(surface.radius_at(surface.s_at(part.bounds[1])))
+            depth = min(d, limit) if not surface.internal else d
+            low, high = (-REVOLVED_AIR, depth) if surface.internal else (-depth, REVOLVED_AIR)
+            cs = region_cross_section(segmentize(part, max_segment_length=step))
+            prism = m3d.Manifold.extrude(cs, height=1.0, n_divisions=2).refine_to_length(step)
+            tools.append(prism.warp_batch(surface.warp(low, high)).transform(M[:3, :]))
+    return (m3d.Manifold.batch_boolean(tools, m3d.OpType.Add) if tools else None), len(cells)
+
+
 def cylinder_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Manifold], int]:
     ref = _refitted(manifold, ref)
     r, internal = float(ref["radius"]), bool(ref.get("internal", False))
     M = _frame(ref["origin"], ref["axis"])
+    surface = revolved_surface(manifold, M, ref)
+    if surface is not None:         # a pot, a vase: its radius changes along the axis
+        return revolved_tool(surface, M, params, rays)
     M_inv = np.linalg.inv(M)
     ext = _cylinder_extent(manifold, M_inv, r, float(ref["length"]), internal)
     if ext is None:
@@ -312,11 +463,11 @@ def cylinder_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Mani
 class HoneycombFeature(Feature):
     """Cuts a lattice of cells into the chosen faces of one body."""
 
-    PARAMS = ("shape", "size", "wall", "margin", "depth", "through", "angle", "partial")
+    PARAMS = ("shape", "size", "wall", "margin", "depth", "through", "angle", "partial", "randomness", "seed")
 
     def __init__(self, feature_id: str, name: str, target_body_id: str, faces=None, shape: str = "hexagon",
                  size: float = 6.0, wall: float = 1.5, margin: float = 3.0, depth: float = 1.0, through: bool = True,
-                 angle: float = 0.0, partial: bool = False):
+                 angle: float = 0.0, partial: bool = False, randomness: float = 100.0, seed: int = 1):
         super().__init__(feature_id, "honeycomb", name)
         self.target_body_id = target_body_id
         self.faces = list(faces or [])
@@ -324,6 +475,7 @@ class HoneycombFeature(Feature):
         self.size, self.wall, self.margin = float(size), float(wall), float(margin)
         self.depth, self.through = float(depth), bool(through)
         self.angle, self.partial = float(angle), bool(partial)
+        self.randomness, self.seed = float(randomness), int(round(seed))
         self.cells = 0
         self.skipped = 0
 

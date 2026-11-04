@@ -1,3 +1,31 @@
+# Hybrid-experiment — 0.9.9.80.132
+
+### Changed
+- **Surface Texture replaces Honeycomb, Knurl and Wavy Slices as commands**: One tool in the ribbon's Modify group, the Modify menu and the Modify sector of the fan menu, with a Type at the top of its panel: Cells (the former Honeycomb, including Voronoi), Knurl or Wavy Slices. Only the chosen type's settings show. Cells and Knurl pick faces, Wavy Slices picks a body. Right-clicking a flat face offers Surface Texture with that face picked; right-clicking a body in the tree offers it on Wavy Slices. The panel opens on the type used last. New cell steps are named "Cells N"; saved files load unchanged, and steps keep their type when edited. Box in a Row keeps its own honeycomb option. Help finds the tool under the old names. Test: `tests/test_surface_texture_ui.py`.
+
+### Fixed
+- Randomness and Seed now show and hide with the cell shape in the docked panel too.
+
+# Hybrid-experiment — 0.9.9.80.131
+
+### Fixed
+- **Honeycomb covers a whole pot or vase**: On a surface of revolution the cells only appeared in the bands where the wall happened to match one radius, and were broken there. They now follow the whole curved wall and are cut along its normals, from just above a pointed foot up to the rim. Voronoi cells keep an even size and wall everywhere; the lattice shapes scale with the radius. True cylinders, also with rounded ends, build exactly as before. Knurl now refuses such a face instead of cutting a stray groove. Test: `tests/test_honeycomb_revolved.py`.
+
+# Hybrid-experiment — 0.9.9.80.130
+
+### Added
+- **Knurl**: New Modify > Body tool that cuts a grip pattern of V grooves into whole outer round faces: Diamond, Straight, Right or Left, with pitch, depth, angle and a margin to the ends. Click the faces in the view; live preview, timeline editing, undo and saving in `.omacad`. A bore inside the face is not touched. Test: `tests/test_knurl.py`.
+
+# Hybrid-experiment — 0.9.9.80.129
+
+### Added
+- **Honeycomb: Voronoi cells**: New cell shape **Voronoi** with **Randomness** (0–100 %, 0 gives hexagons) and **Seed**. Keeps the exact wall between cells, the margin, Through or a depth, and works on flat and round faces; the pattern closes round a cylinder without a seam and does not reshuffle when the body changes size. Test: `tests/test_honeycomb_voronoi.py`.
+
+# Hybrid-experiment — 0.9.9.80.128
+
+### Added
+- **Wavy Slices**: New Modify > Body tool (also in the body's right-click menu) that rebuilds a solid as stacked horizontal layers with wavy edges: total waves, slice height, peak-to-peak amplitude, phase shift per layer and an inward/outward offset, with a live preview, timeline editing, undo and saving in `.omacad`. Holes get the same wave, so a hollow body keeps its wall thickness. Written from scratch for Omacad, inspired by the feature list of the Fusion add-in B3D Wavy Surface Slices. Test: `tests/test_wavy_slices.py`.
+
 # Hybrid-experiment — 0.9.9.80.127
 
 ### Added

@@ -42,8 +42,8 @@ from omacad.ui.dialogs.emboss_dlg import EmbossDialog
 from omacad.ui.dialogs.shell_dlg import (
     ShellDialog,
 )
+from omacad.ui.dialogs.surface_texture_dlg import SurfaceTextureDialog
 from omacad.ui.dialogs.offset_face_dlg import OffsetFaceDialog
-from omacad.ui.dialogs.honeycomb_dlg import HoneycombDialog
 from omacad.ui.dialogs.jar_dlg import JarDialog
 from omacad.ui.dialogs.transform_dlg import (
     MoveBodyDialog,
@@ -87,8 +87,8 @@ __all__ = [
     "RoundEdgesDialog",
     "PatternDialog",
     "ShellDialog",
+    "SurfaceTextureDialog",
     "OffsetFaceDialog",
-    "HoneycombDialog",
     "JarDialog",
     "MoveBodyDialog",
     "ThreadDialog",

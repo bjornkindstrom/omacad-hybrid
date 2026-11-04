@@ -36,6 +36,8 @@ from omacad.model.features.boolean import (
     SplitBodyFeature,
 )
 from omacad.model.features.shell import ShellFeature
+from omacad.model.features.wavy_slices import WavySlicesFeature
+from omacad.model.features.knurl import KnurlFeature
 from omacad.model.features.pattern import PatternFeature, _best_pattern
 from omacad.model.features.transform import (
     MoveFeature,
@@ -82,6 +84,8 @@ __all__ = [
     "CombineFeature",
     "SplitBodyFeature",
     "ShellFeature",
+    "WavySlicesFeature",
+    "KnurlFeature",
     "PatternFeature",
     "MoveFeature",
     "ImportMeshFeature",

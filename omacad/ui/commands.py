@@ -59,8 +59,6 @@ _ALL = [
        arg="circular"),
     _c("mirror", "Mirror", "🪞", "A mirrored copy across a plane", signal="pattern_kind_clicked", arg="mirror"),
     _c("pattern_fill", "Fill Face Pattern", "🔁", "Copies filling a face", signal="pattern_kind_clicked", arg="fill"),
-    _c("honeycomb", "Honeycomb", "🐝", "Cut a lattice of hexagons, circles, squares, diamonds or triangles into flat "
-       "and round faces", signal="honeycomb_clicked"),
     _c("offset_plane", "Offset Plane", "📐", "A new plane at a distance from a plane or face, or touching any surface",
        signal="offset_plane_clicked"),
     _c("canvas", "Canvas (Image)", "🖼️", "A reference image on a plane or flat body face: calibrate it and trace over it",
@@ -72,6 +70,7 @@ _ALL = [
     _c("chamfer", "Chamfer", "◢", "Bevel edges (outside and inside corners): pick edges, type a size",
        signal="chamfer_clicked"),
     _c("shell", "Shell", "🐚", "Hollow a body to a wall thickness, leaving picked faces open", signal="shell_clicked"),
+    _c("surface_texture", "Surface Texture", "🧵", "Texture a body's surface: cells (hexagons, circles, squares, diamonds, triangles, Voronoi), a knurl, or wavy slices", signal="surface_texture_clicked"),
     _c("offset_face", "Offset Face", "↔️", "Move flat faces, or change holes, pins and threads for a fit",
        signal="offset_face_clicked"),
     _c("combine", "Combine", "🔗", "Join, cut or intersect bodies", signal="combine_clicked"),
@@ -159,9 +158,9 @@ EXPORT = ("export", "Export", "📤", "Screenshot, Copy Image, Rotating Video of
 PATTERNS = ["pattern_linear", "pattern_circular", "mirror", "pattern_fill"]   # the Pattern button's arrow
 
 SOLID_GROUPS: List[Tuple[str, list]] = [
-    ("CREATE", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", PRIMITIVES, "pattern", "honeycomb", "offset_plane",
+    ("CREATE", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", PRIMITIVES, "pattern", "offset_plane",
                 INSERT]),
-    ("MODIFY", ["fillet", "chamfer", MODIFY_BODY, "parameters", "delete"]),
+    ("MODIFY", ["fillet", "chamfer", "surface_texture", MODIFY_BODY, "parameters", "delete"]),
     ("INSPECT", [INSPECT]),
     ("EXPORT", [EXPORT]),
 ]
@@ -176,9 +175,9 @@ SKETCH_GROUPS: List[Tuple[str, list]] = [
 # Menu bar, in the ribbon's order (None = separator). File, Edit, View and Help are built in menu_setup.
 MENUS: List[Tuple[str, list]] = [
     ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", None, PRIMITIVES,       # a tuple is a submenu that opens to the right (saves vertical space)
-                None, "pattern_linear", "pattern_circular", "mirror", "pattern_fill", "honeycomb", None,
+                None, "pattern_linear", "pattern_circular", "mirror", "pattern_fill", None,
                 "offset_plane", "canvas"]),
-    ("Modify", ["fillet", "chamfer", "shell", "offset_face", None, "combine", "split_body", "move", None,
+    ("Modify", ["fillet", "chamfer", "shell", "surface_texture", "offset_face", None, "combine", "split_body", "move", None,
                 "parameters", "delete"]),
     ("Inspect", ["measure", "section", "statistics"]),
 ]
@@ -189,7 +188,7 @@ MENUS: List[Tuple[str, list]] = [
 CONTEXT: Dict[str, List[str]] = {
     "profile": ["extrude", "revolve", "sweep", "loft", "emboss"],
     "edges": ["fillet", "chamfer"],
-    "body": ["move", "shell", "split_body", "offset_face", "hole", "fillet", "chamfer"],
+    "body": ["move", "shell", "split_body", "offset_face", "surface_texture", "hole", "fillet", "chamfer"],
     "bodies": ["combine", "move"],
 }
 

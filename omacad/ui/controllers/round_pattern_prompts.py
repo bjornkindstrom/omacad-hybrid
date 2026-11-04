@@ -19,6 +19,7 @@ from omacad.ui.controllers.prompt_guards import leaves_sketch
 
 
 class RoundPatternPromptsMixin:
+    _texture_kind = "honeycomb"     # the Surface Texture type used last
     """RoundPattern prompt workflows for MainWindow."""
 
     def _connect_debounced_preview(self, dlg, preview_fn, interval_ms: int = 50, throttle: bool = False):
@@ -300,17 +301,20 @@ class RoundPatternPromptsMixin:
         dlg.show()
 
     @leaves_sketch
-    def prompt_honeycomb(self):
-        """Honeycomb: click flat and round faces of one body, choose the cells; live preview of the result."""
-        from omacad.model.features.honeycomb import HoneycombFeature
-        from omacad.ui.dialogs import HoneycombDialog
+    def prompt_surface_texture(self, target_body_id: str = "", face=None):
+        """Surface Texture: cells or a knurl on picked faces, wavy slices on a whole body; live preview of the result.
+        A face from a right-click starts on Cells with that face, a body from the tree on Wavy Slices."""
+        from omacad.model.features.offset_face import plane_face_ref
+        from omacad.ui.dialogs.surface_texture_dlg import BODY_TEXTURES, SurfaceTextureDialog, outer_round, preview_texture
         if not self.doc.bodies:
-            QMessageBox.information(self, "Honeycomb", "Create a 3D body first.")
+            QMessageBox.information(self, "Surface Texture", "Create a 3D body first.")
             return
         if self.inspector.current_tool_dlg is not None:
             return
-        dlg = HoneycombDialog(self, embedded=True)
+        kind = "honeycomb" if face is not None else "wavy_slices" if target_body_id else self._texture_kind
+        dlg = SurfaceTextureDialog(self.doc, self, kind=kind, body_id=target_body_id, embedded=True)
         self.dock(dlg)
+        self.doc.hide_used_sketches()
         vp = self.viewport
         hidden = [None]    # the body whose preview replaces it
 
@@ -320,49 +324,85 @@ class RoundPatternPromptsMixin:
             hidden[0] = None
 
         def refresh_preview():
-            body = self.doc.bodies.get(dlg.body_id)
-            if body is None or not dlg.faces:
+            kind = dlg.kind()
+            on_faces = kind not in BODY_TEXTURES
+            body = self.doc.bodies.get(dlg.target_body_id())
+            if body is None or (on_faces and not dlg.faces):
                 show_body()
                 vp.shell_target_body_id = ""
                 vp.set_preview(None)
                 dlg.lbl_info.setText("")
                 return
-            result, cells, skipped = HoneycombFeature.compute(body.manifold, dlg.faces, dlg.params())
+            if hidden[0] != body.body_id:
+                show_body()
+            try:
+                result, info = preview_texture(kind, body.manifold, dlg.faces, dlg.params())
+            except ValueError as e:         # values that give no body: show the body as it is, and say why
+                result, info = body.manifold, str(e)
             body.visible = False
             hidden[0] = body.body_id
-            vp.shell_target_body_id = body.body_id
+            vp.shell_target_body_id = body.body_id if on_faces else ""
             vp.set_preview(result, "new_body")
-            note = f" {skipped} face(s) have no room for a cell." if skipped else ""
-            dlg.lbl_info.setText(f"{cells} cells will be cut.{note}")
+            dlg.lbl_info.setText(info)
+
+        def set_pick_mode(kind):
+            if kind in BODY_TEXTURES:
+                vp.shell_target_body_id = ""
+                vp.end_plane_pick()
+            else:
+                vp.begin_plane_pick("offset_face")   # the same face picking as Offset Face
+            self.status_label.setText("Surface Texture: pick what to texture, choose the settings, OK. Esc cancels.")
 
         def on_picked(ref, body_id):
-            if ref.get("kind") not in ("plane", "cylinder"):
-                self.status_label.setText("Honeycomb: only flat and cylindrical faces can take a honeycomb.")
+            if dlg.kind() == "knurl" and not outer_round(ref):
+                self.status_label.setText("Knurl: only outer round faces can take a knurl.")
+            elif ref.get("kind") not in ("plane", "cylinder"):
+                self.status_label.setText("Cells: only flat and cylindrical faces can take cells.")
             elif not dlg.toggle(ref, body_id):
-                self.status_label.setText("Honeycomb: all faces must belong to the same body.")
+                self.status_label.setText("Surface Texture: all faces must belong to the same body.")
+
+        def add_step(kind, body_id, faces, params, exprs):
+            if kind == "honeycomb":
+                feat = self.doc.add_honeycomb(body_id, faces, exprs=exprs, **params)
+                return f"Cells: {feat.cells} cells cut in {len(faces)} face(s)."
+            if kind == "knurl":
+                feat = self.doc.add_knurl(body_id, faces, exprs=exprs, **params)
+                return f"Knurl: {feat.teeth} teeth per turn in {len(faces)} face(s)."
+            feat = self.doc.add_wavy_slices(body_id, exprs=exprs, **params)
+            return f"Created {feat.name}."
 
         def on_finished(result):
-            timer.stop()
+            timer.stop()                    # a pending preview would hide the rebuilt body again
             vp.offset_face_picked.disconnect(on_picked)
-            faces, body_id, params, exprs = list(dlg.faces), dlg.body_id, dlg.params(), dlg.get_expressions()
+            vp.body_clicked.disconnect(dlg.on_body_clicked)
+            kind, faces, body_id, params, exprs = dlg.kind(), list(dlg.faces), dlg.target_body_id(), dlg.params(), dlg.get_expressions()
             show_body()
             vp.shell_target_body_id = ""
             vp.end_plane_pick()
             vp.set_preview(None)
             self.inspector.undock_tool()
             dlg.deleteLater()
-            if result and faces:
-                feat = self.doc.add_honeycomb(body_id, faces, exprs=exprs, **params)
-                self.status_label.setText(f"Honeycomb: {feat.cells} cells cut in {len(faces)} face(s).")
+            if not result:
+                self.status_label.setText("Surface Texture cancelled.")
+            elif kind not in BODY_TEXTURES and not faces:
+                self.status_label.setText("No faces were selected.")
             else:
-                self.status_label.setText("Honeycomb cancelled." if not result else "No faces were selected.")
+                self._texture_kind = kind
+                try:
+                    self.status_label.setText(add_step(kind, body_id, faces, params, exprs))
+                except ValueError as e:
+                    self.status_label.setText(f"Surface Texture: {e}")
             vp.update()
 
         timer = self._connect_debounced_preview(dlg, refresh_preview, interval_ms=80)
+        dlg.kind_changed.connect(set_pick_mode)
         dlg.finished.connect(on_finished)
         vp.offset_face_picked.connect(on_picked)
-        vp.begin_plane_pick("offset_face")   # the same face picking as Offset Face: flat faces and cylinders light up
-        self.status_label.setText("Honeycomb: click flat or round faces, choose shape and sizes, OK. Esc cancels.")
+        vp.body_clicked.connect(dlg.on_body_clicked)
+        set_pick_mode(kind)
+        if face is not None:
+            dlg.toggle(plane_face_ref(face), face.body_id)
+        refresh_preview()
         dlg.show()
 
     @leaves_sketch

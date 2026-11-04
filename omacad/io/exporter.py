@@ -14,7 +14,7 @@ from omacad.model.document import Document, Parameter, default_origin_vis
 from omacad.model.timeline import (Body, SketchFeature, BoxFeature, CylinderFeature, PrismFeature, SphereFeature,
                                     ExtrudeFeature, EmbossFeature, RevolveFeature, CombineFeature, FilletFeature,
                                     PatternFeature, SplitBodyFeature, ShellFeature, MoveFeature, ImportMeshFeature, HoleFeature, DeleteBodyFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature,
-                                    ConeFeature, SweepFeature, LoftFeature, PipeFeature)
+                                    ConeFeature, SweepFeature, LoftFeature, PipeFeature, WavySlicesFeature, KnurlFeature)
 from omacad import applog
 from omacad.model.sketch import Sketch
 from omacad.model.timeline import ProfileRefs
@@ -642,6 +642,14 @@ class Exporter:
                     open_faces=f_data.get("open_faces", []),
                     direction=f_data.get("direction", "inside"), thickness2=f_data.get("thickness2", 2.0),
                 )
+                doc.timeline.add_feature(feat)
+            elif ft == "knurl":
+                feat = KnurlFeature(fid, fname, f_data["target_body_id"], f_data.get("faces", []),
+                                    **{k: f_data[k] for k in KnurlFeature.PARAMS if k in f_data})
+                doc.timeline.add_feature(feat)
+            elif ft == "wavy_slices":
+                feat = WavySlicesFeature(fid, fname, f_data["target_body_id"],
+                                         **{k: f_data[k] for k in WavySlicesFeature.PARAMS if k in f_data})
                 doc.timeline.add_feature(feat)
             elif ft == "offset_face":
                 feat = OffsetFaceFeature(fid, fname, f_data["target_body_id"], f_data.get("faces", []), f_data.get("distance", 0.2))

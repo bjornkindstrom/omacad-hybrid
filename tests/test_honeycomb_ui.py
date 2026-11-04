@@ -1,4 +1,4 @@
-"""The Honeycomb tool end to end: ribbon button, pick a flat face and a cylinder, preview, OK -> one undoable step."""
+"""Surface Texture's cells end to end: ribbon button, pick a flat face and a cylinder, preview, OK -> one undoable step."""
 import pytest
 from PySide6.QtWidgets import QApplication
 
@@ -18,14 +18,14 @@ def test_honeycomb_tool_adds_one_undoable_step(win):
     doc = win.doc
     body = next(iter(doc.bodies.values()))
     v0 = body.manifold.volume()
-    win.ribbon.honeycomb_clicked.emit()
+    win.ribbon.surface_texture_clicked.emit()
     dlg = win.inspector.current_tool_dlg
-    assert dlg is not None and dlg.windowTitle() == "Honeycomb"
+    assert dlg is not None and dlg.windowTitle() == "Surface Texture" and dlg.kind() == "honeycomb"
     front = min(body.faces, key=lambda f: f.normal[1])
     win.viewport.offset_face_picked.emit({"kind": "surface", "point": [0, 0, 0], "normal": [1, 0, 0]}, body.body_id)
     assert dlg.faces == []                                  # a free-form surface takes no honeycomb
     win.viewport.offset_face_picked.emit(plane_face_ref(front), body.body_id)
-    dlg.cmb_shape.setCurrentIndex(2)                        # square
+    dlg.page.cmb_shape.setCurrentIndex(2)                        # square
     dlg.accept()
     feats = [f for f in doc.timeline.features if f.feature_type == "honeycomb"]
     assert len(feats) == 1 and feats[0].shape == "square" and feats[0].cells > 0
@@ -37,7 +37,7 @@ def test_honeycomb_tool_adds_one_undoable_step(win):
 
 
 def test_cancel_leaves_the_model_alone(win):
-    win.prompt_honeycomb()
+    win.prompt_surface_texture()
     win.inspector.current_tool_dlg.reject()
     assert not [f for f in win.doc.timeline.features if f.feature_type == "honeycomb"]
     assert next(iter(win.doc.bodies.values())).visible

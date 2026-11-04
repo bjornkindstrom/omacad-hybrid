@@ -47,6 +47,8 @@ class FeatureNodeWidget(QFrame):
         "offset_face": "↔️",
         "honeycomb": "🐝",
         "shell": "🐚",
+        "wavy_slices": "🌊",
+        "knurl": "🧶",
         "split_body": "🪚",
         "move": "🧭",
         "import_mesh": "📥",
@@ -151,6 +153,10 @@ class FeatureNodeWidget(QFrame):
             return f"{f.name}\n{f.kind.title()} {f.size:g} mm on {len(f.edges)} edge(s)"
         if t == "shell":
             return f"{f.name}\nThickness {f.thickness:g} mm ({len(getattr(f, 'open_faces', ()) or ())} open face(s))"
+        if t == "knurl":
+            return f"{f.name}\n{f.pattern.title()}, pitch {f.pitch:g} mm, depth {f.depth:g} mm, {f.teeth} teeth"
+        if t == "wavy_slices":
+            return f"{f.name}\n{f.waves:g} waves, {f.amplitude:g} mm, layers {f.slice_height:g} mm"
         if t == "offset_face":
             return f"{f.name}\nOffset {f.distance:g} mm on {len(getattr(f, 'faces', ()) or ())} face(s)"
         if t == "honeycomb":

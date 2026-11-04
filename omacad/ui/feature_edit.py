@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from omacad import applog
 from omacad.model import quality
+from omacad.ui.dialogs.surface_texture_dlg import TEXTURES, SurfaceTextureDialog, preview_texture
 from omacad.ui.dialogs import (
     BoxDialog, CylinderDialog, PrismDialog, SphereDialog, ExtrudeDialog, RoundEdgesDialog, PatternDialog, MoveBodyDialog,
     ThreadDialog, RevolveDialog, ShellDialog, CombineDialog, SplitBodyDialog, HoleDialog
@@ -22,7 +23,7 @@ OPERATIONS = ["auto", "new_body", "join", "cut", "intersect"]  # same order as t
 def can_edit(feature) -> bool:
     return feature.feature_type in (
         "box", "cylinder", "prism", "sphere", "extrude", "emboss", "revolve", "loft",
-        "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "combine", "split_body"
+        "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "wavy_slices", "knurl", "combine", "split_body"
     )
 
 
@@ -620,18 +621,18 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             return False
         return commit(distance=dlg.distance(), exprs=dlg.get_expressions())
 
-    if t == "honeycomb":
-        from omacad.ui.dialogs import HoneycombDialog
-        from omacad.model.features.honeycomb import HoneycombFeature
-        dlg = HoneycombDialog(win, feat)
+    if t in TEXTURES:
+        dlg = SurfaceTextureDialog(doc, win, feature=feat)
         dlg.setWindowTitle(f"Edit {feat.name}")
         base_m = state_before.get(feat.target_body_id)
 
-        def _preview_honeycomb():
+        def _preview_texture():
             if base_m is not None:
-                vp.set_preview(HoneycombFeature.compute(base_m, feat.faces, dlg.params())[0], "new_body")
+                result, info = preview_texture(t, base_m, dlg.faces, dlg.params())
+                vp.set_preview(result, "new_body")
+                dlg.lbl_info.setText(info)
 
-        if not _exec_with_preview(win, doc, dlg, _preview_honeycomb, [feat.target_body_id]):
+        if not _exec_with_preview(win, doc, dlg, _preview_texture, [feat.target_body_id]):
             return False
         return commit(**dlg.params(), exprs=dlg.get_expressions())
 

@@ -119,6 +119,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     edge_pick_cancelled = Signal()
     offset_face_picked = Signal(object, str)   # (face reference dict, body id) while Offset Face is open
     offset_face_requested = Signal(object)     # a flat face chosen from the right-click menu
+    surface_texture_requested = Signal(object) # likewise, for Surface Texture
     round_requested = Signal(str, object)      # ("fillet" | "chamfer", edges): start the tool with these edges picked
     lay_face_requested = Signal(object, str)   # (face, "ground" | "pick"): turn the body so this face rests on a plane
     lay_target_picked = Signal(object)         # the plane a face is to be laid on
