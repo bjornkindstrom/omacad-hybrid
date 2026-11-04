@@ -76,6 +76,7 @@ This file lists what has been built, step by step, and what is left. (Swedish fe
 - **Surface Texture › Cells** (formerly Honeycomb): hexagon / circle / square / diamond / triangle / Voronoi cells cut into picked flat and cylindrical faces (inside or out), cell size, wall, edge margin, depth or Through (to the air behind each cell), rotation, optional cut cells at the edge; placed for the most whole cells and closed seamlessly round a cylinder.
 - **Revolve** (axis = construction/any sketch line or sketch X/Y axis, angle, one side / symmetric / two sides, Auto/New/Join/Cut/Intersect, live preview).
 - **Shell**: Inside / Outside / Both, open faces (outer skin trimmed flush).
+- **Surface Texture › Cells › Voronoi styles**: Gradient, Hotspot, Radial, Nested, Triangles, Relaxation; Hole shape, Rounding and fading Opening for every cell shape.
 - **Surface Texture › Knurl**: diamond, straight, right and left grip patterns cut into whole outer round faces.
 - **Surface Texture › Wavy Slices**: rebuilds a body as stacked layers with wavy edges (waves, slice height, amplitude, phase shift, offset).
 - **Hole** exists as a model feature (simple / counterbore / countersink, flat or 118° tip, through); dialog and placement are next.

@@ -5,6 +5,7 @@ from typing import Any, Dict, Tuple
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFormLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from omacad.model.document import Document
+from omacad.model.features.cell_patterns import HOLE_SHAPES, MAX_RELAXATION, VORONOI_STYLES
 from omacad.model.features.honeycomb import SHAPES, HoneycombFeature
 from omacad.model.features.knurl import PATTERNS, apply_knurl
 from omacad.model.features.wavy_slices import slice_body
@@ -32,7 +33,7 @@ def preview_texture(kind: str, manifold, faces, params: Dict[str, Any]) -> Tuple
     """The body with the texture on it, and a line for the panel. Raises ValueError for values that give no body."""
     if kind == "honeycomb":
         result, cells, skipped = HoneycombFeature.compute(manifold, faces, params)
-        note = f" {skipped} face(s) have no room for a cell." if skipped else ""
+        note = f" {skipped} face(s) got no cells: no room for one, or too many (use a larger size)." if skipped else ""
         return result, f"{cells} cells will be cut.{note}"
     if kind == "knurl":
         result, teeth, notes = apply_knurl(manifold, faces, params)
@@ -86,9 +87,18 @@ class _CellsPage(_Page):
         self.cmb_shape = QComboBox()
         self.cmb_shape.addItems([s.title() for s in SHAPES])
         self.form.addRow("Shape:", self.cmb_shape)
+        self.cmb_style = QComboBox()
+        self.cmb_style.addItems([s.title() for s in VORONOI_STYLES])
+        self.cmb_style.setToolTip("Even: one size. Gradient: from Smallest cell to Cell size across the face. Hotspot: small cells "
+                                  "round points. Radial: rings and spokes. Nested: big cells split into small ones. "
+                                  "Triangles: the triangles between the sites, also from small to large.")
+        self.lbl_style = QLabel("Style:")
+        self.form.addRow(self.lbl_style, self.cmb_style)
         self.field("size", "Cell size:", 0.1, 10000, 2, " mm", 6.0,
                    "Width of a cell across its flats (a circle's diameter, a Voronoi cell's average width).")
+        self.field("fine_size", "Smallest cell:", 0.1, 10000, 2, " mm", 2.0, "The smallest cells of the style; Cell size sets the largest.")
         self.field("wall", "Wall:", 0.0, 10000, 2, " mm", 1.5, "Material left between two cells.")
+        self.field("inner_wall", "Inner wall:", 0.0, 10000, 2, " mm", 0.8, "Material between the small cells inside a big one.")
         self.field("margin", "Margin to edge:", 0.0, 10000, 2, " mm", 3.0, "Distance kept to the face's edges and to holes already in it.")
         self.chk_through = QCheckBox("Through")
         self.chk_through.setChecked(True)
@@ -101,28 +111,52 @@ class _CellsPage(_Page):
         self.chk_partial.setToolTip("Cells that cross the margin are cut off by it (pieces under a quarter are left out). "
                                     "Off: whole cells only.")
         self.form.addRow("", self.chk_partial)
-        randomness = self.field("randomness", "Randomness:", 0.0, 100.0, 2, " %", 100.0,
-                                "How far the Voronoi cells stray from a regular pattern. 0 % gives hexagons.")
-        seed = self.field("seed", "Seed:", 0.0, 999999.0, 0, "", 1.0, "Picks another random layout with the same settings.")
-        self.voronoi_widgets = [w for spin in (randomness, seed) for w in (self.form.labelForField(spin), spin)]
+        self.field("hotspots", "Hotspots:", 1, 12, 0, "", 1, "Points the small cells gather round: the face's middle first, the rest from the seed.")
+        self.field("randomness", "Randomness:", 0.0, 100.0, 2, " %", 100.0,
+                   "How far the Voronoi cells stray from a regular pattern. 0 % gives hexagons.")
+        self.field("seed", "Seed:", 0.0, 999999.0, 0, "", 1.0, "Picks another random layout with the same settings.")
+        self.field("relaxation", "Relaxation:", 0, MAX_RELAXATION, 0, "", 0, "Evens the Voronoi cells out, a little more each step. 0 keeps them as they fell.")
+        self.cmb_hole = QComboBox()
+        self.cmb_hole.addItems([h.title() for h in HOLE_SHAPES])
+        self.cmb_hole.setToolTip("Cell: the hole follows its cell. The others put that shape in the largest circle that fits the cell.")
+        self.form.addRow("Hole shape:", self.cmb_hole)
+        self.field("rounding", "Rounding:", 0.0, 100.0, 0, " %", 0.0, "Rounds each cell's corners. 100 % is close to a round hole.")
+        self.field("opening", "Opening:", 0.0, 100.0, 0, " %", 100.0, "Size of each hole in its cell, at the start of the face: "
+                   "the bottom, or a hotspot's middle. A smaller hole leaves a thicker wall.")
+        self.field("opening_end", "Opening at end:", 0.0, 100.0, 0, " %", 100.0, "The same at the far end, so the holes fade across the face.")
+        BaseFeatureDialog.pair_form_rows(self.form, [(self.spins["opening"], self.spins["opening_end"])])
+        # not setRowVisible: docking moves each field into a slider widget, which follows the field
+        self.toggled = {key: [self.form.labelForField(self.spins[key]), self.spins[key]]
+                        for key in ("fine_size", "inner_wall", "hotspots", "randomness", "seed", "relaxation")}
+        self.toggled["style"] = [self.lbl_style, self.cmb_style]
         self.chk_through.toggled.connect(self._sync)
         self.cmb_shape.currentIndexChanged.connect(self._sync)
-        for signal in (self.chk_through.toggled, self.chk_partial.toggled, self.cmb_shape.currentIndexChanged):
+        self.cmb_style.currentIndexChanged.connect(self._sync)
+        for signal in (self.chk_through.toggled, self.chk_partial.toggled, self.cmb_shape.currentIndexChanged,
+                       self.cmb_style.currentIndexChanged, self.cmb_hole.currentIndexChanged):
             signal.connect(lambda *_: self.changed.emit())
         self._sync()
 
     def _sync(self, *_):
         self.spins["depth"].setEnabled(not self.chk_through.isChecked())
         voronoi = SHAPES[self.cmb_shape.currentIndex()] == "voronoi"
-        for widget in self.voronoi_widgets:     # not setRowVisible: docking moves each field into a slider widget, which follows the field
-            widget.setVisible(voronoi)
+        style = VORONOI_STYLES[self.cmb_style.currentIndex()]
+        shown = {"style": voronoi, "randomness": voronoi, "seed": voronoi, "relaxation": voronoi and style != "radial",
+                 "fine_size": voronoi and style != "even" , "inner_wall": voronoi and style == "nested",
+                 "hotspots": voronoi and style == "hotspot"}
+        for key, widgets in self.toggled.items():
+            for widget in widgets:
+                widget.setVisible(shown[key])
 
     def params(self):
-        return {**super().params(), "shape": SHAPES[self.cmb_shape.currentIndex()],
+        return {**super().params(), "shape": SHAPES[self.cmb_shape.currentIndex()], "style": VORONOI_STYLES[self.cmb_style.currentIndex()],
+                "hole": HOLE_SHAPES[self.cmb_hole.currentIndex()],
                 "through": self.chk_through.isChecked(), "partial": self.chk_partial.isChecked()}
 
     def load(self, feature):
         self.cmb_shape.setCurrentIndex(SHAPES.index(feature.shape))
+        self.cmb_style.setCurrentIndex(VORONOI_STYLES.index(feature.style))
+        self.cmb_hole.setCurrentIndex(HOLE_SHAPES.index(feature.hole))
         super().load(feature)
         self.chk_through.setChecked(feature.through)
         self.chk_partial.setChecked(feature.partial)

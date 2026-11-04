@@ -12,7 +12,8 @@ from shapely.ops import unary_union
 
 from omacad.io.exporter import Exporter
 from omacad.model.document import Document
-from omacad.model.features.honeycomb import HoneycombFeature, VORONOI_MIN_AREA, lattice, voronoi_cells
+from omacad.model.features.cell_patterns import VORONOI_MIN_AREA
+from omacad.model.features.honeycomb import HoneycombFeature, lattice, voronoi_cells
 
 HEX = math.sqrt(3) / 2 * 6.0 ** 2          # hexagon 6 mm across flats
 P = dict(shape="voronoi", size=6.0, wall=1.5, margin=3.0, depth=1.0, through=True, angle=0.0, partial=False,

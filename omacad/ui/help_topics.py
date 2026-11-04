@@ -59,14 +59,14 @@ MORE = {
     "pattern": ("Pick the steps to copy in the timeline or the list (a rib and its fillets together), then the kind: "
                 "linear, circular round an axis, mirror across a plane, or filling a face.", "array copy repeat"),
     "surface_texture": ("Choose the type at the top of the panel. Cells: pick flat or round faces; set cell shape, size, wall, margin and depth or "
-                        "Through. Voronoi gives organic cells: Randomness sets how irregular they are, Seed picks another layout. On a pot or vase the "
+                        "Through. Voronoi gives organic cells: Randomness sets how irregular they are, Seed picks another layout, and Style gives Gradient, Hotspot, Radial, Nested or Triangles. Relaxation evens the cells out. Hole shape, Rounding and Opening shape the holes of any cell, and Opening can fade across the face. On a pot or vase the "
                         "cells follow the whole curved wall; Voronoi cells keep their size, the other shapes get smaller where it narrows. "
                         "Knurl: click outer round faces; choose Diamond, Straight, Right or Left, the pitch, depth and angle, and a margin to leave "
                         "plain ends. Only whole round faces can take a knurl, and a bore inside stays untouched. "
                         "Wavy Slices: rebuilds the whole body as horizontal layers along Z whose edges follow a wave. Set the waves per slice, the slice "
                         "height, the peak-to-peak amplitude, how far each slice's wave moves from the one below, and an optional offset. Holes get the "
                         "same wave, so a hollow body keeps its wall thickness.",
-                        "honeycomb hexagon cells lattice vent voronoi organic random knurl knurling grip knob diamond grooves thumb screw "
+                        "honeycomb hexagon cells lattice vent voronoi organic random gradient hotspot radial nested triangles delaunay dots relaxation lloyd star perforated perforation knurl knurling grip knob diamond grooves thumb screw "
                         "wavy slice layer wave stack decoration ripple"),
     "offset_plane": ("Click a plane or flat face and type the distance, or touch any surface (a cylinder's side). "
                      "Angle turns the plane about its X or Y direction or about an edge you click (Plane at Angle).",

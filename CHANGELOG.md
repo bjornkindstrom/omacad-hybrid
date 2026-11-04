@@ -1,3 +1,12 @@
+# Hybrid-experiment — 0.9.9.80.133
+
+### Added
+- **Surface Texture › Cells: more Voronoi patterns**: A new **Style** for Voronoi: Even, **Gradient** (from Smallest cell to Cell size across the face, turned by Rotation), **Hotspot** (small cells round the face's middle and further points from the seed), **Radial** (rings and spokes), **Nested** (big cells split into small ones, with their own Inner wall) and **Triangles** (the Delaunay triangles between the sites, also graded). **Relaxation** (Lloyd) evens the cells out.
+- **Hole shape, Rounding and Opening for every cell shape**: Hole shape puts a circle, square, star, triangle, pentagon, hexagon or octagon in the largest circle that fits each cell. Rounding rounds the corners. Opening and Opening at end set the hole's size and fade it across the face. All styles close round a cylinder and follow a pot's wall; on a pot, Hotspot and Radial grade from a band round the middle of the wall, and Relaxation may even out some of the size differences. Existing steps build exactly as before. Test: `tests/test_cell_patterns.py`.
+
+### Changed
+- The panel now says when a face got no cells because there would be too many, not only because there is no room.
+
 # Hybrid-experiment — 0.9.9.80.132
 
 ### Changed
