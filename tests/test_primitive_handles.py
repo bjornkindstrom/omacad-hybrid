@@ -102,9 +102,13 @@ def test_create_preview_drag_accept_undo_and_cancel(app, kind):
     initial = field.value()
     mouse(vp, QEvent.Type.MouseButtonPress, tip, Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton)
     mouse(vp, QEvent.Type.MouseMove, tip+tangent*10, Qt.MouseButton.NoButton, Qt.MouseButton.LeftButton)
-    QTest.qWait(80)
-    span = vp.preview_mesh.bounds_max[0] - vp.preview_mesh.bounds_min[0]
-    assert span == pytest.approx((initial+10) * (1 if kind == "box" else 2), abs=.01)
+    wanted = (initial+10) * (1 if kind == "box" else 2)
+    span = lambda: vp.preview_mesh.bounds_max[0] - vp.preview_mesh.bounds_min[0]
+    for _ in range(500):        # the preview follows after a timer, later on a busy machine (PySide6 has no QTest.qWaitFor)
+        if abs(span() - wanted) <= .01:
+            break
+        QTest.qWait(10)
+    assert span() == pytest.approx(wanted, abs=.01)
     mouse(vp, QEvent.Type.MouseButtonRelease, tip+tangent*10, Qt.MouseButton.LeftButton, Qt.MouseButton.NoButton)
     assert field.value() == pytest.approx(initial+10)
     assert not w.doc.bodies

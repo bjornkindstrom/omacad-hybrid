@@ -237,7 +237,10 @@ def test_pencil_click_on_box_row_group_param_opens_editor():
     # Edit count to 3
     editor.setText("3")
     QTest.keyClick(editor, Qt.Key.Key_Return)
-    QTest.qWait(200)
+    for _ in range(500):        # the value is committed after a timer, later on a busy machine
+        if doc.box_row_group_params(gid)["count"] == 3:
+            break
+        QTest.qWait(10)
 
     assert doc.box_row_group_params(gid)["count"] == 3
     assert len(doc.box_row_features(gid)[0]) == 3

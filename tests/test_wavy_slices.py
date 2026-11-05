@@ -173,7 +173,10 @@ def test_the_real_tool_previews_in_the_bodys_place_and_ok_makes_one_undoable_ste
 
     dlg.page.spins["offset"].setValue(-30.0)     # nothing is left: the tool says so instead of failing
     dlg.changed.emit()
-    QTest.qWait(150)
+    for _ in range(500):        # the preview follows after a timer, later on a busy machine
+        if "Nothing is left" in dlg.lbl_info.text():
+            break
+        QTest.qWait(10)
     assert "Nothing is left" in dlg.lbl_info.text()
     dlg.page.spins["offset"].setValue(0.0)
     dlg.accept()
