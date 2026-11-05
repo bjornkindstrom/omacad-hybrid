@@ -14,7 +14,7 @@ from omacad.model.document import Document, Parameter, default_origin_vis
 from omacad.model.timeline import (Body, SketchFeature, BoxFeature, CylinderFeature, PrismFeature, SphereFeature,
                                     ExtrudeFeature, EmbossFeature, RevolveFeature, CombineFeature, FilletFeature,
                                     PatternFeature, SplitBodyFeature, ShellFeature, MoveFeature, ImportMeshFeature, HoleFeature, DeleteBodyFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature,
-                                    ConeFeature, SweepFeature, LoftFeature, PipeFeature, WavySlicesFeature, KnurlFeature)
+                                    ConeFeature, SweepFeature, LoftFeature, PipeFeature, WavySlicesFeature, KnurlFeature, JapandiFeature)
 from omacad import applog
 from omacad.model.sketch import Sketch
 from omacad.model.timeline import ProfileRefs
@@ -646,6 +646,10 @@ class Exporter:
             elif ft == "knurl":
                 feat = KnurlFeature(fid, fname, f_data["target_body_id"], f_data.get("faces", []),
                                     **{k: f_data[k] for k in KnurlFeature.PARAMS if k in f_data})
+                doc.timeline.add_feature(feat)
+            elif ft == "japandi":
+                feat = JapandiFeature(fid, fname, f_data["target_body_id"], f_data.get("faces", []),
+                                      **{k: f_data[k] for k in JapandiFeature.PARAMS if k in f_data})
                 doc.timeline.add_feature(feat)
             elif ft == "wavy_slices":
                 feat = WavySlicesFeature(fid, fname, f_data["target_body_id"],

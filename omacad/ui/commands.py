@@ -70,7 +70,7 @@ _ALL = [
     _c("chamfer", "Chamfer", "◢", "Bevel edges (outside and inside corners): pick edges, type a size",
        signal="chamfer_clicked"),
     _c("shell", "Shell", "🐚", "Hollow a body to a wall thickness, leaving picked faces open", signal="shell_clicked"),
-    _c("surface_texture", "Surface Texture", "🧵", "Texture a body's surface: cells (hexagons, circles, squares, diamonds, triangles, Voronoi), a knurl, or wavy slices", signal="surface_texture_clicked"),
+    _c("surface_texture", "Surface Texture", "🧵", "Texture a body's surface: cells (hexagons, circles, squares, diamonds, triangles, Voronoi), a knurl, Japandi ribs, or wavy slices", signal="surface_texture_clicked"),
     _c("offset_face", "Offset Face", "↔️", "Move flat faces, or change holes, pins and threads for a fit",
        signal="offset_face_clicked"),
     _c("combine", "Combine", "🔗", "Join, cut or intersect bodies", signal="combine_clicked"),

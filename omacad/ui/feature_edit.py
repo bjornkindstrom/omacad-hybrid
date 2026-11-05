@@ -23,7 +23,7 @@ OPERATIONS = ["auto", "new_body", "join", "cut", "intersect"]  # same order as t
 def can_edit(feature) -> bool:
     return feature.feature_type in (
         "box", "cylinder", "prism", "sphere", "extrude", "emboss", "revolve", "loft",
-        "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "wavy_slices", "knurl", "combine", "split_body"
+        "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "wavy_slices", "knurl", "japandi", "combine", "split_body"
     )
 
 

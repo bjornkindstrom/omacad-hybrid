@@ -16,9 +16,10 @@ from omacad.model.timeline import (
     PatternFeature, FilletFeature, Body, Timeline, BoxFeature, CylinderFeature, PrismFeature,
     SphereFeature, ExtrudeFeature, EmbossFeature, RevolveFeature, HoleFeature, DeleteBodyFeature, SketchFeature, SplitBodyFeature, ShellFeature, MoveFeature,
     ImportMeshFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature, ConeFeature, SweepFeature, LoftFeature,
-    PipeFeature, WavySlicesFeature, KnurlFeature
+    PipeFeature, WavySlicesFeature, KnurlFeature, JapandiFeature
 )
 from omacad.model.features.knurl import apply_knurl
+from omacad.model.features.japandi import apply_japandi
 from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint
 from omacad.model.sketch_solver import solve_sketch, SolveResult
 from omacad.model import expr as exprlib
@@ -1304,6 +1305,7 @@ class Document:
         "shell": ("thickness", "direction", "thickness2", "open_faces"),
         "wavy_slices": WavySlicesFeature.PARAMS,
         "knurl": KnurlFeature.PARAMS,
+        "japandi": JapandiFeature.PARAMS,
         "offset_face": ("distance",),
         "honeycomb": HoneycombFeature.PARAMS,
         "hole": ("points", "hole_type", "diameter", "depth", "through", "cb_diameter", "cb_depth", "cs_diameter", "cs_angle", "tip", "tip_angle", "chamfer", "chamfer_angle", "chamfer_depth"),
@@ -1545,6 +1547,24 @@ class Document:
         solid, feat.teeth, feat.notes = apply_knurl(target.manifold, feat.faces, feat.params())
         if not feat.teeth:
             raise ValueError(feat.notes[0] if feat.notes else "No face could take a knurl.")
+        feat.exprs = dict(exprs or {})
+        self.timeline.add_feature(feat)
+        target.manifold = solid
+        target.update_render_mesh()
+        self.notify_changed()
+        return feat
+
+    @undoable("Japandi")
+    def add_japandi(self, body_id: str, faces, exprs=None, **params) -> Optional[JapandiFeature]:
+        """Adds ribs or grooves along round faces of a body. Raises ValueError, and adds no step, if no face can take them."""
+        target = self.bodies.get(body_id)
+        if target is None or not faces:
+            return None
+        n = len([f for f in self.timeline.features if f.feature_type == "japandi"]) + 1
+        feat = JapandiFeature(self._feature_id("japandi"), f"Japandi {n}", body_id, faces, **params)
+        solid, feat.ribs, feat.notes = apply_japandi(target.manifold, feat.faces, feat.params())
+        if not feat.ribs:
+            raise ValueError(feat.notes[0] if feat.notes else "No face could take Japandi ribs.")
         feat.exprs = dict(exprs or {})
         self.timeline.add_feature(feat)
         target.manifold = solid

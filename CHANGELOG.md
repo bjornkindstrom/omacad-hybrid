@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.137
+
+### Added
+- **Surface Texture › Japandi (requests #179, #180, #181, #182)**: A new type that puts half-round or rectangular ribs along whole outer round faces, straight or curved like a pot, bowl or vase. Half-round has a radius and a spacing, rectangular a width, depth and spacing. Direction chooses ribs standing out or grooves cut in, Twist turns them from one end of the face to the other, and Margin to ends leaves plain ends. The number of ribs stays the same along the face, so they narrow where a curved wall narrows, and the inside of a pot is left alone. Live preview, editing from the history, undo and saving in `.omacad`. Test: `tests/test_japandi.py`.
+
+### Fixed
+- **Fine round faces no longer hang the app**: Finding the axis of a round face built a matrix of N x N for N triangles, which ran out of time or memory on a finely meshed vase, for Cells and Knurl as well.
+
 # Hybrid-experiment — 0.9.9.80.136
 
 ### Fixed

@@ -164,7 +164,7 @@ def _normal_axis(nrm) -> Optional[np.ndarray]:
     """The axis a set of face normals is perpendicular to (smallest singular vector), or None when the normals
     spread in all three directions (a sphere or torus, not a cylinder)."""
     try:
-        _, s, vh = np.linalg.svd(nrm)
+        _, s, vh = np.linalg.svd(nrm, full_matrices=False)   # the full form builds an N x N matrix, which hangs on a fine vase
     except Exception:
         return None
     if s[2] / max(s[0], 1e-9) > 0.35:

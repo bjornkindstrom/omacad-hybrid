@@ -49,6 +49,7 @@ class FeatureNodeWidget(QFrame):
         "shell": "🐚",
         "wavy_slices": "🌊",
         "knurl": "🧶",
+        "japandi": "🎋",
         "split_body": "🪚",
         "move": "🧭",
         "import_mesh": "📥",
@@ -155,6 +156,9 @@ class FeatureNodeWidget(QFrame):
             return f"{f.name}\nThickness {f.thickness:g} mm ({len(getattr(f, 'open_faces', ()) or ())} open face(s))"
         if t == "knurl":
             return f"{f.name}\n{f.pattern.title()}, pitch {f.pitch:g} mm, depth {f.depth:g} mm, {f.teeth} teeth"
+        if t == "japandi":
+            twist = f", twist {f.twist:g}°" if f.twist else ""
+            return f"{f.name}\n{f.ribs} {f.shape} ribs {f.direction}{twist}"
         if t == "wavy_slices":
             return f"{f.name}\n{f.waves:g} waves, {f.amplitude:g} mm, layers {f.slice_height:g} mm"
         if t == "offset_face":

@@ -1,4 +1,4 @@
-"""Surface Texture: one panel for the textures of a body's surface. Cells and Knurl work on faces picked in the viewport,
+"""Surface Texture: one panel for the textures of a body's surface. Cells, Knurl and Japandi work on faces picked in the viewport,
 Wavy Slices on a whole body. The types stay separate steps in the history, so saved files keep loading as they are."""
 
 from typing import Any, Dict, Tuple
@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QCheckBox, QComboBox, QFormLayout, QLabel, QPushBu
 from omacad.model.document import Document
 from omacad.model.features.cell_patterns import HOLE_SHAPES, MAX_RELAXATION, VORONOI_STYLES
 from omacad.model.features.honeycomb import SHAPES, HoneycombFeature
+from omacad.model.features.japandi import DIRECTIONS, SHAPES as RIB_SHAPES, apply_japandi
 from omacad.model.features.knurl import PATTERNS, apply_knurl
 from omacad.model.features.wavy_slices import slice_body
 from omacad.ui.expr_spin import ExprDoubleSpinBox
@@ -14,13 +15,15 @@ from omacad.ui.dialogs.base import BaseFeatureDialog
 from omacad.ui.dialogs.offset_face_dlg import FacePickMixin
 
 # The step type of each texture and its name in the panel
-TEXTURES = {"honeycomb": "Cells", "knurl": "Knurl", "wavy_slices": "Wavy Slices"}
+TEXTURES = {"honeycomb": "Cells", "knurl": "Knurl", "japandi": "Japandi", "wavy_slices": "Wavy Slices"}
 BODY_TEXTURES = ("wavy_slices",)        # work on a whole body; the others on picked faces
+OUTER_ROUND_TEXTURES = ("knurl", "japandi")   # take only outer round faces
 
 HINTS = {
     "honeycomb": "Click flat faces and round faces (cylinders, inside or out) of one body in the viewport; click again to "
                  "deselect. Through cuts to the air behind each cell, so a box wall is pierced but the wall opposite is not.",
     "knurl": "Click outer round faces of one body in the viewport; click again to deselect.",
+    "japandi": "Click outer round faces of one body in the viewport, straight or curved like a vase; click again to deselect.",
     "wavy_slices": "Click a body in the viewport or choose it here. It is rebuilt as stacked layers along Z.",
 }
 
@@ -38,6 +41,9 @@ def preview_texture(kind: str, manifold, faces, params: Dict[str, Any]) -> Tuple
     if kind == "knurl":
         result, teeth, notes = apply_knurl(manifold, faces, params)
         return result, " ".join(([f"{teeth} teeth per turn."] if teeth else []) + notes)
+    if kind == "japandi":
+        result, ribs, notes = apply_japandi(manifold, faces, params)
+        return result, " ".join(([f"{ribs} ribs per turn."] if ribs else []) + notes)
     return slice_body(manifold, params["waves"], params["slice_height"], params["amplitude"], params["phase_shift"],
                       params["offset"]), ""
 
@@ -187,6 +193,45 @@ class _KnurlPage(_Page):
         super().load(feature)
 
 
+class _JapandiPage(_Page):
+    def __init__(self):
+        super().__init__()
+        self.cmb_shape = QComboBox()
+        self.cmb_shape.addItems([s.capitalize() for s in RIB_SHAPES])
+        self.form.addRow("Shape:", self.cmb_shape)
+        self.cmb_direction = QComboBox()
+        self.cmb_direction.addItems([d.capitalize() for d in DIRECTIONS])
+        self.cmb_direction.setToolTip("Outward: ribs stand on the face. Inward: grooves are cut into it.")
+        self.form.addRow("Direction:", self.cmb_direction)
+        self.field("radius", "Half-circle radius:", 0.05, 100.0, 2, " mm", 1.5, "Radius of each half-round rib, at the widest part of the face.")
+        self.field("width", "Width:", 0.05, 100.0, 2, " mm", 2.0, "Width of each rib or groove, at the widest part of the face.")
+        self.field("depth", "Depth:", 0.01, 100.0, 2, " mm", 2.0, "How far each rib stands out, or each groove goes in.")
+        self.field("spacing", "Spacing:", 0.0, 100.0, 2, " mm", 0.0, "Distance between two ribs. It is adjusted a little so whole ribs fit.")
+        self.field("twist", "Twist:", -3600.0, 3600.0, 1, " °", 0.0, "How far the ribs turn from one end of the face to the other.")
+        self.field("margin", "Margin to ends:", 0.0, 10000.0, 2, " mm", 0.0, "Plain length left at both ends of the face.")
+        # not setRowVisible: docking moves each field into a slider widget, which follows the field
+        self.toggled = {key: [self.form.labelForField(self.spins[key]), self.spins[key]] for key in ("radius", "width", "depth")}
+        self.cmb_shape.currentIndexChanged.connect(self._sync)
+        for combo in (self.cmb_shape, self.cmb_direction):
+            combo.currentIndexChanged.connect(lambda *_: self.changed.emit())
+        self._sync()
+
+    def _sync(self, *_):
+        half_round = RIB_SHAPES[self.cmb_shape.currentIndex()] == "half-round"
+        for key, shown in (("radius", half_round), ("width", not half_round), ("depth", not half_round)):
+            for widget in self.toggled[key]:
+                widget.setVisible(shown)
+
+    def params(self):
+        return {"shape": RIB_SHAPES[self.cmb_shape.currentIndex()], "direction": DIRECTIONS[self.cmb_direction.currentIndex()],
+                **super().params()}
+
+    def load(self, feature):
+        self.cmb_shape.setCurrentIndex(RIB_SHAPES.index(feature.shape))
+        self.cmb_direction.setCurrentIndex(DIRECTIONS.index(feature.direction))
+        super().load(feature)
+
+
 class _WavyPage(_Page):
     def __init__(self):
         super().__init__()
@@ -236,7 +281,7 @@ class SurfaceTextureDialog(FacePickMixin, BaseFeatureDialog):
         target_form.addRow("Target Body:", self.cmb_target)
         self.main_layout.addWidget(self.target_row)
 
-        self.pages = {"honeycomb": _CellsPage(), "knurl": _KnurlPage(), "wavy_slices": _WavyPage()}
+        self.pages = {"honeycomb": _CellsPage(), "knurl": _KnurlPage(), "japandi": _JapandiPage(), "wavy_slices": _WavyPage()}
         for page in self.pages.values():
             page.changed.connect(self.changed)
             self.main_layout.addWidget(page)
@@ -279,7 +324,7 @@ class SurfaceTextureDialog(FacePickMixin, BaseFeatureDialog):
         self._update_count()
 
     def _kind_switched(self, *_):
-        if self.kind() == "knurl":          # only outer round faces take a knurl
+        if self.kind() in OUTER_ROUND_TEXTURES:
             self.faces = [f for f in self.faces if outer_round(f)]
             self.body_id = self.body_id if self.faces else ""
         elif self.kind() in BODY_TEXTURES and self.body_id:

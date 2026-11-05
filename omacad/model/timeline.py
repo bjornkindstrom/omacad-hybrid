@@ -39,6 +39,7 @@ from omacad.model.features import (
     ShellFeature,
     WavySlicesFeature,
     KnurlFeature,
+    JapandiFeature,
     PatternFeature,
     _best_pattern,
     MoveFeature,
@@ -99,7 +100,7 @@ class Timeline:
         Manifold objects are immutable; keeping them in the key prevents ID reuse.
         """
         independent = {'box', 'cylinder', 'cone', 'prism', 'sphere', 'import_mesh'}
-        explicit = {'move', 'combine', 'split_body', 'offset_face', 'honeycomb', 'wavy_slices', 'knurl'}
+        explicit = {'move', 'combine', 'split_body', 'offset_face', 'honeycomb', 'wavy_slices', 'knurl', 'japandi'}
         if feat.feature_type not in independent | explicit:
             return None
         refs = doc.object_history.body_inputs(feat)
@@ -352,6 +353,7 @@ __all__ = [
     "ShellFeature",
     "WavySlicesFeature",
     "KnurlFeature",
+    "JapandiFeature",
     "PatternFeature",
     "MoveFeature",
     "ImportMeshFeature",

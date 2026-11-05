@@ -63,11 +63,14 @@ MORE = {
                         "cells follow the whole curved wall; Voronoi cells keep their size, the other shapes get smaller where it narrows. "
                         "Knurl: click outer round faces; choose Diamond, Straight, Right or Left, the pitch, depth and angle, and a margin to leave "
                         "plain ends. Only whole round faces can take a knurl, and a bore inside stays untouched. "
+                        "Japandi: click outer round faces, straight or curved like a vase; choose half-round or rectangular ribs, outward or inward "
+                        "as grooves, the radius or the width and depth, the spacing, a twist from end to end and a margin to leave plain ends. "
+                        "The ribs get narrower where a curved wall narrows, and whatever lies inside the wall stays untouched. "
                         "Wavy Slices: rebuilds the whole body as horizontal layers along Z whose edges follow a wave. Set the waves per slice, the slice "
                         "height, the peak-to-peak amplitude, how far each slice's wave moves from the one below, and an optional offset. Holes get the "
                         "same wave, so a hollow body keeps its wall thickness.",
                         "honeycomb hexagon cells lattice vent voronoi organic random gradient hotspot radial nested triangles delaunay dots relaxation lloyd star perforated perforation knurl knurling grip knob diamond grooves thumb screw "
-                        "wavy slice layer wave stack decoration ripple"),
+                        "wavy slice layer wave stack decoration ripple japandi ribs ribbed fluted fluting flutes reeded twist vase pot bowl"),
     "offset_plane": ("Click a plane or flat face and type the distance, or touch any surface (a cylinder's side). "
                      "Angle turns the plane about its X or Y direction or about an edge you click (Plane at Angle).",
                      "construction plane workplane angle rotate tilt"),

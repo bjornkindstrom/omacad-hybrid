@@ -302,7 +302,7 @@ class RoundPatternPromptsMixin:
 
     @leaves_sketch
     def prompt_surface_texture(self, target_body_id: str = "", face=None):
-        """Surface Texture: cells or a knurl on picked faces, wavy slices on a whole body; live preview of the result.
+        """Surface Texture: cells, a knurl or Japandi ribs on picked faces, wavy slices on a whole body; live preview of the result.
         A face from a right-click starts on Cells with that face, a body from the tree on Wavy Slices."""
         from omacad.model.features.offset_face import plane_face_ref
         from omacad.ui.dialogs.surface_texture_dlg import BODY_TEXTURES, SurfaceTextureDialog, outer_round, preview_texture
@@ -356,6 +356,8 @@ class RoundPatternPromptsMixin:
         def on_picked(ref, body_id):
             if dlg.kind() == "knurl" and not outer_round(ref):
                 self.status_label.setText("Knurl: only outer round faces can take a knurl.")
+            elif dlg.kind() == "japandi" and not outer_round(ref):
+                self.status_label.setText("Japandi: only outer round faces can take ribs.")
             elif ref.get("kind") not in ("plane", "cylinder"):
                 self.status_label.setText("Cells: only flat and cylindrical faces can take cells.")
             elif not dlg.toggle(ref, body_id):
@@ -368,6 +370,9 @@ class RoundPatternPromptsMixin:
             if kind == "knurl":
                 feat = self.doc.add_knurl(body_id, faces, exprs=exprs, **params)
                 return f"Knurl: {feat.teeth} teeth per turn in {len(faces)} face(s)."
+            if kind == "japandi":
+                feat = self.doc.add_japandi(body_id, faces, exprs=exprs, **params)
+                return f"Japandi: {feat.ribs} ribs per turn in {len(faces)} face(s)."
             feat = self.doc.add_wavy_slices(body_id, exprs=exprs, **params)
             return f"Created {feat.name}."
 

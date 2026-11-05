@@ -34,6 +34,7 @@ EMOJI_TO_TOOL = {
     "🌊": "wavy_slices",
     "🧵": "surface_texture",
     "🧶": "knurl",
+    "🎋": "japandi",
     "↔️": "move",
     "✥": "move",
     "🗑️": "delete",
