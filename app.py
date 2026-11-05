@@ -83,6 +83,8 @@ def main():
     
     window.show()
     from omacad import session
+    from omacad.ui import busy_dialog
+    busy_dialog.install(window)     # here, not in MainWindow: tests call the model on the main thread
     window.start_autosave()
     if session.RESUME_FLAG in sys.argv:
         window.restore_session()

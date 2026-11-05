@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.138
+
+### Added
+- **Long steps no longer freeze the window**: Steps, undo, redo and opening a file run on another thread, so the desktop stops offering to terminate the app (Terminate / Wait on Omarchy). A small box shows what is being done once it has taken half a second. Clicks and keys meanwhile are ignored, and a step can't be stopped halfway. Test: `tests/test_busy.py`.
+
 # Hybrid-experiment — 0.9.9.80.137
 
 ### Added

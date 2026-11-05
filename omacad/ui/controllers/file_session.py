@@ -12,6 +12,7 @@ from pathlib import Path
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QMessageBox, QFileDialog
 
+from omacad import busy
 from omacad.io.exporter import Exporter
 from omacad.model.document import Document
 
@@ -87,6 +88,8 @@ class FileSessionMixin:
 
     def autosave_now(self, force: bool = False) -> None:
         """Called by the timer; `force` writes at once (e.g. right after resuming)."""
+        if busy.active():       # the document is half built; the next tick saves it
+            return
         import time
         from omacad import applog, autosave
         from omacad.ui.settings import get_settings
@@ -283,7 +286,7 @@ class FileSessionMixin:
         if not self.confirm_discard_changes():
             return
         try:
-            doc = Exporter.load_project(filepath)
+            doc = busy.run("Opening " + Path(filepath).name, lambda: Exporter.load_project(filepath))
         except (OSError, ValueError, KeyError) as e:
             QMessageBox.critical(self, "Open failed", f"Could not open {filepath}:\n{e}")
             return
@@ -373,6 +376,8 @@ class FileSessionMixin:
         self._restart_timer.start(interval_ms)
 
     def _check_code_version(self) -> None:
+        if busy.active():       # a restart saves the document, which is half built; the next tick looks again
+            return
         from PySide6.QtWidgets import QApplication
         from omacad import session
         from omacad.ui.settings import get_settings

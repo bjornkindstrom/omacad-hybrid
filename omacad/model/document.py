@@ -12,6 +12,7 @@ import math
 import uuid
 import numpy as np
 import manifold3d as m3d
+from omacad import busy
 from omacad.model.timeline import (
     PatternFeature, FilletFeature, Body, Timeline, BoxFeature, CylinderFeature, PrismFeature,
     SphereFeature, ExtrudeFeature, EmbossFeature, RevolveFeature, HoleFeature, DeleteBodyFeature, SketchFeature, SplitBodyFeature, ShellFeature, MoveFeature,
@@ -74,26 +75,29 @@ def undoable(label: str):
         def wrapper(self, *args, **kwargs):
             if self._undo_depth > 0 or self._restoring:
                 return fn(self, *args, **kwargs)
-            self._undo_depth += 1
-            before = self.snapshot()
-            feature_ids_before = {f.feature_id for f in self.timeline.features}
-            bodies_before = {bid: b.manifold for bid, b in self.bodies.items()}
-            was_interactive = quality.is_interactive_mode()
-            quality.set_interactive_mode(False)     # a real change is built at full quality (coarse is for previews)
-            try:
-                result = fn(self, *args, **kwargs)
-                self._finish_object_operation(feature_ids_before, bodies_before)
-                return result
-            except Exception:
-                self.restore(before)
-                raise
-            finally:
-                quality.set_interactive_mode(was_interactive)
-                self._undo_depth -= 1
+
+            def step():
+                self._undo_depth += 1
+                before = self.snapshot()
+                feature_ids_before = {f.feature_id for f in self.timeline.features}
+                bodies_before = {bid: b.manifold for bid, b in self.bodies.items()}
+                was_interactive = quality.is_interactive_mode()
+                quality.set_interactive_mode(False)     # a real change is built at full quality (coarse is for previews)
                 try:
-                    self._push_doc_undo(label, before)
-                except Exception as e:   # never let book-keeping break the operation itself
-                    print(f"Undo book-keeping failed for {label}: {e}")
+                    result = fn(self, *args, **kwargs)
+                    self._finish_object_operation(feature_ids_before, bodies_before)
+                    return result
+                except Exception:
+                    self.restore(before)
+                    raise
+                finally:
+                    quality.set_interactive_mode(was_interactive)
+                    self._undo_depth -= 1
+                    try:
+                        self._push_doc_undo(label, before)
+                    except Exception as e:   # never let book-keeping break the operation itself
+                        print(f"Undo book-keeping failed for {label}: {e}")
+            return busy.run(label, step)
         return wrapper
     return deco
 
@@ -187,6 +191,9 @@ class Document:
 
     def notify_changed(self) -> None:
         self.object_history.sync(self)
+        if busy.in_worker():        # listeners are the UI, which belongs to the main thread and waits for the end
+            busy.defer(id(self), self.notify_changed)
+            return
         for listener in self.change_listeners:
             try:
                 listener()
@@ -366,12 +373,12 @@ class Document:
         return None
 
     def undo(self) -> Optional[str]:
-        name = self._swap_state(self.undo_stack, self.redo_stack)
+        name = busy.run("Undoing", lambda: self._swap_state(self.undo_stack, self.redo_stack))
         self._history_changed()
         return name
 
     def redo(self) -> Optional[str]:
-        name = self._swap_state(self.redo_stack, self.undo_stack)
+        name = busy.run("Redoing", lambda: self._swap_state(self.redo_stack, self.undo_stack))
         self._history_changed()
         return name
 

@@ -9,6 +9,8 @@ from PySide6.QtCore import QBuffer, QByteArray, QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import QApplication
 
+from omacad import busy
+
 SIZE = 40           # shown size in the tree, px
 OVERSAMPLE = 2      # drawn this much larger and scaled down: smooth edges
 LARGE = 220         # the picture shown while the mouse rests on the row (tooltip), px
@@ -166,8 +168,8 @@ class BodyThumbnails(QObject):
         self.timer.start(IDLE_MS)
 
     def work(self):
-        """Draw the next out-of-date picture; put off while a mouse button is down (dragging, orbiting)."""
-        if QApplication.mouseButtons() != Qt.MouseButton.NoButton:
+        """Draw the next out-of-date picture; put off while a mouse button is down (dragging, orbiting) or the document is being built."""
+        if QApplication.mouseButtons() != Qt.MouseButton.NoButton or busy.active():
             self.timer.start(IDLE_MS)
             return
         if self.pending:
