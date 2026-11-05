@@ -4,6 +4,8 @@ Stores persistent user preferences (colors, sketch palette position, behavior) i
 """
 
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -59,6 +61,14 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "autosave_minutes": 2,              # write unsaved work to a recovery file this often; 0 = off
     "auto_restart": False,               # restart the app (work saved and restored) when a new version is committed
 }
+
+
+def default_settings(platform: Optional[str] = None) -> Dict[str, Any]:
+    """The defaults for this machine. Windows has no Omarchy theme to follow, so it starts in Studio with its icons."""
+    defaults = dict(DEFAULT_SETTINGS)
+    if (platform or sys.platform) == "win32":
+        defaults.update(theme_mode="fixed", theme_name="studio", icon_theme="studio")
+    return defaults
 
 
 def hex_to_rgb01(hex_str: Optional[str]) -> Optional[Tuple[float, float, float]]:
@@ -120,7 +130,7 @@ class SettingsManager(QObject):
     def __init__(self, config_file: Optional[Path] = None):
         super().__init__()
         self.config_file = config_file or SETTINGS_FILE
-        self._data: Dict[str, Any] = dict(DEFAULT_SETTINGS)
+        self._data: Dict[str, Any] = default_settings()
         self.load()
         self._push_quality()
 
@@ -145,8 +155,10 @@ class SettingsManager(QObject):
     def save(self):
         try:
             self.config_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.config_file, "w", encoding="utf-8") as f:
+            temporary = self.config_file.with_name(self.config_file.name + ".tmp")
+            with open(temporary, "w", encoding="utf-8") as f:
                 json.dump(self._data, f, indent=2)
+            os.replace(temporary, self.config_file)     # closing mid-write must not lose the settings
         except Exception as e:
             print(f"[Settings] Failed to save {self.config_file}: {e}")
 
@@ -166,7 +178,7 @@ class SettingsManager(QObject):
         self.changed.emit()
 
     def reset_defaults(self):
-        self._data = dict(DEFAULT_SETTINGS)
+        self._data = default_settings()
         self._push_quality()
         self.save()
         self.changed.emit()

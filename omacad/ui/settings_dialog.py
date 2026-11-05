@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from omacad.ui import theme
-from omacad.ui.settings import finished_sketch_grey, get_settings, rgb01_to_hex
+from omacad.ui.settings import default_settings, finished_sketch_grey, get_settings, rgb01_to_hex
 
 
 ROLE_THEMES = theme.ROLE_THEMES   # Studio, Graphite, Atelier: they come with the Studio line icons
@@ -758,8 +758,10 @@ class SettingsDialog(QDialog):
         self.spn_fillet.setValue(2.0)
         self.chk_auto_restart.setChecked(True)
         self.spn_autosave.setValue(2)
-        self.cmb_theme_mode.setCurrentIndex(max(0, self.cmb_theme_mode.findData("omarchy")))   # the default
-        self.cmb_icon_theme.setCurrentIndex(0)
+        defaults = default_settings()
+        default_theme = "omarchy" if defaults["theme_mode"] == "omarchy" else defaults["theme_name"]
+        self.cmb_theme_mode.setCurrentIndex(max(0, self.cmb_theme_mode.findData(default_theme)))
+        self.cmb_icon_theme.setCurrentIndex(max(0, self.cmb_icon_theme.findData(defaults["icon_theme"])))
         self.cmb_curves.setCurrentIndex(max(0, self.cmb_curves.findData(96)))
         self.spn_arrow_size.setValue(1.0)
         self.spn_arrow_gap.setValue(2.0)

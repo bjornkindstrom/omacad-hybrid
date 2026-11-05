@@ -50,7 +50,7 @@ Python om modulen saknas; `rust` kräver en fungerande modul. Bygg om Rust separ
 ./tools/build_native.sh
 ```
 
-Inställningar, sessioner, teman och cache ligger i `.state/` (ignoreras av Git).
+Inställningar, sessioner, teman och cache ligger i `.state/` (ignoreras av Git); Windows-exen använder `%APPDATA%\Omacad Hybrid`.
 Ingen automatisk omstart eller bakgrundssändning av problemrapporter körs.
 
 ## Testa och mäta

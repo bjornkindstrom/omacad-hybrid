@@ -46,6 +46,9 @@ def _selftest_checks(importlib, pathlib) -> None:
     from omacad.ui import theme
     assert len(theme.available_themes()) >= 10, "bundled themes are missing"
     assert (pathlib.Path(theme.THEMES_DIR).parent / "icon.svg").exists(), "assets are missing"
+    from omacad.hybrid_paths import STATE_DIR
+    unpacked = getattr(sys, "_MEIPASS", None)
+    assert not unpacked or pathlib.Path(unpacked) not in STATE_DIR.parents, "settings would be lost when the app closes"
 
 
 def main():

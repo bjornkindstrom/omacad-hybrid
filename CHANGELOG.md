@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.136
+
+### Fixed
+- **The Windows app remembers its settings (requests #173, #174, #175, #177)**: The exe kept settings, GitHub token, autosaves, unsent requests and problem reports in its temporary unpacking folder, which is deleted when the app closes, so every start was a first start. They now live in `%APPDATA%\Omacad Hybrid`, and the exe's self test fails the build if they would land in the temporary folder. Settings are written atomically. Settings made before this version are gone and must be entered once more. Test: `tests/test_state_location.py`.
+
+### Changed
+- **Windows starts in Studio with Studio icons (request #173)**: There is no Omarchy theme to follow on Windows, so a first start showed a dark fallback theme and the Solid icons, where Offset Face and Move look the same. Linux defaults are unchanged. Test: `tests/test_state_location.py`.
+
 # Hybrid-experiment — 0.9.9.80.135
 
 ### Fixed

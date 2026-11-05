@@ -47,7 +47,7 @@ Mesh indices live with their RenderMesh and disappear with it.
 - The permanent Qt status indicator shows the actual backend. All dialogs,
   sketches, modeling, undo/redo, files and GL drawing are still upstream Python.
 - Settings, sessions, feedback, custom themes and arrow caches live under `.state/`
-  in this repository, or `OMACAD_HYBRID_STATE_DIR` if explicitly overridden.
+  in this repository, `%APPDATA%\Omacad Hybrid` for the Windows exe, or `OMACAD_HYBRID_STATE_DIR` if explicitly overridden.
   The active Omarchy theme is read, never changed.
 - Automatic application restart and background request submission are disabled.
   The upstream Windows-release workflow was moved out of `.github/workflows/`;
