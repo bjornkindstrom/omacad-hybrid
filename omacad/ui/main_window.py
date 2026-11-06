@@ -206,7 +206,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.settings_clicked.connect(self.on_open_settings)
         self.ribbon.sketch_tool_selected.connect(self.on_sketch_tool_selected)
         self.viewport.sketch_tool_changed.connect(self.sync_sketch_tool_from_viewport)
-        self.ribbon.toggle_construction_clicked.connect(self.viewport.toggle_construction_mode)
+        self.ribbon.toggle_construction_clicked.connect(self.viewport.construction_command)
         self.ribbon.construction_tool_requested.connect(self.start_construction_tool)
         self.viewport.construction_mode_changed.connect(self._sync_construction_button)
         self.doc.add_change_listener(self._reset_construction_outside_sketch)
@@ -530,9 +530,13 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
 
     def start_construction_tool(self, tool: str):
         """Construction ▾ Line/Circle: helper geometry on, and that tool picked, in one step."""
-        if not self.viewport.construction_mode:
-            self.viewport.toggle_construction_mode()
+        vp = self.viewport
+        one_pick = vp._construction_for_one_pick or not vp.construction_mode
+        vp._construction_for_one_pick = False
+        if not vp.construction_mode:
+            vp.toggle_construction_mode()
         self.ribbon.select_sketch_tool(tool)
+        vp._construction_for_one_pick = one_pick
 
     def pick_browser_feature(self, feature_id):
         handler = self.timeline_bar.feature_pick_handler

@@ -156,6 +156,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self.sketch_second_uv: Optional[Tuple[float, float]] = None
         self.sketch_current_uv: Optional[Tuple[float, float]] = None
         self.construction_mode: bool = False
+        self._construction_for_one_pick: bool = False   # on through Construction ▾: an ordinary drawing tool ends it
         self.active_snap: Optional[SnapResult] = None
         self.dim_badges: Dict[str, Tuple[QRectF, str, str, float]] = {}
         self.hovered_dim_id: Optional[str] = None

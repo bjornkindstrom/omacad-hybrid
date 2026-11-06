@@ -126,6 +126,20 @@ def _add_box_row_group_settings(grow, doc, gid):
         _pencil(row)
 
 
+def _is_deleted(doc, oid, features) -> bool:
+    """A body removed by its own Delete step leaves the browser (undo or the timeline bring it back). Rolled back to
+    before that step, the body exists again and so does its row."""
+    history = doc.object_history
+
+    def has_body(object_id) -> bool:    # what a Combine or Split used up hangs under the object and may have none left
+        return (any(b in doc.bodies for b in history.objects[object_id].body_ids)
+                or any(has_body(child) for used in history.children(object_id).values() for child in used))
+
+    return (not has_body(oid)
+            and any(features[f].feature_type == "delete_body" and not features[f].suppressed
+                    for f in history.objects[oid].feature_ids if f in features))
+
+
 def add_histories(browser, root):
     doc = browser.doc
     history = doc.object_history
@@ -137,6 +151,11 @@ def add_histories(browser, root):
     features = {f.feature_id: f for f in doc.timeline.features}
     grouped_oids = set()
     for og in getattr(doc, "object_groups", []):
+        members = [oid for oid in og.get("objects", []) if oid in history.objects and history.objects[oid].parent_id is None]
+        shown = [oid for oid in members if not _is_deleted(doc, oid, features)]
+        grouped_oids.update(members)
+        if members and not shown:
+            continue                                 # every box or bracket of the group was deleted
         gid = og["id"]
         gname = og["name"]
         gvis = og.get("visible", True)
@@ -149,15 +168,13 @@ def add_histories(browser, root):
             _add_box_row_group_settings(grow, doc, gid)
         elif hasattr(doc, "is_star_bracket_group") and doc.is_star_bracket_group(gid):
             _add_star_bracket_group_settings(grow, doc, gid)
-        for oid in og.get("objects", []):
-            if oid in history.objects and history.objects[oid].parent_id is None:
-                _add_object(browser, grow, oid, features, excluded)
-                grouped_oids.add(oid)
+        for oid in shown:
+            _add_object(browser, grow, oid, features, excluded)
 
     for oid, obj in history.objects.items():
         # a split half with no steps of its own that is gone (removed from a copy, or the split did nothing) has nothing to show
         gone = not obj.feature_ids and not any(b in doc.bodies for b in obj.body_ids)
-        if obj.parent_id is None and oid not in grouped_oids and not gone:
+        if obj.parent_id is None and oid not in grouped_oids and not gone and not _is_deleted(doc, oid, features):
             _add_object(browser, group, oid, features, excluded)
     # An unfinished sketch has not yet become a feature.
     sk = doc.active_sketch

@@ -1,3 +1,18 @@
+# Hybrid-experiment — 0.9.9.80.144
+
+### Added
+- **Switch curves between construction and normal (#183)**: With curves selected in a sketch, X, the ribbon's Construction button and the menu entry turn them into construction lines, or back to normal when all of them already are. It is one undo step, and with nothing selected they switch construction mode as before.
+
+### Fixed
+- **Normal tools draw normally after Construction ▾ (#185)**: After Construction ▾ Line or Circle, picking an ordinary drawing tool by button or shortcut draws normal geometry and turns the button off. Turning construction on with the button itself still lasts until you turn it off.
+- **New Design starts without construction lines (#186)**: Construction mode was only reset for the first document in a session, so it carried into New and Open.
+- **Deleted objects leave the browser (#176)**: An object whose body was removed by its Delete step, and a group with all its objects deleted, no longer show under Objects. Undo, suppressing the Delete step or rolling back before it brings them back.
+- **Clearance arrows step sensibly (#172)**: Box in a Row's 3D print clearance goes up and down by 0.1 mm, and the Star Brackets clearance by 0.05 mm, instead of 1 mm.
+- **Text in the constraint help box**: Its "If it doesn't work" line raised an error on every paint.
+
+### Tests
+- **Textures on half-round ends (#184)**: Cells, Knurl and Japandi on a shelled body with half-round ends are now covered by a test (the support itself came in 0.9.9.80.139). Clicking a curved wall textures the whole smooth wall, including flat parts that join it without an edge.
+
 # Hybrid-experiment — 0.9.9.80.143
 
 ### Changed

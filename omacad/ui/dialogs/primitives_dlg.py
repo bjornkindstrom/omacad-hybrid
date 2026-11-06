@@ -726,6 +726,7 @@ class BoxInRowDialog(BaseFeatureDialog):
 
         self.spn_clearance = ExprDoubleSpinBox()
         self.spn_clearance.setRange(0.0, 5.0)
+        self.spn_clearance.setSingleStep(0.1)
         self.spn_clearance.setValue(0.2)
         self.spn_clearance.setSuffix(" mm")
         self.spn_clearance.setToolTip("3D printer clearance gap for smooth sliding.")
@@ -926,6 +927,7 @@ class StarBracketsDialog(BaseFeatureDialog):
 
         self.spn_clearance = ExprDoubleSpinBox()
         self.spn_clearance.setRange(0.0, 5.0)
+        self.spn_clearance.setSingleStep(0.05)
         self.spn_clearance.setValue(0.25)
         self.spn_clearance.setSuffix(" mm")
         self.spn_clearance.setToolTip("Fit tolerance for 3D printer (inner socket size = tube + clearance).")

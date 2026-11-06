@@ -263,7 +263,7 @@ class ContextMenuMixin:
                 tooltip="Toggle construction lines mode",
                 checkable=True,
                 checked=self.construction_mode,
-                callback=self.toggle_construction_mode
+                callback=self.construction_command
             ))
             categories.append(FanItem(
                 id="cat_modify",
@@ -570,7 +570,7 @@ class ContextMenuMixin:
         elif kind == "tool":
             self.set_sketch_tool(arg)
         elif kind == "construction":
-            self.toggle_construction_mode()
+            self.construction_command()
         elif kind == "project":
             self.project_edges()
         elif kind == "finish":

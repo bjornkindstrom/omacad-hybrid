@@ -278,7 +278,7 @@ class ViewportEventsMixin:
                 self.set_sketch_tool("ARC")
                 return
             elif event.key() == Qt.Key.Key_X:
-                self.toggle_construction_mode()
+                self.construction_command()
                 return
             elif event.key() == Qt.Key.Key_D:
                 self.set_sketch_tool("DIMENSION")

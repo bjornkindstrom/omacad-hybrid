@@ -128,7 +128,7 @@ class ConstraintHelp(QWidget):
         p.drawRoundedRect(box, 6, 6)
         p.setPen(QColor(231, 233, 236))
         p.setFont(QFont("sans-serif", 9, QFont.Weight.DemiBold))
-        p.drawText(box.adjusted(9, 5, -7, -26), Qt.TextFlag.AlignVCenter, "If it doesn't work")
+        p.drawText(box.adjusted(9, 5, -7, -26), Qt.AlignmentFlag.AlignVCenter, "If it doesn't work")
         p.setPen(QColor(187, 194, 202))
         p.setFont(QFont("sans-serif", 8))
         p.drawText(box.adjusted(9, 23, -7, -4), Qt.TextFlag.TextWordWrap, trouble)

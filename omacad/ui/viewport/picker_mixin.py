@@ -838,8 +838,38 @@ class PickerMixin:
         if self.doc.active_sketch:
             self.align_to_plane(self.doc.active_sketch.plane)
 
+    def construction_command(self):
+        """X, the ribbon button and the menus: with curves selected they switch between normal and construction,
+        otherwise construction mode goes on or off."""
+        if self._convert_selected_construction():
+            self.construction_mode_changed.emit(self.construction_mode)     # the button toggled itself on the click
+        else:
+            self.toggle_construction_mode()
+
+    def _convert_selected_construction(self) -> bool:
+        """Selected curves become construction, or normal when all of them already are. False when none can."""
+        sketch = self.doc.active_sketch
+        if sketch is None or not self.selected_entities:
+            return False
+        guides = {g for e in sketch.entities for g in (getattr(e, "fillet_info", None) or {}).get("guides", ())}
+        curves = [e for e in sketch.entities if e.entity_id in self.selected_entities and hasattr(e, "is_construction")
+                  and not getattr(e, "projected", False) and e.entity_id not in guides
+                  and not (getattr(e, "group", None) and e.entity_type == "circle")]   # a polygon's centre circle stays
+        if not curves:
+            return False
+        before = sketch.to_dict()
+        make_construction = not all(e.is_construction for e in curves)
+        for curve in curves:
+            curve.is_construction = make_construction
+        sketch.solve_profiles()
+        self.doc.record_sketch_change(sketch, before)
+        self.doc.notify_changed()
+        self.update()
+        return True
+
     def toggle_construction_mode(self):
-        """Toggles construction geometry creation mode (X key)."""
+        """Toggles construction geometry creation mode."""
+        self._construction_for_one_pick = False
         self.construction_mode = not self.construction_mode
         self.construction_mode_changed.emit(self.construction_mode)
         self.update()

@@ -220,6 +220,7 @@ class FileSessionMixin:
         self.inspector.doc = doc
         doc.add_change_listener(self.inspector.refresh_info)
         doc.add_change_listener(self.sync_sketch_status)
+        doc.add_change_listener(self._reset_construction_outside_sketch)
         doc.history_listeners.append(self._update_undo_actions)
         self._update_undo_actions()
         for panel, refresh in ((self.browser, "refresh_tree"), (self.timeline_bar, "refresh_timeline"),

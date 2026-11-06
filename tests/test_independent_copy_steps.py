@@ -185,5 +185,5 @@ def test_the_removed_half_leaves_no_empty_row_in_the_browser():
     add_histories(tree, root)
     objects = root.child(0)
     labels = [objects.child(i).text(0) for i in range(objects.childCount())]
-    assert labels.count("Split Body 1 result") == 1     # the original's own row, which holds its Delete step
+    assert labels.count("Split Body 1 result") == 0     # deleted, so the row with its Delete step has left too (#176)
     assert copy.body_id in doc.bodies

@@ -72,7 +72,10 @@ def test_dialog_says_which_body_changes():
     dlg = w.inspector.current_tool_dlg
     dlg.spn_dist.setValue(-0.2)
     dlg.toggle(last.faces[0], JAR)
-    QTest.qWait(400)
+    for _ in range(1500):       # the note follows after a timer, later on a busy machine
+        if "only Burk changes" in dlg.lbl_note.text():
+            break
+        QTest.qWait(10)
     assert "only Burk changes" in dlg.lbl_note.text() and "looser" in dlg.lbl_note.text()
     dlg.reject()
 

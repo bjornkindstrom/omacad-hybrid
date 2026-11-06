@@ -5,6 +5,9 @@ import numpy as np
 from PySide6.QtCore import Qt, QTimer
 from omacad.ui.viewport.sketch_rotate_mixin import INFO as ROTATE_INFO
 from omacad.model.sketch import Sketch
+from omacad.ui.sketch_tools import RECT_TOOLS
+
+ORDINARY_DRAWING_TOOLS = {"LINE", "CIRCLE", "SMART_CIRCLE", "ARC", "POLYGON", "SLOT", "SPLINE", "CONTROL_SPLINE", *RECT_TOOLS}
 
 
 class SketchOperationMixin:
@@ -12,6 +15,8 @@ class SketchOperationMixin:
 
     def set_sketch_tool(self, tool_name: str):
         """Sets the active 2D sketching tool and resets temporary anchors."""
+        if self._construction_for_one_pick and tool_name in ORDINARY_DRAWING_TOOLS:
+            self.toggle_construction_mode()     # Construction ▾ picked one helper tool; this is the normal one again
         if hasattr(self, "constraint_help") and self.constraint_help.isVisible():
             self.constraint_help.dismiss()
         self._dim_pending = []
