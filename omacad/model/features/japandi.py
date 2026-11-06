@@ -1,5 +1,6 @@
-"""Japandi: half-round or rectangular ribs along whole outer round faces, straight or twisted. The wall may be a plain
-cylinder or curved like a vase. The number of ribs stays the same all the way along, so they narrow with the wall."""
+"""Japandi: half-round or rectangular ribs along whole outer round faces, straight, twisted, or bent in one curve or a wave.
+The wall may be a plain cylinder or curved like a vase. The number of ribs stays the same all the way along, so they narrow
+with the wall."""
 
 import math
 from typing import Any, Dict, List, Tuple
@@ -17,6 +18,8 @@ from shapely.geometry import Polygon
 
 SHAPES = ("half-round", "rectangular")
 DIRECTIONS = ("outward", "inward")
+PATHS = ("straight", "curve", "wave")
+HEIGHTS = ("even", "arch")
 MAX_FACETS = 2_000_000      # triangles in a tool: more would take minutes and be finer than a printer can show
 # How far straight pieces may leave the true curve, in mm. Coarser than the rest of the model on purpose: a printer shows no
 # less, and the face analysis after each step grows quickly with the triangles (a real pot took 20 s at a tenth of these).
@@ -31,6 +34,54 @@ FREE_END = 1e-3             # mm outward ribs stop short of a free end, so they 
 MAX_RINGS = 48              # rings along a wall, unless a twist needs more: a faceted wall's own rings are mostly noise
 WALL_STEP = 1e-3            # share of a rib's period a rectangular side leans, as the tool's rings need distinct angles
 SMALLEST_RADIUS = 0.15      # share of the largest radius where the ribs stop: below it they would run together
+
+
+def path_shape(params: Dict[str, Any]) -> Tuple[float, float]:
+    """(radians the ribs swing to the side at most, radians of the sine over the ribs' whole length)."""
+    path = params.get("path", "straight")
+    if path == "curve":
+        return math.radians(params.get("bend", 0.0)), math.pi
+    if path == "wave":
+        return math.radians(params.get("bend", 0.0)), 2.0 * math.pi * params.get("waves", 1.0)
+    return 0.0, 0.0
+
+
+def path_turn(params: Dict[str, Any], along: np.ndarray) -> np.ndarray:
+    """Radians the ribs stand to the side at each place along them, from 0 at the start to 1 at the end."""
+    bend, sweep = path_shape(params)
+    return bend * np.sin(sweep * np.asarray(along))
+
+
+def _path_pieces(params: Dict[str, Any], radius: float) -> int:
+    """Steps along the ribs that keep a bent path within TWIST_SAG of its sine on the unrolled wall."""
+    bend, sweep = path_shape(params)
+    return math.ceil(abs(sweep) * math.sqrt(abs(bend) * radius / (8.0 * TWIST_SAG)))
+
+
+def _arch(params: Dict[str, Any], height: float, length: float) -> Tuple[float, float, float]:
+    """(end share of the height, rise in mm, radius of the arc) of an arched rib; rise 0 when the ribs are even."""
+    if params.get("height_profile", "even") != "arch":
+        return 1.0, 0.0, 0.0
+    end = float(np.clip(params.get("end_height", 20.0) / 100.0, 0.01, 1.0))
+    rise = height * (1.0 - end)
+    return end, rise, (length * length / 4.0 + rise * rise) / (2.0 * rise) if rise > 1e-9 else 0.0
+
+
+def height_share(params: Dict[str, Any], height: float, length: float, along: np.ndarray) -> np.ndarray:
+    """Share of the rib's height at each place along it (0 at the start, 1 at the end). Arch: seen from the side the top
+    of the rib is one circular arc, highest in the middle and `end_height` percent of that at both ends."""
+    along = np.asarray(along, dtype=float)
+    end, rise, radius = _arch(params, height, length)
+    if rise <= 1e-9:
+        return np.ones_like(along)
+    off_middle = (along - 0.5) * length
+    return end + (np.sqrt(np.maximum(radius * radius - off_middle * off_middle, 0.0)) - (radius - rise)) / height
+
+
+def _arch_pieces(params: Dict[str, Any], height: float, length: float) -> int:
+    """Steps along the ribs that keep the arc within PROFILE_SAG."""
+    _, rise, radius = _arch(params, height, length)
+    return math.ceil(length / math.sqrt(8.0 * radius * PROFILE_SAG)) if rise > 1e-9 else 1
 
 
 def rib_period(params: Dict[str, Any]) -> float:
@@ -202,7 +253,9 @@ def surface_japandi_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Di
         t_in = pts_arr[:, 1]
         z_frac = pts_arr[:, 2] / max(h_span, 1e-6)
         z_in = bottom + pts_arr[:, 2]
-        s_eff = s_in + twist * equiv_R * z_frac
+        on_rib = t_in < 0.0 if inward else t_in > 0.0       # the back of the tool stays where it is
+        t_in = np.where(on_rib, t_in * height_share(params, height, h_span, z_frac), t_in)
+        s_eff = s_in + equiv_R * (twist * z_frac + path_turn(params, z_frac))
         if wall.closed and wall.L > 1e-6:
             s_eff = np.mod(s_eff, wall.L)
         px = np.interp(s_eff, wall.s, wall.coords[:, 0])
@@ -241,10 +294,12 @@ def japandi_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, 
     columns = (np.arange(ribs)[:, None] + places[None, :]).ravel() * step
     shares = np.tile(shares, ribs)
 
-    # steps along the wall: its own profile, and short enough to follow a twisted rib
+    # steps along the wall: its own profile, and short enough to follow a twisted or bent rib
     twist = math.radians(params["twist"])
     turn = min(step, 2.0 * math.acos(max(0.0, 1.0 - TWIST_SAG / surface.R)))
-    pieces = max(1, math.ceil(abs(twist) / turn))
+    bend, sweep = path_shape(params)
+    travel = abs(twist) + abs(bend * sweep) * 2.0 / math.pi      # the angle a rib passes, there and back for a bend
+    pieces = max(1, math.ceil(travel / turn), _path_pieces(params, surface.R), _arch_pieces(params, height, high - low))
     even = np.linspace(low, high, pieces + 1)
     gap = (high - low) / max(MAX_RINGS, pieces)
     bends = _profile_steps(surface, low, high)
@@ -253,15 +308,17 @@ def japandi_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, 
     s = s[np.concatenate(([True], np.diff(s) >= gap / 2.0))]
     s[-1] = high
     if 4 * len(columns) * len(s) > MAX_FACETS:
-        raise ValueError("Ribs this fine are too many for a face this large. Use wider ribs or less twist.")
+        raise ValueError("Ribs this fine are too many for a face this large. Use wider ribs, less twist or a smaller bend.")
 
     radii, zs = np.interp(s, surface.s, surface.r), np.interp(s, surface.s, surface.z)
     nr, nz = np.interp(s, surface.s, surface.nr), np.interp(s, surface.s, surface.nz)
     length = np.maximum(np.hypot(nr, nz), 1e-12)
     nr, nz = nr / length, nz / length
-    angles = columns[None, :] + twist * ((s - low) / (high - low))[:, None]
+    along = (s - low) / (high - low)
+    angles = columns[None, :] + (twist * along + path_turn(params, along))[:, None]
     # a half-round rib keeps its shape as the wall narrows; a rectangular one keeps its depth
-    size = (height * radii / surface.R if half_round else np.full(len(s), height))[:, None]
+    size = (height * radii / surface.R if half_round else np.full(len(s), height))
+    size = (size * height_share(params, height, high - low, along))[:, None]
     relief = shares[None, :] * size
     has_rib = shares[None, :] > 0
     if inward:
@@ -294,11 +351,13 @@ def apply_japandi(manifold: m3d.Manifold, faces: List[Dict[str, Any]], params: D
 class JapandiFeature(Feature):
     """Ribs or grooves along the chosen round faces of one body."""
 
-    PARAMS = ("shape", "direction", "radius", "width", "depth", "spacing", "twist", "margin")
+    PARAMS = ("shape", "direction", "radius", "width", "depth", "spacing", "twist", "margin", "path", "bend", "waves",
+              "height_profile", "end_height")
 
     def __init__(self, feature_id: str, name: str, target_body_id: str, faces=None, shape: str = "half-round",
                  direction: str = "outward", radius: float = 1.5, width: float = 2.0, depth: float = 2.0,
-                 spacing: float = 0.0, twist: float = 0.0, margin: float = 0.0):
+                 spacing: float = 0.0, twist: float = 0.0, margin: float = 0.0, path: str = "straight",
+                 bend: float = 20.0, waves: float = 2.0, height_profile: str = "even", end_height: float = 20.0):
         super().__init__(feature_id, "japandi", name)
         self.target_body_id = target_body_id
         self.faces = list(faces or [])
@@ -306,6 +365,10 @@ class JapandiFeature(Feature):
         self.direction = direction if direction in DIRECTIONS else DIRECTIONS[0]
         self.radius, self.width, self.depth = float(radius), float(width), float(depth)
         self.spacing, self.twist, self.margin = float(spacing), float(twist), float(margin)
+        self.path = path if path in PATHS else PATHS[0]
+        self.bend, self.waves = float(bend), float(waves)
+        self.height_profile = height_profile if height_profile in HEIGHTS else HEIGHTS[0]
+        self.end_height = float(end_height)
         self.ribs = 0
         self.notes: List[str] = []
 

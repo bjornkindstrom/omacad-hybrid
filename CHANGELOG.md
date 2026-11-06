@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.146
+
+### Added
+- **Arched Japandi ribs (#187)**: Surface Texture › Japandi has a Rib height setting: Even, or Arch, where the ribs seen from the side follow one circular arc, low at both ends and highest in the middle. End height sets how low the ends are, as a share of the height in the middle. Inward grooves follow the same arc, and it combines with Twist and Rib path.
+
+# Hybrid-experiment — 0.9.9.80.145
+
+### Added
+- **Curved and wavy Japandi ribs (#187)**: Surface Texture › Japandi has a Rib path: Straight, Curve (each rib bows in one arc from end to end) or Wave (each rib snakes from side to side). Bend sets how far round the face the ribs swing, Waves how many waves they make. It works outward and inward, with both rib shapes, on cylinders and vases, and adds to a twist. Saved steps without a path stay straight.
+
 # Hybrid-experiment — 0.9.9.80.144
 
 ### Added

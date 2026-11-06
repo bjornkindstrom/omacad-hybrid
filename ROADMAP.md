@@ -78,7 +78,7 @@ This file lists what has been built, step by step, and what is left. (Swedish fe
 - **Shell**: Inside / Outside / Both, open faces (outer skin trimmed flush).
 - **Surface Texture › Cells › Voronoi styles**: Gradient, Hotspot, Radial, Nested, Triangles, Relaxation; Hole shape, Rounding and fading Opening for every cell shape.
 - **Surface Texture › Knurl**: diamond, straight, right and left grip patterns cut into whole outer round faces.
-- **Surface Texture › Japandi**: half-round or rectangular ribs or grooves along whole outer round faces, straight or curved, with spacing, twist and plain ends.
+- **Surface Texture › Japandi**: half-round or rectangular ribs or grooves along whole outer round faces, straight or curved, with spacing, twist, curved or wavy rib paths and plain ends.
 - **Surface Texture › Wavy Slices**: rebuilds a body as stacked layers with wavy edges (waves, slice height, amplitude, phase shift, offset).
 - **Hole** exists as a model feature (simple / counterbore / countersink, flat or 118° tip, through); dialog and placement are next.
 - **Offset Plane** (pick XY/XZ/YZ, then any surface incl. cylinders), **Section View** (draggable offset, saved in the tree, toggled with the eye).

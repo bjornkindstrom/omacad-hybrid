@@ -83,3 +83,20 @@ def test_curved_japandi():
     assert ribs > 0
     assert not notes
     assert result.volume() < body.manifold.volume()
+
+
+@pytest.mark.parametrize("path", [dict(path="curve", bend=20.0), dict(path="wave", bend=10.0, waves=2.0)])
+def test_curved_japandi_rib_path(path):
+    doc = _build_spline_wall_doc()
+    body = doc.bodies["body_e1"]
+    ref = {"kind": "surface", "point": [35.0, 25.0, 25.0], "normal": [0.0, -1.0, 0.0]}
+    params = {
+        "shape": "half-round", "direction": "inward", "radius": 1.5, "width": 2.0, "depth": 2.0,
+        "spacing": 1.0, "twist": 0.0, "margin": 0.0, **path
+    }
+    straight, _, _ = apply_japandi(body.manifold, [ref], {**params, "path": "straight"})
+    result, ribs, notes = apply_japandi(body.manifold, [ref], params)
+    assert ribs > 0 and not notes
+    assert result.status().name == "NoError"
+    assert result.volume() < body.manifold.volume()
+    assert abs(result.volume() - straight.volume()) > 1e-6     # the path really moved the grooves

@@ -15,7 +15,7 @@ from shapely.geometry import Polygon
 from omacad.io.exporter import Exporter
 from omacad.model.document import Document
 from omacad.model.faces_hit_tests import _normal_axis, detect_cylinder_surface
-from omacad.model.features.japandi import PROFILE_SAG, SAG, apply_japandi, rib_count, rib_period
+from omacad.model.features.japandi import PROFILE_SAG, SAG, JapandiFeature, apply_japandi, height_share, rib_count, rib_period
 from omacad.model.features.offset_face import cylinder_face_ref
 from omacad.ui.dialogs.surface_texture_dlg import SurfaceTextureDialog
 from omacad.ui.feature_edit import can_edit
@@ -279,6 +279,10 @@ def test_panel_makes_a_step_with_a_live_preview_and_keeps_only_outer_round_faces
     page.cmb_shape.setCurrentText("Rectangular")
     assert page.spins["width"].isVisible() and page.spins["depth"].isVisible() and not page.spins["radius"].isVisible()
     page.cmb_shape.setCurrentText("Half-round")
+    assert not page.spins["bend"].isVisible() and not page.spins["waves"].isVisible()
+    page.cmb_path.setCurrentText("Wave")
+    assert page.spins["bend"].isVisible() and page.spins["waves"].isVisible()
+    page.cmb_path.setCurrentText("Straight")
     dlg.accept()
     _app.processEvents()
     assert win.doc.timeline.features[-1].feature_type == "japandi"
@@ -286,3 +290,180 @@ def test_panel_makes_a_step_with_a_live_preview_and_keeps_only_outer_round_faces
     assert win.doc.bodies[body.body_id].manifold.volume() > volume
     assert "ribs per turn" in win.status_label.text()
     win.close()
+
+
+CURVE = dict(path="curve", bend=30.0)
+WAVE = dict(path="wave", bend=20.0, waves=2.0)
+
+
+@pytest.mark.parametrize("params", [ROUND, {**RECT, "direction": "inward"}])
+@pytest.mark.parametrize("path, turned_at", [
+    (CURVE, lambda u: 30.0 * math.sin(math.pi * u)),
+    (WAVE, lambda u: 20.0 * math.sin(4.0 * math.pi * u)),
+])
+def test_rib_path_turns_each_section_by_the_sine_at_its_height(params, path, turned_at):
+    straight, ribs = apply(**params)
+    result, bent_ribs = apply(**params, **path)
+    assert bent_ribs == ribs and result.status() == m3d.Error.NoError and result.genus() == 0
+    # a section only slides round the axis, so the volume stays the same
+    assert result.volume() == pytest.approx(straight.volume(), rel=2e-3)
+    for z in (0.5, H / 8, H / 4, H / 2, 5 * H / 8, H - 0.5):
+        expected = affinity.rotate(section(straight, z), turned_at(z / H), origin=(0, 0))
+        assert section(result, z).symmetric_difference(expected).area < 0.03 * expected.area
+
+
+def test_curve_ends_where_straight_ribs_end_and_bends_the_other_way():
+    straight, _ = apply(**RECT)
+    right, _ = apply(**RECT, path="curve", bend=40.0)
+    left, _ = apply(**RECT, path="curve", bend=-40.0)
+    z = H - 0.01
+    assert section(right, z).symmetric_difference(section(straight, z)).area < 0.03 * section(straight, z).area
+    mirrored = affinity.rotate(section(right, H / 2), -80.0, origin=(0, 0))
+    assert section(left, H / 2).symmetric_difference(mirrored).area < 0.03 * mirrored.area
+
+
+def test_rib_path_adds_to_a_twist_and_ignores_bend_when_straight():
+    both, _ = apply(**{**RECT, "twist": 60.0}, path="curve", bend=30.0)
+    twist, _ = apply(**{**RECT, "twist": 60.0})
+    expected = affinity.rotate(section(twist, H / 2), 30.0, origin=(0, 0))
+    assert section(both, H / 2).symmetric_difference(expected).area < 0.03 * expected.area
+    plain, _ = apply(**RECT)
+    unbent, _ = apply(**RECT, path="straight", bend=45.0)
+    assert unbent.volume() == pytest.approx(plain.volume(), rel=1e-9)
+
+
+def test_rib_path_on_a_vase_is_one_whole_body():
+    vase, ref, *_ = _vase()
+    for path in (CURVE, WAVE):
+        result, ribs = apply(solid=vase, ref=ref, **path)
+        assert ribs > 0 and result.status() == m3d.Error.NoError and result.genus() == 0
+
+
+def test_rib_path_saves_rebuilds_and_old_steps_stay_straight(tmp_path):
+    doc = Document()
+    body = doc.add_cylinder(R, H)
+    feat = doc.add_japandi(body.body_id, [dict(REF)], shape="rectangular", width=2.0, depth=1.0, spacing=2.0, path="wave", bend=25.0, waves=3.0)
+    made = doc.bodies[body.body_id].manifold.volume()
+    path = str(tmp_path / "wave.omacad")
+    Exporter.save_project(doc, path)
+    copy = Exporter.load_project(path)
+    again = next(f for f in copy.timeline.features if f.feature_type == "japandi")
+    assert again.params() == feat.params() and (again.path, again.bend, again.waves) == ("wave", 25.0, 3.0)
+    assert copy.bodies[body.body_id].manifold.volume() == pytest.approx(made, rel=1e-6)
+
+    saved = {k: v for k, v in feat.to_dict().items() if k not in ("path", "bend", "waves")}
+    old = JapandiFeature(saved["feature_id"], saved["name"], saved["target_body_id"], saved["faces"],
+                         **{k: saved[k] for k in JapandiFeature.PARAMS if k in saved})
+    assert old.path == "straight"
+
+
+def test_panel_shows_bend_and_waves_only_for_their_path():
+    doc = Document()
+    body = doc.add_cylinder(R, H)
+    feat = doc.add_japandi(body.body_id, [dict(REF)], path="wave", bend=15.0, waves=3.0)
+    dlg = SurfaceTextureDialog(doc, feature=feat)
+    page = dlg.page
+    assert dlg.params() == feat.params()
+    assert page.spins["bend"].isVisibleTo(page) and page.spins["waves"].isVisibleTo(page)
+    page.cmb_path.setCurrentText("Curve")
+    assert page.spins["bend"].isVisibleTo(page) and not page.spins["waves"].isVisibleTo(page)
+    page.cmb_path.setCurrentText("Straight")
+    assert not page.spins["bend"].isVisibleTo(page) and not page.spins["waves"].isVisibleTo(page)
+    assert dlg.params()["path"] == "straight"
+    dlg.deleteLater()
+
+
+def _reach(body, z):
+    """(smallest, largest) distance from the axis of the wall at height z."""
+    radii = [math.hypot(x, y) for ring in body.slice(z).to_polygons() for x, y in ring]
+    return min(radii), max(radii)
+
+
+def test_arch_share_is_one_circular_arc_through_the_ends_and_the_middle():
+    params = {"height_profile": "arch", "end_height": 25.0}
+    along = np.linspace(0.0, 1.0, 41)
+    share = height_share(params, 2.0, 50.0, along)
+    assert share[0] == pytest.approx(0.25) and share[-1] == pytest.approx(0.25) and share[20] == pytest.approx(1.0)
+    rise = 1.5                                              # mm from the ends to the middle of a 2 mm rib
+    radius = (25.0 ** 2 + rise ** 2) / (2.0 * rise)
+    centre_height = 2.0 - radius
+    assert np.hypot((along - 0.5) * 50.0, share * 2.0 - centre_height) == pytest.approx(np.full(41, radius))
+    assert height_share({"height_profile": "even"}, 2.0, 50.0, along) == pytest.approx(np.ones(41))
+
+
+@pytest.mark.parametrize("params, rib", [(ROUND, 1.5), (RECT, 2.0)])
+def test_arched_ribs_stand_out_by_the_arc_at_every_height(params, rib):
+    arched = {**params, "height_profile": "arch", "end_height": 20.0}
+    body, count, notes = apply_japandi(PIN, [REF], arched)
+    assert count > 0 and not notes and body.status() == m3d.Error.NoError and body.genus() == 0
+    for z in (H * 0.5, H * 0.25, H * 0.75, H * 0.02, H * 0.98):
+        expected = R + rib * float(height_share(arched, rib, H, np.array([z / H]))[0])
+        assert _reach(body, z)[1] == pytest.approx(expected, abs=PROFILE_SAG + 0.01)   # the rings cut the arc within this
+
+
+def test_arched_grooves_are_deepest_in_the_middle_and_leave_the_bore_alone():
+    arched = {**RECT, "direction": "inward", "height_profile": "arch", "end_height": 20.0}
+    bored = PIN - m3d.Manifold.cylinder(H, R - 5.0, R - 5.0, 720)
+    body, _, notes = apply_japandi(bored, [REF], arched)
+    assert not notes and body.status() == m3d.Error.NoError
+    solid, _, _ = apply_japandi(PIN, [REF], arched)
+    assert solid.slice(H / 2).area() < solid.slice(H * 0.05).area()
+    assert _reach(body, H / 2)[0] == pytest.approx(R - 5.0, abs=0.01)
+
+
+def test_even_ribs_are_what_they_were_without_the_setting():
+    plain, _, _ = apply_japandi(PIN, [REF], ROUND)
+    even, _, _ = apply_japandi(PIN, [REF], {**ROUND, "height_profile": "even", "end_height": 5.0})
+    assert even.volume() == plain.volume()
+
+
+def test_full_end_height_is_even_ribs():
+    plain, _, _ = apply_japandi(PIN, [REF], ROUND)
+    full, _, _ = apply_japandi(PIN, [REF], {**ROUND, "height_profile": "arch", "end_height": 100.0})
+    assert full.volume() == pytest.approx(plain.volume(), rel=1e-9)
+
+
+def test_arch_with_a_twist_on_a_vase_is_one_whole_body():
+    vase = m3d.CrossSection([[[0.0, 0.0], [20.0, 0.0], [26.0, 20.0], [20.0, 40.0], [0.0, 40.0]]]).revolve(180)
+    ref = {"kind": "cylinder", "origin": [0, 0, 0], "axis": [0, 0, 1], "radius": 26.0, "length": 40.0, "internal": False}
+    body, count, notes = apply_japandi(vase, [ref], {**ROUND, "twist": 40.0, "height_profile": "arch"})
+    assert count > 0 and not notes and body.status() == m3d.Error.NoError and body.volume() > vase.volume()
+
+
+def test_arched_ribs_on_an_open_curved_wall_keep_the_back_of_the_tool():
+    wall = m3d.Manifold.cylinder(H, R, R, 360)
+    ref = {"kind": "surface", "point": [R, 0.0, H / 2], "normal": [1.0, 0.0, 0.0]}
+    body, count, notes = apply_japandi(wall, [ref], {**ROUND, "height_profile": "arch", "end_height": 20.0})
+    assert count > 0 and not notes
+    assert _reach(body, H / 2)[1] == pytest.approx(R + 1.5, abs=0.05)
+    assert _reach(body, H * 0.02)[1] < R + 0.6
+
+
+def test_arch_saves_rebuilds_and_old_steps_stay_even(tmp_path):
+    doc = Document()
+    body = doc.add_cylinder(R, H)
+    feat = doc.add_japandi(body.body_id, [dict(REF)], **{**ROUND, "height_profile": "arch", "end_height": 30.0})
+    made = doc.bodies[body.body_id].manifold.volume()
+    path = str(tmp_path / "arch.omacad")
+    Exporter.save_project(doc, path)
+    copy = Exporter.load_project(path)
+    again = next(f for f in copy.timeline.features if f.feature_type == "japandi")
+    assert (again.height_profile, again.end_height) == ("arch", 30.0)
+    assert copy.bodies[body.body_id].manifold.volume() == pytest.approx(made, rel=1e-6)
+    saved = {k: v for k, v in feat.to_dict().items() if k not in ("height_profile", "end_height")}
+    old = JapandiFeature(saved["feature_id"], saved["name"], saved["target_body_id"], saved["faces"],
+                         **{k: saved[k] for k in JapandiFeature.PARAMS if k in saved})
+    assert old.height_profile == "even"
+
+
+def test_panel_shows_end_height_only_for_an_arch():
+    doc = Document()
+    body = doc.add_cylinder(R, H)
+    feat = doc.add_japandi(body.body_id, [dict(REF)], height_profile="arch", end_height=35.0)
+    dlg = SurfaceTextureDialog(doc, feature=feat)
+    page = dlg.page
+    assert dlg.params() == feat.params()
+    assert page.spins["end_height"].isVisibleTo(page)
+    page.cmb_height.setCurrentText("Even")
+    assert not page.spins["end_height"].isVisibleTo(page) and dlg.params()["height_profile"] == "even"
+    dlg.deleteLater()
