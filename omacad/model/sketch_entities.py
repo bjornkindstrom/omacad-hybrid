@@ -370,6 +370,11 @@ class SketchArc(SketchEntity):
         return arc
 
 
+SPLINE_SAMPLES = 16             # chords per span of a spline
+SPLINE_MAX_SAMPLES = 256
+SPLINE_CHORD_ERROR = 0.005      # mm a chord may lie from a span with explicit tangents
+
+
 class SketchSpline(SketchEntity):
     """Smooth interpolating spline through sketch points, sampled for display and profile operations."""
 
@@ -389,19 +394,24 @@ class SketchSpline(SketchEntity):
         a, b = pts[max(0, i - 1)], pts[min(len(pts) - 1, i + 1)]
         return (0.5 * (b[0] - a[0]), 0.5 * (b[1] - a[1]))
 
-    def get_points(self, samples_per_span: int = 16):
+    def get_points(self, samples_per_span: Optional[int] = None):
+        """Points along the curve. Without a sample count a span whose tangents are both explicit (an imported Bezier
+        can be long and tight) gets as many as it needs; every other span gets SPLINE_SAMPLES."""
         if len(self.points) < 2:
             return list(self.points)
         if self.control_points:
-            return self._control_curve(samples_per_span)
+            return self._control_curve(samples_per_span or SPLINE_SAMPLES)
         points = self.points
         out = []
         for i in range(len(points) - 1):
             p1, p2 = points[i], points[i + 1]
             m1, m2 = self.tangent_at(i), self.tangent_at(i + 1)
+            samples = samples_per_span or SPLINE_SAMPLES
+            if samples_per_span is None and i in self.tangents and i + 1 in self.tangents:
+                samples = _samples_for_chord_error(p1, p2, m1, m2)
             # the clamped end tangent of the old Catmull-Rom curve was (p2-p0)/2 with p0=p1, i.e. same formula
-            for j in range(samples_per_span):
-                t = j / samples_per_span
+            for j in range(samples):
+                t = j / samples
                 out.append(_hermite(p1, p2, m1, m2, t))
         out.append(points[-1])
         return out
@@ -446,6 +456,16 @@ class SketchSpline(SketchEntity):
         return cls(data["entity_id"], data.get("points", []), data.get("is_construction", False),
                    tangents=data.get("tangents"), control_points=data.get("control_points", False),
                    offset_info=data.get("offset_info"))
+
+
+def _samples_for_chord_error(p1, p2, m1, m2) -> int:
+    """How many chords keep a Hermite span within SPLINE_CHORD_ERROR mm of the curve (Wang's formula for its cubic
+    Bezier form: chords = sqrt(0.75 * largest second difference of the control points / error))."""
+    c1 = (p1[0] + m1[0] / 3.0, p1[1] + m1[1] / 3.0)
+    c2 = (p2[0] - m2[0] / 3.0, p2[1] - m2[1] / 3.0)
+    second = max(math.hypot(p1[0] - 2.0 * c1[0] + c2[0], p1[1] - 2.0 * c1[1] + c2[1]),
+                 math.hypot(c1[0] - 2.0 * c2[0] + p2[0], c1[1] - 2.0 * c2[1] + p2[1]))
+    return min(SPLINE_MAX_SAMPLES, max(SPLINE_SAMPLES, math.ceil(math.sqrt(0.75 * second / SPLINE_CHORD_ERROR))))
 
 
 def _hermite(p1, p2, m1, m2, t):

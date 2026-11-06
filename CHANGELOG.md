@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.140
+
+### Fixed
+- **Imported SVG curves stay smooth**: SVG import flattened curves to about half a drawing unit, so a logo with a small viewBox came in as a coarse polygon (82 lines, 2.7 % area error). Sketches now get the file's exact Beziers as two-point splines with explicit tangents, arcs and circles stay curved, long curves are sampled to a 0.005 mm chord error, and the SVG Surface Texture outline is flattened relative to the drawing's size.
+
 # Hybrid-experiment — 0.9.9.80.138
 
 ### Added
