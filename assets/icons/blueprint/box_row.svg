@@ -1,8 +1,5 @@
 <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="24,7 44,17 24,27 4,17" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-    <line x1="14" y1="22" x2="34" y2="12" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2" stroke-linecap="round"/>
-    <polygon points="4,17 24,27 24,43 4,33" fill="none" stroke="currentColor" stroke-width="2" opacity="0.7" stroke-linejoin="round"/>
-    <line x1="14" y1="22" x2="14" y2="38" stroke="currentColor" stroke-width="1.8" opacity="0.7" stroke-linecap="round"/>
-    <polygon points="44,17 24,27 24,43 44,33" fill="none" stroke="currentColor" stroke-width="2" opacity="0.45" stroke-linejoin="round"/>
-    <line x1="34" y1="22" x2="34" y2="38" stroke="currentColor" stroke-width="1.8" opacity="0.45" stroke-linecap="round"/>
+  <path d="M4 20L28 8L44 16L20 28Z" stroke="#4CE0FF" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M4 20V32L20 40L44 28V16M20 28V40" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12 16L28 24V36M20 12L36 20V32" stroke="#E26D28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

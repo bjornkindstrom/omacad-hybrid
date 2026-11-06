@@ -6,7 +6,7 @@ import numpy as np
 import manifold3d as m3d
 import trimesh
 from omacad.model.faces_types import PlanarEdge, CircularEdge, LoopEdge
-from omacad.model.faces_topology import _coplanar, _curved_roots, _sliver_roots
+from omacad.model.faces_topology import _classified_roots, _groups_of_roots, _coplanar, _curved_roots, _sliver_roots
 
 
 def tangent_chain(edge, edges) -> list:
@@ -203,11 +203,13 @@ def _planar_edges_from(mesh, manifold) -> list:
                 ra, rb = find(int(a_idx)), find(int(b_idx))
                 if ra != rb:
                     parent[rb] = ra
-    groups: dict = {}
-    for i in range(len(f)):
-        groups.setdefault(find(i), []).append(i)
-    curved = _curved_roots(v, f, tm, find, groups, adj, angles)
-    slivers = _sliver_roots(v, f, tm, groups)
+    if native_roots is not None:
+        groups = _groups_of_roots(native_roots)
+    else:
+        groups: dict = {}
+        for i in range(len(f)):
+            groups.setdefault(find(i), []).append(i)
+    slivers, curved = _classified_roots(v, f, tm, find, groups, adj, angles, native_roots)
     planar = {r for r in groups if r not in curved and r not in slivers}
 
     # collect boundary segments between two different planar faces
@@ -304,12 +306,12 @@ def _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, plan
     for (pr, _), segs in buckets.items():
         by_face.setdefault(pr, []).extend(segs)
     loops = []
+    snap_tol = 1e-5 * max(1.0, float(np.ptp(v, axis=0).max()))      # once: a pattern makes thousands of faces
+    from omacad import viewport_accel
     for pr, segs in by_face.items():
         # Boolean operations can leave duplicate vertices and tiny seam edges around a true
         # circular boundary. Snap this boundary graph before checking its degree; otherwise a
         # microscopic spur turns a closed circle into a branched, unpickable contour.
-        snap_tol = 1e-5 * max(1.0, float(np.ptp(v, axis=0).max()))
-        from omacad import viewport_accel
         native_cleaned = viewport_accel.snap_and_clean_segments(v, [[s[0], s[1]] for s in segs], snap_tol)
         if native_cleaned is not None:
             cleaned = [(int(a), int(b), *segs[orig][2:]) for orig, a, b in native_cleaned]

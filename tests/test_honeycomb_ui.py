@@ -22,8 +22,6 @@ def test_honeycomb_tool_adds_one_undoable_step(win):
     dlg = win.inspector.current_tool_dlg
     assert dlg is not None and dlg.windowTitle() == "Surface Texture" and dlg.kind() == "honeycomb"
     front = min(body.faces, key=lambda f: f.normal[1])
-    win.viewport.offset_face_picked.emit({"kind": "surface", "point": [0, 0, 0], "normal": [1, 0, 0]}, body.body_id)
-    assert dlg.faces == []                                  # a free-form surface takes no honeycomb
     win.viewport.offset_face_picked.emit(plane_face_ref(front), body.body_id)
     dlg.page.cmb_shape.setCurrentIndex(2)                        # square
     dlg.accept()

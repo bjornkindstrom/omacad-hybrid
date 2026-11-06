@@ -55,7 +55,8 @@ def test_fillet_green_check_button_applies_request_160():
     win.show()
     body = win.doc.add_box(30.0, 20.0, 10.0)
     win.prompt_round_edges("fillet")
-    btn = next(b for b in win.viewport.findChildren(QToolButton) if b.text() == "✓")
+    btn = next(b for b in win.viewport.findChildren(QToolButton)
+               if b.text() == "✓" and b is not win.viewport._sketch_apply_btn)
     top = next(e for e in body.edges if hasattr(e, "p0") and abs(e.p0[2] - 10.0) < 1e-6 and abs(e.p1[2] - 10.0) < 1e-6)
     win.viewport.selected_edges = [top]
     win.viewport.edges_selection_changed.emit()
@@ -80,7 +81,8 @@ def test_primitive_with_viewport_handles_gets_green_check_button():
     win.show()
     n = len(win.doc.timeline.features)
     win.prompt_box()
-    btn = next(b for b in win.viewport.findChildren(QToolButton) if b.text() == "✓")
+    btn = next(b for b in win.viewport.findChildren(QToolButton)
+               if b.text() == "✓" and b is not win.viewport._sketch_apply_btn)
     t = time.time()
     while not btn.isVisible() and time.time() - t < 3:
         _app.processEvents()

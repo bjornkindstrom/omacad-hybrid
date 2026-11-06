@@ -267,6 +267,8 @@ class EmbossPromptMixin:
         dlg.select_text_requested.connect(on_select_text)
         vp.profile_picked.connect(on_pick)
         dlg.finished.connect(finished)
+        from omacad.ui.apply_button import add_apply_button, profile_anchor
+        add_apply_button(vp, dlg, lambda: profile_anchor(vp, doc) if doc.selected_profile else None)
         if not doc.selected_profile:
             select_text()                                   # a sketch with text: start with all its letters picked
         refresh()

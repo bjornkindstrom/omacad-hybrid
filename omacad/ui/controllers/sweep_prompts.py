@@ -172,6 +172,8 @@ class SweepPromptsMixin:
         self.viewport.profile_picked.connect(on_pick)
         self._connect_debounced_preview(dlg, preview)
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport))
         self.status_label.setText(f"{title}: " + ("set the path and the diameter." if mode == "pipe" else
                                                   "click the profile." if mode == "sweep" else
                                                   "click the profiles in order (a click again drops one)."))

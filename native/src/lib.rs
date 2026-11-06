@@ -82,9 +82,10 @@ impl TriangleIndex {
 #[pymodule]
 fn _viewport_native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<TriangleIndex>()?;
-    module.add("API_VERSION", 2)?;
+    module.add("API_VERSION", 3)?;
     module.add_function(wrap_pyfunction!(topology::flat_patch_mask, module)?)?;
     module.add_function(wrap_pyfunction!(topology::coplanar_roots, module)?)?;
     module.add_function(wrap_pyfunction!(topology::snap_and_clean_segments, module)?)?;
+    module.add_function(wrap_pyfunction!(topology::classify_face_groups, module)?)?;
     Ok(())
 }

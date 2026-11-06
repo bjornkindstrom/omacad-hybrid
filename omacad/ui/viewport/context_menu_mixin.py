@@ -202,6 +202,15 @@ class ContextMenuMixin:
                     callback=lambda _t=tool_id: self.menu_command.emit(f"sketch_tool:{_t}")
                 ))
 
+            c_svg = commands.get("import_svg")
+            create_items.append(FanItem(
+                id="import_svg",
+                label=c_svg.label,
+                icon=theme.command_icon("import_svg", c_svg.icon, 20),
+                tooltip=c_svg.tip,
+                callback=lambda: self.menu_command.emit("import_svg")
+            ))
+
             c_proj = commands.get("project")
             create_items.append(FanItem(
                 id="project",
@@ -226,6 +235,7 @@ class ContextMenuMixin:
                 ("MOVE", "move_sketch"),
                 ("ROTATE", "rotate_sketch"),
                 ("SCALE", "scale_sketch"),
+                ("PATTERN", "pattern_sketch"),
             ):
                 c = commands.get(cmd_id)
                 modify_items.append(FanItem(
@@ -276,7 +286,7 @@ class ContextMenuMixin:
             categories.append(FanItem(
                 id="cat_constraints",
                 label="Constraints",
-                icon=theme.named_icon("c_coincident", "📐", 20),
+                icon=theme.named_icon("c_perpendicular", "⟂", 20),
                 children=const_items
             ))
 
@@ -334,13 +344,13 @@ class ContextMenuMixin:
             id="fit",
             label="Fit Window",
             shortcut="F",
-            icon=theme.named_icon("locate", "🔍", 20),
+            icon=theme.named_icon("fit", "🔲", 20),
             callback=self.zoom_fit
         ))
         view_items.append(FanItem(
             id="grid",
             label="Grid",
-            icon=theme.named_icon("origin", "🌐", 20),
+            icon=theme.named_icon("grid", "📐", 20),
             checkable=True,
             checked=self.show_grid,
             callback=lambda: self._run_general("grid", None)
@@ -598,7 +608,7 @@ class ContextMenuMixin:
         acts: dict = {}
         acts[theme.action_with_icon(menu, "✏️ Edit Sketch")] = ("edit_sketch", sketch_id)
         acts[theme.action_with_icon(menu, "⬆️ Extrude\tE")] = ("extrude_sketch", sketch_id)
-        acts[theme.action_with_icon(menu, "👁️ Hide Sketch")] = ("hide_sketch", sketch_id)
+        acts[theme.action_with_icon(menu, "🚫 Hide Sketch")] = ("hide_sketch", sketch_id)
         acts[theme.action_with_icon(menu, "🗑️ Delete Sketch…")] = ("cmd", f"delete_sketch:{sketch_id}")
         menu.addSeparator()
         self._add_tool_entries(menu, acts)
@@ -607,7 +617,7 @@ class ContextMenuMixin:
         context_items = [
             FanItem("edit_sk", "Edit Sketch", theme.named_icon("sketch", "✏️", 20), callback=lambda: self.edit_sketch_requested.emit(sketch_id)),
             FanItem("extrude_sk", "Extrude", theme.named_icon("extrude", "⬆️", 20), shortcut="E", callback=lambda: self.extrude_sketch_requested.emit(sketch_id)),
-            FanItem("hide_sk", "Hide Sketch", theme.named_icon("eye", "👁️", 20), callback=lambda: self.doc.toggle_sketch_visibility(sketch_id)),
+            FanItem("hide_sk", "Hide Sketch", theme.named_icon("eye_off", "🚫", 20), callback=lambda: self.doc.toggle_sketch_visibility(sketch_id)),
             FanItem("del_sk", "Delete Sketch", theme.named_icon("delete", "🗑️", 20), callback=lambda: self.menu_command.emit(f"delete_sketch:{sketch_id}")),
         ]
         self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label=sk.name or "Sketch")
@@ -664,7 +674,7 @@ class ContextMenuMixin:
                 self.move_gizmo["active_axis"] = _a
                 self.move_gizmo_axis_selected.emit(_a)
                 self.update()
-            context_items.append(FanItem(f"axis_{ax}", label, callback=_choose_ax))
+            context_items.append(FanItem(f"axis_{ax}", label, theme.named_icon("move", "✥", 20), callback=_choose_ax))
 
         self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label="Move Axis")
 
@@ -719,7 +729,7 @@ class ContextMenuMixin:
         """Fillet / Chamfer entries for the edges under the cursor (nothing while a tool panel is open)."""
         if self.active_tool_title():
             return
-        for kind, icon in (("fillet", "🔵"), ("chamfer", "📐")):
+        for kind, icon in (("fillet", "🔘"), ("chamfer", "◢")):
             acts[theme.action_with_icon(menu, f"{icon} {kind.title()} {what}…")] = ("round", (kind, edges))
         menu.addSeparator()
 
@@ -755,7 +765,7 @@ class ContextMenuMixin:
         if face.body_id in self.doc.bodies:
             menu.addSeparator()
             acts[theme.action_with_icon(menu, "🎨 Appearance / Färg…")] = ("body_color", face.body_id)
-            acts[theme.action_with_icon(menu, "↔️ Move this Body…")] = ("move_body", face.body_id)
+            acts[theme.action_with_icon(menu, "✥ Move this Body…")] = ("move_body", face.body_id)
             acts[theme.action_with_icon(menu, "⬇️ Lay this face on the ground (XY)")] = ("lay", "ground")
             acts[theme.action_with_icon(menu, "⬇️ Lay this face on a face or plane…")] = ("lay", "pick")
         menu.addSeparator()
@@ -783,7 +793,7 @@ class ContextMenuMixin:
         ]
         if face.body_id in self.doc.bodies:
             context_items.append(FanItem("move_body", "Move Body", theme.named_icon("move", "✥", 20), shortcut="M", callback=lambda: self.move_body_requested.emit(face.body_id)))
-            context_items.append(FanItem("color_body", "Appearance", theme.named_icon("settings", "🎨", 20), callback=lambda: self.body_color_requested.emit(face.body_id)))
+            context_items.append(FanItem("color_body", "Appearance", theme.named_icon("appearance", "🎨", 20), callback=lambda: self.body_color_requested.emit(face.body_id)))
             context_items.append(FanItem("lay_ground", "Lay on Ground", theme.named_icon("lay_flat", "⬇️", 20), callback=lambda: self.lay_face_requested.emit(face, "ground")))
 
         if body is not None:
@@ -804,6 +814,60 @@ class ContextMenuMixin:
 
         self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label="Face", on_close=_clear_ctx, on_custom=_custom_pick)
 
+    def _show_cylinder_face_menu(self, event, cyl: dict):
+        """Right-click on a cylindrical face (e.g., Jar or Lid wall): offer Surface Texture, Offset Face, Move Body, Appearance."""
+        from omacad.model.features.offset_face import cylinder_face_ref
+        body_id = cyl.get("body_id", "")
+        ref = {**cylinder_face_ref(cyl), "body_id": body_id}
+        menu = QMenu(self)
+        acts: dict = {}
+        if body_id in self.doc.bodies:
+            acts[theme.action_with_icon(menu, "🎨 Appearance / Färg…")] = ("body_color", body_id)
+            acts[theme.action_with_icon(menu, "✥ Move this Body…")] = ("move_body", body_id)
+            menu.addSeparator()
+        self._add_tool_entries(menu, acts)
+        if not self.active_tool_title():
+            acts[theme.action_with_icon(menu, "🧵 Surface Texture…")] = ("surface_texture", ref)
+            acts[theme.action_with_icon(menu, "↔️ Offset Face…")] = ("offset_face", ref)
+        self._add_history_and_view(menu, acts, False)
+
+        context_items = [
+            FanItem("surface_texture", "Surface Texture", theme.command_icon("surface_texture", "🧵", 20), callback=lambda: self.surface_texture_requested.emit(ref)),
+            FanItem("offset_face", "Offset Face", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(ref)),
+        ]
+        if body_id in self.doc.bodies:
+            context_items.append(FanItem("move_body", "Move Body", theme.named_icon("move", "✥", 20), shortcut="M", callback=lambda: self.move_body_requested.emit(body_id)))
+            context_items.append(FanItem("color_body", "Appearance", theme.named_icon("appearance", "🎨", 20), callback=lambda: self.body_color_requested.emit(body_id)))
+
+        self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label="Round Face")
+
+    def _show_curved_face_menu(self, event, surf: dict):
+        """Right-click on a curved / spline surface: offer Surface Texture, Offset Face, Move Body, Appearance."""
+        from omacad.model.features.offset_face import surface_face_ref
+        body_id = surf.get("body_id", "")
+        ref = {**surface_face_ref(surf), "body_id": body_id}
+        menu = QMenu(self)
+        acts: dict = {}
+        if body_id in self.doc.bodies:
+            acts[theme.action_with_icon(menu, "🎨 Appearance / Färg…")] = ("body_color", body_id)
+            acts[theme.action_with_icon(menu, "✥ Move this Body…")] = ("move_body", body_id)
+            menu.addSeparator()
+        self._add_tool_entries(menu, acts)
+        if not self.active_tool_title():
+            acts[theme.action_with_icon(menu, "🧵 Surface Texture…")] = ("surface_texture", ref)
+            acts[theme.action_with_icon(menu, "↔️ Offset Face…")] = ("offset_face", ref)
+        self._add_history_and_view(menu, acts, False)
+
+        context_items = [
+            FanItem("surface_texture", "Surface Texture", theme.command_icon("surface_texture", "🧵", 20), callback=lambda: self.surface_texture_requested.emit(ref)),
+            FanItem("offset_face", "Offset Face", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(ref)),
+        ]
+        if body_id in self.doc.bodies:
+            context_items.append(FanItem("move_body", "Move Body", theme.named_icon("move", "✥", 20), shortcut="M", callback=lambda: self.move_body_requested.emit(body_id)))
+            context_items.append(FanItem("color_body", "Appearance", theme.named_icon("appearance", "🎨", 20), callback=lambda: self.body_color_requested.emit(body_id)))
+
+        self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label="Curved Face")
+
 
     def _show_plane_menu(self, event, target):
         """Right-click on an origin or construction plane: split a body with it, offset from it, sketch on it, hide it."""
@@ -814,11 +878,11 @@ class ContextMenuMixin:
         menu.addSection(name)
         if not self.active_tool_title():
             if self.doc.bodies:
-                acts[theme.action_with_icon(menu, "✂️ Split Body with this Plane…")] = ("split_plane", target[1])
+                acts[theme.action_with_icon(menu, "🪚 Split Body with this Plane…")] = ("split_plane", target[1])
             acts[theme.action_with_icon(menu, "📐 Offset Plane from this Plane…")] = ("offset_plane", plane)
             acts[theme.action_with_icon(menu, "✏️ Create Sketch on this Plane")] = ("sketch_plane", plane)
             menu.addSeparator()
-        acts[theme.action_with_icon(menu, "👁 Hide Plane")] = ("hide_plane", target)
+        acts[theme.action_with_icon(menu, "🚫 Hide Plane")] = ("hide_plane", target)
         menu.addSeparator()
         self._add_history_and_view(menu, acts, False)
 
@@ -827,8 +891,8 @@ class ContextMenuMixin:
             FanItem("offset_plane", "Offset Plane", theme.named_icon("offset_plane", "📐", 20), callback=lambda: self.offset_base_picked.emit(plane)),
         ]
         if self.doc.bodies:
-            context_items.append(FanItem("split_plane", "Split Body", theme.named_icon("split_body", "✂️", 20), callback=lambda: self.split_plane_requested.emit(target[1])))
-        context_items.append(FanItem("hide_plane", "Hide Plane", theme.named_icon("eye_off", "👁", 20), callback=lambda: self._run_general("hide_plane", target)))
+            context_items.append(FanItem("split_plane", "Split Body", theme.named_icon("split_body", "🪚", 20), callback=lambda: self.split_plane_requested.emit(target[1])))
+        context_items.append(FanItem("hide_plane", "Hide Plane", theme.named_icon("eye_off", "🚫", 20), callback=lambda: self._run_general("hide_plane", target)))
 
         self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label=name)
 

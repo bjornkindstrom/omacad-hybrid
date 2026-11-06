@@ -6,11 +6,13 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import manifold3d as m3d
 
-from omacad.model.features.base import Feature
+from omacad.model.features.base import Feature, region_cross_section
 from omacad.model.features.honeycomb import FULL_GAP, _cylinder_extent, _refitted
 from omacad.model.features.offset_face import _frame
 from omacad.model.features.revolved_surface import revolved_surface
+from omacad.model.features.curved_surface import curved_wall, ensure_positive_volume
 from omacad.model.kernel import CadKernel
+from shapely.geometry import Polygon
 
 PATTERNS = ("diamond", "straight", "right", "left")
 STEPS_PER_TOOTH = 2     # twist steps while a groove passes one tooth: 4 looks the same but took ten times as long to analyse
@@ -53,10 +55,80 @@ def kept_solid(radius: float, height: float, pattern: str, pitch: float, depth: 
     return right if pattern == "right" else left
 
 
+def surface_knurl_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, Any]) -> Tuple[m3d.Manifold, int]:
+    wall = curved_wall(manifold, ref)
+    if wall is None or wall.L < 1e-3 or wall.height < 1e-3:
+        raise ValueError("The curved surface could not be analyzed.")
+    pitch, depth, margin = params["pitch"], params["depth"], params["margin"]
+    if pitch <= 0 or depth <= 0 or not 0 <= params["angle"] < 90:
+        raise ValueError("Pitch and depth must be above zero, and the angle under 90°.")
+    bottom = wall.z0 + margin if margin > 0 else wall.z0 - END_OVERSHOOT
+    top = wall.z1 - margin if margin > 0 else wall.z1 + END_OVERSHOOT
+    if top - bottom <= 1e-3:
+        raise ValueError("The margin leaves no room for a knurl.")
+    height = top - bottom
+    angle_rad = math.radians(params["angle"])
+    shift = height * math.tan(angle_rad)
+
+    s_min = -shift - 1.0 if not wall.closed else 0.0
+    s_max = wall.L + shift + 1.0 if not wall.closed else wall.L
+    span = s_max - s_min
+    teeth = max(3, int(round(span / pitch)))
+    tooth_w = span / teeth
+
+    pts = []
+    for i in range(teeth):
+        s0 = s_min + i * tooth_w
+        s_mid = s_min + (i + 0.5) * tooth_w
+        pts.append((s0, 0.0))
+        pts.append((s_mid, -depth))
+    pts.append((s_max, 0.0))
+    pts.append((s_max, 1.0))
+    pts.append((s_min, 1.0))
+
+    saw = Polygon(pts).buffer(0)
+    cs = region_cross_section(saw)
+    step = 0.5
+    divisions = max(2, int(height / 2.0))
+    prism = m3d.Manifold.extrude(cs, height, n_divisions=divisions).refine_to_length(step)
+
+    pattern = params["pattern"]
+
+    def warp_fn(sign: float):
+        def warper(pts_arr: np.ndarray) -> np.ndarray:
+            t_in = pts_arr[:, 1]
+            z_in = bottom + pts_arr[:, 2]
+            s_eff = pts_arr[:, 0] + sign * (pts_arr[:, 2] * math.tan(angle_rad))
+            if wall.closed and wall.L > 1e-6:
+                s_eff = np.mod(s_eff, wall.L)
+            px = np.interp(s_eff, wall.s, wall.coords[:, 0])
+            py = np.interp(s_eff, wall.s, wall.coords[:, 1])
+            nx = np.interp(s_eff, wall.s, wall.normals[:, 0])
+            ny = np.interp(s_eff, wall.s, wall.normals[:, 1])
+            return np.column_stack([px + t_in * nx, py + t_in * ny, z_in])
+        return warper
+
+    right = prism.warp_batch(warp_fn(1.0)).transform(wall.M[:3, :]) if pattern != "left" else None
+    left = prism.warp_batch(warp_fn(-1.0)).transform(wall.M[:3, :]) if pattern != "right" else None
+
+    if pattern == "diamond":
+        tool = right ^ left
+    elif pattern == "right":
+        tool = right
+    elif pattern == "left":
+        tool = left
+    else:
+        tool = prism.warp_batch(warp_fn(0.0)).transform(wall.M[:3, :])
+
+    return ensure_positive_volume(tool), max(3, int(round(wall.L / pitch)))
+
+
 def knurl_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, Any]) -> Tuple[m3d.Manifold, int]:
     """(the solid to cut away, teeth per turn) for one face. Raises ValueError saying why a face can't be knurled."""
+    if ref.get("kind") == "surface":
+        return surface_knurl_tool(manifold, ref, params)
     if ref.get("kind") != "cylinder" or ref.get("internal"):
-        raise ValueError("A knurl needs an outer round face.")
+        raise ValueError("A knurl needs an outer round or curved face.")
     ref = _refitted(manifold, ref)
     radius = float(ref["radius"])
     pitch, depth, margin = params["pitch"], params["depth"], params["margin"]

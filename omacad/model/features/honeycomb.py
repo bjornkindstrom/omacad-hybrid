@@ -14,21 +14,44 @@ from shapely.ops import unary_union
 
 from omacad.model.features.base import Feature, region_cross_section
 from omacad.model.features.offset_face import _frame, cylinder_face_ref, find_plane_face
-from omacad.model.features.cell_patterns import (HOLE_SHAPES, VORONOI_STYLES, finish_cells, revolved_styled_cells, revolved_voronoi_cells,
+from omacad.model.features.cell_patterns import (HOLE_SHAPES, VORONOI_STYLES, _site_random, finish_cells, revolved_styled_cells, revolved_voronoi_cells,
                                                  styled_cells, voronoi_cells)
 from omacad.model.features.revolved_surface import RevolvedSurface, revolved_surface
+from omacad.model.features.curved_surface import CurvedWall, curved_wall
+from omacad.model.svg_importer import parse_svg_to_geometry, svg_to_template
 
-SHAPES = ("hexagon", "circle", "square", "diamond", "triangle", "voronoi")
+SHAPES = ("hexagon", "circle", "square", "diamond", "triangle", "voronoi", "svg")
+TURN_SAMPLES = 145      # angles tried for the room a randomly turned SVG cell needs
+TURN_SALT = 3           # keeps the turn apart from the Voronoi jitter drawn from the same index
+TURN_INDEX_SHIFT = 1 << 20   # _site_random draws alike for (i, j) and (-i, -j): positive indices keep opposite cells apart
 AIR = 0.05          # the tool starts this far out in the air: never a face coinciding with the body's
 OVERSHOOT = 0.05    # and a Through cell ends this far past the far side
 REVOLVED_AIR = 0.5  # a revolved wall is read at some heights only, and can bulge past the line between them
 FULL_GAP = math.radians(22.5)   # a cylinder whose widest angular gap is smaller than this goes all the way round
 
 
-def _templates(shape: str, size: float, wall: float):
+def _turned_size(polys, limit: float) -> Tuple[float, float]:
+    """Width and height of the box centred on 0 that holds `polys` turned any way up to `limit` degrees each way."""
+    points = np.vstack([np.asarray(p.exterior.coords) for p in polys])
+    angles = np.radians(np.linspace(-limit, limit, TURN_SAMPLES))[:, None]
+    x = np.cos(angles) * points[:, 0] - np.sin(angles) * points[:, 1]
+    y = np.sin(angles) * points[:, 0] + np.cos(angles) * points[:, 1]
+    return 2.0 * float(np.abs(x).max()), 2.0 * float(np.abs(y).max())
+
+
+def _templates(shape: str, size: float, wall: float, svg_path: Optional[str] = None, random_rotation: float = 0.0):
     """(cell outlines centred on 0, lattice points as (x, y, template) generator data) before rotation.
     `size` is the width of a cell across its flats (the diameter for a circle)."""
     p = size + wall
+    if shape == "svg":
+        geom = parse_svg_to_geometry(svg_path) if svg_path else None
+        polys, (w, h) = svg_to_template(geom, size)
+        if random_rotation > 0.0:       # cells turn on their own, so the grid must leave room for any two neighbours
+            w, h = _turned_size(polys, random_rotation)
+        px, py = max(w + wall, 1e-4), max(h + wall, 1e-4)
+        # Place cells in a clean grid with spacing matching the SVG bounding box + wall
+        motif = [(0.0, 0.0, i) for i in range(len(polys))]
+        return polys, ((px, 0.0), (0.0, py)), motif, (px, py)
     if shape in ("hexagon", "circle"):
         cell = (Polygon([(size / math.sqrt(3) * math.cos(math.radians(90 + 60 * k)),
                           size / math.sqrt(3) * math.sin(math.radians(90 + 60 * k))) for k in range(6)])
@@ -47,12 +70,15 @@ def _templates(shape: str, size: float, wall: float):
 
 
 def lattice(shape: str, size: float, wall: float, angle: float, bounds, anchor, period: Optional[float] = None,
-            randomness: float = 100.0, seed: int = 1):
+            randomness: float = 100.0, seed: int = 1, svg_path: Optional[str] = None, random_rotation: float = 0.0):
     """Cells (shapely polygons) covering `bounds` with one cell centred on `anchor`. With `period` (the length of a
-    cylinder's circumference) the lattice is fitted to repeat exactly along x, and only one turn is made."""
+    cylinder's circumference) the lattice is fitted to repeat exactly along x, and only one turn is made.
+    `random_rotation` (SVG cells) turns each cell by up to that many degrees either way, from its lattice index and
+    `seed`, so a cell keeps its turn when the face grows."""
     if shape == "voronoi":
         return voronoi_cells(size, wall, angle, bounds, anchor, period, randomness, seed)
-    templates, (a1, a2), motif, (px, py) = _templates(shape, size, wall)
+    random_rotation = max(0.0, random_rotation) if shape == "svg" else 0.0
+    templates, (a1, a2), motif, (px, py) = _templates(shape, size, wall, svg_path, random_rotation)
     a1, a2 = np.array(a1), np.array(a2)
     ax, ay = float(anchor[0]), float(anchor[1])
     stretch = 1.0
@@ -73,6 +99,7 @@ def lattice(shape: str, size: float, wall: float, angle: float, bounds, anchor, 
     ii, jj = np.meshgrid(np.arange(-k, k + 1), np.arange(-k, k + 1))
     base = ii.reshape(-1, 1) * a1 + jj.reshape(-1, 1) * a2
     shaped = [affinity.rotate(t, angle, origin=(0, 0)) for t in templates]
+    turns = (2.0 * _site_random(ii.ravel() + TURN_INDEX_SHIFT, jj.ravel() + TURN_INDEX_SHIFT, seed, TURN_SALT) - 1.0) * random_rotation
     cells = []
     pad = size + wall
     for mx, my, ti in motif:
@@ -84,7 +111,11 @@ def lattice(shape: str, size: float, wall: float, angle: float, bounds, anchor, 
         else:
             keep = (pts[:, 0] > minx - pad) & (pts[:, 0] < maxx + pad)
         keep &= (pts[:, 1] > miny - pad) & (pts[:, 1] < maxy + pad)
-        cells += [affinity.translate(shaped[ti], float(x), float(y)) for x, y in pts[keep]]
+        if random_rotation > 0.0:
+            cells += [affinity.translate(affinity.rotate(shaped[ti], float(turn), origin=(0, 0)), float(x), float(y))
+                      for (x, y), turn in zip(pts[keep], turns[keep])]
+        else:
+            cells += [affinity.translate(shaped[ti], float(x), float(y)) for x, y in pts[keep]]
     return cells
 
 
@@ -112,10 +143,11 @@ def best_fit(params, room, anchor, period=None):
         return finish_cells(cells, params, room.bounds, anchor, period)
     best = []
     shifts = ((0.0, 0.0), (0.0, half), (half, 0.0), (half, half))
-    for dx, dy in shifts[:1] if params["shape"] == "voronoi" else shifts:   # shifting would only reshuffle it
+    for dx, dy in shifts[:1] if params["shape"] in ("voronoi", "svg") else shifts:   # shifting would only reshuffle it
         cells = fit_cells(lattice(params["shape"], params["size"], params["wall"], params["angle"], room.bounds,
                                   (anchor[0] + dx, anchor[1] + dy), period, params.get("randomness", 100.0),
-                                  int(round(params.get("seed", 1)))), room, params["partial"])
+                                  int(round(params.get("seed", 1))), params.get("svg_path"),
+                                  params.get("random_rotation", 0.0)), room, params["partial"])
         if len(cells) > len(best):
             best = cells
     return finish_cells(best, params, room.bounds, anchor, period)
@@ -341,9 +373,17 @@ def cylinder_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Mani
         s0, s1 = r * start, r * (start + 2 * math.pi - gaps[g])
         room = box(s0 + margin, z0 + margin, s1 - margin, z1 - margin)
         anchor, period = ((s0 + s1) / 2.0, (z0 + z1) / 2.0), None
-    if room.is_empty or room.area < 1e-9:
-        return None, 0
-    cells = best_fit(params, room, anchor, period)
+    if not (room.is_empty or room.area < 1e-9):
+        cells = best_fit(params, room, anchor, period)
+    else:
+        cells = []
+    if not cells and margin > 0 and (z1 - z0) > params["size"] * 2.0 / math.sqrt(3.0):
+        z_margin = max(0.0, ((z1 - z0) - params["size"] * 2.0 / math.sqrt(3.0)) / 2.0 - 1e-3)
+        if z_margin < margin:
+            room = (box(-circ, z0 + z_margin, 2 * circ, z1 - z_margin) if full
+                    else box(s0 + margin, z0 + z_margin, s1 - margin, z1 - z_margin))
+            if not (room.is_empty or room.area < 1e-9):
+                cells = best_fit(params, room, anchor, period)
     if not cells:
         return None, 0
     out = -1.0 if internal else 1.0       # from the surface into the air
@@ -371,17 +411,64 @@ def cylinder_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Mani
     return (m3d.Manifold.compose(tools) if tools else None), len(cells)
 
 
+def curved_surface_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Manifold], int]:
+    wall = curved_wall(manifold, ref)
+    if wall is None or wall.L < 1e-3 or wall.height < 1e-3:
+        return None, 0
+    margin = params["margin"]
+    if wall.closed:
+        room = box(-wall.L, wall.z0 + margin, 2 * wall.L, wall.z1 - margin)
+        anchor, period = (wall.L / 2.0, (wall.z0 + wall.z1) / 2.0), wall.L
+    else:
+        room = box(margin, wall.z0 + margin, wall.L - margin, wall.z1 - margin)
+        anchor, period = (wall.L / 2.0, (wall.z0 + wall.z1) / 2.0), None
+
+    if not (room.is_empty or room.area < 1e-9):
+        cells = best_fit(params, room, anchor, period)
+    else:
+        cells = []
+
+    if not cells and margin > 0 and wall.height > params["size"] * 2.0 / math.sqrt(3.0):
+        z_margin = max(0.0, (wall.height - params["size"] * 2.0 / math.sqrt(3.0)) / 2.0 - 1e-3)
+        if z_margin < margin:
+            room = (box(-wall.L, wall.z0 + z_margin, 2 * wall.L, wall.z1 - z_margin) if wall.closed
+                    else box(margin, wall.z0 + z_margin, wall.L - margin, wall.z1 - z_margin))
+            if not (room.is_empty or room.area < 1e-9):
+                cells = best_fit(params, room, anchor, period)
+
+    if not cells:
+        return None, 0
+
+    centres, inward = [], []
+    for c in cells:
+        p, n = wall.point_and_normal(c.centroid.x, c.centroid.y)
+        centres.append(p)
+        inward.append(-n)
+
+    depths = _depths(centres, inward, rays, None if params["through"] else params["depth"])
+    step = 0.5
+    tools = []
+    for d, group in _grouped(cells, depths).items():
+        cs = region_cross_section(segmentize(unary_union(group), max_segment_length=step))
+        prism = m3d.Manifold.extrude(cs, height=1.0, n_divisions=2).refine_to_length(step)
+        tool = prism.warp_batch(wall.warp(-d, AIR)).transform(wall.M[:3, :])
+        tools.append(tool)
+
+    return (m3d.Manifold.batch_boolean(tools, m3d.OpType.Add) if tools else None), len(cells)
+
+
 class HoneycombFeature(Feature):
     """Cuts a lattice of cells into the chosen faces of one body."""
 
     PARAMS = ("shape", "size", "wall", "margin", "depth", "through", "angle", "partial", "randomness", "seed", "style",
-              "fine_size", "inner_wall", "hotspots", "rounding", "opening", "opening_end", "relaxation", "hole")
+              "fine_size", "inner_wall", "hotspots", "rounding", "opening", "opening_end", "relaxation", "hole", "svg_path", "random_rotation")
 
     def __init__(self, feature_id: str, name: str, target_body_id: str, faces=None, shape: str = "hexagon",
                  size: float = 6.0, wall: float = 1.5, margin: float = 3.0, depth: float = 1.0, through: bool = True,
                  angle: float = 0.0, partial: bool = False, randomness: float = 100.0, seed: int = 1, style: str = "even",
                  fine_size: float = 2.0, inner_wall: float = 0.8, hotspots: int = 1, rounding: float = 0.0,
-                 opening: float = 100.0, opening_end: float = 100.0, relaxation: int = 0, hole: str = "cell"):
+                 opening: float = 100.0, opening_end: float = 100.0, relaxation: int = 0, hole: str = "cell",
+                 svg_path: str = "", random_rotation: float = 0.0):
         super().__init__(feature_id, "honeycomb", name)
         self.target_body_id = target_body_id
         self.faces = list(faces or [])
@@ -394,6 +481,8 @@ class HoneycombFeature(Feature):
         self.fine_size, self.inner_wall, self.hotspots = float(fine_size), float(inner_wall), int(round(hotspots))
         self.rounding, self.opening, self.opening_end = float(rounding), float(opening), float(opening_end)
         self.relaxation, self.hole = int(round(relaxation)), hole if hole in HOLE_SHAPES else "cell"
+        self.svg_path = str(svg_path or "")
+        self.random_rotation = float(random_rotation)
         self.cells = 0
         self.skipped = 0
 
@@ -408,7 +497,8 @@ class HoneycombFeature(Feature):
         rays = _Rays(manifold)
         tools, cells, skipped = [], 0, 0
         for ref in faces:
-            make = plane_tool if ref.get("kind") == "plane" else cylinder_tool if ref.get("kind") == "cylinder" else None
+            kind = ref.get("kind")
+            make = plane_tool if kind == "plane" else cylinder_tool if kind == "cylinder" else curved_surface_tool if kind == "surface" else None
             try:
                 tool, n = make(manifold, ref, params, rays) if make else (None, 0)
             except Exception as e:     # one odd face must not break the history

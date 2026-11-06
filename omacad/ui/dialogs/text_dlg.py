@@ -144,6 +144,13 @@ class TextDialog(BaseFeatureDialog):
         self.chk_fit.setToolTip("Spread the letters evenly over the whole path.")
         form.addRow("", self.chk_fit)
 
+        self.pair_form_rows(form, [
+            (self.cmb_font, self.spn_height),
+            (self.spn_margin, self.spn_spacing),
+            (self.cmb_h, self.cmb_v),
+            (self.spn_angle, self.flip_box),
+            (self.cmb_place, self.chk_fit)])
+
         self.main_layout.addLayout(form)
         self.add_buttons()
         self._path_rows = (self.lbl_path, self.cmb_place, self.chk_fit)

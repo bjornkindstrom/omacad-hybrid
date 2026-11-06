@@ -18,6 +18,9 @@ class RevolveDialog(BaseFeatureDialog):
         self.doc = doc
         form = QFormLayout()
         self.cmb_profile = QComboBox()
+        self.cmb_profile.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.cmb_profile.setMinimumContentsLength(12)
+        self.cmb_profile.setMinimumWidth(120)   # the long names and placeholder must not squeeze the row's label away
         self.profile_keys = []
         self.cmb_axis = QComboBox()
         self.axis_keys = []
@@ -47,6 +50,10 @@ class RevolveDialog(BaseFeatureDialog):
         self.cmb_op.addItems(["Auto", "New Body", "Join", "Cut (Difference)", "Intersect"])
         self.cmb_op.setToolTip("Auto: cuts when the revolve goes into a body, joins when it touches one, otherwise makes a new body.")
         form.addRow("Operation:", self.cmb_op)
+
+        self.pair_form_rows(form, [
+            (self.cmb_dir, self.cmb_op),
+            (self.spn_angle, self.spn_angle2)])
 
         self.lbl_info = QLabel("")
         self.lbl_info.setWordWrap(True)

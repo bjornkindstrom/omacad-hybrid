@@ -7,11 +7,13 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import manifold3d as m3d
 
-from omacad.model.features.base import Feature
+from omacad.model.features.base import Feature, region_cross_section
 from omacad.model.features.honeycomb import FULL_GAP, _cylinder_extent, _refitted
 from omacad.model.features.offset_face import _frame
 from omacad.model.features.revolved_surface import END_OVERSHOOT, RevolvedSurface, revolved_surface
+from omacad.model.features.curved_surface import curved_wall, ensure_positive_volume
 from omacad.model.kernel import CadKernel
+from shapely.geometry import Polygon
 
 SHAPES = ("half-round", "rectangular")
 DIRECTIONS = ("outward", "inward")
@@ -145,10 +147,80 @@ def _tube(radii, zs, nr, nz, angles, near, far) -> m3d.Manifold:
     return solid
 
 
+def surface_japandi_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, Any]) -> Tuple[m3d.Manifold, int]:
+    wall = curved_wall(manifold, ref)
+    if wall is None or wall.L < 1e-3 or wall.height < 1e-3:
+        raise ValueError("The curved surface could not be analyzed.")
+    half_round = params["shape"] == "half-round"
+    inward = params["direction"] == "inward"
+    if params["spacing"] < 0 or (half_round and params["radius"] <= 0):
+        raise ValueError("The radius must be above zero, and the spacing not below it.")
+    if not half_round and (params["width"] <= 0 or params["depth"] <= 0 or params["spacing"] <= 0):
+        raise ValueError("Width, depth and spacing must all be above zero.")
+    height = params["radius"] if half_round else params["depth"]
+    margin = params["margin"]
+    free = -END_OVERSHOOT if inward else FREE_END
+    bottom = wall.z0 + (margin if margin > 0 else free)
+    top = wall.z1 - (margin if margin > 0 else free)
+    if top - bottom <= 1e-3:
+        raise ValueError("The margin leaves no room for ribs.")
+    h_span = top - bottom
+
+    period = rib_period(params)
+    ribs = max(1, int(round(wall.L / period)))
+    equiv_R = wall.L / (2.0 * math.pi)
+    places, shares = rib_columns(params, equiv_R, ribs)
+    step_s = wall.L / ribs
+
+    s_cols = (np.arange(ribs)[:, None] + places[None, :]).ravel() * step_s
+    relief_cols = np.tile(shares * height, ribs)
+    has_rib = relief_cols > 0
+
+    if inward:
+        t_bottom = np.where(has_rib, -relief_cols, CLEAR)
+        t_top = np.full_like(t_bottom, AIR)
+    else:
+        t_bottom = np.full_like(relief_cols, -BURIED)
+        t_top = np.where(has_rib, relief_cols, -CLEAR)
+
+    poly_pts = []
+    for s_val, t_val in zip(s_cols, t_bottom):
+        poly_pts.append((s_val, t_val))
+    for s_val, t_val in zip(reversed(s_cols), reversed(t_top)):
+        poly_pts.append((s_val, t_val))
+
+    poly = Polygon(poly_pts).buffer(0)
+    cs = region_cross_section(poly)
+    step = 0.5
+    divisions = max(2, int(h_span / 2.0))
+    prism = m3d.Manifold.extrude(cs, h_span, n_divisions=divisions).refine_to_length(step)
+
+    twist = math.radians(params["twist"])
+
+    def warp_fn(pts_arr: np.ndarray) -> np.ndarray:
+        s_in = pts_arr[:, 0]
+        t_in = pts_arr[:, 1]
+        z_frac = pts_arr[:, 2] / max(h_span, 1e-6)
+        z_in = bottom + pts_arr[:, 2]
+        s_eff = s_in + twist * equiv_R * z_frac
+        if wall.closed and wall.L > 1e-6:
+            s_eff = np.mod(s_eff, wall.L)
+        px = np.interp(s_eff, wall.s, wall.coords[:, 0])
+        py = np.interp(s_eff, wall.s, wall.coords[:, 1])
+        nx = np.interp(s_eff, wall.s, wall.normals[:, 0])
+        ny = np.interp(s_eff, wall.s, wall.normals[:, 1])
+        return np.column_stack([px + t_in * nx, py + t_in * ny, z_in])
+
+    tool = prism.warp_batch(warp_fn).transform(wall.M[:3, :])
+    return ensure_positive_volume(tool), ribs
+
+
 def japandi_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, Any]) -> Tuple[m3d.Manifold, int]:
     """(the solid to add or cut away, ribs per turn) for one face. Raises ValueError saying why a face can't take them."""
+    if ref.get("kind") == "surface":
+        return surface_japandi_tool(manifold, ref, params)
     if ref.get("kind") != "cylinder" or ref.get("internal"):
-        raise ValueError("Japandi ribs need an outer round face.")
+        raise ValueError("Japandi ribs need an outer round or curved face.")
     half_round = params["shape"] == "half-round"
     inward = params["direction"] == "inward"
     if params["spacing"] < 0 or (half_round and params["radius"] <= 0):

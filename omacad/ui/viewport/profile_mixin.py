@@ -7,6 +7,8 @@ from omacad.model.kernel import CadKernel
 from omacad.model.timeline import profile_cross_section
 from omacad.ui.math3d import ray_from_screen, ray_plane_intersect
 
+PREVIEW_SMOOTH_TRIANGLES = 60000    # above this, smooth normals take over a second per preview: shade it flat until OK
+
 
 class ProfileMixin:
     """Profile selection and preview helpers used by :class:`Viewport3D`."""
@@ -34,8 +36,8 @@ class ProfileMixin:
         picking; None restores them. Fillet/Chamfer uses it to show the finished result while edges are picked.
         Under a section view the solids are cut like the bodies, with their own cut faces."""
         before, self.display_solids = getattr(self, "display_solids", None) or {}, manifolds or None
-        self.display_override = ({bid: CadKernel.extract_render_mesh(m) for bid, m in manifolds.items()}
-                                 if manifolds else None)
+        self.display_override = ({bid: CadKernel.extract_render_mesh(m, smooth=m.num_tri() <= PREVIEW_SMOOTH_TRIANGLES)
+                                  for bid, m in manifolds.items()} if manifolds else None)
         if self.section is not None:
             for bid in set(before) | set(manifolds or {}):
                 solid = (manifolds or {}).get(bid) or getattr(self.doc.bodies.get(bid), "manifold", None)

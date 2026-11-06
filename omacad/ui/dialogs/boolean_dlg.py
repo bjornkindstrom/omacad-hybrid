@@ -6,6 +6,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QFormLayout, QComboBox, QLabel
 from omacad.model.document import Document
 from omacad.ui.dialogs.base import BaseFeatureDialog
+from omacad.ui.theme import style
 
 
 class CombineDialog(BaseFeatureDialog):
@@ -57,6 +58,10 @@ class CombineDialog(BaseFeatureDialog):
         self.chk_keep_tool.setChecked(False)
         self.chk_keep_tool.toggled.connect(lambda _: self.changed.emit())
         form.addRow("", self.chk_keep_tool)
+
+        self.pair_form_rows(form, [
+            (self.cmb_target, self.cmb_tool),
+            (self.cmb_op, self.chk_keep_tool)])
 
         self.lbl_pick = QLabel()
         self.lbl_pick.setWordWrap(True)
@@ -157,6 +162,8 @@ class SplitBodyDialog(BaseFeatureDialog):
             self.cmb_plane.setCurrentIndex(self.plane_keys.index(preselected_plane_id))
         form.addRow("Splitting Plane:", self.cmb_plane)
 
+        self.pair_form_rows(form, [(self.cmb_target, self.cmb_plane)])
+
         self.lbl_status = QLabel()
         self.lbl_status.setWordWrap(True)
         form.addRow(self.lbl_status)
@@ -223,12 +230,12 @@ class SplitBodyDialog(BaseFeatureDialog):
         p2 = manifold.trim_by_plane(-normal, -d)
         if p1.is_empty() or p2.is_empty() or p1.volume() < 1e-6 or p2.volume() < 1e-6:
             self.lbl_status.setText("⚠️ Warning: Plane does not cut through the body.")
-            self.lbl_status.setStyleSheet("color: #E57373;")
+            style(self.lbl_status, "color: #E57373;", "QLabel { color: #C62828; }")
             if hasattr(self, "btn_ok"):
                 self.btn_ok.setEnabled(False)
         else:
             self.lbl_status.setText(f"✓ Split produces 2 bodies ({p1.volume():.1f} mm³ + {p2.volume():.1f} mm³).")
-            self.lbl_status.setStyleSheet("color: #81C784;")
+            style(self.lbl_status, "color: #81C784;", "QLabel { color: @ok; }")
             if hasattr(self, "btn_ok"):
                 self.btn_ok.setEnabled(True)
 

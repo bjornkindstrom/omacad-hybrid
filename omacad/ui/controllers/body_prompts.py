@@ -80,6 +80,8 @@ class BodyPromptsMixin:
                     self.status_label.setText(f"Combined bodies with operation: {op}.")
 
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(vp, dlg, lambda: preview_anchor(vp) if not dlg.picking_target() else None)
         dlg.show()
 
     @leaves_sketch
@@ -121,6 +123,12 @@ class BodyPromptsMixin:
                         self.viewport.update()
 
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, mesh_anchor
+        add_apply_button(
+            self.viewport, dlg,
+            lambda: mesh_anchor(self.viewport, self.doc.bodies[dlg.get_values()[0]].render_mesh)
+            if all(dlg.get_values()) and dlg.get_values()[0] in self.doc.bodies else None
+        )
         dlg.show()
 
     @leaves_sketch
@@ -216,6 +224,11 @@ class BodyPromptsMixin:
         dlg.changed.connect(lambda: timer.start())
         dlg.finished.connect(on_finished)
         self.viewport.body_clicked.connect(dlg.select_body)
+        from omacad.ui.apply_button import add_apply_button, face_ref_anchor, preview_anchor
+        add_apply_button(
+            self.viewport, dlg,
+            lambda: face_ref_anchor(self.viewport, lambda: dlg.open_faces) or preview_anchor(self.viewport)
+        )
         refresh_preview()
         dlg.show()
 
@@ -538,6 +551,8 @@ class BodyPromptsMixin:
         self.viewport.body_clicked.connect(dlg.select_body)
         self.viewport.begin_plane_pick("move_body")
         self.status_label.setText("Move / Rotate: drag the 3D arrows to move, or drag the circular rings to rotate (Fusion 360 style).")
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport) if pending() else None)
 
         refresh_preview()
         dlg.show()

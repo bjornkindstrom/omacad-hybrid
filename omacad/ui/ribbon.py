@@ -155,6 +155,7 @@ class Ribbon(QWidget):
     move_clicked = Signal()
     thread_clicked = Signal()
     canvas_clicked = Signal()
+    import_svg_clicked = Signal()
     import_3mf_clicked = Signal()
     inspect_clicked = Signal()
     export_media_clicked = Signal(str)    # "screenshot", "copy" or "video"
@@ -407,7 +408,8 @@ class Ribbon(QWidget):
             "line": "btn_line", "polygon": "btn_polygon", "arc": "btn_arc", "spline": "btn_spline", "control_spline": "btn_control_spline", "slot": "btn_slot", "text": "btn_text",
             "offset_sketch": "btn_offset_sk", "mirror_sketch": "btn_mirror_sk", "project": "btn_project_sk",
             "dimension": "btn_dim", "fillet_sketch": "btn_fillet_sk", "trim": "btn_trim_sk", "move_sketch": "btn_move",
-            "rotate_sketch": "btn_rotate_sk", "scale_sketch": "btn_scale_sk", "construction": "btn_construct",
+            "rotate_sketch": "btn_rotate_sk", "scale_sketch": "btn_scale_sk", "pattern_sketch": "btn_pattern_sketch",
+            "construction": "btn_construct",
         }
         h_layout = QHBoxLayout(self.sketch_tab)
         h_layout.setContentsMargins(4, 1, 4, 1)
@@ -431,15 +433,16 @@ class Ribbon(QWidget):
                     from PySide6.QtWidgets import QMenu
                     menu = QMenu(self.btn_construct)
                     theme.style_menu(menu)
-                    for tool, label in (("LINE", "Construction Line"), ("CIRCLE", "Construction Circle")):
-                        act = menu.addAction(label)
+                    for tool, cid, label in (("LINE", "line", "Construction Line"), ("CIRCLE", "circle", "Construction Circle")):
+                        c = commands.get(cid)
+                        act = menu.addAction(theme.command_icon(cid, c.icon, 22), label)
                         act.triggered.connect(lambda _=False, t=tool: self.construction_tool_requested.emit(t))
                     self.btn_construct.setMenu(menu)
                     row.addWidget(self.btn_construct)
                 elif item == "constraints":
                     self._build_constraints(row, group_constraints, scale)
                 else:
-                    btn = self._command_button(item, checkable=item != "project" and item != "measure")
+                    btn = self._command_button(item, checkable=item not in ("project", "measure", "fix_sketch"))
                     if item in sketch_buttons:
                         setattr(self, sketch_buttons[item], btn)
                     row.addWidget(btn)
@@ -575,6 +578,8 @@ class Ribbon(QWidget):
         self.btn_rotate_sk.setChecked(tool_name == "ROTATE")
         if hasattr(self, "btn_scale_sk"):
             self.btn_scale_sk.setChecked(tool_name == "SCALE")
+        if hasattr(self, "btn_pattern_sketch"):
+            self.btn_pattern_sketch.setChecked(tool_name == "PATTERN")
         self.sketch_tool_selected.emit(tool_name)
 
     def selection_context(self) -> str:
@@ -620,9 +625,11 @@ class Ribbon(QWidget):
             self.tabs.setCurrentIndex(0)
             for btn in (
                 self.btn_line, self.btn_rect, self.btn_circle, self.btn_arc,
+                getattr(self, "btn_spline", None), getattr(self, "btn_control_spline", None),
                 self.btn_slot, self.btn_polygon, self.btn_text, self.btn_fillet_sk,
                 self.btn_trim_sk, self.btn_mirror_sk, self.btn_offset_sk,
                 self.btn_dim, self.btn_move, self.btn_rotate_sk, getattr(self, "btn_scale_sk", None),
+                getattr(self, "btn_pattern_sketch", None), getattr(self, "btn_construct", None),
             ):
                 if btn is not None:
                     btn.setChecked(False)

@@ -1,3 +1,4 @@
-<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="24,7 28.7,18.5 41.1,19.4 30.5,29.7 34.6,39.6 24,33 13.4,39.6 17.5,29.7 6.9,19.4 19.3,18.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <path d="M24 5L29 17L42 18L32 27L35 40L24 33L13 40L16 27L6 18L19 17Z M24 10V17 M37 19L30 22 M32 36L27 29 M16 36L21 29 M11 19L18 22"/>
+  <circle cx="24" cy="24" r="3.5"/>
 </svg>

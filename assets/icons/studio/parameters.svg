@@ -1,3 +1,6 @@
 <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <path d="M8 12H40M8 24H40M8 36H40"/><circle cx="16" cy="12" r="4" fill="white"/><circle cx="32" cy="24" r="4" fill="white"/><circle cx="22" cy="36" r="4" fill="white"/>
+  <path d="M8 12H12M20 12H40M8 24H28M36 24H40M8 36H18M26 36H40"/>
+  <circle cx="16" cy="12" r="4"/>
+  <circle cx="32" cy="24" r="4"/>
+  <circle cx="22" cy="36" r="4"/>
 </svg>

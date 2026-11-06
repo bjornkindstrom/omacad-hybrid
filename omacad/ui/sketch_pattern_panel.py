@@ -42,6 +42,11 @@ class SketchPatternPanel(QGroupBox):
         self.circ_rows = [("Count", self.count), ("Angle", self.angle), ("Centre", self.centre)]
         for label, w in self.rect_rows + self.circ_rows:
             form.addRow(label, w)
+        from omacad.ui.dialogs.base import BaseFeatureDialog
+        BaseFeatureDialog.pair_form_rows(form, [
+            (self.count_x, self.spacing_x),
+            (self.count_y, self.spacing_y),
+            (self.count, self.angle)])
         row = QHBoxLayout()
         self.cancel, self.ok = QPushButton("Cancel"), QPushButton("OK")
         for b in (self.cancel, self.ok):
@@ -64,7 +69,9 @@ class SketchPatternPanel(QGroupBox):
         circular = self.kind.currentData() == "circular"
         for rows, visible in ((self.rect_rows, not circular), (self.circ_rows, circular)):
             for _label, w in rows:
-                self._form.setRowVisible(w.parentWidget() if w.parentWidget() is not self else w, visible)
+                w.setVisible(visible)
+                if w is self.centre:
+                    self._form.setRowVisible(w, visible)
 
     def _accept(self):
         for s in (self.count_x, self.count_y, self.spacing_x, self.spacing_y, self.count, self.angle):

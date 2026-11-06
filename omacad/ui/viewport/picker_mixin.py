@@ -563,12 +563,16 @@ class PickerMixin:
         face_best, face_t = None, float("inf")
         section_keeps = getattr(self, "_section_keeps", lambda pt: True)
         surface_in_front = getattr(self, "_surface_in_front", lambda *args: False)
+        hidden_pick = getattr(self, "shell_target_body_ids", None) or (
+            {self.shell_target_body_id} if getattr(self, "shell_target_body_id", "") else set()
+        )
         for body in ([] if only_origin else self.doc.bodies.values()):
-            if shell_pick and getattr(self, "shell_target_body_id", None):   # the body is hidden behind its preview; only its faces count
+            if self.plane_pick_mode and self.plane_pick_purpose == "shell_face" and getattr(self, "shell_target_body_id", None):
                 if body.body_id != self.shell_target_body_id:
                     continue
-            elif shell_pick and not body.pickable:
-                continue
+            elif shell_pick:
+                if not (body.pickable or body.body_id in hidden_pick):
+                    continue
             elif not body.pickable:
                 continue
             if len(body.faces):
@@ -614,10 +618,12 @@ class PickerMixin:
         proj, view, _ = self.get_matrices()
         origin, ray_dir = ray_from_screen(x, y, self.width(), self.height(), view, proj)
         best = None
-        only = self.shell_target_body_id if self.plane_pick_purpose == "offset_face" else ""
+        only = (getattr(self, "shell_target_body_ids", None) or (
+            {self.shell_target_body_id} if getattr(self, "shell_target_body_id", "") else set()
+        )) if self.plane_pick_purpose == "offset_face" else set()
         for body in self.doc.bodies.values():
             mesh = self._pick_mesh(body)
-            if (only and body.body_id != only) or (not only and not body.pickable) or mesh is None or len(mesh.vertices) == 0:
+            if not (body.pickable or body.body_id in only) or mesh is None or len(mesh.vertices) == 0:
                 continue
             hit = ray_mesh_hit(mesh, origin, ray_dir)
             if hit is not None and (best is None or hit[0] < best[0]):
@@ -703,10 +709,12 @@ class PickerMixin:
         proj, view, _ = self.get_matrices()
         origin, ray_dir = ray_from_screen(x, y, self.width(), self.height(), view, proj)
         best = None
-        only = self.shell_target_body_id if self.plane_pick_purpose == "offset_face" else ""
+        only = (getattr(self, "shell_target_body_ids", None) or (
+            {self.shell_target_body_id} if getattr(self, "shell_target_body_id", "") else set()
+        )) if self.plane_pick_purpose == "offset_face" else set()
         for body in self.doc.bodies.values():
             mesh = self._pick_mesh(body)
-            if (only and body.body_id != only) or (not only and not body.pickable) or mesh is None or len(mesh.vertices) == 0:
+            if not (body.pickable or body.body_id in only) or mesh is None or len(mesh.vertices) == 0:
                 continue
             hit = ray_mesh_hit(mesh, origin, ray_dir)
             if hit is not None and (best is None or hit[0] < best[0]):

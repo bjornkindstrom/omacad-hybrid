@@ -84,6 +84,8 @@ class PrimitivePromptsMixin:
 
         timer = self._connect_debounced_preview(dlg, refresh_preview, interval_ms=120)
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(vp, dlg, lambda: preview_anchor(vp))
         self.status_label.setText("Jar with Lid: set the sizes (fields or sliders), OK. Esc cancels.")
         dlg.show()
         timer.start()
@@ -256,6 +258,8 @@ class PrimitivePromptsMixin:
         dlg.pick_face_requested.connect(on_pick_face)
         self.viewport.primitive_face_picked.connect(on_face_picked)
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport))
         self.dock(dlg)
         refresh_preview()
 
@@ -313,6 +317,8 @@ class PrimitivePromptsMixin:
         timer = self._connect_debounced_preview(dlg, refresh_preview, interval_ms=25, throttle=False)
         dlg.finished.connect(lambda _: timer.stop())
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport))
         self.dock(dlg)
         refresh_preview()
 
@@ -506,6 +512,8 @@ class PrimitivePromptsMixin:
         self.viewport.cylinder_picked.connect(on_cylinder_picked)
         self.viewport.body_clicked.connect(dlg.select_body)
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport))
         self.dock(dlg)
         refresh_preview()
         on_pick_face()

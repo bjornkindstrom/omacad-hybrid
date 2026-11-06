@@ -87,6 +87,8 @@ class SketchScenePromptsMixin:
 
         dlg.changed.connect(update_preview)
         self.viewport.extrude_handle_dragged.connect(on_handle_drag)
+        from omacad.ui.apply_button import add_apply_button, arrow_anchor
+        add_apply_button(self.viewport, dlg, lambda: arrow_anchor(self.viewport))
         update_preview()
 
         # Surface pick mode if user clicks "To surface…"
@@ -227,6 +229,8 @@ class SketchScenePromptsMixin:
         self.viewport.extrude_handle_dragged.connect(dragged)
         dlg.changed.connect(apply)
         dlg.finished.connect(finished)
+        from omacad.ui.apply_button import add_apply_button, arrow_anchor
+        add_apply_button(self.viewport, dlg, lambda: arrow_anchor(self.viewport))
         dlg.show()
         dlg.set_offset(round(existing["offset"] if existing else start, 2))
         if existing:

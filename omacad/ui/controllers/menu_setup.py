@@ -40,6 +40,10 @@ class MenuSetupMixin:
 
         menu_file.addSeparator()
 
+        act_import_svg = QAction("Import SVG…", self)
+        act_import_svg.triggered.connect(self.on_import_svg)
+        menu_file.addAction(act_import_svg)
+
         act_import_3mf = QAction("Import 3MF…", self)
         act_import_3mf.triggered.connect(self.on_import_3mf)
         menu_file.addAction(act_import_3mf)
@@ -91,14 +95,12 @@ class MenuSetupMixin:
                         target.addSeparator()
                         continue
                     if isinstance(cid, tuple):      # (id, label, icon, tip, members): a submenu opening to the right
-                        sub = target.addMenu(cid[1])
+                        sub = target.addMenu(theme.command_icon(cid[0], cid[2], 24), cid[1])
                         sub.setToolTipsVisible(True)
                         add_entries(sub, cid[4])
                         continue
                     c = commands.get(cid)
-                    act = QAction(theme.named_icon(theme.COMMAND_ICONS[cid], c.icon, 24) if cid in theme.COMMAND_ICONS
-                                  else theme.emoji_icon(c.icon, 24) if c.icon != "dimension" else theme.tool_icon(c.icon, 24),
-                                  c.label, target)
+                    act = QAction(theme.command_icon(cid, c.icon, 24), c.label, target)
                     keys = [k for k in (c.shortcut, *c.extra_shortcuts) if k]
                     if keys:
                         act.setShortcuts([QKeySequence(k) for k in keys])
@@ -156,8 +158,8 @@ class MenuSetupMixin:
         # Icons for the other menu entries (the commands have theirs); drawn from emoji at a size the menu font can't give
         icons = {
             "New Design": "📄", "Open Project": "📂", "Save Project As": "💾", "Save Project": "💾", "Export All as STL": "📤",
-            "Import 3MF": "📥", "Exit": "🚪", "Undo": "↩️", "Redo": "↪️", "Fit View": "🔲", "Toggle Ground Grid": "📐",
-            "Toggle Feature Edges": "🔳", "About": "ℹ️", "Settings": "⚙️",
+            "Export All as STEP": "📤", "Import 3MF": "📥", "Exit": "🚪", "Undo": "↩️", "Redo": "↪️", "Fit View": "🔲",
+            "Toggle Ground Grid": "📐", "Toggle Feature Edges": "🔳", "About": "ℹ️", "Settings": "⚙️",
         }
         studio_names = {"Fit View": "fit", "Toggle Ground Grid": "grid"}   # their emoji means something else in Studio
         for menu in menubar.findChildren(QMenu):

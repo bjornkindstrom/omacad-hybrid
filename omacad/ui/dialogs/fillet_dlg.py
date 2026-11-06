@@ -66,6 +66,10 @@ class RoundEdgesDialog(BaseFeatureDialog):
         self.chk_chain.setToolTip("Clicking an edge also selects the edges joined to it smoothly (as in Fusion).")
         if not editing:
             form.addRow("", self.chk_chain)
+        pairs = [(self.cmb_kind, self.cmb_chamfer), (self.spn_size2, self.spn_angle)]
+        if not editing:
+            pairs.append((self.chk_flip, self.chk_chain))
+        self.pair_form_rows(form, pairs)
         self.lbl_count = QLabel("" if editing else _HELP)
         self.lbl_count.setWordWrap(True)
         self.main_layout.addWidget(self.lbl_count)

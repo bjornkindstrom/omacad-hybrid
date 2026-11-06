@@ -51,10 +51,21 @@ class FeatureNodeWidget(QFrame):
         "knurl": "🧶",
         "japandi": "🎋",
         "split_body": "🪚",
-        "move": "🧭",
+        "move": "✥",
         "import_mesh": "📥",
         "linked_sketch": "📄",
+        "star_bracket": "⭐",
+        "branch": "🔗",
     }
+
+    @classmethod
+    def feature_emoji(cls, feature: Feature) -> str:
+        kind = getattr(feature, "kind", "")
+        if feature.feature_type == "fillet" and kind == "chamfer":
+            return "◢"
+        if feature.feature_type == "pattern" and kind == "mirror":
+            return "🪞"
+        return cls.FEATURE_ICONS.get(feature.feature_type, "⚙️")
 
     def __init__(self, index: int, feature: Feature, is_active: bool, parent: Optional[QWidget] = None,
                  show_label: bool = True):
@@ -68,9 +79,13 @@ class FeatureNodeWidget(QFrame):
         layout.setContentsMargins(5, 2, 5, 2)
         layout.setSpacing(4)
 
-        icon_str = self.FEATURE_ICONS.get(feature.feature_type, "⚙️")
+        icon_str = self.feature_emoji(feature)
         lbl_icon = QLabel()
-        lbl_icon.setPixmap(theme.emoji_icon(icon_str, 24).pixmap(24, 24))
+        kind = getattr(feature, "kind", "")
+        if feature.feature_type == "pattern" and kind in ("linear", "circular", "fill"):
+            lbl_icon.setPixmap(theme.named_icon(f"pattern_{kind}", icon_str, 24).pixmap(24, 24))
+        else:
+            lbl_icon.setPixmap(theme.emoji_icon(icon_str, 24).pixmap(24, 24))
         layout.addWidget(lbl_icon)
 
         lbl_name = QLabel(feature.name)

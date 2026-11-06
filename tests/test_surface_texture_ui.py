@@ -179,3 +179,37 @@ def test_a_step_is_edited_in_the_same_panel_with_its_type_locked():
 
 def test_the_neighbouring_commands_keep_their_longer_help():
     assert {"pattern", "offset_plane", "fillet", "chamfer", "shell", "offset_face"} <= set(help_topics.MORE)
+
+
+def test_surface_texture_works_on_jar_and_lid(win):
+    from omacad.model.jar import JarSpec
+    ids = win.doc.add_jar(JarSpec())
+    jar_id, lid_id = ids["jar"], ids["lid"]
+    jar_wall = {"kind": "cylinder", "origin": [0.0, 0.0, 0.0], "axis": [0.0, 0.0, 1.0],
+                "radius": 20.0, "length": 40.0, "internal": False}
+    lid_wall = {"kind": "cylinder", "origin": [50.0, 0.0, 0.0], "axis": [0.0, 0.0, 1.0],
+                "radius": 20.0, "length": 12.0, "internal": False}
+
+    win.prompt_surface_texture()
+    dlg = win.inspector.current_tool_dlg
+    dlg.cmb_kind.setCurrentText("Knurl")
+    win.viewport.offset_face_picked.emit(jar_wall, jar_id)
+    win.viewport.offset_face_picked.emit(lid_wall, lid_id)
+    assert len(dlg.faces) == 2 and len(dlg.faces_per_body()) == 2
+    dlg.accept()
+    QApplication.processEvents()
+    assert [f.feature_type for f in win.doc.timeline.features[-2:]] == ["knurl", "knurl"]
+    assert all(f.teeth > 0 and not f.notes for f in win.doc.timeline.features[-2:])
+    win.doc.undo()
+    win.doc.undo()
+
+    win.prompt_surface_texture()
+    dlg = win.inspector.current_tool_dlg
+    dlg.cmb_kind.setCurrentText("Cells")
+    win.viewport.offset_face_picked.emit(jar_wall, jar_id)
+    win.viewport.offset_face_picked.emit(lid_wall, lid_id)
+    dlg.accept()
+    QApplication.processEvents()
+    assert [f.feature_type for f in win.doc.timeline.features[-2:]] == ["honeycomb", "honeycomb"]
+    assert all(f.cells > 0 for f in win.doc.timeline.features[-2:])
+

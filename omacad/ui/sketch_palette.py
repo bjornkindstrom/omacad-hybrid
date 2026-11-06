@@ -161,7 +161,8 @@ class SketchPalette(QFrame):
         content_layout.addSpacing(4)
 
         # Edit Text Button (shown when active sketch contains SketchText entities)
-        self.btn_edit_text = QPushButton("🔤  Edit Text…")
+        self.btn_edit_text = QPushButton()
+        theme.set_button_text(self.btn_edit_text, "🔤  Edit Text…")
         self.btn_edit_text.setToolTip("Edit text in the active sketch (or double-click text in the 3D view)")
         style(self.btn_edit_text, """
             QPushButton {

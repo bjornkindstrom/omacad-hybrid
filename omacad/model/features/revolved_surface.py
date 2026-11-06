@@ -25,10 +25,21 @@ def _profile_points(local: m3d.Manifold, internal: bool):
         return []
     # just inside both ends of every stretch between mesh rings: a plain cylinder has only its two ends to read,
     # and a step shows as a jump, which ends the face
+    if 2 * (len(heights) - 1) > MAX_LEVELS:
+        step = (heights[-1] - heights[0]) / (MAX_LEVELS // 2)
+        kept = [heights[0]]
+        for i in range(len(heights) - 1):
+            if heights[i + 1] - heights[i] >= step:
+                if heights[i] != kept[-1]:
+                    kept.append(heights[i])
+                kept.append(heights[i + 1])
+            elif heights[i + 1] - kept[-1] >= step:
+                kept.append(heights[i + 1])
+        if heights[-1] != kept[-1]:
+            kept.append(heights[-1])
+        heights = np.asarray(kept, dtype=float)
     inside = np.minimum(1e-3, np.diff(heights) / 4.0)
     levels = np.sort(np.concatenate((heights[:-1] + inside, heights[1:] - inside)))
-    if len(levels) > MAX_LEVELS:
-        levels = levels[np.linspace(0, len(levels) - 1, MAX_LEVELS).astype(int)]
     points = []
     for z in levels:
         rings = [np.asarray(r, dtype=float) for r in local.slice(float(z)).to_polygons()]
@@ -58,7 +69,9 @@ def _run_at(points, z_middle: float) -> Optional[np.ndarray]:
             a, b = np.subtract(run[-1], run[-2]), np.subtract(point, run[-1])
             if abs(math.atan2(a[0] * b[1] - a[1] * b[0], float(a @ b))) > CREASE:
                 runs.append(run)
-                run = [run[-1]]
+                run = [point] if abs(b[1]) <= 2.1e-3 and abs(b[0]) > 0.1 else [run[-1]]
+                if run == [point]:
+                    continue
         run.append(point)
     runs.append(run)
     for run in runs:

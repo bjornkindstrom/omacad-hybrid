@@ -17,6 +17,7 @@ class HoleDialog(BaseFeatureDialog):
         super().__init__("Hole", parent, embedded)
         v = values or {}
         form = QFormLayout()
+        self._row_labels = {}
         self.points = list(v.get("points", []))
         self.plane = None
         self.lbl_points = QLabel(f"{len(self.points)} point(s) selected" if self.points else "No points selected")
@@ -36,7 +37,7 @@ class HoleDialog(BaseFeatureDialog):
         self.cmb_type = QComboBox()
         self.cmb_type.addItem(tool_icon("🕳️", 18), "Simple", "simple")
         self.cmb_type.addItem(tool_icon("🔩", 18), "Counterbore", "counterbore")
-        self.cmb_type.addItem(tool_icon("📐", 18), "Countersink", "countersink")
+        self.cmb_type.addItem(tool_icon("🔺", 18), "Countersink", "countersink")
         self.cmb_type.setCurrentIndex(max(0, self.cmb_type.findData(v.get("hole_type", "simple"))))
         self._row(form, "Hole type", "🕳️", self.cmb_type)
         self.spn_diameter = self._spin(v.get("diameter", 6.0), 0.01, "Hole diameter")
@@ -53,21 +54,29 @@ class HoleDialog(BaseFeatureDialog):
         self.spn_cs_diameter = self._spin(v.get("cs_diameter", 12.0), 0.01, "Countersink diameter")
         self._row(form, "Countersink diameter", "📏", self.spn_cs_diameter)
         self.spn_cs_angle = self._spin(v.get("cs_angle", 90.0), 10.0, "Countersink angle", 170.0, " °")
-        self._row(form, "Countersink angle", "📐", self.spn_cs_angle)
+        self._row(form, "Countersink angle", "⌒", self.spn_cs_angle)
         self.cmb_tip = QComboBox()
         self.cmb_tip.addItem(tool_icon("➖", 18), "Flat", "flat")
         self.cmb_tip.addItem(tool_icon("🔻", 18), "Angled drill point", "angle")
         self.cmb_tip.setCurrentIndex(max(0, self.cmb_tip.findData(v.get("tip", "flat"))))
         self._row(form, "Drill point", "🔻", self.cmb_tip)
         self.spn_tip_angle = self._spin(v.get("tip_angle", 118.0), 10.0, "Drill tip angle", 170.0, " °")
-        self._row(form, "Tip angle", "📐", self.spn_tip_angle)
+        self._row(form, "Tip angle", "⌒", self.spn_tip_angle)
         old_angle = float(v.get("chamfer_angle", 45.0))
         legacy_depth = float(v.get("chamfer", 0.0)) / max(0.01745, math.tan(math.radians(old_angle)))
         self.spn_chamfer_depth = self._spin(v.get("chamfer_depth", legacy_depth), 0.0,
                                              "Maximum axial reach from the selected start face. Chamfer size and angle also limit its actual depth.")
-        self._row(form, "Max chamfer depth", "🔻", self.spn_chamfer_depth)
+        self._row(form, "Max chamfer depth", "◢", self.spn_chamfer_depth)
         self.spn_chamfer_angle = self._spin(v.get("chamfer_angle", 45.0), 1.0, "Chamfer angle from top face", 89.0, " °")
-        self._row(form, "Chamfer angle", "📐", self.spn_chamfer_angle)
+        self._row(form, "Chamfer angle", "⌒", self.spn_chamfer_angle)
+        self.pair_form_rows(form, [
+            (self.btn_place, self.btn_all_corners),
+            (self.cmb_type, self.chk_through),
+            (self.spn_diameter, self.spn_depth),
+            (self.spn_cb_diameter, self.spn_cb_depth),
+            (self.spn_cs_diameter, self.spn_cs_angle),
+            (self.cmb_tip, self.spn_tip_angle),
+            (self.spn_chamfer_depth, self.spn_chamfer_angle)])
         self.main_layout.addLayout(form)
         self.add_buttons()
         self.cmb_type.currentIndexChanged.connect(self._sync)
@@ -79,8 +88,7 @@ class HoleDialog(BaseFeatureDialog):
             w.valueChanged.connect(self.changed.emit)
         self._sync()
 
-    @staticmethod
-    def _row(form, text, symbol, field):
+    def _row(self, form, text, symbol, field):
         label = QWidget()
         layout = QHBoxLayout(label)
         layout.setContentsMargins(0, 0, 5, 0)
@@ -93,6 +101,7 @@ class HoleDialog(BaseFeatureDialog):
         layout.addWidget(caption)
         layout.addStretch(1)
         form.addRow(label, field)
+        self._row_labels[field] = label
 
     @staticmethod
     def _spin(value, minimum, tooltip, maximum=10000.0, suffix=" mm"):
@@ -116,6 +125,8 @@ class HoleDialog(BaseFeatureDialog):
                         (self.spn_chamfer_depth, kind != "countersink"),
                         (self.spn_chamfer_angle, kind != "countersink")):
             w.setVisible(show)
+            if w in self._row_labels:
+                self._row_labels[w].setVisible(show)
         self.changed.emit()
 
     def set_points(self, points):

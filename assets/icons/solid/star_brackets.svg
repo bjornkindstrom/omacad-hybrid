@@ -1,3 +1,5 @@
 <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="24,7 28.7,18.5 41.1,19.4 30.5,29.7 34.6,39.6 24,33 13.4,39.6 17.5,29.7 6.9,19.4 19.3,18.5" fill="currentColor"/>
+  <polygon points="24,5 29,17 42,18 32,27 35,40 24,33 13,40 16,27 6,18 19,17" fill="currentColor" opacity="0.75" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M24 5V17M42 18L30 22M35 40L27 29M13 40L21 29M6 18L18 22" stroke="#E26D28" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="24" cy="24" r="4.5" fill="#E26D28"/>
 </svg>

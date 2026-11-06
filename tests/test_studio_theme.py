@@ -120,10 +120,11 @@ def test_studio_icons_are_one_colour_and_blue_when_active():
         return {img.pixelColor(x, y).name() for x in range(img.width()) for y in range(img.height())
                 if img.pixelColor(x, y).alpha() == 255}
 
-    for name in ("〰️", "🏺", "fillet", "chamfer"):     # the drawn Sweep/Loft and recoloured Blueprint icons
+    for name in ("〰️", "🏺", "fillet", "chamfer", "parameters", "measure", "box_row", "star_brackets",
+                 "knurl", "wavy_slices", "japandi", "surface_texture", "appearance"):
         icon = theme_icons.tool_icon(name, 24)
-        assert colours(QIcon.State.Off) == {"#253247"}
-        assert colours(QIcon.State.On) == {"#2863d9"}
+        assert colours(QIcon.State.Off) == {"#253247"}, name
+        assert colours(QIcon.State.On) == {"#2863d9"}, name
 
 
 def test_icons_only_drawn_for_studio_keep_their_emoji_in_other_sets():
@@ -282,3 +283,21 @@ def test_finished_sketches_are_grey_unless_a_colour_is_chosen():
     assert get_settings().sketch_finished_color_rgb01() == dark_view
     get_settings().set("sketch_finished_color", "#FF0000")
     assert get_settings().sketch_finished_color_rgb01() == (1.0, 0.0, 0.0)
+
+
+@pytest.mark.parametrize("icon_set", ["solid", "blueprint", "semantic", "studio"])
+def test_command_icons_are_distinct_across_all_icon_sets(icon_set):
+    """Commands that share a fallback emoji use their dedicated SVG in every icon set that has it."""
+    from omacad.ui import commands, theme_icons
+    from omacad.ui.settings import get_settings
+    get_settings().set("icon_theme", icon_set)
+    theme_icons.clear_icon_cache()
+
+    def img(cid):
+        c = commands.get(cid)
+        return theme_icons.command_icon(cid, c.icon, 24).pixmap(24, 24).toImage()
+
+    assert img("line") != img("create_sketch")
+    assert img("section") != img("trim")
+    assert img("offset_face") != img("move")
+    assert img("box_row") != img("box")

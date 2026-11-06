@@ -67,12 +67,13 @@ def _sliver_roots(v, f, tm, groups) -> set:
                 out.add(r)
     return out
 
-def _curved_roots(v, f, tm, find, groups, adj, angles) -> set:
+def _curved_roots(v, f, tm, find, groups, adj, angles, sliver=None) -> set:
     """Groups that are strips of a curved surface. A group is curved when it meets a neighbour at a
     shallow angle and is not clearly wider than that neighbour; so a wide flat face next to a fillet
     (also a shallow join) stays planar, while the thin strips of the fillet and of cylinders do not.
     Sliver triangles between two strips are looked through (the strips are neighbours of each other)."""
-    sliver = _sliver_roots(v, f, tm, groups)
+    if sliver is None:
+        sliver = _sliver_roots(v, f, tm, groups)
     shallow = {}
     touching = {}  # every neighbour regardless of angle (needed to look through slivers)
     for (a_idx, b_idx), ang in zip(adj, angles):
@@ -148,3 +149,24 @@ def _curved_roots(v, f, tm, find, groups, adj, angles) -> set:
                         curved.add(r)
                         break
     return curved
+
+
+def _groups_of_roots(roots) -> dict:
+    """root -> its triangle ids, ascending, roots in the order of their first triangle: the same dict a loop over the
+    triangles builds, for the 100 000s of triangles of a patterned body."""
+    order = np.argsort(roots, kind="stable")
+    in_order = roots[order]
+    pieces = np.split(order, np.flatnonzero(in_order[1:] != in_order[:-1]) + 1)
+    return {int(roots[p[0]]): p.tolist() for p in sorted(pieces, key=lambda p: p[0])}
+
+
+def _classified_roots(v, f, tm, find, groups, adj, angles, roots=None) -> tuple:
+    """(sliver roots, curved roots). `roots` (root per triangle, with the native backend) takes the native pass."""
+    if roots is not None:
+        from omacad import viewport_accel
+        native = viewport_accel.classify_face_groups(v, f, tm.face_normals, tm.area_faces, roots, adj, angles,
+                                                     SLIVER_AREA, SLIVER_MIN_WIDTH, np.radians(25.0))
+        if native is not None:
+            return native
+    slivers = _sliver_roots(v, f, tm, groups)
+    return slivers, _curved_roots(v, f, tm, find, groups, adj, angles, slivers)

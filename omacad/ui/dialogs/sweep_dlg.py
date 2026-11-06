@@ -86,6 +86,10 @@ class SweepLoftDialog(BaseFeatureDialog):
             self.cmb_op.addItem(label)
         self.cmb_op.currentIndexChanged.connect(lambda *_: self.changed.emit())
         form.addRow("Operation:", self.cmb_op)
+        if mode == "pipe":
+            self.pair_form_rows(form, [(self.spn_diam, self.spn_thick)])
+        else:
+            self.pair_form_rows(form, [(self.spn_twist, self.cmb_op)])
         self.lbl_problem = QLabel("")
         self.lbl_problem.setWordWrap(True)
         self.main_layout.addLayout(form)

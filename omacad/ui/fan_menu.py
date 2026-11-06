@@ -409,12 +409,13 @@ class FanMenu(QObject):
 
         pal = theme.palette()
 
-        bg_card = self._qc(pal.surfaces.get("surface", (38, 41, 46)), 235)
-        bg_card_alt = self._qc(pal.surfaces.get("field", (28, 30, 34)), 245)
-        border_col = self._qc(pal.surfaces.get("border", (70, 75, 84)), 255)
+        bg_card = self._qc(pal.surfaces.get("surface", pal.map_rgb((38, 41, 46))), 235)
+        bg_card_alt = self._qc(pal.surfaces.get("field", pal.map_rgb((28, 30, 34))), 245)
+        border_col = self._qc(pal.surfaces.get("border", pal.map_rgb((70, 75, 84))), 255)
         text_col = self._qc(pal.foreground, 255)
         muted_col = self._qc(pal.muted, 255)
         accent_col = self._qc(pal.accent, 255)
+        on_accent_col = self._qc(pal.on_accent, 255) if (pal.studio and pal.on_accent) else QColor("#FFFFFF")
         highlight_col = self._qc(pal.highlight, 255)
 
         # 1. Semi-transparent backdrop shadow
@@ -446,7 +447,7 @@ class FanMenu(QObject):
 
             self._draw_sector_content(
                 painter, sec,
-                text_col=QColor("#FFFFFF") if is_active else text_col,
+                text_col=on_accent_col if is_active else text_col,
                 muted_col=muted_col
             )
 
@@ -473,7 +474,7 @@ class FanMenu(QObject):
 
             self._draw_sector_content(
                 painter, sec,
-                text_col=QColor("#FFFFFF") if is_hover else text_col,
+                text_col=on_accent_col if is_hover else text_col,
                 muted_col=muted_col
             )
 
@@ -490,7 +491,7 @@ class FanMenu(QObject):
 
             self._draw_sector_content(
                 painter, sec,
-                text_col=QColor("#FFFFFF") if is_hover else text_col,
+                text_col=on_accent_col if is_hover else text_col,
                 muted_col=muted_col
             )
 

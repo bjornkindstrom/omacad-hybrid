@@ -52,6 +52,8 @@ def studio_layout(dlg) -> None:
         layout.insertWidget(0, heading)
 
 
+PAIR_FIELD_WIDTH = 160      # px a field may need to share a row with another in the docked panel
+
 class BaseFeatureDialog(QDialog):
     """Base modal dialog with Fusion 360 styling, docked in the right side panel."""
 
@@ -59,31 +61,70 @@ class BaseFeatureDialog(QDialog):
     def pair_form_rows(form, pairs) -> None:
         """Put two fields of a QFormLayout side by side, label above each field, to save vertical space (Björn #168).
         `pairs` is a list of (field_a, field_b); the pair takes the place of field_a's row and field_b's row goes."""
+        from PySide6.QtCore import QEvent
         from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFormLayout
+
+        class _PairBox(QWidget):
+            def __init__(self, items):
+                super().__init__()
+                self._items = items
+                self.setMinimumWidth(1)     # share the panel's width: a larger minimum squeezes other rows' labels away
+                hbox = QHBoxLayout(self)
+                hbox.setContentsMargins(0, 0, 0, 0)
+                hbox.setSpacing(8)
+                for lab, f in items:
+                    col = QVBoxLayout()
+                    col.setContentsMargins(0, 0, 0, 0)
+                    col.setSpacing(2)
+                    if isinstance(lab, QLabel):
+                        lab.setText(lab.text().strip())
+                        lab.setBuddy(f)
+                    col.addWidget(lab)
+                    col.addWidget(f)
+                    hbox.addLayout(col, 1)
+                    f.installEventFilter(self)
+                self._sync()
+
+            def _sync(self):
+                any_vis = False
+                for lab, f in self._items:
+                    vis = not f.isHidden()
+                    lab.setVisible(vis)
+                    parent = f.parentWidget()
+                    if parent is not None and parent is not self and getattr(parent, "field", None) is f:
+                        parent.setVisible(vis)
+                    if vis:
+                        any_vis = True
+                self.setVisible(any_vis)
+
+            def eventFilter(self, obj, event):
+                if event.type() in (QEvent.Type.ShowToParent, QEvent.Type.HideToParent):
+                    self._sync()
+                return super().eventFilter(obj, event)
+
+        paired_labels = getattr(form, "_paired_labels", None)
+        if paired_labels is None:
+            paired_labels = {}
+            orig_label_for_field = form.labelForField
+            form._paired_labels = paired_labels
+            form.labelForField = lambda w, _orig=orig_label_for_field, _map=paired_labels: _map.get(w) or _orig(w)
+
         for fa, fb in pairs:
-            texts = []
+            # half a panel is too narrow for a long choice or check box: it keeps its own row, and its text its room
+            if max(fa.sizeHint().width(), fb.sizeHint().width()) > PAIR_FIELD_WIDTH:
+                continue
+            labs = []
             for f in (fa, fb):
                 lab = form.labelForField(f)
-                texts.append(lab.text().strip() if lab is not None else "")
+                if lab is None:
+                    lab = QLabel("")
+                labs.append(lab)
+                paired_labels[f] = lab
             row_a = next(i for i in range(form.rowCount()) if form.itemAt(i, QFormLayout.FieldRole) is not None
                          and form.itemAt(i, QFormLayout.FieldRole).widget() is fa)
             for f in (fb, fa):
-                taken = form.takeRow(f)
-                if taken.labelItem is not None and taken.labelItem.widget() is not None:
-                    taken.labelItem.widget().deleteLater()      # the row's own label; each column gets a new one
-            box = QWidget()
-            hbox = QHBoxLayout(box)
-            hbox.setContentsMargins(0, 0, 0, 0)
-            hbox.setSpacing(8)
-            for text, f in zip(texts, (fa, fb)):
-                col = QVBoxLayout()
-                col.setContentsMargins(0, 0, 0, 0)
-                col.setSpacing(2)
-                lab = QLabel(text)
-                lab.setBuddy(f)
-                col.addWidget(lab)
-                col.addWidget(f)
-                hbox.addLayout(col, 1)
+                form.takeRow(f)
+            box = _PairBox(list(zip(labs, (fa, fb))))
             form.insertRow(row_a, box)
 
     def __init__(self, title: str, parent=None, embedded: bool = False):
@@ -121,6 +162,11 @@ class BaseFeatureDialog(QDialog):
                 border-top: 2px solid #B85317;
                 color: #FFFFFF;
                 padding-top: 8px;
+            }
+            QPushButton:checked {
+                background-color: #3A2D27;
+                border: 1px solid #E26D28;
+                color: #FFFFFF;
             }
             QPushButton#PrimaryButton, QPushButton:default {
                 background-color: #E26D28;

@@ -154,13 +154,19 @@ def test_fan_menu_rendering_and_mouse_events(win):
     assert overlay.hovered_outer_idx == prim_idx
     assert len(overlay.sub_sectors) > 0
 
-    # Render onto a QImage to verify draw() completes without error
+    # Render onto a QImage across Studio, Graphite, Atelier, and Omarchy themes to verify draw() completes without error
+    from omacad.ui import theme
     img = QImage(800, 600, QImage.Format.Format_ARGB32)
-    painter = QPainter(img)
     try:
-        overlay.draw(painter, 800, 600)
+        for theme_key in ("studio", "graphite", "atelier", None):
+            theme.set_fixed_theme(theme_key)
+            painter = QPainter(img)
+            try:
+                overlay.draw(painter, 800, 600)
+            finally:
+                painter.end()
     finally:
-        painter.end()
+        theme.set_fixed_theme(None)
 
     # Clicking on a parent outer sector ("primitives") in click mode expands its children into outer_sectors!
     class _BtnEv(_Ev):

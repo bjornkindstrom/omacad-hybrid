@@ -23,6 +23,9 @@ class ExtrudeDialog(BaseFeatureDialog):
 
         # Profile selection
         self.cmb_profile = QComboBox()
+        self.cmb_profile.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.cmb_profile.setMinimumContentsLength(12)
+        self.cmb_profile.setMinimumWidth(120)   # the long names and placeholder must not squeeze the row's label away
         self.profile_keys = []
         for s_id, s in doc.sketches.items():
             for p_idx, p in enumerate(s.profiles):
@@ -48,6 +51,7 @@ class ExtrudeDialog(BaseFeatureDialog):
         self.btn_face.clicked.connect(self.pick_face_requested)
         dist_row = QHBoxLayout()
         dist_row.setContentsMargins(0, 0, 0, 0)
+        self.spn_dist.setMinimumWidth(120)       # beside the button it must leave room for the label
         dist_row.addWidget(self.spn_dist, 1)
         dist_row.addWidget(self.btn_face)
         form.addRow("Distance:", dist_row)
@@ -87,6 +91,10 @@ class ExtrudeDialog(BaseFeatureDialog):
         self.cmb_op.addItems(["Auto", "New Body", "Join", "Cut (Difference)", "Intersect"])
         self.cmb_op.setToolTip("Auto: cuts when the extrusion goes into a body, joins when it starts on a body's face and goes out, otherwise makes a new body.")
         form.addRow("Operation:", self.cmb_op)
+
+        self.pair_form_rows(form, [
+            (self.spn_offset, self.spn_twist),
+            (self.cmb_dir, self.cmb_op)])
 
         hint = QLabel("Click a profile to select it; Shift+click adds or removes more (a ring and the circle inside it are separate profiles). Distance accepts formulas (10-1, 2x(3+5)).")
         hint.setWordWrap(True)

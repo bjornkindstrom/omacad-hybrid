@@ -42,6 +42,7 @@ def test_field_lists_parameters_and_enter_picks_one(win):
     dlg = win.inspector.current_tool_dlg
     f = dlg.spn_length
     win.activateWindow()
+    QTest.qWait(30)                 # offscreen delivers it on the next turn: its focus-out would revert the typing
     f.setFocus()
     f.lineEdit().selectAll()
     _type(f, "d")
@@ -60,6 +61,7 @@ def test_letters_typed_in_the_view_go_to_the_panel_not_to_shortcuts(win):
     win.prompt_box()
     dlg = win.inspector.current_tool_dlg
     win.activateWindow()
+    QTest.qWait(30)                 # offscreen delivers it on the next turn: its focus-out would revert the typing
     win.viewport.setFocus()
     QTest.qWait(20)
     _type(win.viewport, "depth")
@@ -74,6 +76,7 @@ def test_drawing_dimension_field_takes_a_parameter_name(win):
     vp.set_sketch_tool("RECT")
     vp.sketch_start_uv, vp.sketch_current_uv = (0.0, 0.0), (10.0, 5.0)
     win.activateWindow()
+    QTest.qWait(30)                 # offscreen delivers it on the next turn: its focus-out would revert the typing
     vp.setFocus()
     QTest.keyClick(vp, Qt.Key.Key_Tab)
     _type(vp, "e")
@@ -102,6 +105,7 @@ def test_list_completes_a_name_inside_a_formula(win):
     dlg = win.inspector.current_tool_dlg
     f = dlg.spn_length
     win.activateWindow()
+    QTest.qWait(30)                 # offscreen delivers it on the next turn: its focus-out would revert the typing
     f.setFocus()
     f.lineEdit().selectAll()
     _type(f, "test1+5*te")

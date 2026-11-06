@@ -128,14 +128,21 @@ class PatternDialog(BaseFeatureDialog):
     def _show_kind(self, *_):
         """Show only the fields that belong to the chosen type."""
         for w_ in [x for rows in self.rows.values() for _, x in rows]:
+            parent = w_.parentWidget()
+            host = parent if getattr(parent, "field", None) is w_ else w_
+            host.setVisible(False)
+            host.setParent(self)
             w_.setVisible(False)
         while self._kind_form.rowCount():
             row = self._kind_form.takeRow(0)
-            if row.labelItem is not None and row.labelItem.widget() is not None:
-                lbl = row.labelItem.widget()
-                lbl.hide()          # gone at once (deleteLater alone leaves it painted for a moment)
-                lbl.setParent(None)
-                lbl.deleteLater()
+            for item in (row.labelItem, row.fieldItem):
+                if item is not None and item.widget() is not None:
+                    w_ = item.widget()
+                    w_.hide()           # gone at once (deleteLater alone leaves it painted for a moment)
+                    w_.setParent(None)
+                    w_.deleteLater()
+        if hasattr(self._kind_form, "_paired_labels"):
+            self._kind_form._paired_labels.clear()
         kind = self.KINDS[self.cmb_kind.currentIndex()]
         rows = list(self.rows[kind])
         mode = self.MIRROR_MODES[self.cmb_mirror.currentIndex()]
@@ -144,9 +151,9 @@ class PatternDialog(BaseFeatureDialog):
         if kind == "mirror" and mode == "plane":
             rows = [("Mirror:", self.cmb_mirror), ("Plane:", self.cmb_mplane)]
         self.lbl_features.setText("Features (rib + fillet):" if kind == "circular" else "Copy these steps:")
+        picked = self.cmb_rotation.currentIndex() == 3
         for text, widget in rows:
             if kind == "circular":
-                picked = self.cmb_rotation.currentIndex() == 3
                 if widget is self.lbl_axis and not picked:
                     continue
                 if widget is self.cmb_about and picked:
@@ -158,6 +165,22 @@ class PatternDialog(BaseFeatureDialog):
             self._kind_form.addRow(QLabel(text), host)
             host.setVisible(True)
             widget.setVisible(True)
+        def _h(w):
+            p = w.parentWidget()
+            return p if getattr(p, "field", None) is w else w
+        pairs = []
+        if kind == "linear":
+            pairs.append((_h(self.spn_count1), _h(self.spn_space1)))
+            if self.chk_second.isChecked():
+                pairs.append((_h(self.spn_count2), _h(self.spn_space2)))
+        elif kind == "circular":
+            pairs.append((_h(self.spn_count1), _h(self.cmb_rotation)))
+            if not picked:
+                pairs.append((_h(self.spn_angle), _h(self.cmb_about)))
+        elif kind == "fill":
+            pairs.extend([(_h(self.spn_gap), _h(self.spn_margin)), (_h(self.cmb_layout), _h(self.spn_partial))])
+        if pairs:
+            self.pair_form_rows(self._kind_form, pairs)
         if getattr(self, "_is_docked", False):
             from omacad.ui.numeric_slider import add_numeric_sliders
             add_numeric_sliders(self)

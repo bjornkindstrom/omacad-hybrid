@@ -6,7 +6,7 @@ import numpy as np
 import manifold3d as m3d
 import trimesh
 from omacad.model.faces_types import PlanarFace, PlanarEdge
-from omacad.model.faces_topology import _coplanar, _curved_roots, _sliver_roots
+from omacad.model.faces_topology import _classified_roots, _groups_of_roots, _coplanar, _curved_roots, _sliver_roots
 from omacad.model.faces_edges import _edge_from, _loop_edges, _circular_edges, _circles_for_round_loops, drop_round_loop_chords
 
 _TOPOLOGY_CACHE: dict = {}
@@ -40,12 +40,14 @@ def _face_groups(v, f, tm):
                 if ra != rb:
                     parent[rb] = ra
 
-    groups: dict = {}
-    for i in range(len(f)):
-        groups.setdefault(find(i), []).append(i)
-    curved = _curved_roots(v, f, tm, find, groups, adj, tm.face_adjacency_angles)
-    slivers = _sliver_roots(v, f, tm, groups)
-    roots = np.array([find(i) for i in range(len(f))], dtype=np.int64)
+    if native_roots is not None:
+        groups, roots = _groups_of_roots(native_roots), native_roots
+    else:
+        groups: dict = {}
+        for i in range(len(f)):
+            groups.setdefault(find(i), []).append(i)
+        roots = np.array([find(i) for i in range(len(f))], dtype=np.int64)
+    slivers, curved = _classified_roots(v, f, tm, find, groups, adj, tm.face_adjacency_angles, native_roots)
     return roots, groups, {r for r in groups if r not in curved and r not in slivers}, slivers, curved
 
 

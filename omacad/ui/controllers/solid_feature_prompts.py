@@ -138,6 +138,11 @@ class SolidFeaturePromptsMixin:
         self.viewport.hole_plane_picked.connect(plane_picked)
         self.viewport.hole_point_picked.connect(point_picked)
         dlg.finished.connect(finished)
+        from omacad.ui.apply_button import add_apply_button
+        add_apply_button(
+            self.viewport, dlg,
+            lambda: self.viewport.world_to_screen(np.asarray(points[-1]["origin"], dtype=float)) if points else None
+        )
         pick_plane()
 
     @leaves_sketch
@@ -268,6 +273,8 @@ class SolidFeaturePromptsMixin:
         self.viewport.target_plane_picked.connect(on_target_plane)
         self.viewport.profile_picked.connect(on_pick)
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, arrow_anchor, profile_anchor
+        add_apply_button(self.viewport, dlg, lambda: arrow_anchor(self.viewport) or profile_anchor(self.viewport, self.doc))
         dlg.show()
         refresh_preview()
         dlg.focus_primary()
@@ -345,5 +352,7 @@ class SolidFeaturePromptsMixin:
         self._connect_debounced_preview(dlg, refresh_preview)
         self.viewport.profile_picked.connect(on_pick)
         dlg.finished.connect(on_finished)
+        from omacad.ui.apply_button import add_apply_button, profile_anchor
+        add_apply_button(self.viewport, dlg, lambda: profile_anchor(self.viewport, self.doc))
         dlg.show()
         refresh_preview()

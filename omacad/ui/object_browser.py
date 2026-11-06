@@ -247,7 +247,7 @@ def _add_object(browser, group, oid, features, excluded):
             node = QTreeWidgetItem(parent, [feat.name, ''])
             node.setIcon(0, theme.named_icon(studio_icon, '⚙️', 22))
         else:
-            icon = FeatureNodeWidget.FEATURE_ICONS.get(feat.feature_type, '⚙️')
+            icon = FeatureNodeWidget.feature_emoji(feat)
             node = QTreeWidgetItem(parent, [icon + ' ' + feat.name, ''])
         node.setData(0, ROLE, ('feature', fid))
         node.setData(0, FEATURE_ROLE, fid)

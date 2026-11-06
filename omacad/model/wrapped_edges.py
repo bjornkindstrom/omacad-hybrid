@@ -6,6 +6,8 @@ import math
 import manifold3d as m3d
 import numpy as np
 
+FRAME_SAMPLE_POINTS = 8     # points of a patch tried against every cylinder frame before all of them are
+
 
 @dataclass
 class WrappedLoopEdge:
@@ -128,6 +130,48 @@ def cylindrical_contours(v, f, tm):
             continue
         frames.append((axis, center+sol[0]*u+sol[1]*vv, u, vv))
 
+    if not frames:
+        return []
+    frame_axes = np.array([frame[0] for frame in frames])
+    frame_origins = np.array([frame[1] for frame in frames])
+    points_cache, possible_cache, radius_cache = {}, {}, {}
+
+    def points_of(label):
+        if label not in points_cache:
+            points_cache[label] = v[np.unique(f[parts[label]])]
+        return points_cache[label]
+
+    def possible_frames(label):
+        """Frames a few points of the patch do not rule out, all at once: a pattern makes thousands of patches and
+        frames. The points' spread is at most the whole patch's, and the limit is a hair above radius_on_frame's, so
+        no frame that fits is lost."""
+        if label not in possible_cache:
+            points = points_of(label)
+            sample = points[np.linspace(0, len(points)-1, min(len(points), FRAME_SAMPLE_POINTS)).astype(int)]
+            delta = sample[None, :, :]-frame_origins[:, None, :]
+            along = np.einsum("fsk,fk->fs", delta, frame_axes)
+            lengths = np.linalg.norm(delta-along[:, :, None]*frame_axes[:, None, :], axis=2)
+            possible_cache[label] = np.ptp(lengths, axis=1) <= np.maximum(.002, (lengths.max(axis=1)+.01)*.0011)
+        return possible_cache[label]
+
+    def radius_on_frame(index, label):
+        """The radius of the patch when it is the outside of frame `index`'s cylinder, else None."""
+        key = (index, label)
+        if key not in radius_cache:
+            axis, origin = frames[index][:2]
+            delta = points_of(label)-origin
+            lengths = np.linalg.norm(delta-np.outer(delta @ axis, axis), axis=1)
+            radius = float(np.median(lengths))
+            fits = radius > .01 and np.ptp(lengths) <= max(.002, radius*.001)
+            if fits:
+                ids = parts[label]
+                centers = v[f[ids]].mean(axis=1)-origin
+                outward = centers-np.outer(centers @ axis, axis)
+                # internal cylinders require opposite radial section orientation
+                fits = np.einsum("ij,ij->i", outward, tm.face_normals[ids]).mean() > 0
+            radius_cache[key] = radius if fits else None
+        return radius_cache[key]
+
     patch_cache = {}
     def patch(label):
         if label not in patch_cache:
@@ -140,22 +184,13 @@ def cylindrical_contours(v, f, tm):
     result = []
     for pair, segments in candidates:
         match = None
-        for axis, origin, u, vv in frames:
+        for index in np.flatnonzero(possible_frames(pair[0]) | possible_frames(pair[1])):
             for label in pair:
-                ids = parts[label]
-                pts = v[np.unique(f[ids])]
-                delta = pts-origin
-                radial = delta-np.outer(delta @ axis, axis)
-                lengths = np.linalg.norm(radial, axis=1)
-                radius = float(np.median(lengths))
-                if radius <= .01 or np.ptp(lengths) > max(.002, radius*.001):
-                    continue
-                centers = v[f[ids]].mean(axis=1)-origin
-                outward = centers-np.outer(centers @ axis, axis)
-                if np.einsum("ij,ij->i", outward, tm.face_normals[ids]).mean() <= 0:
-                    continue  # internal cylinders require opposite radial section orientation
-                match = (axis, origin, radius, u, vv, label)
-                break
+                radius = radius_on_frame(int(index), label)
+                if radius is not None:
+                    axis, origin, u, vv = frames[index]
+                    match = (axis, origin, radius, u, vv, label)
+                    break
             if match:
                 break
         if match is None:

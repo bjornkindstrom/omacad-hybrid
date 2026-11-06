@@ -26,7 +26,8 @@ def test_pick_goes_through_the_cut_away_half(monkeypatch):
     # section along XZ, the y > 0 half is cut away (viewer looks from +y towards -y)
     p, keep = np.zeros(3), np.array([0.0, -1.0, 0.0])
     vp.section = {"origin": p, "normal": np.array([0.0, 1.0, 0.0]), "offset": 0.0, "flip": False,
-                  "meshes": {nut.body_id: CadKernel.extract_render_mesh(nut.manifold.trim_by_plane(tuple(keep), 0.0))}}
+                  "meshes": {b.body_id: CadKernel.extract_render_mesh(b.manifold.trim_by_plane(tuple(keep), 0.0))
+                             for b in doc.bodies.values()}}
     monkeypatch.setattr(picker_mixin, "ray_from_screen", lambda *a: (np.array([0.0, 100.0, 20.0]), np.array([0.0, -1.0, 0.0])))
     hit = vp._pick_surface(0, 0)
     assert hit is not None

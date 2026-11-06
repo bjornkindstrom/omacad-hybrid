@@ -321,6 +321,21 @@ class FileSessionMixin:
             if ok:
                 QMessageBox.information(self, "Export STL", f"Successfully exported {body.name} to:\n{filepath}")
 
+    def on_import_svg(self):
+        filepath, _ = QFileDialog.getOpenFileName(self, "Import SVG Vector", "", "SVG Files (*.svg)")
+        if not filepath:
+            return
+        try:
+            sketch = Exporter.import_svg_to_sketch(filepath, self.doc)
+            if sketch:
+                self.viewport.zoom_fit()
+                self.viewport.update()
+                self.status_label.setText(f"Imported SVG curves from {Path(filepath).name} into {sketch.name} ({len(sketch.entities)} entities).")
+            else:
+                QMessageBox.warning(self, "Import SVG", "No usable paths or shapes found in SVG file.")
+        except Exception as e:
+            QMessageBox.critical(self, "Import Failed", f"Could not import {filepath}:\n{e}")
+
     def on_import_3mf(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Import 3MF Model", "", "3MF Files (*.3mf)")
         if not filepath:

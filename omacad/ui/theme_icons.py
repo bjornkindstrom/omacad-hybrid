@@ -35,7 +35,7 @@ EMOJI_TO_TOOL = {
     "🧵": "surface_texture",
     "🧶": "knurl",
     "🎋": "japandi",
-    "↔️": "move",
+    "↔️": "offset_face",
     "✥": "move",
     "🗑️": "delete",
     "⚙️": "settings",
@@ -54,6 +54,7 @@ EMOJI_TO_TOOL = {
     "⛶": "rect",
     "▢": "rect",
     "▣": "rect",
+    "↗️": "scale",
     # drawn only in the Studio set; the other sets keep the emoji for these
     "〰️": "sweep",
     "🏺": "loft",
@@ -70,6 +71,7 @@ EMOJI_TO_TOOL = {
     "✅": "finish", "✔️": "finish", "✖️": "cancel",
     "↩️": "undo", "↪️": "redo",
     "⏮": "timeline_rewind", "⏮️": "timeline_rewind", "⏭": "timeline_end", "⏭️": "timeline_end",
+    "◀": "timeline_back", "◀️": "timeline_back", "▶": "timeline_forward",
     "▶️": "play", "⏸️": "pause",
     "━": "c_horizontal", "┃": "c_vertical", "•": "c_coincident", "∥": "c_parallel", "⟂": "c_perpendicular",
     "＝": "c_equal", "◠": "c_tangent", "◎": "c_concentric", "⋈": "c_midpoint", "⇋": "c_symmetric", "⊙": "c_center", "🔒": "c_fix",
@@ -78,16 +80,19 @@ EMOJI_TO_TOOL = {
     "🔳": "edges", "📁": "folder", "🔍": "analysis", "🔎": "find", "🧭": "locate", "🧱": "parametric",
     "🧊": "body", "●": "history_end", "🕳️": "hole", "💥": "explode", "📍": "point", "🎯": "look_at",
     "🗑": "delete", "✋": "pan", "👆": "pointer", "📋": "overview", "🛠️": "settings",
-    "🍱": "box_row", "⭐": "star_brackets",
+    "🍱": "box_row", "⭐": "star_brackets", "☆": "star_brackets",
+    "📸": "screenshot", "🎬": "turntable", "🎨": "appearance",
+    "🔵": "circle", "↕️": "extrude", "➖": "c_horizontal", "🔻": "cone",
+    "🔢": "polygon", "➕": "point",
 }
 
 # Where one emoji stands for several commands, Studio draws each its own icon (other sets keep the emoji's icon)
 COMMAND_ICONS = {
     "line": "line", "spline": "spline", "control_spline": "control_spline", "smart_circle": "smart_circle", "pattern_linear": "pattern_linear",
     "pattern_circular": "pattern_circular", "pattern_fill": "pattern_fill", "offset_face": "offset_face",
-    "section": "section", "finish_sketch": "finish", "move_sketch": "move", "modify_body": "move",
+    "section": "section", "finish_sketch": "finish", "move_sketch": "move", "modify_body": "body",
     "scale_sketch": "scale", "screenshot": "screenshot", "copy_image": "copy_image", "turntable": "turntable",
-    "box_row": "box_row", "star_brackets": "star_brackets",
+    "box_row": "box_row", "star_brackets": "star_brackets", "import_svg": "import_svg",
 }
 
 STUDIO_ICONS = "studio"   # line icons in one colour (the text), blue while the tool is active
@@ -162,16 +167,26 @@ def _studio_icons() -> bool:
 
 
 def named_icon(name: str, fallback: str, px: int = 24) -> QIcon:
-    """The Studio icon `name` when the Studio set is chosen and has it, else the fallback emoji/symbol as before."""
+    """The Studio icon `name` when the Studio set is chosen and has it, else the active set's SVG or fallback emoji."""
     if name and _studio_icons() and (ICONS_DIR / STUDIO_ICONS / f"{name}.svg").exists():
         return tool_icon(name, px)
-    return emoji_icon(fallback, px)
+    from omacad.ui.settings import get_settings
+    icon_theme = get_settings().get("icon_theme", "solid")
+    if name and (ICONS_DIR / icon_theme / f"{name}.svg").exists():
+        return tool_icon(name, px)
+    return tool_icon(fallback, px)
 
 
 def command_icon(cid: str, symbol: str, px: int = 24) -> QIcon:
-    """A command's icon: its own Studio icon if it has one, else what its symbol gives in the chosen set."""
-    if cid in COMMAND_ICONS and _studio_icons():
-        return named_icon(COMMAND_ICONS[cid], symbol, px)
+    """A command's icon: its own Studio icon if it has one, or its named icon in the chosen set, else what its symbol gives."""
+    if cid in COMMAND_ICONS:
+        if _studio_icons():
+            return named_icon(COMMAND_ICONS[cid], symbol, px)
+        from omacad.ui.settings import get_settings
+        icon_theme = get_settings().get("icon_theme", "solid")
+        name = COMMAND_ICONS[cid]
+        if (ICONS_DIR / icon_theme / f"{name}.svg").exists():
+            return tool_icon(name, px)
     return tool_icon(symbol, px)
 
 
@@ -193,6 +208,7 @@ def set_button_text(button, text: str, px: int = 18, colour: Optional[str] = Non
         button.setIcon(tool_icon(name, px, colour))
         button.setText(rest)
     else:
+        button.setIcon(QIcon())
         button.setText(text)
 
 

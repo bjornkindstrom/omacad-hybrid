@@ -2,8 +2,9 @@
 Wavy Slices on a whole body. The types stay separate steps in the history, so saved files keep loading as they are."""
 
 from typing import Any, Dict, Tuple
+from pathlib import Path
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QCheckBox, QComboBox, QFormLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFileDialog, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 from omacad.model.document import Document
 from omacad.model.features.cell_patterns import HOLE_SHAPES, MAX_RELAXATION, VORONOI_STYLES
 from omacad.model.features.honeycomb import SHAPES, HoneycombFeature
@@ -17,19 +18,19 @@ from omacad.ui.dialogs.offset_face_dlg import FacePickMixin
 # The step type of each texture and its name in the panel
 TEXTURES = {"honeycomb": "Cells", "knurl": "Knurl", "japandi": "Japandi", "wavy_slices": "Wavy Slices"}
 BODY_TEXTURES = ("wavy_slices",)        # work on a whole body; the others on picked faces
-OUTER_ROUND_TEXTURES = ("knurl", "japandi")   # take only outer round faces
+OUTER_ROUND_TEXTURES = ("knurl", "japandi")   # take outer round or curved faces
 
 HINTS = {
-    "honeycomb": "Click flat faces and round faces (cylinders, inside or out) of one body in the viewport; click again to "
+    "honeycomb": "Click flat, cylindrical or curved faces of one body in the viewport; click again to "
                  "deselect. Through cuts to the air behind each cell, so a box wall is pierced but the wall opposite is not.",
-    "knurl": "Click outer round faces of one body in the viewport; click again to deselect.",
-    "japandi": "Click outer round faces of one body in the viewport, straight or curved like a vase; click again to deselect.",
+    "knurl": "Click outer round or curved faces of one body in the viewport; click again to deselect.",
+    "japandi": "Click outer round or curved faces of one body in the viewport, straight or curved like a vase; click again to deselect.",
     "wavy_slices": "Click a body in the viewport or choose it here. It is rebuilt as stacked layers along Z.",
 }
 
 
 def outer_round(ref: dict) -> bool:
-    return ref.get("kind") == "cylinder" and not ref.get("internal")
+    return (ref.get("kind") == "cylinder" and not ref.get("internal")) or ref.get("kind") == "surface"
 
 
 def preview_texture(kind: str, manifold, faces, params: Dict[str, Any]) -> Tuple[Any, str]:
@@ -91,8 +92,21 @@ class _CellsPage(_Page):
     def __init__(self):
         super().__init__()
         self.cmb_shape = QComboBox()
-        self.cmb_shape.addItems([s.title() for s in SHAPES])
+        self.cmb_shape.addItems([s.upper() if s == "svg" else s.title() for s in SHAPES])
         self.form.addRow("Shape:", self.cmb_shape)
+
+        self.svg_row = QWidget()
+        svg_layout = QHBoxLayout(self.svg_row)
+        svg_layout.setContentsMargins(0, 0, 0, 0)
+        self.txt_svg_path = QLineEdit()
+        self.txt_svg_path.setPlaceholderText("Select SVG file…")
+        self.btn_browse_svg = QPushButton("Browse…")
+        self.btn_browse_svg.setAutoDefault(False)
+        self.btn_browse_svg.clicked.connect(self._browse_svg)
+        svg_layout.addWidget(self.txt_svg_path)
+        svg_layout.addWidget(self.btn_browse_svg)
+        self.lbl_svg = QLabel("SVG File:")
+        self.form.addRow(self.lbl_svg, self.svg_row)
         self.cmb_style = QComboBox()
         self.cmb_style.addItems([s.title() for s in VORONOI_STYLES])
         self.cmb_style.setToolTip("Even: one size. Gradient: from Smallest cell to Cell size across the face. Hotspot: small cells "
@@ -120,6 +134,9 @@ class _CellsPage(_Page):
         self.field("hotspots", "Hotspots:", 1, 12, 0, "", 1, "Points the small cells gather round: the face's middle first, the rest from the seed.")
         self.field("randomness", "Randomness:", 0.0, 100.0, 2, " %", 100.0,
                    "How far the Voronoi cells stray from a regular pattern. 0 % gives hexagons.")
+        self.field("random_rotation", "Random rotation:", 0.0, 180.0, 2, " °", 0.0,
+                   "Turns each SVG cell by a random angle up to this far either way. 180° points them anywhere. "
+                   "The grid widens so turned cells keep the wall between them.")
         self.field("seed", "Seed:", 0.0, 999999.0, 0, "", 1.0, "Picks another random layout with the same settings.")
         self.field("relaxation", "Relaxation:", 0, MAX_RELAXATION, 0, "", 0, "Evens the Voronoi cells out, a little more each step. 0 keeps them as they fell.")
         self.cmb_hole = QComboBox()
@@ -130,39 +147,60 @@ class _CellsPage(_Page):
         self.field("opening", "Opening:", 0.0, 100.0, 0, " %", 100.0, "Size of each hole in its cell, at the start of the face: "
                    "the bottom, or a hotspot's middle. A smaller hole leaves a thicker wall.")
         self.field("opening_end", "Opening at end:", 0.0, 100.0, 0, " %", 100.0, "The same at the far end, so the holes fade across the face.")
-        BaseFeatureDialog.pair_form_rows(self.form, [(self.spins["opening"], self.spins["opening_end"])])
+        BaseFeatureDialog.pair_form_rows(self.form, [
+            (self.cmb_shape, self.cmb_style),
+            (self.spins["size"], self.spins["wall"]),
+            (self.spins["fine_size"], self.spins["inner_wall"]),
+            (self.spins["margin"], self.spins["angle"]),
+            (self.chk_through, self.chk_partial),
+            (self.spins["randomness"], self.spins["seed"]),
+            (self.spins["relaxation"], self.spins["hotspots"]),
+            (self.cmb_hole, self.spins["rounding"]),
+            (self.spins["opening"], self.spins["opening_end"])])
         # not setRowVisible: docking moves each field into a slider widget, which follows the field
         self.toggled = {key: [self.form.labelForField(self.spins[key]), self.spins[key]]
-                        for key in ("fine_size", "inner_wall", "hotspots", "randomness", "seed", "relaxation")}
+                        for key in ("fine_size", "inner_wall", "hotspots", "randomness", "random_rotation", "seed", "relaxation")}
         self.toggled["style"] = [self.lbl_style, self.cmb_style]
+        self.toggled["svg"] = [self.lbl_svg, self.svg_row]
         self.chk_through.toggled.connect(self._sync)
         self.cmb_shape.currentIndexChanged.connect(self._sync)
         self.cmb_style.currentIndexChanged.connect(self._sync)
+        self.txt_svg_path.textChanged.connect(lambda *_: self.changed.emit())
         for signal in (self.chk_through.toggled, self.chk_partial.toggled, self.cmb_shape.currentIndexChanged,
                        self.cmb_style.currentIndexChanged, self.cmb_hole.currentIndexChanged):
             signal.connect(lambda *_: self.changed.emit())
         self._sync()
 
+    def _browse_svg(self):
+        fpath, _ = QFileDialog.getOpenFileName(self, "Select SVG Pattern", "", "SVG Files (*.svg)")
+        if fpath:
+            self.txt_svg_path.setText(fpath)
+            self.changed.emit()
+
     def _sync(self, *_):
         self.spins["depth"].setEnabled(not self.chk_through.isChecked())
-        voronoi = SHAPES[self.cmb_shape.currentIndex()] == "voronoi"
+        shape = SHAPES[self.cmb_shape.currentIndex()]
+        voronoi = shape == "voronoi"
+        is_svg = shape == "svg"
         style = VORONOI_STYLES[self.cmb_style.currentIndex()]
-        shown = {"style": voronoi, "randomness": voronoi, "seed": voronoi, "relaxation": voronoi and style != "radial",
+        shown = {"style": voronoi, "randomness": voronoi, "random_rotation": is_svg, "seed": voronoi or is_svg,
+                 "relaxation": voronoi and style != "radial",
                  "fine_size": voronoi and style != "even" , "inner_wall": voronoi and style == "nested",
-                 "hotspots": voronoi and style == "hotspot"}
+                 "hotspots": voronoi and style == "hotspot", "svg": is_svg}
         for key, widgets in self.toggled.items():
             for widget in widgets:
                 widget.setVisible(shown[key])
 
     def params(self):
         return {**super().params(), "shape": SHAPES[self.cmb_shape.currentIndex()], "style": VORONOI_STYLES[self.cmb_style.currentIndex()],
-                "hole": HOLE_SHAPES[self.cmb_hole.currentIndex()],
+                "hole": HOLE_SHAPES[self.cmb_hole.currentIndex()], "svg_path": self.txt_svg_path.text().strip(),
                 "through": self.chk_through.isChecked(), "partial": self.chk_partial.isChecked()}
 
     def load(self, feature):
         self.cmb_shape.setCurrentIndex(SHAPES.index(feature.shape))
         self.cmb_style.setCurrentIndex(VORONOI_STYLES.index(feature.style))
         self.cmb_hole.setCurrentIndex(HOLE_SHAPES.index(feature.hole))
+        self.txt_svg_path.setText(getattr(feature, "svg_path", ""))
         super().load(feature)
         self.chk_through.setChecked(feature.through)
         self.chk_partial.setChecked(feature.partial)
@@ -178,6 +216,9 @@ class _KnurlPage(_Page):
         self.field("depth", "Depth:", 0.01, 100.0, 2, " mm", 0.6, "How deep the grooves go into the face.")
         self.field("angle", "Angle:", 1.0, 80.0, 2, " °", 30.0, "Slant of the grooves from the axis. Straight grooves have none.")
         self.field("margin", "Margin to ends:", 0.0, 10000.0, 2, " mm", 0.0, "Plain length left at both ends of the face.")
+        BaseFeatureDialog.pair_form_rows(self.form, [
+            (self.spins["pitch"], self.spins["depth"]),
+            (self.spins["angle"], self.spins["margin"])])
         self.cmb_pattern.currentIndexChanged.connect(self._sync)
         self.cmb_pattern.currentIndexChanged.connect(lambda *_: self.changed.emit())
         self._sync()
@@ -209,6 +250,11 @@ class _JapandiPage(_Page):
         self.field("spacing", "Spacing:", 0.0, 100.0, 2, " mm", 0.0, "Distance between two ribs. It is adjusted a little so whole ribs fit.")
         self.field("twist", "Twist:", -3600.0, 3600.0, 1, " °", 0.0, "How far the ribs turn from one end of the face to the other.")
         self.field("margin", "Margin to ends:", 0.0, 10000.0, 2, " mm", 0.0, "Plain length left at both ends of the face.")
+        BaseFeatureDialog.pair_form_rows(self.form, [
+            (self.cmb_shape, self.cmb_direction),
+            (self.spins["width"], self.spins["depth"]),
+            (self.spins["radius"], self.spins["spacing"]),
+            (self.spins["twist"], self.spins["margin"])])
         # not setRowVisible: docking moves each field into a slider widget, which follows the field
         self.toggled = {key: [self.form.labelForField(self.spins[key]), self.spins[key]] for key in ("radius", "width", "depth")}
         self.cmb_shape.currentIndexChanged.connect(self._sync)
@@ -241,6 +287,9 @@ class _WavyPage(_Page):
         self.field("phase_shift", "Wave Phase Shift:", -360.0, 360.0, 1, "°", 15.0,
                    "How far each slice's wave moves from the slice below. 360° is one whole wave")
         self.field("offset", "Offset:", -200.0, 200.0, 2, " mm", 0.0, "Moves the outline first: + outward, − inward")
+        BaseFeatureDialog.pair_form_rows(self.form, [
+            (self.spins["waves"], self.spins["slice_height"]),
+            (self.spins["amplitude"], self.spins["phase_shift"])])
 
     def params(self):
         values = super().params()
@@ -258,6 +307,7 @@ class SurfaceTextureDialog(FacePickMixin, BaseFeatureDialog):
                  embedded: bool = False):
         super().__init__("Surface Texture", parent, embedded)
         self.faces, self.body_id = [], ""
+        self.face_bodies = []
         self._editing = feature is not None
         self.kinds = list(TEXTURES)
         self.body_ids = list(doc.bodies.keys())
@@ -299,6 +349,7 @@ class SurfaceTextureDialog(FacePickMixin, BaseFeatureDialog):
         if feature is not None:
             kind, first = feature.feature_type, feature.target_body_id
             self.faces, self.body_id = list(getattr(feature, "faces", [])), feature.target_body_id
+            self.face_bodies = [feature.target_body_id] * len(self.faces)
             self.pages[kind].load(feature)
         self.select_body(first)
         self.cmb_kind.setCurrentIndex(self.kinds.index(kind))
@@ -323,10 +374,44 @@ class SurfaceTextureDialog(FacePickMixin, BaseFeatureDialog):
         self.lbl_info.setText("")
         self._update_count()
 
+    def toggle(self, ref: dict, body_id: str) -> bool:
+        """Adds the face (or removes it when already picked), even across multiple bodies like a Jar and its Lid."""
+        if len(self.face_bodies) != len(self.faces):
+            self.face_bodies = [self.body_id] * len(self.faces)
+        for i, (f, bid) in enumerate(zip(self.faces, self.face_bodies)):
+            if bid == body_id and self._same(f, ref):
+                self.faces.pop(i)
+                self.face_bodies.pop(i)
+                break
+        else:
+            self.faces.append(ref)
+            self.face_bodies.append(body_id)
+        self.body_id = self.face_bodies[0] if self.faces else ""
+        self._update_count()
+        self.changed.emit()
+        return True
+
+    def clear(self):
+        self.faces, self.face_bodies, self.body_id = [], [], ""
+        self._update_count()
+        self.changed.emit()
+
+    def faces_per_body(self):
+        if not self.faces:
+            return []
+        if len(self.face_bodies) != len(self.faces):
+            return [(self.body_id, list(self.faces))] if self.body_id else []
+        order = list(dict.fromkeys(self.face_bodies))
+        return [(bid, [f for f, b in zip(self.faces, self.face_bodies) if b == bid]) for bid in order if bid]
+
     def _kind_switched(self, *_):
         if self.kind() in OUTER_ROUND_TEXTURES:
-            self.faces = [f for f in self.faces if outer_round(f)]
-            self.body_id = self.body_id if self.faces else ""
+            if len(self.face_bodies) != len(self.faces):
+                self.face_bodies = [self.body_id] * len(self.faces)
+            kept = [(f, b) for f, b in zip(self.faces, self.face_bodies) if outer_round(f)]
+            self.faces = [f for f, _ in kept]
+            self.face_bodies = [b for _, b in kept]
+            self.body_id = self.face_bodies[0] if self.faces else ""
         elif self.kind() in BODY_TEXTURES and self.body_id:
             self.select_body(self.body_id)
         self._show_kind()

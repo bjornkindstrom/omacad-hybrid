@@ -1,7 +1,46 @@
+# Hybrid-experiment — 0.9.9.80.143
+
+### Changed
+- **Face grouping runs in Rust**: Sorting a body's triangle groups into flat faces, curved strips and boolean slivers now runs in the native module, which halves edge analysis on patterned bodies (12.6 s to 6.3 s at 190,000 triangles). Results are identical to the Python path, which remains the fallback. Rebuild with `./tools/build_native.sh` (API version 3).
+
+# Hybrid-experiment — 0.9.9.80.142
+
+### Fixed
+- **Faster steps on patterned bodies**: Pressing OK on a Fillet after an SVG pattern on a shelled cylinder took minutes and now takes about 17 s (190,000 triangles), and each preview went from 4.2 s to about 1.4 s. Edge analysis no longer repeats work per face and per cylinder, SVG cell outlines stay within 0.03 mm of their curves instead of being needlessly fine, and previews of very large meshes are shaded flat until OK.
+
+# Hybrid-experiment — 0.9.9.80.141
+
+### Added
+- **Random rotation for SVG cells**: Surface Texture › Cells › SVG has a Random rotation setting (0–180° either way, 0 = off). Each cell gets its own turn from its grid position and the Seed, and the grid widens so turned cells keep the wall between them.
+
 # Hybrid-experiment — 0.9.9.80.140
 
 ### Fixed
 - **Imported SVG curves stay smooth**: SVG import flattened curves to about half a drawing unit, so a logo with a small viewBox came in as a coarse polygon (82 lines, 2.7 % area error). Sketches now get the file's exact Beziers as two-point splines with explicit tangents, arcs and circles stay curved, long curves are sampled to a 0.005 mm chord error, and the SVG Surface Texture outline is flattened relative to the drawing's size.
+
+# Hybrid-experiment — 0.9.9.80.139
+
+### Added
+- **SVG Import and SVG Surface Texture Pattern**:
+  - **Import SVG directly to sketch (`import_svg`)**: Added "Import SVG…" under *File*, in the ribbon under *Insert*, directly inside the *Sketch* ribbon tools, and in the sketch viewport context/fan menu. Automatically parses SVG paths (including cubic/quadratic beziers, lines, and arcs) and shapes (rect, circle, ellipse, polygon, polyline) directly into active or new sketch lines and curves, creating closed profiles ready for Extrude, Revolve, or Emboss.
+  - **SVG cell pattern in Surface Texture (`honeycomb.py`)**: Added `SVG` as a cell shape option in *Surface Texture › Cells*. Users can select any custom SVG vector file to use as the repeating pattern element across flat, cylindrical, or curved spline faces, scaled to cell size with custom wall thickness, margins, depth, rotation, and through-cuts. Tests: `tests/test_svg_features.py`.
+
+### Fixed
+- **Icons and styles match what each tool and menu entry does**:
+  - **Command icons in all icon sets**: Line, Spline, Section View, Scale, Offset Face and Construction now use their own vector icons in the Solid, Blueprint and Colour-coded sets too, instead of showing the Create Sketch, Trim or Move icons or falling back to emoji, and the menu bar uses the chosen icon set instead of emoji.
+  - **Drawn icons match their features**: Box in a Row shows a row of open compartments instead of a closed cube (and its dividing lines are visible on light themes too), Star Brackets shows a star bracket with a centre hub and socket arms, Knurl shows a knurled cylinder instead of a cogwheel, Wavy Slices shows a sliced body, Japandi shows connected fluted ribs with a base, and Surface Texture shows a cellular textured surface.
+  - **Studio and Blueprint details**: Parameters, Measure, Equal, Midpoint, Point and Blueprint Sphere no longer have white fills or dark tick blocks that clash with the theme, and Appearance gets its own Studio palette icon.
+  - **Timeline, Browser and menus**: Star Bracket and Branch steps get their own icons instead of the Settings gear, Move steps use the Move icon instead of the Locate compass, Chamfer and Mirror steps show their own icons in the timeline too, the Body dropdown uses the Body icon instead of Move/Combine, Fix Sketch no longer stays stuck in a checked state, Sketch Pattern is included in the right-click and fan menus, and right-click / fan menus use the right icons for Fit Window, Grid, Hide Sketch/Plane, Split Body, Fillet/Chamfer Edge, Sketch Offset, Edit Dimension, Ungroup and Export.
+  - **Styles**: Checkable push buttons (Sweep Profile/Path, Move Point-to-point/Face-to-face, Text Bold/Italic) now show their active state, Hole hides row labels when their fields are hidden, and the fan menu follows the active theme's surface and text-on-accent colours. Tests: `tests/test_studio_theme.py`, `tests/test_fan_menu.py`, `tests/test_icon_svgs.py`.
+- **Surface Texture works on Jar with Lid and curved spline walls**:
+  - **Curved and spline-extruded surfaces (`curved_surface`)**: Surface Texture (Cells, Knurl and Japandi) previously only accepted planar faces or circular cylinders, so an extruded spline/S-curved wall only supported Wavy Slices (which operates on the entire body). A new module `curved_surface.py` identifies the smooth patch around the picked point, determines the extrusion axis via normal PCA/SVD, slices the patch across the extrusion axis to construct an ordered 2D curve parameterized by arc length $s$ with outward unit normals, and warps the texture tools directly onto the curved surface.
+  - **Surface Texture UI and context menu**: `Cells`, `Knurl` and `Japandi` accept picked surfaces (`kind == "surface"`), right-clicking a curved surface in the viewport opens the Curved Face context/fan menu with `Surface Texture…` and `Offset Face…`, and positive manifold volume orientation is enforced. Tests: `tests/test_curved_surface_texture.py`, `tests/test_surface_texture_ui.py`.
+  - **Jar wall detection (`revolved_surface`)**: The jar's threaded neck has over a thousand height rings while the jar wall has only a few, so index-based subsampling skipped the shoulder step at `z = 40` and treated the jar wall and neck thread as one sloping cone. Knurl refused the jar wall ("radius changes along its length"), Cells cut into the neck thread instead of the upper jar wall, and Japandi placed ribs inside the upper wall and over the thread. Profile heights are now thinned in Z while keeping the endpoints of every long stretch, and radial steps split the profile cleanly, so the jar wall is recognized as a true cylinder.
+  - **Cells on the Lid and multi-body picking**: Short cylinder walls like the lid (`12 mm` tall) adjust vertical margin when needed so a row of whole cells fits instead of cutting 0 cells, picking faces in Surface Texture and Offset Face no longer ignores other visible bodies once a preview is shown, Surface Texture can texture faces picked on both the Jar and the Lid in one operation, and right-clicking a cylindrical wall in the viewport offers Surface Texture and Offset Face directly. Test: `tests/test_surface_texture_ui.py`.
+
+### Changed
+- **Green ✓ apply button on all tools that wait for Enter after picking**: The floating green ✓ button in the viewport (previously only on Fillet/Chamfer and primitives with handles) now appears on every 2D sketch tool (`Fillet`, `Offset`, `Move`, `Mirror`, `Spline`, `Control Spline`, `Rotate`, `Scale`, `Pattern`) and 3D tool (`Extrude`, `Revolve`, `Sweep`, `Loft`, `Pipe`, `Emboss`, `Hole`, `Shell`, `Offset Face`, `Surface Texture`, `Combine`, `Split Body`, `Move/Rotate`, `Pattern/Mirror`, `Offset Plane`, `Section View`, `Thread`, `Jar with Lid`, `Box in a Row`, `Star Brackets`) once the selection or preview is ready, so clicking ✓ applies or advances the step without pressing Enter or moving the mouse to OK. Test: `tests/test_apply_button.py`.
+- **Compact two-column grouping across all tool panels**: Following the `Jar with Lid` layout, related fields, dropdowns, checkboxes and buttons across Box, Cylinder, Prism, Cone, Star Brackets, Extrude, Revolve, Sweep/Loft/Pipe, Fillet/Chamfer, Shell, Hole, Thread, Surface Texture (Cells, Knurl, Japandi, Wavy Slices), Emboss, Move/Copy, Pattern, Text, Combine, Split Body and Sketch Pattern are paired two per row to save vertical space, with automatic visibility syncing for dynamically shown/hidden fields.
 
 # Hybrid-experiment — 0.9.9.80.138
 

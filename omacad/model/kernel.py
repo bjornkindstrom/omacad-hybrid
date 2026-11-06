@@ -748,10 +748,13 @@ class CadKernel:
         return np.array([root(i) in flat_roots for i in range(len(f))], dtype=bool)
 
     @staticmethod
-    def _shaded_triangles(manifold: m3d.Manifold, v, f, smooth_below_deg: float = 30.0):
+    def _shaded_triangles(manifold: m3d.Manifold, v, f, smooth_below_deg: float = 30.0, smooth: bool = True):
         """Unrolled triangle corners and their normals. Curved surfaces are shaded smooth (vertex normals shared
         across edges flatter than `smooth_below_deg`, sharp CAD edges stay crisp): with one flat normal per triangle
-        the irregular triangles of a wrapped emboss floor showed as blotches and fan streaks (Björn #61)."""
+        the irregular triangles of a wrapped emboss floor showed as blotches and fan streaks (Björn #61).
+        `smooth=False` gives every triangle its own normal, for a preview of a mesh too big to smooth while dragging."""
+        if not smooth:
+            return CadKernel._flat_shaded(v, f)
         try:
             mesh = manifold.calculate_normals(0, smooth_below_deg).to_mesh()
             props = np.asarray(mesh.vert_properties)
@@ -771,6 +774,11 @@ class CadKernel:
         except Exception as e:      # fall back to flat shading, which is always right, and say why
             from omacad import applog
             applog.log("ERROR", f"smooth normals: {e!r}")
+        return CadKernel._flat_shaded(v, f)
+
+    @staticmethod
+    def _flat_shaded(v, f):
+        """Unrolled triangle corners, each triangle with its own normal."""
         v0, v1, v2 = v[f[:, 0]], v[f[:, 1]], v[f[:, 2]]
         cross_prod = np.cross(v1 - v0, v2 - v0)
         lengths = np.linalg.norm(cross_prod, axis=1, keepdims=True)
@@ -779,7 +787,7 @@ class CadKernel:
 
     @staticmethod
     def extract_render_mesh(manifold: m3d.Manifold, edge_angle_threshold_deg: float = SHARP_EDGE_DEG,
-                            min_thickness: float = 0.0) -> RenderMesh:
+                            min_thickness: float = 0.0, smooth: bool = True) -> RenderMesh:
         """
         Extract triangle buffers and sharp CAD feature edges for OpenGL rendering. With `min_thickness`,
         material thinner than that is left out (see `thin_triangles`).
@@ -800,7 +808,7 @@ class CadKernel:
                 center=np.zeros(3, dtype=np.float32)
             )
 
-        tri_verts, tri_normals = CadKernel._shaded_triangles(manifold, v, f)
+        tri_verts, tri_normals = CadKernel._shaded_triangles(manifold, v, f, smooth=smooth)
         if keep is not None:
             tri_verts = tri_verts.reshape(-1, 3, 3)[keep].reshape(-1, 3)
             tri_normals = tri_normals.reshape(-1, 3, 3)[keep].reshape(-1, 3)

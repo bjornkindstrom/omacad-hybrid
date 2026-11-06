@@ -266,7 +266,7 @@ class SketchDimensionsMixin:
             return
         menu = QMenu(self)
         theme.style_menu(menu)
-        edit = theme.action_with_icon(menu, "✏️ Edit value…")
+        edit = theme.action_with_icon(menu, "📏 Edit value…")
         delete = theme.action_with_icon(menu, "🗑️ Delete dimension\tDel")
 
         from PySide6.QtWidgets import QMenu as _RealQMenu
@@ -280,7 +280,7 @@ class SketchDimensionsMixin:
 
         from omacad.ui.fan_menu import FanItem
         context_items = [
-            FanItem("edit_val", "Edit Value", theme.named_icon("sketch", "✏️", 20), callback=lambda: self.prompt_edit_dimension(sketch_id, dim_id, dim.value)),
+            FanItem("edit_val", "Edit Value", theme.named_icon("dimension", "📏", 20), callback=lambda: self.prompt_edit_dimension(sketch_id, dim_id, dim.value)),
             FanItem("del_dim", "Delete Dimension", theme.named_icon("delete", "🗑️", 20), shortcut="Del", callback=lambda: self.delete_dimension(sketch_id, dim_id)),
         ]
         self._open_fan_or_menu(event, menu, {edit: ("edit", None), delete: ("del", None)}, context_items=context_items, context_label="Dimension")
@@ -341,7 +341,7 @@ class SketchDimensionsMixin:
         if isinstance(ent, SketchLine):
             heading("Line - set a dimension")
             add("length", "📏 Length…", "Type how long this line should be.")
-            add("angle", "📐 Angle to another line…", "Then click the other line; you get an angle between them.")
+            add("angle", "⌒ Angle to another line…", "Then click the other line; you get an angle between them.")
             add("p1", "📍 Distance from start point to…", "Then click a point, another line or a face edge to measure to it.")
             add("p2", "📍 Distance from end point to…", "Then click a point, another line or a face edge to measure to it.")
             menu.addSeparator()
@@ -379,7 +379,7 @@ class SketchDimensionsMixin:
                     add("insert_point", "➕ Insert Fit Point", "Adds a fit point to the curve at the cursor position.")
         menu.addSeparator()
         add("fillet", "╭ Fillet corner…  (F)", "Rounds a corner between lines with an arc.")
-        add("offset", "↔️ Offset…  (O)", "Makes a parallel copy at a distance you type (select several, or double-click, to offset a whole shape).")
+        add("offset", "⧉ Offset…  (O)", "Makes a parallel copy at a distance you type (select several, or double-click, to offset a whole shape).")
         add("delete", "🗑️ Delete", "Removes this element (and its dimensions).")
         menu.addSeparator()
         general: dict = {}

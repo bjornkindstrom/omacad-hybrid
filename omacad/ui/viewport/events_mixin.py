@@ -380,6 +380,10 @@ class ViewportEventsMixin:
                 self._show_face_menu(event)
             elif target is not None:
                 self._show_plane_menu(event, target)
+            elif self._pick_cylinder_surface(event.position().x(), event.position().y()) is not None:
+                self._show_cylinder_face_menu(event, self._pick_cylinder_surface(event.position().x(), event.position().y()))
+            elif hasattr(self, "_pick_surface") and self._pick_surface(event.position().x(), event.position().y()) is not None:
+                self._show_curved_face_menu(event, self._pick_surface(event.position().x(), event.position().y()))
             else:
                 self._show_general_menu(event)
         elif self.dim_badge_at(event.position().x(), event.position().y()) is not None:

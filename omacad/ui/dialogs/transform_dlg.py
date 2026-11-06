@@ -131,6 +131,14 @@ class MoveBodyDialog(BaseFeatureDialog):
         self.cmb_f2f.currentIndexChanged.connect(lambda *_: self.f2f_changed.emit())     # the prompt recomputes
         self.chk_f2f_centre.toggled.connect(lambda *_: self.f2f_changed.emit())
 
+        self.pair_form_rows(form, [
+            (self.cmb_target, self.chk_copy_body),
+            (self.spn_dx, self.spn_dy),
+            (self.spn_dz, self.cmb_pivot),
+            (self.spn_rx, self.spn_ry),
+            (self.spn_rz, self.btn_lay),
+            (self.btn_f2f, self.cmb_f2f)])
+
         self.main_layout.addLayout(form)
         self.add_buttons()
 

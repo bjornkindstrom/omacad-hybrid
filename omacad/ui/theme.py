@@ -426,6 +426,8 @@ def studio_sheet(css: str) -> str:
 def style(widget, css: str, studio: str = "") -> None:
     """setStyleSheet that follows the theme, including later theme switches. `studio` = extra rules used only
     while a Studio theme is active (calm, borderless buttons, light blue for the active state)."""
+    from PySide6.QtWidgets import QApplication
+    ensure_big_icon_style(QApplication.instance())
     widget.setStyleSheet(_sheet(css, studio))
     _styled.append((weakref.ref(widget), css, studio))
 

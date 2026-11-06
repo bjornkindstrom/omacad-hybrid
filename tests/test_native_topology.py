@@ -85,3 +85,81 @@ def test_native_snap_and_clean_segments_parity():
     assert cleaned[0][0] == 0 and cleaned[0][1] == 0 and cleaned[0][2] == 1
     assert cleaned[1][0] == 2 and cleaned[1][1] == 1 and cleaned[1][2] == 3
 
+
+
+def _patterned_bodies(tmp_path):
+    """The shapes the native grouping is for: thousands of patches, slivers and strips from a pattern on a shell."""
+    from omacad.model.document import Document
+    from omacad.model.features.honeycomb import HoneycombFeature
+    svg=tmp_path/"ring.svg"
+    svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"><ellipse cx="0" cy="0" rx="20" ry="12"/><ellipse cx="0" cy="0" rx="14" ry="8"/></svg>')
+    doc=Document();body=doc.add_cylinder(25.,40.)
+    doc.add_shell(body.body_id,2.,open_faces=[{"normal":[0,0,1],"origin":[0,0,40]}])
+    shell=doc.bodies[body.body_id].manifold
+    face={"kind":"cylinder","origin":[0,0,0],"axis":[0,0,1],"radius":25.,"length":40.,"internal":False}
+    base=dict(shape="svg",svg_path=str(svg),size=10.,wall=2.,margin=3.,depth=1.,through=True,angle=0.,partial=False,randomness=100.,seed=1,
+              style="even",fine_size=2.,inner_wall=.8,hotspots=1,rounding=0.,opening=100.,opening_end=100.,relaxation=0,hole="cell")
+    for changes in ({},dict(through=False,random_rotation=180.),dict(shape="voronoi",size=6.),dict(shape="hexagon",size=5.)):
+        yield HoneycombFeature.compute(shell,[face],{**base,**changes})[0]
+
+
+def test_native_classes_and_the_whole_analysis_match_python_on_patterned_bodies(tmp_path,monkeypatch):
+    from omacad.model import faces_surfaces
+    assert accel.backend_name()=='rust'
+    native=accel.classify_face_groups
+    for solid in _patterned_bodies(tmp_path):
+        mesh=solid.to_mesh64();v=np.asarray(mesh.vert_properties[:,:3],dtype=np.float64);f=np.asarray(mesh.tri_verts,dtype=np.int64)
+        tm=trimesh.Trimesh(vertices=v,faces=f,process=False)
+        faces_surfaces._TOPOLOGY_CACHE.clear()
+        actual=_face_groups(v,f,tm)
+        faces,edges=faces_surfaces.compute_planar_faces_and_edges(solid,"b")
+        with monkeypatch.context() as ctx:
+            ctx.setattr(accel,'classify_face_groups',lambda *args,**kwargs:None)
+            faces_surfaces._TOPOLOGY_CACHE.clear()
+            expected=_face_groups(v,f,tm)
+            faces_expected,edges_expected=faces_surfaces.compute_planar_faces_and_edges(solid,"b")
+        np.testing.assert_array_equal(actual[0],expected[0])
+        assert list(actual[1].items())==list(expected[1].items())       # the same groups in the same order
+        assert actual[2:]==expected[2:] and actual[4]                   # planar, slivers, curved; and there are curves
+        assert [(x.index,x.area) for x in faces]==[(x.index,x.area) for x in faces_expected]
+        assert [str(x.ref()) for x in edges]==[str(x.ref()) for x in edges_expected]
+        faces_surfaces._TOPOLOGY_CACHE.clear()
+    assert accel.classify_face_groups is native
+
+
+def test_native_classes_look_through_a_chain_of_slivers_like_python():
+    """Two strips of a curve whose only link is a chain of slivers, and a thin flat group: the awkward rules, on their own."""
+    from omacad.model.faces_topology import _curved_roots,_sliver_roots
+    # a fan of quads round a cylinder, with hair-thin quads between every second pair
+    v,f=[],[]
+    angle=0.
+    for i in range(24):
+        step=.002 if i%3==2 else .3
+        a,b=angle,angle+step
+        angle=b
+        base=len(v)
+        v+=[[20*np.cos(a),20*np.sin(a),0],[20*np.cos(b),20*np.sin(b),0],[20*np.cos(b),20*np.sin(b),30],[20*np.cos(a),20*np.sin(a),30]]
+        f+=[[base,base+1,base+2],[base,base+2,base+3]]
+    v=np.array(v,dtype=np.float64);f=np.array(f,dtype=np.int64)
+    # weld the shared corners, so the strips are neighbours
+    unique,inverse=np.unique(np.round(v,9),axis=0,return_inverse=True)
+    v,f=unique,inverse.reshape(-1)[f]
+    tm=trimesh.Trimesh(vertices=v,faces=f,process=False)
+    tolerance=1e-6*max(1.,float(np.ptp(v,axis=0).max()))
+    roots=accel.coplanar_roots(v,f,tm.face_normals,tm.area_faces,tm.face_adjacency,tolerance)
+    groups={}
+    for i,r in enumerate(roots.tolist()):groups.setdefault(r,[]).append(i)
+    find=lambda i:int(roots[i])
+    slivers=_sliver_roots(v,f,tm,groups)
+    curved=_curved_roots(v,f,tm,find,groups,tm.face_adjacency,tm.face_adjacency_angles,slivers)
+    assert slivers and curved
+    native=accel.classify_face_groups(v,f,tm.face_normals,tm.area_faces,roots,tm.face_adjacency,tm.face_adjacency_angles,.03,.04,np.radians(25.))
+    assert native==(slivers,curved)
+
+
+def test_groups_of_roots_is_the_dict_a_loop_builds():
+    from omacad.model.faces_topology import _groups_of_roots
+    roots=np.array([5,5,0,7,0,5,7,9,0,9],dtype=np.int64)
+    loop={}
+    for i,r in enumerate(roots.tolist()):loop.setdefault(r,[]).append(i)
+    assert list(_groups_of_roots(roots).items())==list(loop.items())

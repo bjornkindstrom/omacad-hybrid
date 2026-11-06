@@ -264,6 +264,8 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self._init_sketch_scale()
         self._init_tool_panel()
         self._init_sketch_pattern()
+        from omacad.ui.apply_button import attach_sketch_apply_button
+        attach_sketch_apply_button(self)
         self.sketch_palette.finish_clicked.connect(self.finish_sketch_requested)
         self.sketch_palette.look_at_clicked.connect(self.look_at_active_plane)
         self.sketch_palette.settings_changed.connect(self.update)

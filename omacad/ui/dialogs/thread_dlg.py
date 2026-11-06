@@ -189,6 +189,10 @@ class ThreadDialog(BaseFeatureDialog):
                                    "its diameter. The difference between the typed diameter and the cylinder's is kept.")
         self.chk_follow.toggled.connect(self._follow_toggled)
         form.addRow("", self.chk_follow)
+        self.pair_form_rows(form, [
+            (self.cmb_type, self.cmb_preset),
+            (self.spn_dia, self.spn_pitch),
+            (self.spn_length, self.cmb_target)])
         self._update_anchor_enabled()
 
         self.main_layout.addLayout(form)

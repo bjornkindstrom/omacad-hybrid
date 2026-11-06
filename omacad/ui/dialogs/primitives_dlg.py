@@ -148,7 +148,10 @@ class BoxDialog(BaseFeatureDialog):
         inner_row.addWidget(self.cmb_inner_kind)
         form.addRow("Inner Edge:", inner_row)
 
-        self.pair_form_rows(form, [(self.spn_length, self.spn_width)])      # two fields per row
+        self.pair_form_rows(form, [      # two fields per row to save vertical space
+            (self.spn_length, self.spn_width),
+            (self.spn_height, self.spn_taper),
+            (self.cmb_placement, self.spn_wall)])
         self.main_layout.addLayout(form)
         self.lbl_problem = QLabel("")
         self.lbl_problem.setWordWrap(True)
@@ -356,6 +359,10 @@ class CylinderDialog(BaseFeatureDialog):
         inner_row.addWidget(self.cmb_inner_kind)
         form.addRow("Inner Edge:", inner_row)
 
+        if type(self) is CylinderDialog:
+            self.pair_form_rows(form, [
+                (self.spn_radius, self.spn_height),
+                (self.spn_taper, self.spn_wall)])
         self.main_layout.addLayout(form)
         self.lbl_problem = QLabel("")
         self.lbl_problem.setWordWrap(True)
@@ -476,6 +483,10 @@ class PrismDialog(CylinderDialog):
         self.form.insertRow(self.form.getWidgetPosition(self.spn_radius)[0] + 1, "Sides:", self.spn_sides)
         self.btn_face.setToolTip("Klicka på en yta eller plan i 3D-vyn där prismat ska starta.")
         self.spn_wall.setToolTip("Shell wall thickness, square to the flats (0 = solid; > 0 hollows it with an open top).")
+        self.pair_form_rows(self.form, [
+            (self.spn_radius, self.spn_sides),
+            (self.spn_height, self.spn_taper),
+            (self.cmb_placement, self.spn_wall)])
 
     def sides(self) -> int:
         return self.spn_sides.value()
@@ -518,6 +529,9 @@ class ConeDialog(CylinderDialog):
                         break
             if row >= 0:
                 self.form.setRowVisible(row, False)
+        self.pair_form_rows(self.form, [
+            (self.spn_radius, self.spn_top),
+            (self.spn_height, self.spn_wall)])
 
     def top_radius(self) -> float:
         return self.spn_top.value()
@@ -1049,6 +1063,7 @@ class StarBracketsDialog(BaseFeatureDialog):
         self.pair_form_rows(form, [
             (self.spn_tube_length, self.spn_tube_size), (self.spn_clearance, self.spn_wall),
             (self.spn_depth, self.spn_hole_dia), (self.spn_hole_offset, self.spn_hole_spacing),
+            (self.chk_double_holes, self.chk_reinforcement), (self.chk_post, self.chk_second_star),
             (self.spn_post_height, self.spn_cross_tube_length),
             (self.spn_outer_angle, self.spn_inner_angle)])
 

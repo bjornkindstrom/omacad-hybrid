@@ -76,10 +76,11 @@ class BrowserTree(QWidget):
               "QLabel { color: @muted; font-size: 11px; font-weight: 600; letter-spacing: 1px; border: none; }")
         h_layout.addWidget(self.lbl_title)
         h_layout.addStretch()
+        self._nav_buttons = []
         for label, action, tip in (
             ('⏮', 'start', 'Show the active object before its first step'),
-            ('‹', 'back', 'Previous step of the active object'),
-            ('›', 'next', 'Next step of the active object'),
+            ('◀', 'back', 'Previous step of the active object'),
+            ('▶', 'next', 'Next step of the active object'),
             ('⏭', 'end', 'Show the complete active object'),
         ):
             button = QToolButton(self.header)
@@ -87,6 +88,7 @@ class BrowserTree(QWidget):
             button.setToolTip(tip)
             button.clicked.connect(lambda checked=False, a=action: self.navigate_history(a))
             h_layout.addWidget(button)
+            self._nav_buttons.append((button, label))
 
         layout.addWidget(self.header)
 
@@ -764,7 +766,7 @@ class BrowserTree(QWidget):
                 )
             add("✥ Move group…", lambda: self.move_group_prompt(item_id))
             rename()
-            add("🗑️ Ungroup objects", lambda: self.doc.remove_object_group(item_id))
+            add("📁 Ungroup objects", lambda: self.doc.remove_object_group(item_id))
             menu.addSeparator()
             show_hide()
         elif item_type in ("parameter", "dimension", "polygon_sides", "hole_dim", "group_param"):
@@ -782,7 +784,7 @@ class BrowserTree(QWidget):
             self._favorite_menu(menu, list(item_id))
         elif item_type == "fav_group":
             rename()
-            add("🗑️ Remove group from favorites", lambda: self.doc.remove_favorite_group(item_id))
+            add("☆ Remove group from favorites", lambda: self.doc.remove_favorite_group(item_id))
         elif item_type == "plane":
             add(f"✏️ Create Sketch on {item_id} Plane", lambda: self.start_sketch_on_plane.emit(item_id))
             add("📐 Offset Plane…", lambda: self.offset_plane_requested.emit("plane", item_id))
@@ -819,8 +821,8 @@ class BrowserTree(QWidget):
             show_hide()
             find("body")
             menu.addSeparator()
-            add("💾 Export as STL…", lambda: self.export_body_stl.emit(item_id))
-            add("💾 Export as STEP…", lambda: self.export_body_step.emit(item_id))
+            add("📤 Export as STL…", lambda: self.export_body_stl.emit(item_id))
+            add("📤 Export as STEP…", lambda: self.export_body_step.emit(item_id))
             menu.addSeparator()
             add("🗑️ Delete", lambda: self.doc.delete_body(item_id))
 

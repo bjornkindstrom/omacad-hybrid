@@ -232,7 +232,8 @@ class InspectorPanel(QWidget):
             form.setSpacing(6)
             for label, text in rows:
                 value = QLabel(text)
-                style(value, "color: #FFC83B; font-weight: bold; border: none; background: transparent;")
+                style(value, "color: #FFC83B; font-weight: bold; border: none; background: transparent;",
+                      "QLabel { color: @accent; font-weight: bold; }")
                 form.addRow(f"{label}:", value)
             self.hover_layout.addWidget(self._make_card(f"👆 {title}", form))
 
@@ -251,7 +252,8 @@ class InspectorPanel(QWidget):
             form.setSpacing(6)
             for line in measure_info:
                 lbl = QLabel(line)
-                style(lbl, "color: #FFC83B; font-weight: bold; font-size: 13px; border: none; background: transparent;")
+                style(lbl, "color: #FFC83B; font-weight: bold; font-size: 13px; border: none; background: transparent;",
+                      "QLabel { color: @accent; font-weight: bold; font-size: 13px; }")
                 form.addRow(lbl)
             self.info_layout.addWidget(self._make_card("📏 Measurement", form))
             return
@@ -272,7 +274,8 @@ class InspectorPanel(QWidget):
                 style(lbl_status, "color: #66BB6A; font-weight: bold; border: none; background: transparent;",
                       "QLabel { color: @ok; font-weight: bold; }")   # the theme's own green: light green was unreadable on white
             else:
-                style(lbl_status, "color: #FFA726; border: none; background: transparent;")
+                style(lbl_status, "color: #FFA726; border: none; background: transparent;",
+                      "QLabel { color: @muted; }")
             form.addRow("Status:", lbl_status)
 
             form.addRow("Elements:", QLabel(f"{len(sk.entities)}"))
@@ -316,7 +319,7 @@ class InspectorPanel(QWidget):
             form.addRow("Flat faces:", QLabel(f"{len(body.faces)}"))
             form.addRow("Edges:", QLabel(f"{len(body.edges)}"))
 
-            self.info_layout.addWidget(self._make_card(f"📦 Body: {body.name}", form))
+            self.info_layout.addWidget(self._make_card(f"🧊 Body: {body.name}", form))
             return
 
         # D. Document Overview (Nothing specifically selected)

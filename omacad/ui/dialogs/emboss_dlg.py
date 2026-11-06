@@ -67,6 +67,11 @@ class EmbossDialog(BaseFeatureDialog):
         self.spn_rot.setSuffix(" °")
         form.addRow("Rotation:", self.spn_rot)
 
+        self.pair_form_rows(form, [
+            (self.cmb_effect, self.spn_depth),
+            (self.chk_flip, self.chk_wrap),
+            (self.spn_dx, self.spn_dy)])
+
         self.main_layout.addLayout(form)
         self.add_buttons()
         self._sync_effect_from_depth()

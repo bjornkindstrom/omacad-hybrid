@@ -296,14 +296,20 @@ class RoundPatternPromptsMixin:
         vp.offset_face_picked.connect(on_picked)
         vp.begin_plane_pick("offset_face")
         self.status_label.setText("Offset Face: click flat faces, holes or pins, type the distance, OK. Esc cancels.")
+        from omacad.ui.apply_button import add_apply_button, face_ref_anchor
+        add_apply_button(vp, dlg, lambda: face_ref_anchor(vp, lambda: dlg.faces))
         if face is not None:
-            dlg.toggle(plane_face_ref(face), face.body_id)
+            if isinstance(face, dict):
+                dlg.toggle({k: v for k, v in face.items() if k != "body_id"}, face.get("body_id", ""))
+            else:
+                dlg.toggle(plane_face_ref(face), face.body_id)
         dlg.show()
 
     @leaves_sketch
     def prompt_surface_texture(self, target_body_id: str = "", face=None):
         """Surface Texture: cells, a knurl or Japandi ribs on picked faces, wavy slices on a whole body; live preview of the result.
         A face from a right-click starts on Cells with that face, a body from the tree on Wavy Slices."""
+        import manifold3d as m3d
         from omacad.model.features.offset_face import plane_face_ref
         from omacad.ui.dialogs.surface_texture_dlg import BODY_TEXTURES, SurfaceTextureDialog, outer_round, preview_texture
         if not self.doc.bodies:
@@ -316,32 +322,61 @@ class RoundPatternPromptsMixin:
         self.dock(dlg)
         self.doc.hide_used_sketches()
         vp = self.viewport
-        hidden = [None]    # the body whose preview replaces it
+        hidden = set()     # the bodies whose preview replaces them
 
         def show_body():
-            if hidden[0] in self.doc.bodies:
-                self.doc.bodies[hidden[0]].visible = True
-            hidden[0] = None
+            for bid in list(hidden):
+                if bid in self.doc.bodies:
+                    self.doc.bodies[bid].visible = True
+            hidden.clear()
+            vp.shell_target_body_ids = set()
 
         def refresh_preview():
             kind = dlg.kind()
             on_faces = kind not in BODY_TEXTURES
+            if on_faces:
+                groups = [(bid, bfaces) for bid, bfaces in dlg.faces_per_body() if bid in self.doc.bodies and bfaces]
+                if not groups:
+                    show_body()
+                    vp.shell_target_body_id = ""
+                    vp.set_preview(None)
+                    dlg.lbl_info.setText("")
+                    return
+                show_body()
+                results, infos = [], []
+                for bid, bfaces in groups:
+                    body = self.doc.bodies[bid]
+                    try:
+                        res, info = preview_texture(kind, body.manifold, bfaces, dlg.params())
+                    except ValueError as e:
+                        res, info = body.manifold, str(e)
+                    body.visible = False
+                    hidden.add(bid)
+                    results.append(res)
+                    if info and info not in infos:
+                        infos.append(info)
+                vp.shell_target_body_id = groups[0][0]
+                vp.shell_target_body_ids = set(hidden)
+                vp.set_preview(results[0] if len(results) == 1 else m3d.Manifold.compose(results), "new_body")
+                dlg.lbl_info.setText(" ".join(infos))
+                return
             body = self.doc.bodies.get(dlg.target_body_id())
-            if body is None or (on_faces and not dlg.faces):
+            if body is None:
                 show_body()
                 vp.shell_target_body_id = ""
                 vp.set_preview(None)
                 dlg.lbl_info.setText("")
                 return
-            if hidden[0] != body.body_id:
+            if hidden != {body.body_id}:
                 show_body()
             try:
                 result, info = preview_texture(kind, body.manifold, dlg.faces, dlg.params())
             except ValueError as e:         # values that give no body: show the body as it is, and say why
                 result, info = body.manifold, str(e)
             body.visible = False
-            hidden[0] = body.body_id
-            vp.shell_target_body_id = body.body_id if on_faces else ""
+            hidden.add(body.body_id)
+            vp.shell_target_body_id = ""
+            vp.shell_target_body_ids = set()
             vp.set_preview(result, "new_body")
             dlg.lbl_info.setText(info)
 
@@ -355,11 +390,11 @@ class RoundPatternPromptsMixin:
 
         def on_picked(ref, body_id):
             if dlg.kind() == "knurl" and not outer_round(ref):
-                self.status_label.setText("Knurl: only outer round faces can take a knurl.")
+                self.status_label.setText("Knurl: only outer round and curved faces can take a knurl.")
             elif dlg.kind() == "japandi" and not outer_round(ref):
-                self.status_label.setText("Japandi: only outer round faces can take ribs.")
-            elif ref.get("kind") not in ("plane", "cylinder"):
-                self.status_label.setText("Cells: only flat and cylindrical faces can take cells.")
+                self.status_label.setText("Japandi: only outer round and curved faces can take ribs.")
+            elif ref.get("kind") not in ("plane", "cylinder", "surface"):
+                self.status_label.setText("Cells: only flat, cylindrical and curved faces can take cells.")
             elif not dlg.toggle(ref, body_id):
                 self.status_label.setText("Surface Texture: all faces must belong to the same body.")
 
@@ -381,6 +416,7 @@ class RoundPatternPromptsMixin:
             vp.offset_face_picked.disconnect(on_picked)
             vp.body_clicked.disconnect(dlg.on_body_clicked)
             kind, faces, body_id, params, exprs = dlg.kind(), list(dlg.faces), dlg.target_body_id(), dlg.params(), dlg.get_expressions()
+            groups = dlg.faces_per_body()
             show_body()
             vp.shell_target_body_id = ""
             vp.end_plane_pick()
@@ -394,7 +430,11 @@ class RoundPatternPromptsMixin:
             else:
                 self._texture_kind = kind
                 try:
-                    self.status_label.setText(add_step(kind, body_id, faces, params, exprs))
+                    if kind not in BODY_TEXTURES and len(groups) > 1:
+                        msgs = [add_step(kind, bid, bfaces, params, exprs) for bid, bfaces in groups]
+                        self.status_label.setText(" ".join(msgs))
+                    else:
+                        self.status_label.setText(add_step(kind, body_id, faces, params, exprs))
                 except ValueError as e:
                     self.status_label.setText(f"Surface Texture: {e}")
             vp.update()
@@ -404,9 +444,17 @@ class RoundPatternPromptsMixin:
         dlg.finished.connect(on_finished)
         vp.offset_face_picked.connect(on_picked)
         vp.body_clicked.connect(dlg.on_body_clicked)
+        from omacad.ui.apply_button import add_apply_button, face_ref_anchor, preview_anchor
+        add_apply_button(
+            vp, dlg,
+            lambda: preview_anchor(vp) if dlg.kind() in BODY_TEXTURES else face_ref_anchor(vp, lambda: dlg.faces)
+        )
         set_pick_mode(kind)
         if face is not None:
-            dlg.toggle(plane_face_ref(face), face.body_id)
+            if isinstance(face, dict):
+                dlg.toggle({k: v for k, v in face.items() if k != "body_id"}, face.get("body_id", ""))
+            else:
+                dlg.toggle(plane_face_ref(face), face.body_id)
         refresh_preview()
         dlg.show()
 
@@ -485,6 +533,8 @@ class RoundPatternPromptsMixin:
 
         timer = self._connect_debounced_preview(dlg, preview)
         self.dock(dlg)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport) if dlg.source_ids() else None)
         self.viewport.pick_step_mode = True
         self.viewport.step_point_clicked.connect(on_step_clicked)
 

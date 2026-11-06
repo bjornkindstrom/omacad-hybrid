@@ -20,6 +20,7 @@ from omacad.model.sketch import Sketch
 from omacad.model.timeline import ProfileRefs
 from omacad.model import quality
 from omacad.io.step_mesh import DECIMALS, clean_for_step, step_str
+from omacad.model.svg_importer import parse_svg_to_sketch_entities
 
 
 class Exporter:
@@ -320,6 +321,33 @@ class Exporter:
                             imported_bodies.append(body)
 
             return imported_bodies
+
+    @staticmethod
+    def import_svg_to_sketch(filepath: str, doc: Document, plane_name: str = "XY",
+                             scale: float = 1.0, is_construction: bool = False) -> Optional[Sketch]:
+        """
+        Parses an SVG file and imports its paths/shapes into a new or active Sketch in `doc`.
+        """
+        if not os.path.isfile(filepath):
+            raise ValueError(f"File {filepath} not found.")
+
+        entities = parse_svg_to_sketch_entities(filepath, origin=(0.0, 0.0), scale=scale, is_construction=is_construction)
+        if not entities:
+            return None
+
+        sketch = doc.active_sketch
+        if sketch is None:
+            sketch = doc.start_sketch(plane_name)
+
+        before = sketch.to_dict()
+        for ent in entities:
+            sketch.entities.append(ent)
+        sketch.solve_profiles()
+
+        if hasattr(doc, "record_sketch_change"):
+            doc.record_sketch_change(sketch, before)
+        doc.notify_changed()
+        return sketch
 
     @staticmethod
     def document_to_dict(doc: Document) -> dict:

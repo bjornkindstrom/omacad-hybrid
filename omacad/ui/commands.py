@@ -63,6 +63,7 @@ _ALL = [
        signal="offset_plane_clicked"),
     _c("canvas", "Canvas (Image)", "🖼️", "A reference image on a plane or flat body face: calibrate it and trace over it",
        signal="canvas_clicked"),
+    _c("import_svg", "Import SVG", "📐", "Import 2D vector curves from an SVG file into a sketch", signal="import_svg_clicked", modes=("model", "sketch")),
     _c("import_3mf", "Import 3MF", "📥", "Bring in the bodies of a 3MF file", signal="import_3mf_clicked"),
     # --- SOLID: MODIFY -------------------------------------------------------------------------------------------
     _c("fillet", "Fillet", "🔘", "Round edges (outside and inside corners): pick edges, type a radius",
@@ -149,8 +150,8 @@ COMMANDS: Dict[str, Command] = {c.cid: c for c in _ALL}
 # commands stand as separate buttons instead (Settings > ribbon layout).
 PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Pipe, Thread / Coil, Jar with Lid (each "
               "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"])
-INSERT = ("insert", "Insert", "🖼️", "Canvas (Image) and Import 3MF", ["canvas", "import_3mf"])
-MODIFY_BODY = ("modify_body", "Body", "🔗", "Combine, Split Body, Shell, Offset Face, Move",
+INSERT = ("insert", "Insert", "🖼️", "Canvas (Image), Import SVG and Import 3MF", ["canvas", "import_svg", "import_3mf"])
+MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Split Body, Shell, Offset Face, Move",
                ["combine", "split_body", "shell", "offset_face", "move"])
 INSPECT = ("inspect", "Inspect", "📏", "Measure, Section View, Document Statistics", ["measure", "section", "statistics"])
 EXPORT = ("export", "Export", "📤", "Screenshot, Copy Image, Rotating Video of the model as it is shown",
@@ -165,7 +166,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
     ("EXPORT", [EXPORT]),
 ]
 SKETCH_GROUPS: List[Tuple[str, list]] = [
-    ("CREATE", ["line", "rect", "circle", "arc", "spline", "control_spline", "polygon", "slot", "text", "offset_sketch", "mirror_sketch", "project",
+    ("CREATE", ["line", "rect", "circle", "arc", "spline", "control_spline", "polygon", "slot", "text", "import_svg", "offset_sketch", "mirror_sketch", "project",
                 "dimension"]),
     ("MODIFY", ["fillet_sketch", "trim", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
     ("CONSTRAINTS", ["constraints"]),

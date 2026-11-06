@@ -20,6 +20,7 @@ from omacad.model.text_layout import _even_odd
 # units across the drawing's largest side, whatever size its coordinates happen to be.
 FLATTEN_UNITS = 1000.0
 MIN_LENGTH = 1e-4       # a shorter sketch segment is numerical noise
+CELL_CHORD_ERROR = 0.03 # mm a cell's outline may lie from its curves: finer only costs triangles, in every step after it
 
 def _tokenize_svg_path(d_str: str) -> List[str]:
     """Tokenize SVG path string into command characters and numeric strings."""
@@ -322,7 +323,7 @@ def svg_to_template(geom: Union[Polygon, MultiPolygon], target_size: float) -> T
 
     scale = target_size / max(w, h)
     scaled = affinity.scale(geom, xfact=scale, yfact=scale, origin=(cx, cy))
-    centered = affinity.translate(scaled, xoff=-cx, yoff=-cy)
+    centered = affinity.translate(scaled, xoff=-cx, yoff=-cy).simplify(CELL_CHORD_ERROR)
 
     polys = []
     if isinstance(centered, Polygon):

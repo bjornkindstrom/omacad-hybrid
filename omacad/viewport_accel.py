@@ -20,7 +20,7 @@ _ERROR = None
 if _MODE != "python":
     try:
         _NATIVE = importlib.import_module("_viewport_native")
-        if _NATIVE.API_VERSION != 2:
+        if _NATIVE.API_VERSION != 3:
             raise ImportError("native picking API version mismatch; rebuild the extension")
     except ImportError as error:
         _NATIVE = None
@@ -84,15 +84,32 @@ def coplanar_roots(v, f, normals, areas, adjacency, tolerance):
     return np.frombuffer(data,dtype="<u8").astype(np.int64)
 
 
+def classify_face_groups(v, f, normals, areas, roots, adjacency, angles, sliver_area, sliver_min_width, shallow_angle):
+    """(sliver roots, curved roots) of the coplanar triangle groups, as faces_topology's Python passes give them."""
+    if _NATIVE is None:
+        return None
+    data = _NATIVE.classify_face_groups(
+        np.ascontiguousarray(v, dtype="<f8").tobytes(), np.ascontiguousarray(f, dtype="<u8").tobytes(),
+        np.ascontiguousarray(normals, dtype="<f8").tobytes(), np.ascontiguousarray(areas, dtype="<f8").tobytes(),
+        np.ascontiguousarray(roots, dtype="<u8").tobytes(), np.ascontiguousarray(adjacency, dtype="<u8").tobytes(),
+        np.ascontiguousarray(angles, dtype="<f8").tobytes(), float(sliver_area), float(sliver_min_width),
+        float(shallow_angle), float(np.cos(shallow_angle)))
+    classes = np.frombuffer(data, dtype=np.uint8)
+    return set(np.flatnonzero(classes & 1).tolist()), set(np.flatnonzero(classes & 2).tolist())
+
+
 def snap_and_clean_segments(v, segments, snap_tol):
     """Native snap-vertex pass: returns (cleaned_segments, original_indices)."""
     if _NATIVE is None:
         return None
     seg_arr = np.ascontiguousarray(segments, dtype="<u8")
+    # only the vertices these segments use: this runs per flat face, and a pattern makes thousands of them
+    used, compact = np.unique(seg_arr, return_inverse=True)
     data = _NATIVE.snap_and_clean_segments(
-        np.ascontiguousarray(v, dtype="<f8").tobytes(),
-        seg_arr.tobytes(),
+        np.ascontiguousarray(v[used.astype(np.int64)], dtype="<f8").tobytes(),
+        np.ascontiguousarray(compact.reshape(seg_arr.shape), dtype="<u8").tobytes(),
         float(snap_tol)
     )
-    res = np.frombuffer(data, dtype="<u8").reshape(-1, 3)
+    res = np.frombuffer(data, dtype="<u8").reshape(-1, 3).copy()
+    res[:, 1:] = used[res[:, 1:]]
     return res

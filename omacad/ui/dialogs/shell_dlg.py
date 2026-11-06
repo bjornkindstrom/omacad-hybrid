@@ -66,6 +66,10 @@ class ShellDialog(BaseFeatureDialog):
         self.btn_clear_faces.clicked.connect(self.clear_faces)
         form.addRow("", self.btn_clear_faces)
 
+        self.pair_form_rows(form, [
+            (self.cmb_target, self.cmb_dir),
+            (self.spn_thickness, self.spn_thickness2)])
+
         self.main_layout.addLayout(form)
         self.add_buttons()
 
