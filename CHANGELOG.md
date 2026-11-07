@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.147
+
+### Fixed
+- **Shell wall thickness controls**: Docking the Shell panel could hide the entire thickness row when its fields moved into slider wrappers. Thickness fields and labels now stay visible for Inside, Outside and Both, while Outside Thickness remains hidden for a single direction.
+
 # Hybrid-experiment — 0.9.9.80.146
 
 ### Added

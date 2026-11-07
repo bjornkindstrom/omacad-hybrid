@@ -25,6 +25,9 @@ class NumericSlider(QWidget):
         self._layout.addWidget(self.slider)
         self.field.installEventFilter(self)
         self.field.valueChanged.connect(self.sync)
+        # Reparenting hides the field temporarily. Restore its intended state
+        # before showing the wrapper so paired rows also resync their visibility.
+        self.field.setVisible(not hidden)
         self.setVisible(not hidden)
         self.sync(rescale=True)
 
