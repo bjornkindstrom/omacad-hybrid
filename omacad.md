@@ -1,3 +1,12 @@
+## Japandi: slätt kantband vid ribbornas ändar — 2026-11-07 (0.9.9.80.150)
+
+Rapport 20261107-094826: `rim_follow` kopierade ribbornas tvärprofil till fasen.
+`_rim_end_relief` använder i stället en enda ändhöjd runt hela bandet, med bågprofil
+som förut och radieskala för halvrunda ribbor. Chamfer/Round möter ribbornas toppar
+utan räfflor i kantbandet. Panelen säger Meet rib ends; sparade inställningar fungerar.
+Regression: `test_japandi_rim_join.py`, inklusive rapportens lilla dokument,
+båda ribbformerna, vridning, båghöjd, böjd vägg, fil och ångra.
+
 ## Japandi: kantband möter ribborna — 2026-11-07 (0.9.9.80.149)
 
 Rapport 20261107-093936: fasen slutade vid väggen medan ribborna fortfarande stack ut

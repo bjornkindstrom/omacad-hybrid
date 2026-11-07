@@ -222,16 +222,11 @@ def _rim_rows(params):
     return u * margin, np.maximum(relief, 0.)
 
 
-def _rim_columns(params, radius, ribs, end, length, distances, relief, scale=1.):
-    """Use the ribs' own columns and endpoint phase so the band meets every crest and valley."""
-    places, shares = rib_columns(params, radius, ribs)
-    columns = (np.arange(ribs)[:, None] + places).ravel() / ribs
-    turn = math.radians(params["twist"]) * end + float(path_turn(params, np.array(end)))
-    columns = columns + turn / (2. * math.pi)
+def _rim_end_relief(params, length, distances, relief, scale=1.):
+    """A smooth band reaches the rib crests at the join, without copying their flutes."""
     height = params["radius"] if params["shape"] == "half-round" else params["depth"]
-    end_relief = np.tile(shares, ribs) * height * scale * float(height_share(params, height, length, np.array(end)))
-    u = distances / distances[-1]
-    return columns, relief[:, None] + u[:, None] * end_relief[None, :]
+    end_height = height * scale * float(height_share(params, height, length, np.array(0.)))
+    return relief + distances / distances[-1] * end_height
 
 
 def _wall_band(coords, normals, zs, relief, closed):
@@ -287,22 +282,7 @@ def japandi_rims(manifold, ref, params):
         for edge, sign in ((bottom, 1.), (top, -1.)):
             coords, normals, heights = wall.coords, wall.normals, relief
             if follow:
-                radius = wall.L / (2. * math.pi)
-                ribs = max(1, int(round(wall.L / rib_period(params))))
-                columns, heights = _rim_columns(params, radius, ribs, 0. if sign > 0 else 1.,
-                                                wall.height - 2. * distances[-1], distances, relief)
-                positions = columns * wall.L
-                positions = np.mod(positions, wall.L) if wall.closed else np.clip(positions, 0., wall.L)
-                if wall.closed:
-                    # Resolve bends between rib columns at least as finely as the warped rib prism.
-                    order = np.argsort(positions)
-                    positions, heights = positions[order], heights[:, order]
-                    samples = np.unique(np.concatenate((positions, wall.s[:-1],
-                                                        np.linspace(0., wall.L, math.ceil(wall.L / 0.25), endpoint=False))))
-                    heights = np.array([np.interp(samples, positions, row, period=wall.L) for row in heights])
-                    positions = samples
-                coords = np.column_stack([np.interp(positions, wall.s, wall.coords[:, i]) for i in (0, 1)])
-                normals = np.column_stack([np.interp(positions, wall.s, wall.normals[:, i]) for i in (0, 1)])
+                heights = _rim_end_relief(params, wall.height - 2. * distances[-1], distances, relief)
             tools.append(_wall_band(coords, normals, edge + sign * distances,
                                     heights, wall.closed).transform(M[:3, :]))
     else:
@@ -323,9 +303,8 @@ def japandi_rims(manifold, ref, params):
             if follow:
                 join_radius = float(np.interp(along[-1], wall.s, wall.r))
                 scale = join_radius / wall.R if params["shape"] == "half-round" else 1.
-                columns, far = _rim_columns(params, wall.R, rib_count(wall.R, params), 0. if sign > 0 else 1.,
-                                            high - low - 2. * distances[-1], distances, relief, scale)
-                band_angles = np.broadcast_to(columns * 2. * math.pi, far.shape)
+                heights = _rim_end_relief(params, high - low - 2. * distances[-1], distances, relief, scale)
+                far = np.broadcast_to(heights[:, None], angles.shape)
             near = np.full(far.shape, -BURIED)
             tools.append(_tube(radii, zs, nr / size, nz / size, band_angles, near, far).transform(M[:3, :]))
     if params.get("rim_inside", False) and params.get("rim") == "round":

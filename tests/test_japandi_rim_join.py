@@ -1,8 +1,9 @@
-"""Report 20261107-093936: end rims meet the rib profile at both ends."""
+"""Report 20261107-093936: smooth end rims meet the rib crests at both ends."""
 import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from pathlib import Path
 
+import numpy as np
 import manifold3d as m3d
 import pytest
 from shapely.geometry import Polygon
@@ -22,7 +23,8 @@ def outline(body, z):
 @pytest.mark.parametrize("rim", ["chamfer", "round"])
 @pytest.mark.parametrize("shape", ["rectangular", "half-round"])
 @pytest.mark.parametrize("twist", [0., 35.])
-def test_report_rim_meets_ribs_without_ledge(rim, shape, twist):
+@pytest.mark.parametrize("height_profile", ["even", "arch"])
+def test_report_smooth_rim_meets_rib_crests(rim, shape, twist, height_profile):
     doc = Exporter.load_project(str(REPORT))
     feature = doc.timeline.features[-1]
     old = doc.bodies[feature.target_body_id].manifold
@@ -31,14 +33,18 @@ def test_report_rim_meets_ribs_without_ledge(rim, shape, twist):
     doc.timeline.recompute(doc)
     base = doc.bodies[feature.target_body_id].manifold
     result, ribs, notes = apply_japandi(base, feature.faces,
-        {**feature.params(), "rim_follow": True, "rim": rim, "shape": shape, "twist": twist})
+        {**feature.params(), "rim_follow": True, "rim": rim, "shape": shape, "twist": twist, "height_profile": height_profile})
     assert ribs > 0 and not notes
     assert result.status() == m3d.Error.NoError and len(result.decompose()) == 1
-    for z in (3., 37.):
-        assert outline(result, z - 0.001).hausdorff_distance(outline(result, z + 0.001)) < 0.03
+    for edge, sign in ((3., -1.), (37., 1.)):
+        band = np.asarray(outline(result, edge + sign * 0.001).exterior.coords)
+        rib = np.asarray(outline(result, edge - sign * 0.001).exterior.coords)
+        band_r, rib_r = np.linalg.norm(band, axis=1), np.linalg.norm(rib, axis=1)
+        assert np.ptp(band_r) < 0.03
+        assert band_r.max() == pytest.approx(rib_r.max(), abs=0.03)
     # Following the ends must leave the middle ribs and the bore unchanged.
     ordinary, _, _ = apply_japandi(base, feature.faces,
-        {**feature.params(), "rim": rim, "shape": shape, "twist": twist})
+        {**feature.params(), "rim": rim, "shape": shape, "twist": twist, "height_profile": height_profile})
     assert result.slice(20.).area() == pytest.approx(ordinary.slice(20.).area(), abs=1e-5)
 
 
@@ -80,5 +86,25 @@ def test_follow_rim_on_closed_curved_wall(rim):
     result, ribs, notes = apply_japandi(solid, [ref], params)
     assert ribs > 0 and not notes
     assert result.status() == m3d.Error.NoError and len(result.decompose()) == 1
-    for z in (3., 17.):
-        assert outline(result, z - 0.001).hausdorff_distance(outline(result, z + 0.001)) < 0.03
+    straight, _, _ = apply_japandi(solid, [ref], {**params, "twist": 45.})
+    for z in (1.5, 18.5):
+        assert outline(result, z).hausdorff_distance(outline(straight, z)) < 1e-6
+
+
+@pytest.mark.parametrize("rim", ["chamfer", "round"])
+def test_094826_no_flutes_in_end_band(rim):
+    doc = Exporter.load_project(str(Path(__file__).parent / "data" / "japandi_smooth_rim.omacad"))
+    feature = doc.timeline.features[-1]
+    assert feature.rim_follow
+    doc.timeline.marker_index = 1
+    doc.timeline.recompute(doc)
+    base = doc.bodies[feature.target_body_id].manifold
+    result, ribs, notes = apply_japandi(base, feature.faces, {**feature.params(), "rim": rim})
+    assert ribs == 103 and not notes
+    assert result.status() == m3d.Error.NoError and len(result.decompose()) == 1
+    for z in (0.75, 1.5, 2.999, 37.001, 38.5, 39.25):
+        points = np.asarray(outline(result, z).exterior.coords)
+        assert np.ptp(np.linalg.norm(points, axis=1)) < 0.03
+    for z in (2.999, 37.001):
+        points = np.asarray(outline(result, z).exterior.coords)
+        assert np.linalg.norm(points, axis=1).max() == pytest.approx(50.5, abs=0.03)

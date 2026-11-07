@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.150
+
+### Fixed
+- **Smooth Japandi end rims (report 20261107-094826)**: Meet rib ends now keeps Chamfer and Round bands smooth around the wall while meeting the rib crests. Ribs stop at the band instead of continuing across it.
+
 # Hybrid-experiment — 0.9.9.80.149
 
 ### Added
