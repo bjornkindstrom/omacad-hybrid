@@ -27,6 +27,27 @@ class Exporter:
     """Handles STL / OBJ export and document persistence."""
 
     @staticmethod
+    def exact_document(doc: Document) -> Document:
+        """`doc` itself, or, while "Fast view, exact export" builds the view coarser, a copy of it rebuilt from its
+        history at the full curve smoothness (same rollback position, same visible bodies). For exports."""
+        if not quality.fast_view_active():
+            return doc
+        data = Exporter.document_to_dict(doc)   # records the view's smoothness, so profile numbers resolve right
+        with quality.exact():
+            copy = Document(doc.name)
+            Exporter.apply_dict(copy, data)
+        for bid, body in copy.bodies.items():
+            live = doc.bodies.get(bid)
+            if live is not None:
+                body.visible = live.visible
+        return copy
+
+    @staticmethod
+    def exact_body(doc: Document, body_id: str) -> Optional[Body]:
+        """The body `body_id` as an export should write it (see exact_document)."""
+        return Exporter.exact_document(doc).bodies.get(body_id) or doc.bodies.get(body_id)
+
+    @staticmethod
     def export_body_to_stl(body: Body, filepath: str) -> bool:
         """Exports a single solid body to an STL file."""
         if not body.render_mesh or len(body.render_mesh.vertices) == 0:
@@ -59,6 +80,7 @@ class Exporter:
     @staticmethod
     def export_all_to_stl(doc: Document, filepath: str) -> bool:
         """Combines all visible bodies and exports to STL."""
+        doc = Exporter.exact_document(doc)
         meshes = []
         for b in doc.bodies.values():
             if b.visible and b.render_mesh and len(b.render_mesh.vertices) > 0:
@@ -220,6 +242,7 @@ class Exporter:
     @staticmethod
     def export_all_to_step(doc: Document, filepath: str) -> bool:
         """Combines all visible solid bodies and exports to an ISO 10303-21 STEP file."""
+        doc = Exporter.exact_document(doc)
         tuples = []
         for b in doc.bodies.values():
             if b.visible and b.render_mesh and len(b.render_mesh.vertices) > 0:

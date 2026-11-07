@@ -40,6 +40,9 @@ def _cut(dlg):
             + dlg.findChildren(QRadioButton) + dlg.findChildren(QLabel):
         if not b.isVisible() or (isinstance(b, QLabel) and (b.wordWrap() or not b.text())):
             continue
+        if isinstance(b, (QComboBox, QPushButton)):
+            if b.height() < b.minimumSizeHint().height() or not b.parentWidget().rect().contains(b.geometry()):
+                out.append(("clipped control", type(b).__name__, b.geometry().getRect()))
         fm = b.fontMetrics()
         if isinstance(b, QComboBox):
             texts = [b.itemText(i) for i in range(b.count())]

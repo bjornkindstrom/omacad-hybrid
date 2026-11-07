@@ -1,3 +1,21 @@
+## SolidCraft-ytmarkering, kantlinjer och studiobelysning — 2026-11-07 (0.9.9.80.154)
+
+Rapport 20261107-121711: efterlikna SolidCrafts markering/hantering av ytor och streck
+samt rendering av kroppar.
+1. Markering: klick på kropp i viloläge väljer nu den enskilda plana ytan eller krökta
+   ytlappen (t.ex. cylinder/avrundning) i stället för hela kroppen. Shift-klick för
+   flerval, klick i bakgrunden eller Esc avmarkerar, dubbelklick väljer hela kroppen.
+   Verktygen Extrude, Round/Fillet, Offset Face och Skiss på yta konsumerar automatiskt
+   förvalda ytor.
+2. Streck & konturer: hovrade och valda ytor ritar sina yttre gränskanter (`sel_edge`
+   i #007aff med 2,2 px bredd) samt dämpad genomlysning genom modellen, precis som
+   SolidCraft.
+3. Rendering: solid-shadern har uppdaterats med SolidCrafts studiobelysning (synvinkel-
+   justerad riktad huvudbelysning + kameraljusfyllnad, spegelglans `spec`, normalflippning
+   så insidor/baksidor inte slås ut till svart, samt himmelsgradient). Modellkanter är nu
+   antracitgrå (`#282c34`) och kroppsmarkering SolidCraft-blå (`#6eaae7`).
+Tester: `test_solidcraft_face_selection_and_rendering.py` och `tests/data/solidcraft_face_selection_fillet_box.omacad`.
+
 ## Japandi: inga streck över inre kantbandet — 2026-11-07 (0.9.9.80.152)
 
 Rapport 20261107-110203: skivningen gav nästan sammanfallande punkter och extra
@@ -6,6 +24,16 @@ punkter längs raka kordor. Normalerna vid dessa punkter vek `_inner_rims` tillb
 med 0,00001 mm tolerans före normalberäkningen. Regression med rapportens dokument:
 `test_japandi_inner_rim.py` kontrollerar att tvärgående veck saknas och att öppning,
 vägg och kantbandets mått består.
+
+## Offset Face: välj fler ytor vid redigering — 2026-11-07 (0.9.9.80.151, #192)
+
+Redigeraren visade bara avstånd och saknade plockkopplingar. `OffsetFaceDialog`
+fylls nu med sparade refs och startar `offset_face`-plockning via `_exec_with_preview`.
+`Document.EDITABLE` tillåter `faces`; valen sparas med avståndet i samma ångra-steg.
+En ytlista med Remove/Clear och bestående `highlighted_faces` (plan + triangellappar)
+visar vad som valts även över förhandsvisningen. Cylinderjämförelsen skiljer radie
+på koaxiella ytor. Tomt val stänger av OK. Tester: `test_offset_face_multi_ui.py`,
+`test_offset_face_ui.py`, `test_edit_preview_ui.py`, `test_offset_face_hover_and_slivers.py`.
 
 ## Japandi: slätt kantband vid ribbornas ändar — 2026-11-07 (0.9.9.80.150)
 
@@ -24,6 +52,20 @@ möta utåtriktade ribbors ändprofil vid båda marginalerna. Kantbandet återan
 `rib_columns`, ändhöjd och ändrotation; halvrunda ribbor följer väggens radieskala.
 Sparning, redigering, ångra och panel täcks av `test_japandi_rim_join.py`, med rapportens
 lilla dokument som fixture. Rak kant och inåtriktade spår behåller vanliga kantband.
+
+## Requests #188–#191 och avbrutna uppladdningar — 2026-11-07 (0.9.9.80.148)
+
+Japandi `rim` (none/straight/chamfer/round), `rim_depth`, `rim_inside` ingår i `PARAMS`.
+Kantbanden läggs till separat från ribborna i båda ändmarginalerna; `japandi_rims` följer
+hela väggen och fungerar även med inåtriktade spår. `_strip` kapslar även öppna väggar.
+#190 var en äldre burk med `anchor_gap=0`; en separat reparerad kopia har gap 0,5 mm och
+längd 4,5 mm, vilket ger hel axelcirkel. Nya burkar har redan rätt gap sedan .73;
+`test_jar_shoulder_flap` täcker nu även rapportens Ø20/hals5/stigning4.
+Parade fält och dockade dialoger har vertikal Minimum-policy; innehållslayouten håller
+sin minimistorlek så scrollarean inte trycker ihop raderna. `rfc.send` jämför Git-blob-SHA,
+uppdaterar befintliga filer och återanvänder issues. Fel sparas i `last_error.json`.
+`MainWindow.retry_requests` kör kön i trådpoolen; start, femminuterstimer och ny request
+triggar försök. Tester: `test_requests_188_190`, `test_rfc`, panel- och menytesterna.
 
 ## Länkade objekt följer originalet — 2026-11-01 (0.9.9.80.103)
 
@@ -60,6 +102,7 @@ This fork does not publish Omacad releases or send requests in the background.
 
 ## Senaste lösningar
 
+- **Snabb vy, exakt export (0.9.9.80.153, Björn)**: `quality.set_fast_view(on, view_segments)`; `circle_segments()` ger `_view_segments` (72) när `fast_view_active()`, `quality.exact()` (räknare) tvingar full `_segments`. `RenderMesh.display_arrays(edge_lines)` → `model/display_smooth.smooth_arrays`: Phong-tessellering (`SHAPE` 0,5 = kordans mittpunkt hamnar på cirkeln; 0,75 buktar ut) i 2 nivåer, mittpunkten hör till kanten (snitt av de kurviga trianglarnas förslag) så locket följer väggen utan spricka, kantlinjerna delas med samma punkter; bara ritningen i `render_mixin`, plockning/mätning använder modellen. `Exporter.exact_document(doc)` = `document_to_dict` + `apply_dict` på en ny `Document` inne i `exact()` (sparar vyns segment så profilnummer löses rätt), synlighet kopieras; STL/STEP via `busy.run`, `media_export.exact_view` lägger exakta render-meshar i `display_override` och ritar inom `exact()`. Inställningen pushas bara vid start eller när `fast_view`/`view_segments` ändras; `conftest` slår av den (exakta volymer). Fälla: 48 bitar gav fel i 7 av 88 testdokument (Emboss på jarburk lade till material, Japandi, gängor); samma fel finns redan med Curve smoothness Light/Normal. 72 gav inga verkliga avvikelser (`fillet_surface_follow` byter genus även mellan 96 och 128). Test: `test_fast_view_exact_export.py`.
 - **Shell saknade tjockleksfält (0.9.9.80.147, rapport 20261107-084755)**: `NumericSlider.attach` flyttar fältet till en ny förälder, vilket tillfälligt döljer det. `_PairBox` såg då två dolda fält och dolde hela raden; även etiketter kunde bli kvar dolda i Both. Återställ fältets avsedda synlighet efter flytten, innan omslaget visas, så synkas både rad och etiketter. Test med rapportens lilla boxdokument: `test_shell_panel.py` (alla tre riktningar vid dockning och växling).
 - **Japandi: bågformad ribbhöjd (0.9.9.80.146, request #187)**: Björn menade inte bara ribbans bana (0.9.9.80.145, behålls): den röda linjen i skärmbilden är ribbans ytterprofil från sidan. `height_profile` (`even`/`arch`) och `end_height` (% av mitthöjden, minst 1 så att ribban inte möter väggen i en nollhöjd). `height_share` är en äkta cirkelbåge i mm genom ändhöjden och mitthöjden, inte en sinus. `_arch_pieces` håller bågen inom `PROFILE_SAG`. Bredden är oförändrad, så halvrunda ribbor blir halvellipser. I `surface_japandi_tool` skalas bara ribbsidan av `t_in`, baksidan står kvar. Test: `test_japandi.py`.
 - **Japandi: böjda och vågiga ribbor (0.9.9.80.145, request #187)**: `path` (`straight`/`curve`/`wave`), `bend` (grader, störst utslag) och `waves` på `JapandiFeature` (`PARAMS`, så fil, ångra och redigering följer med). `path_turn` = bend·sin(sweep·u), sweep π för Curve och 2π·waves för Wave, och läggs på ringens vinkel precis som Twist. Skärmbilden i requesten visade en båge längs höjden, så "curve" och "wave" tolkades som ribbans bana. Varje ring glider bara runt axeln, så volymen är oförändrad och tvärsnittet är det raka vridet. Ringar: `_path_pieces` håller bågen inom `TWIST_SAG` på den utrullade väggen; bara vinkelsteget som för Twist gav 8 ringar och synlig polygon på en båge. Ribbans vinkelbredd är konstant, så den blir smalare mätt tvärs banan där den lutar mest. Fälla: öppen böjd vägg (`surface_japandi_tool`) klämmer `s` vid väggens ändar, så ribbor glider av kanten och lämnar en slät kil på andra sidan, samma som Twist redan gör. Test: `test_japandi.py`, `test_curved_surface_texture.py`.

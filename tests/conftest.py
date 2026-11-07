@@ -16,9 +16,11 @@ def isolated_settings(tmp_path, monkeypatch):
         yield
         return
     monkeypatch.setattr(settings_mod, "_instance", settings_mod.SettingsManager(tmp_path / "settings.json"))
-    yield
     from omacad.model import quality
+    quality.set_fast_view(False)    # exact volumes in tests: the model is built at the full curve smoothness
+    yield
     quality.set_circle_segments(quality.DEFAULT_SEGMENTS)
+    quality.set_fast_view(False)
     quality.set_interactive_mode(False)     # a test that ends mid-drag must not leave coarse curves for the next
 
 

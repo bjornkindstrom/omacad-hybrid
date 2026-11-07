@@ -493,6 +493,14 @@ class SettingsDialog(QDialog):
         q_row.addStretch()
         lay_sketch.addLayout(q_row)
 
+        # Fast view, exact export
+        self.chk_fast_view = QCheckBox("Fast view, exact export (smooth look in the view, full curve smoothness in exports)")
+        self.chk_fast_view.setChecked(bool(self.settings.get("fast_view", True)))
+        self.chk_fast_view.setToolTip("The view builds round shapes with fewer pieces and draws them smoothed, so the "
+                                      "app is faster. STL, STEP, screenshots and videos are rebuilt with the curve "
+                                      "smoothness above.")
+        lay_sketch.addWidget(self.chk_fast_view)
+
         # Camera: projection type and perspective field of view
         proj_row = QHBoxLayout()
         lbl_proj = QLabel("Camera type (3D view):")
@@ -831,6 +839,7 @@ class SettingsDialog(QDialog):
             "group_constraints": self.chk_group_constraints.isChecked(),
             "ai_agent": str(self.cmb_ai_agent.currentData() or "omarchy"),
             "curve_segments": self.cmb_curves.currentData(),
+            "fast_view": self.chk_fast_view.isChecked(),
             "view_projection": self.cmb_projection.currentData(),
             "view_fov": self.spn_fov.value(),
             "auto_restart": self.chk_auto_restart.isChecked(),

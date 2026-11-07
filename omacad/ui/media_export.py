@@ -41,6 +41,36 @@ def model_only(viewport):
         viewport.update()
 
 
+@contextmanager
+def exact_view(window):
+    """While capturing pictures for export: the bodies as an export builds them (full curve smoothness) when
+    "Fast view, exact export" draws a coarser model in the view; the view is put back afterwards."""
+    from omacad.model import quality
+    if not quality.fast_view_active():
+        yield
+        return
+    from omacad import busy
+    from omacad.io.exporter import Exporter
+    exact = busy.run("Building the exact model…", lambda: Exporter.exact_document(window.doc))
+    viewport = window.viewport
+    before_solids = getattr(viewport, "display_solids", None)
+    before_meshes = getattr(viewport, "display_override", None)
+    solids = {bid: b.manifold for bid, b in exact.bodies.items() if bid in window.doc.bodies}
+    if viewport.section is not None:
+        viewport.set_display_override(solids)        # cut like the bodies
+    else:
+        viewport.display_override = {bid: exact.bodies[bid].render_mesh for bid in solids}
+    try:
+        with quality.exact():                        # drawn as built, not smoothed again
+            yield
+    finally:
+        if viewport.section is not None:
+            viewport.set_display_override(before_solids)
+        else:
+            viewport.display_override = before_meshes
+        viewport.update()
+
+
 def model_image(viewport) -> QImage:
     with model_only(viewport):
         return viewport.grabFramebuffer()
@@ -188,13 +218,17 @@ def run(window, kind: str):
         window.status_label.setText("Export: there is no visible body to show.")
         return
     if kind == "copy":
-        QApplication.clipboard().setImage(cropped_to_model(model_image(viewport)))
+        with exact_view(window):
+            image = cropped_to_model(model_image(viewport))
+        QApplication.clipboard().setImage(image)
         window.status_label.setText("Picture of the model copied: paste it into another app (Ctrl+V).")
         return
     if kind == "screenshot":
         path = _save_path(window, "Save Screenshot", IMAGE_FILTERS, _base_name(window) + ".png")
         if path:
-            if cropped_to_model(model_image(viewport)).save(path):
+            with exact_view(window):
+                image = cropped_to_model(model_image(viewport))
+            if image.save(path):
                 window.status_label.setText(f"Screenshot saved to {path}")
             else:
                 QMessageBox.warning(window, "Screenshot", f"Could not save the picture to:\n{path}")
@@ -217,7 +251,8 @@ def run(window, kind: str):
         return not dialog.wasCanceled()
 
     try:
-        finished = write_turntable(viewport, path, progress, DISTANCES[distance])
+        with exact_view(window):
+            finished = write_turntable(viewport, path, progress, DISTANCES[distance])
     except RuntimeError as e:
         dialog.close()
         QMessageBox.warning(window, "Rotating Video", str(e))

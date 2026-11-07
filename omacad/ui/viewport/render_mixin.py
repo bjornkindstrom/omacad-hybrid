@@ -381,8 +381,9 @@ class RenderGLMixin:
             edge_lines = np.vstack([mesh.sharp_lines, mesh.tangent_lines()]) if tangent else mesh.sharp_lines
 
             # Fetch or build GPU VAO/VBO for this body mesh
+            draw_verts, draw_normals, edge_lines = mesh.display_arrays(edge_lines)   # smoothed in Fast view
             cache_entry = None
-            mesh_key = (body.body_id, id(mesh), len(mesh.vertices), len(edge_lines))
+            mesh_key = (body.body_id, id(mesh), len(draw_verts), len(edge_lines))
             if gpu_cache is not None:
                 cache_entry = gpu_cache.get(mesh_key)
                 if cache_entry is None:
@@ -398,14 +399,14 @@ class RenderGLMixin:
                     GL.glBindVertexArray(vao_solid)
 
 
-                    pos_data = np.ascontiguousarray(mesh.vertices, dtype=np.float32)
+                    pos_data = np.ascontiguousarray(draw_verts, dtype=np.float32)
                     GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo_pos)
                     GL.glBufferData(GL.GL_ARRAY_BUFFER, pos_data.nbytes, pos_data, GL.GL_STATIC_DRAW)
                     loc_pos_solid = GL.glGetAttribLocation(self.prog_solid, "in_pos")
                     GL.glEnableVertexAttribArray(loc_pos_solid)
                     GL.glVertexAttribPointer(loc_pos_solid, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
 
-                    norm_data = np.ascontiguousarray(mesh.normals, dtype=np.float32)
+                    norm_data = np.ascontiguousarray(draw_normals, dtype=np.float32)
                     GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo_norm)
                     GL.glBufferData(GL.GL_ARRAY_BUFFER, norm_data.nbytes, norm_data, GL.GL_STATIC_DRAW)
                     loc_norm_solid = GL.glGetAttribLocation(self.prog_solid, "in_normal")
@@ -451,15 +452,20 @@ class RenderGLMixin:
                 loc_col = GL.glGetUniformLocation(self.prog_solid, "u_color")
 
                 GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
+                loc_eye = GL.glGetUniformLocation(self.prog_solid, "u_eye_dir")
+                if loc_eye >= 0:
+                    az = math.radians(getattr(self, "azimuth", 0.0))
+                    el = math.radians(getattr(self, "elevation", 0.0))
+                    GL.glUniform3f(loc_eye, math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el))
 
-                # Color: Orange tint if selected, else body color
+                # Color: SolidCraft blue if selected, else body color
                 if helper:
                     GL.glDepthMask(GL.GL_FALSE)    # never hides anything, whatever the camera angle
                     grey = 0.55 * (body.color[0] + body.color[1] + body.color[2]) / 3.0
                     mix = [0.5 * c + 0.5 * grey for c in body.color[:3]]   # duller than a real body
                     GL.glUniform4f(loc_col, mix[0], mix[1], mix[2], 0.3)
                 elif is_selected:
-                    GL.glUniform4f(loc_col, *theme.palette().highlight01(0.1), 1.0)
+                    GL.glUniform4f(loc_col, 0.43, 0.67, 0.92, 1.0)
                 else:
                     c = body.color
                     GL.glUniform4f(loc_col, c[0], c[1], c[2], c[3])
@@ -475,7 +481,7 @@ class RenderGLMixin:
                 else:
                     loc_pos = GL.glGetAttribLocation(self.prog_solid, "in_pos")
                     loc_norm = GL.glGetAttribLocation(self.prog_solid, "in_normal")
-                    self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, mesh.vertices, loc_norm, mesh.normals)
+                    self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, draw_verts, loc_norm, draw_normals)
 
                 GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
                 GL.glDepthMask(GL.GL_TRUE)
@@ -490,14 +496,14 @@ class RenderGLMixin:
                 GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
 
                 if is_selected:
-                    GL.glUniform4f(loc_col, *theme.palette().highlight01(), 1.0)  # theme highlight
+                    GL.glUniform4f(loc_col, 0.0, 0.48, 1.0, 1.0)  # SolidCraft sel_edge #007aff
                     self.set_line_width(2.2)
                 elif helper:
                     GL.glUniform4f(loc_col, 0.45, 0.47, 0.5, 0.45)  # faint edge on a helper body
                     self.set_line_width(1.0)
                 else:
-                    GL.glUniform4f(loc_col, 0.12, 0.13, 0.15, 1.0)  # Dark CAD Edge
-                    self.set_line_width(1.6)
+                    GL.glUniform4f(loc_col, 0.157, 0.173, 0.204, 1.0)  # SolidCraft dark charcoal edge Rgb(40, 44, 52)
+                    self.set_line_width(1.4)
 
                 if cache_entry and cache_entry.get("vao_lines"):
                     GL.glBindVertexArray(cache_entry["vao_lines"])

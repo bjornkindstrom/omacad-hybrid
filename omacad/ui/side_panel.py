@@ -10,7 +10,7 @@ import numpy as np
 from PySide6.QtCore import Qt, Signal, QEvent, QTimer
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-    QFrame, QPushButton, QGroupBox, QFormLayout
+    QFrame, QPushButton, QGroupBox, QFormLayout, QLayout, QSizePolicy
 )
 from omacad.model.document import Document
 from omacad.ui import theme
@@ -59,6 +59,7 @@ class InspectorPanel(QWidget):
         self.content_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         style(self.content_widget, "QWidget#InspectorContent { background: transparent; }")
         self.content_layout = QVBoxLayout(self.content_widget)
+        self.content_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self.content_layout.setContentsMargins(6, 6, 6, 6)
         self.content_layout.setSpacing(8)
 
@@ -154,6 +155,7 @@ class InspectorPanel(QWidget):
         dlg.setWindowFlags(Qt.WindowType.Widget)
         dlg.setMinimumWidth(0)
         dlg.setFixedWidth(358)
+        dlg.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         dlg.unsetCursor()
 
         self.tool_layout.addWidget(dlg)

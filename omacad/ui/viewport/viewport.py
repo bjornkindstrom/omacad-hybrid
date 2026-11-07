@@ -108,6 +108,8 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     move_gizmo_finished = Signal()
     move_gizmo_axis_selected = Signal(str)
     body_clicked = Signal(str)  # body_id of clicked 3D body
+    face_clicked = Signal(object)  # face or curved surface of clicked 3D body
+    face_selected = Signal(object) # face or curved surface added to selection
     move_body_requested = Signal(str)  # right-click on a face moves its owning whole body
     body_color_requested = Signal(str)  # right-click on a face sets its owning whole body color
     plane_clicked = Signal(str)  # an origin plane ("XY") or construction plane id clicked without a tool
@@ -226,6 +228,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self.hover_face = None            # flat face under the cursor
         self.hover_surface = None         # (body_id, triangles) of a curved surface under the cursor, only lit up
         self.selected_edges: list = []    # PlanarEdge objects chosen so far
+        self.selected_faces: list = []    # (body_id, face) objects chosen so far (SolidCraft face selection)
 
         # Right-click menu on a face
         self._rpress: Optional[QPointF] = None

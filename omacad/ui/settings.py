@@ -32,6 +32,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "fillet_default_radius": 2.0,
     "rect_default_tool": "RECT",        # what the rectangle button draws: RECT, CENTER_RECT, ROUNDED_RECT
     "curve_segments": 96,               # flat pieces around a full circle: lower = lighter and faster, higher = smoother
+    "fast_view": True,                  # build the view coarser (view_segments) and draw it smoothed; exports use curve_segments
+    "view_segments": 72,                # pieces per circle in the view while fast_view is on
     "arrow_size": 1.0,                  # scale of the extrude/move arrow in the 3D view
     "primitive_drag_decimals": 0,       # decimal places when resizing primitives with handles
     "guide_line_gap": 6.0,             # screen pixels between construction-line dashes
@@ -139,8 +141,14 @@ class SettingsManager(QObject):
         from omacad.model import quality
         quality.set_circle_segments(n)
 
-    def _push_quality(self):
+    FAST_VIEW_KEYS = ("fast_view", "view_segments")
+
+    def _push_quality(self, keys=None):
+        """Curve smoothness always; fast view only at start or when its own keys change (tests switch it off once)."""
+        from omacad.model import quality
         self._push_quality_value(self._data.get("curve_segments", DEFAULT_SETTINGS["curve_segments"]))
+        if keys is None or any(k in self.FAST_VIEW_KEYS for k in keys):
+            quality.set_fast_view(bool(self.get("fast_view")), int(self.get("view_segments")))
 
     def load(self):
         if self.config_file.exists():
@@ -167,13 +175,13 @@ class SettingsManager(QObject):
 
     def set(self, key: str, value: Any):
         self._data[key] = value
-        self._push_quality()
+        self._push_quality((key,))
         self.save()
         self.changed.emit()
 
     def update(self, new_values: Dict[str, Any]):
         self._data.update(new_values)
-        self._push_quality()
+        self._push_quality(tuple(new_values))
         self.save()
         self.changed.emit()
 

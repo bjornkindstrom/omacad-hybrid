@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QSurfaceFormat, QIcon
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 
 from omacad.ui.main_window import MainWindow
 
@@ -89,12 +89,15 @@ def main():
     if session.RESUME_FLAG in sys.argv:
         window.restore_session()
     else:
-        from PySide6.QtCore import QTimer
         QTimer.singleShot(0, window.offer_autosave_resume)   # after a crash: get the unsaved work back
     from PySide6.QtWidgets import QLabel
     from omacad.viewport_accel import backend_name
     window.statusBar().addPermanentWidget(QLabel(f"Viewport picking: {backend_name().upper()}"))
-    # The experiment has its own repo/profile and no automatic restart or request sender.
+    QTimer.singleShot(0, window.retry_requests)  # resume requests left by an interrupted upload
+    request_retry_timer = QTimer(window)
+    request_retry_timer.setInterval(5 * 60 * 1000)
+    request_retry_timer.timeout.connect(window.retry_requests)
+    request_retry_timer.start()
 
     sys.exit(app.exec())
 

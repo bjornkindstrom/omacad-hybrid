@@ -3,7 +3,7 @@
 from typing import Optional
 from PySide6.QtCore import Qt, QEventLoop
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QSpinBox
+    QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QDoubleSpinBox, QSpinBox, QSizePolicy
 )
 from omacad.ui.theme import style
 from omacad.ui.theme_styles import _STUDIO_CSS
@@ -68,6 +68,7 @@ class BaseFeatureDialog(QDialog):
             def __init__(self, items):
                 super().__init__()
                 self._items = items
+                self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
                 self.setMinimumWidth(1)     # share the panel's width: a larger minimum squeezes other rows' labels away
                 hbox = QHBoxLayout(self)
                 hbox.setContentsMargins(0, 0, 0, 0)

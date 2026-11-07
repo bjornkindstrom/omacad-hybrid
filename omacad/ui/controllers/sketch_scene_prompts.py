@@ -22,6 +22,15 @@ class SketchScenePromptsMixin:
 
     def prompt_create_sketch(self):
         """Pick the sketch plane directly in the viewport (origin plane or planar face)."""
+        if getattr(self.viewport, "selected_faces", None):
+            item = self.viewport.selected_faces[0]
+            face = item[1] if isinstance(item, tuple) else item
+            if hasattr(face, "normal"):
+                if self.doc.active_sketch:
+                    self.on_finish_sketch()
+                plane = self.viewport.plane_from_target(("face", face))
+                self.on_plane_picked(plane)
+                return
         if self.doc.active_sketch:
             self.on_finish_sketch()
         self.viewport.begin_plane_pick()

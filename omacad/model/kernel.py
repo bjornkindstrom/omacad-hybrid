@@ -24,6 +24,20 @@ class RenderMesh:
     source: Optional[tuple] = field(default=None, repr=False)   # (vertices, triangles, kept mask) for tangent_lines
     _tangent: Optional[np.ndarray] = field(default=None, repr=False)
     _surface_ids: Optional[np.ndarray] = field(default=None, repr=False)
+    _display: Optional[dict] = field(default=None, repr=False)
+
+    def display_arrays(self, edge_lines: np.ndarray):
+        """(vertices, normals, edge lines) to draw: smoothed (display_smooth) while "Fast view, exact export" is
+        on, otherwise the mesh as it is. Cached per set of edge lines (tangent edges on/off)."""
+        if not quality.fast_view_enabled():
+            return self.vertices, self.normals, edge_lines
+        if self._display is None:
+            self._display = {}
+        key = len(edge_lines)
+        if key not in self._display:
+            from omacad.model.display_smooth import smooth_arrays
+            self._display = {key: smooth_arrays(self.vertices, self.normals, edge_lines)}
+        return self._display[key]
 
     def tangent_lines(self) -> np.ndarray:
         """Line pairs (like `sharp_lines`) where a flat face runs smoothly into a curved one (Settings > Show tangent

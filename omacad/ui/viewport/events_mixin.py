@@ -83,6 +83,15 @@ class ViewportEventsMixin:
                 self.selection_changed.emit()
                 self.update()
                 return
+        if event.button() == Qt.MouseButton.LeftButton and not self.doc.active_sketch and not self.edge_pick_mode:
+            clicked_body_id = self.pick_body(x, y)
+            if clicked_body_id is not None:
+                if getattr(self, "selected_faces", None):
+                    self.selected_faces.clear()
+                self.doc.select_body(clicked_body_id)
+                self.body_clicked.emit(clicked_body_id)
+                self.update()
+                return
         super().mouseDoubleClickEvent(event)
     def wheelEvent(self, event):
         delta = event.angleDelta().y()
@@ -359,6 +368,8 @@ class ViewportEventsMixin:
                 self.picked_dim = None
                 self.picked_dim_entities = (None, set())
                 self.selection_changed.emit()
+            elif getattr(self, "selected_faces", None):
+                self.selected_faces.clear()
             self.setCursor(Qt.CursorShape.ArrowCursor)
             self.update()
         elif event.key() == Qt.Key.Key_F:
@@ -636,16 +647,34 @@ class ViewportEventsMixin:
                 self.profile_picked.emit()
                 self.update()
             if picked is None:
-                clicked_body_id = self.pick_body(event.position().x(), event.position().y())
-                if clicked_body_id is not None:
-                    multi = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
-                    doc.select_body(clicked_body_id, multi=multi)
-                    self.body_clicked.emit(clicked_body_id)
+                hit_face = self._pick_face(event.position().x(), event.position().y())
+                hit_surf = self._pick_curved_surface(event.position().x(), event.position().y()) if hit_face is None else None
+                multi = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
+                if hit_face is not None or hit_surf is not None:
+                    if hit_face is not None:
+                        body_id = hit_face[0].body_id
+                        face_item = hit_face[1]
+                    else:
+                        body_id = hit_surf[0]
+                        face_item = hit_surf[1]
+                    self.select_face(body_id, face_item, multi=multi)
+                    if doc.selected_body_ids:
+                        doc.select_body(None)
+                    if hasattr(self, "face_clicked"):
+                        self.face_clicked.emit(face_item)
                     self.update()
                 else:
-                    target = self._pick_plane_target(event.position().x(), event.position().y())
-                    if target is not None and target[0] in ("origin", "cplane"):
-                        self.plane_clicked.emit(target[1])     # e.g. Split Body takes it as its splitting plane
-                    if doc.selected_body_ids:
-                        doc.select_body(None)    # a click in empty space clears the body selection
+                    clicked_body_id = self.pick_body(event.position().x(), event.position().y())
+                    if clicked_body_id is not None:
+                        doc.select_body(clicked_body_id, multi=multi)
+                        self.body_clicked.emit(clicked_body_id)
+                        self.update()
+                    else:
+                        target = self._pick_plane_target(event.position().x(), event.position().y())
+                        if target is not None and target[0] in ("origin", "cplane"):
+                            self.plane_clicked.emit(target[1])     # e.g. Split Body takes it as its splitting plane
+                        if getattr(self, "selected_faces", None):
+                            self.selected_faces.clear()
+                        if doc.selected_body_ids:
+                            doc.select_body(None)    # a click in empty space clears the body selection
                         self.update()

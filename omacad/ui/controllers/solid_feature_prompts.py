@@ -147,6 +147,12 @@ class SolidFeaturePromptsMixin:
 
     @leaves_sketch
     def prompt_extrude(self, default_distance=None):
+        if getattr(self.viewport, "selected_faces", None):
+            item = self.viewport.selected_faces[0]
+            face = item[1] if isinstance(item, tuple) else item
+            if hasattr(face, "normal") and hasattr(self, "on_extrude_face"):
+                self.on_extrude_face(face)
+                return
         if not self.doc.sketches:
             QMessageBox.information(
                 self, "Extrude",

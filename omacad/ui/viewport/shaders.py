@@ -17,16 +17,24 @@ FRAGMENT_SHADER_SOLID = """
 #version 120
 varying vec3 v_normal;
 uniform vec4 u_color;
+uniform vec3 u_eye_dir;
 void main() {
     vec3 n = normalize(v_normal);
-    // Two-point CAD lighting setup
-    vec3 light1 = normalize(vec3(0.5, 0.7, 1.0));
-    vec3 light2 = normalize(vec3(-0.5, -0.6, 0.4));
-    float diff1 = max(dot(n, light1), 0.0);
-    float diff2 = max(dot(n, light2), 0.0) * 0.35;
-    float ambient = 0.38;
-    float lighting = clamp(diff1 + diff2 + ambient, 0.0, 1.0);
-    gl_FragColor = vec4(u_color.rgb * lighting, u_color.a);
+    vec3 v = length(u_eye_dir) > 0.01 ? normalize(u_eye_dir) : normalize(vec3(0.5, 0.7, 1.0));
+    // SolidCraft studio lighting: double-sided normal flip so interior/back faces stay lit
+    if (dot(n, v) < 0.0) {
+        n = -n;
+    }
+    // Key light offset slightly above and to the side relative to camera view
+    vec3 key = normalize(v * 0.8 + vec3(-0.35, 0.25, 0.65));
+    float diff = max(dot(n, key), 0.0);
+    float fill = max(dot(n, v), 0.0);
+    vec3 h = normalize(key + v);
+    float spec = pow(max(dot(n, h), 0.0), 32.0) * 0.22;
+    // Ambient / sky gradient: upward-facing surfaces get subtle sky reflection
+    float sky = dot(n, vec3(0.0, 0.0, 1.0)) * 0.12 + 0.36;
+    float k = clamp(sky + 0.40 * diff + 0.22 * fill, 0.0, 1.0);
+    gl_FragColor = vec4(min(u_color.rgb * k + vec3(spec), vec3(1.0)), u_color.a);
 }
 """
 

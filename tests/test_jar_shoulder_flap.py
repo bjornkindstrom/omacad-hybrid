@@ -3,13 +3,14 @@ import numpy as np
 from omacad.model.document import Document
 from omacad.model.jar import JarSpec
 
-def test_jar_shoulder_has_clean_circle():
+@pytest.mark.parametrize("diameter,neck_height,pitch", [(40., 10., 2.5), (20., 5., 4.)])
+def test_jar_shoulder_has_clean_circle(diameter, neck_height, pitch):
     spec = JarSpec(
-        diameter=40.0,
+        diameter=diameter,
         height=30.0,
         neck_diameter=15.0,
-        neck_height=10.0,
-        pitch=2.5,
+        neck_height=neck_height,
+        pitch=pitch,
         wall=2.0,
     )
     doc = Document()

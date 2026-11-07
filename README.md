@@ -16,6 +16,11 @@ gäller direkt. [Jämför de tre varianterna](design/request-138/layoutforslag.p
 Control Point Spline finns även i högerklicksmenyn under Sketch → Create (0.9.9.80.93).
 Ikonstorleken i solfjädermenyn kan ställas till 50–200 % under Settings → Interface (0.9.9.80.94).
 
+**Snabb vy, exakt export** (0.9.9.80.153, Settings → Sketch & View, på som standard):
+vyn bygger runda former med 72 bitar per cirkel och ritar dem utjämnade, så att
+cylindrar, rundningar och kulor ser helt släta ut och ombyggnader går ca 30 %
+snabbare. STL, STEP, skärmbilder och videor byggs om med full Curve smoothness först.
+
 Utgångspunkt: Omacad `fdf4331` / `0.9.9.80.69`. Experimentet har eget Git-repo,
 egen miljö och egen profil. Ursprungliga Omacad och omacad-rs påverkas inte.
 
@@ -51,7 +56,8 @@ Python om modulen saknas; `rust` kräver en fungerande modul. Bygg om Rust separ
 ```
 
 Inställningar, sessioner, teman och cache ligger i `.state/` (ignoreras av Git); Windows-exen använder `%APPDATA%\Omacad Hybrid`.
-Ingen automatisk omstart eller bakgrundssändning av problemrapporter körs.
+Ingen automatisk omstart körs. Sparade ändringsrequests skickas i bakgrunden och
+avbrutna uppladdningar återupptas vid start och var femte minut.
 
 ## Testa och mäta
 

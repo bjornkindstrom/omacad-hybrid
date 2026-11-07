@@ -1,7 +1,26 @@
+# Hybrid-experiment — 0.9.9.80.154
+
+### Added
+- **SolidCraft-style face selection & edge handling (feedback 20261107-121711)**:
+  - Left-clicking a solid selects individual planar faces or curved surface patches instead of selecting the entire body. Shift-click multi-selects faces; clicking background or pressing Escape deselects; double-click selects the whole body.
+  - Preselected faces are automatically consumed by Extrude, Round/Fillet, Offset Face, and Sketch-on-face prompts.
+  - Hovered and selected faces highlight their outer boundary loop edges with SolidCraft-style outlines (`#007aff`, 2.2px) and dimmed x-ray boundary lines through the solid.
+  - Studio viewport rendering: View-aligned key and camera-fill lighting, subtle specular highlights, double-sided normal flipping for crisp interior/back face definition, upward sky ambient gradient, charcoal feature edges (`#282c34`), and SolidCraft-matched body selection accents.
+
+# Hybrid-experiment — 0.9.9.80.153
+
+### Added
+- **Fast view, exact export (Settings › Sketch & View, on by default)**: The view builds round shapes with 72 pieces per circle instead of the curve smoothness setting (about 30 % faster rebuilds) and draws curved surfaces smoothed (Phong tessellation of the drawn mesh, edge lines included), so cylinders, fillets and spheres look perfectly round. STL, STEP, screenshots, copied images and rotating videos rebuild the document at the full curve smoothness first. Picking, measuring and saved files are unchanged.
+
 # Hybrid-experiment — 0.9.9.80.152
 
 ### Fixed
 - **Stripes on the inner Japandi rim (report 20261107-110203)**: Remove redundant slice points before building the inner round lip, preventing folded strips and false edge lines while retaining the lip dimensions.
+
+# Hybrid-experiment — 0.9.9.80.151
+
+### Fixed
+- **Offset Face selection (#192)**: Existing steps now allow adding and removing faces while editing. A face list, removal controls and persistent viewport highlights show the selection in both new and edited steps. Face changes survive save/load and undo/redo; concentric cylindrical faces can be selected separately.
 
 # Hybrid-experiment — 0.9.9.80.150
 
@@ -12,6 +31,16 @@
 
 ### Added
 - **Japandi rim joins (report 20261107-093936)**: Follow rib ends joins Chamfer and Round rims to the outward ribs at both ends, using their end height, shape and rotation. Existing projects retain their original rims until enabled.
+
+# Hybrid-experiment — 0.9.9.80.148
+
+### Added
+- **Japandi end rims (#188/#191)**: End rim adds a continuous lip in both end margins, following the whole selected wall. Choose Straight, Chamfer or Round and set Rim projection. Round can also extend inside a hollow opening. Parameters survive history edits and project save/load; older projects keep no rim.
+
+### Fixed
+- **Historical jar shoulder flap (#190)**: Reproduced the old saved model's incomplete shoulder circle. A repaired model uses the existing 0.5 mm thread gap; regression coverage now includes its exact small-jar dimensions. New jars already use this gap.
+- **Clipped tool controls (#189)**: Paired rows and docked dialogs retain their required height. The inspector grows with its content and scrolls when the viewport has less room. Panel tests also check control bounds.
+- **Interrupted requests**: Uploads omit project JSON indentation, run outside the GUI thread with a longer timeout, skip unchanged remote files and update changed ones with their SHA. Retries reuse an existing issue and persist the last error locally. Pending requests resume at startup, every five minutes and when another request is sent.
 
 # Hybrid-experiment — 0.9.9.80.147
 

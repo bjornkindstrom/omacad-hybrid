@@ -49,6 +49,16 @@ class RoundPatternPromptsMixin:
     @leaves_sketch
     def prompt_round_edges(self, kind: str = "fillet", edges=None):
         """Fillet / Chamfer: click edges (outside or inside corners), type the size, OK."""
+        if edges is None and getattr(self.viewport, "selected_faces", None):
+            fe = []
+            for item in self.viewport.selected_faces:
+                body_id = item[0] if isinstance(item, tuple) else getattr(item, "body_id", "")
+                face_obj = item[1] if isinstance(item, tuple) else item
+                body = self.doc.bodies.get(body_id)
+                if body is not None and hasattr(face_obj, "normal"):
+                    fe.extend(self.viewport._edges_of_face(face_obj, body))
+            if fe:
+                edges = fe
         if getattr(self, "_round_dlg", None) is not None:
             self._round_dlg.raise_()
             return
@@ -225,6 +235,9 @@ class RoundPatternPromptsMixin:
         """Offset Face: move flat faces, or change the radius of holes and pins (tolerances for threads and fits)."""
         from omacad.model.features.offset_face import OffsetFaceFeature, plane_face_ref
         from omacad.ui.dialogs import OffsetFaceDialog
+        if face is None and getattr(self.viewport, "selected_faces", None):
+            item = self.viewport.selected_faces[0]
+            face = item[1] if isinstance(item, tuple) else item
         if not self.doc.bodies:
             QMessageBox.information(self, "Offset Face", "Create a 3D body first.")
             return
@@ -249,6 +262,7 @@ class RoundPatternPromptsMixin:
                 vp.shell_target_body_id = ""
                 vp.set_preview(None)
                 return
+            vp.highlighted_faces = dlg.highlights(body)
             thread = self.doc.thread_faces(dlg.faces)
             result, skipped = OffsetFaceFeature.compute(body.manifold, thread or dlg.faces, dlg.distance(), self.doc)
             body.visible = False

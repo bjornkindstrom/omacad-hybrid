@@ -611,15 +611,30 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         if feat.exprs.get("distance"):
             dlg.spn_dist.set_expression(feat.exprs["distance"])
         base_m = state_before.get(feat.target_body_id)
+        dlg.faces, dlg.body_id = list(feat.faces), feat.target_body_id
+        dlg._update_count()
 
         def _preview_offset_face():
             if base_m is not None:
-                res, _ = OffsetFaceFeature.compute(base_m, feat.faces, dlg.distance(), doc)
+                body = doc.bodies.get(feat.target_body_id)
+                vp.highlighted_faces = dlg.highlights(body) if body is not None else []
+                refs = doc.thread_faces(dlg.faces) or dlg.faces
+                res, _ = OffsetFaceFeature.compute(base_m, refs, dlg.distance(), doc)
                 vp.set_preview(res, "new_body")
 
-        if not _exec_with_preview(win, doc, dlg, _preview_offset_face, [feat.target_body_id]):
+        def _offset_picked(ref, body_id):
+            if body_id == feat.target_body_id:
+                dlg.toggle(ref, body_id)
+
+        def _start_offset_pick():
+            vp.shell_target_body_id = feat.target_body_id
+            vp.begin_plane_pick("offset_face")
+
+        if not _exec_with_preview(win, doc, dlg, _preview_offset_face, [feat.target_body_id],
+                                  wiring=[(vp.offset_face_picked, _offset_picked)], start=_start_offset_pick):
             return False
-        return commit(distance=dlg.distance(), exprs=dlg.get_expressions())
+        return commit(distance=dlg.distance(), faces=list(doc.thread_faces(dlg.faces) or dlg.faces),
+                      exprs=dlg.get_expressions())
 
     if t in TEXTURES:
         dlg = SurfaceTextureDialog(doc, win, feature=feat)

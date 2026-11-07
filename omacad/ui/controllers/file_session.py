@@ -306,7 +306,7 @@ class FileSessionMixin:
         if filepath:
             if not filepath.endswith(".stl"):
                 filepath += ".stl"
-            ok = Exporter.export_all_to_stl(self.doc, filepath)
+            ok = busy.run("Exporting STL…", lambda: Exporter.export_all_to_stl(self.doc, filepath))
             if ok:
                 QMessageBox.information(self, "Export STL", f"Successfully exported STL to:\n{filepath}")
                 self.status_label.setText(f"Exported STL to {filepath}")
@@ -318,7 +318,7 @@ class FileSessionMixin:
 
         filepath, _ = QFileDialog.getSaveFileName(self, f"Export {body.name} to STL", f"{body.name}.stl", "STL Files (*.stl)")
         if filepath:
-            ok = Exporter.export_body_to_stl(body, filepath)
+            ok = busy.run("Exporting STL…", lambda: Exporter.export_body_to_stl(Exporter.exact_body(self.doc, body_id), filepath))
             if ok:
                 QMessageBox.information(self, "Export STL", f"Successfully exported {body.name} to:\n{filepath}")
 
@@ -361,7 +361,7 @@ class FileSessionMixin:
         if filepath:
             if not (filepath.endswith(".step") or filepath.endswith(".stp")):
                 filepath += ".step"
-            ok = Exporter.export_all_to_step(self.doc, filepath)
+            ok = busy.run("Exporting STEP…", lambda: Exporter.export_all_to_step(self.doc, filepath))
             if ok:
                 QMessageBox.information(self, "Export STEP", f"Successfully exported STEP to:\n{filepath}")
                 self.status_label.setText(f"Exported STEP to {filepath}")
@@ -375,7 +375,7 @@ class FileSessionMixin:
         if filepath:
             if not (filepath.endswith(".step") or filepath.endswith(".stp")):
                 filepath += ".step"
-            ok = Exporter.export_body_to_step(body, filepath)
+            ok = busy.run("Exporting STEP…", lambda: Exporter.export_body_to_step(Exporter.exact_body(self.doc, body_id), filepath))
             if ok:
                 QMessageBox.information(self, "Export STEP", f"Successfully exported {body.name} to:\n{filepath}")
                 self.status_label.setText(f"Exported {body.name} to {filepath}")

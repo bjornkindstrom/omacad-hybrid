@@ -49,7 +49,8 @@ Mesh indices live with their RenderMesh and disappear with it.
 - Settings, sessions, feedback, custom themes and arrow caches live under `.state/`
   in this repository, `%APPDATA%\Omacad Hybrid` for the Windows exe, or `OMACAD_HYBRID_STATE_DIR` if explicitly overridden.
   The active Omarchy theme is read, never changed.
-- Automatic application restart and background request submission are disabled.
+- Automatic application restart is disabled. Requests explicitly saved by the user are
+  uploaded in a worker; interrupted uploads resume on startup and every five minutes.
   The upstream Windows-release workflow was moved out of `.github/workflows/`;
   pushing this experiment cannot publish an upstream-style release.
 - Linux/CPython 3.14 is the verified target. Other operating systems and packaged

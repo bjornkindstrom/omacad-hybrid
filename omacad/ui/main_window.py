@@ -273,7 +273,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
     def on_open_settings(self):
         from omacad.ui.settings_dialog import SettingsDialog
         from omacad.ui.settings import get_settings
-        before_curves = get_settings().get("curve_segments")
+        before_curves = (get_settings().get("curve_segments"), get_settings().get("fast_view"))
         before_scale = get_settings().get("button_scale")
         before_labels = get_settings().get("show_button_labels")
         before_group_prim = get_settings().get("group_primitives")
@@ -296,7 +296,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
 
         if grouping_changed or scale_changed:
             self.ribbon.rebuild_ribbon()
-        if get_settings().get("curve_segments") != before_curves:
+        if (get_settings().get("curve_segments"), get_settings().get("fast_view")) != before_curves:
             self.rebuild_for_curve_quality()
 
     def rebuild_for_curve_quality(self):
@@ -903,11 +903,38 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         extra = {"kind": "request for change", "camera": {"azimuth": v.azimuth, "elevation": v.elevation, "distance": v.distance},
                  "window_size": [self.width(), self.height()]}
         folder = rfc.build_request(self.doc, dlg.text(), dlg.name(), images, extra)
-        self.status_label.setText("Sending your request…")
-        QApplication.processEvents()
-        ok, message = rfc.send(folder)
-        self.status_label.setText(message)
-        QMessageBox.information(self, "Request a change", message)
+        self.retry_requests(folder)
+
+    def retry_requests(self, folder=None):
+        from omacad import rfc
+        if getattr(self, "_request_upload_active", False):
+            if folder is not None:
+                self.status_label.setText("Request saved in the upload queue.")
+            return
+        tok = rfc.token()  # settings belong to the GUI thread
+        if not tok:
+            if folder is not None:
+                self.status_label.setText("No GitHub token is set; request saved for later.")
+            return
+        self._request_upload_active = True
+
+        def upload():
+            result = rfc.send(folder, tok=tok) if folder is not None else None
+            rfc.send_pending(tok=tok, exclude=folder)
+            return result
+
+        def finished(result):
+            self._request_upload_active = False
+            if result is not None:
+                self.status_label.setText(result[1])
+                QMessageBox.information(self, "Request a change", result[1])
+
+        def failed(error):
+            self._request_upload_active = False
+            self.status_label.setText(f"Request saved for later: {error}")
+
+        self.run_async(upload, on_success=finished, on_error=failed,
+                       status_msg="Sending your request…" if folder is not None else "")
 
     @staticmethod
     def _png(image) -> bytes:

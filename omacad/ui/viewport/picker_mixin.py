@@ -50,6 +50,26 @@ def trim_triangles_by_plane(tris: np.ndarray, normal: np.ndarray, ref: np.ndarra
     return np.concatenate(res, axis=0).astype(np.float32) if res else np.zeros((0, 3, 3), dtype=np.float32)
 
 
+def patch_boundary_segments(tris: np.ndarray) -> np.ndarray:
+    """Finds the boundary segments (K, 2, 3) of an open triangle patch."""
+    if tris is None or len(tris) == 0:
+        return np.empty((0, 2, 3), dtype=np.float32)
+    flat_tris = np.asarray(tris, dtype=np.float32).reshape(-1, 3, 3)
+    edges = flat_tris[:, [[0, 1], [1, 2], [2, 0]], :].reshape(-1, 2, 3)
+    q = np.round(edges * 1000.0).astype(np.int64)
+    swap = (q[:, 0, 0] > q[:, 1, 0]) | \
+           ((q[:, 0, 0] == q[:, 1, 0]) & (q[:, 0, 1] > q[:, 1, 1])) | \
+           ((q[:, 0, 0] == q[:, 1, 0]) & (q[:, 0, 1] == q[:, 1, 1]) & (q[:, 0, 2] > q[:, 1, 2]))
+    ordered = q.copy()
+    ordered[swap] = ordered[swap, ::-1]
+    flat6 = np.ascontiguousarray(ordered.reshape(-1, 6))
+    dt = np.dtype((np.void, flat6.dtype.itemsize * 6))
+    packed = flat6.view(dt).ravel()
+    _, inv, counts = np.unique(packed, return_inverse=True, return_counts=True)
+    boundary_mask = (counts[inv] == 1)
+    return edges[boundary_mask]
+
+
 class PickerMixin:
     """Mixin providing body, edge, and plane picking operations for Viewport3D."""
 
@@ -381,8 +401,43 @@ class PickerMixin:
         ref = sec["origin"] + n * sec["offset"]
         return trim_triangles_by_plane(tris.reshape(-1, 3, 3), keep, ref)
 
+    def select_face(self, body_id: str, face, multi: bool = False):
+        """Select a face or curved surface on a body, matching SolidCraft's face selection."""
+        if not hasattr(self, "selected_faces") or self.selected_faces is None:
+            self.selected_faces = []
+
+        def _is_same(item):
+            b_id = item[0] if isinstance(item, tuple) else getattr(item, "body_id", "")
+            f = item[1] if isinstance(item, tuple) else item
+            if b_id != body_id:
+                return False
+            if hasattr(f, "index") and hasattr(face, "index"):
+                return f.index == face.index
+            if isinstance(f, np.ndarray) and isinstance(face, np.ndarray):
+                return f.shape == face.shape and np.array_equal(f, face)
+            return f is face
+
+        existing = [i for i, item in enumerate(self.selected_faces) if _is_same(item)]
+        if multi:
+            if existing:
+                for i in reversed(existing):
+                    self.selected_faces.pop(i)
+            else:
+                self.selected_faces.append((body_id, face))
+        else:
+            self.selected_faces = [(body_id, face)]
+        if hasattr(self, "face_selected"):
+            self.face_selected.emit(face)
+        self.update()
+
+    def clear_face_selection(self):
+        if getattr(self, "selected_faces", None):
+            self.selected_faces.clear()
+            self.update()
+
     def render_edge_pick(self, mvp: np.ndarray):
-        if not (self.edge_pick_mode or self._idle_hover_ok()):
+        has_sel_faces = bool(getattr(self, "selected_faces", None))
+        if not (self.edge_pick_mode or self._idle_hover_ok() or has_sel_faces):
             return
         # If hovering a face, highlight it with translucent flat shading
         if self.hover_face is not None and self.hover_edge is None and self.prog_flat is not None:
@@ -402,6 +457,18 @@ class PickerMixin:
                 self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris.reshape(-1, 3).astype(np.float32))
             GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
             GL.glDepthMask(GL.GL_TRUE)
+
+            # SolidCraft match: Outline boundary edges of hovered face
+            body = self.doc.bodies.get(self.hover_face.body_id)
+            if body is not None:
+                fe = self._edges_of_face(self.hover_face, body)
+                if fe:
+                    lines = self._edge_render_lines(fe)
+                    if lines:
+                        from omacad.ui.settings import hover_line_style
+                        hv_col, hv_w = hover_line_style()
+                        self.draw_thick_lines(mvp, lines, hv_col, hv_w)
+
         if self.hover_surface is not None and self.hover_edge is None and self.prog_flat is not None:
             # depth-tested (the back of a round wall stays hidden), pulled forward so it is not lost in the body
             GL.glUseProgram(self.prog_flat)
@@ -415,6 +482,58 @@ class PickerMixin:
                                     self.hover_surface[1].reshape(-1, 3).astype(np.float32))
             GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
             GL.glDepthMask(GL.GL_TRUE)
+
+            # SolidCraft match: Outline boundary edges of hovered curved surface
+            b_segs = patch_boundary_segments(self.hover_surface[1])
+            if len(b_segs):
+                from omacad.ui.settings import hover_line_style
+                hv_col, hv_w = hover_line_style()
+                self.draw_thick_lines(mvp, b_segs.flatten(), hv_col, hv_w)
+
+        # SolidCraft match: Selected face(s) are highlighted with sel_face fill + sel_edge boundary outline
+        if has_sel_faces and self.prog_flat is not None:
+            GL.glUseProgram(self.prog_flat)
+            loc_mvp = GL.glGetUniformLocation(self.prog_flat, "u_mvp")
+            loc_col = GL.glGetUniformLocation(self.prog_flat, "u_color")
+            loc_pos = GL.glGetAttribLocation(self.prog_flat, "in_pos")
+            GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
+            GL.glDepthMask(GL.GL_FALSE)
+            GL.glEnable(GL.GL_DEPTH_TEST)
+            GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+            GL.glPolygonOffset(-2.0, -2.0)
+            # SolidCraft sel_face: Color32::from_rgb(102, 155, 214) -> [0.40, 0.61, 0.84, 0.45]
+            GL.glUniform4f(loc_col, 0.40, 0.61, 0.84, 0.45)
+            all_selected_edge_lines = []
+            for item in self.selected_faces:
+                body_id = item[0] if isinstance(item, tuple) else getattr(item, "body_id", "")
+                face = item[1] if isinstance(item, tuple) else item
+                body = self.doc.bodies.get(body_id)
+                if hasattr(face, "tris"):
+                    lift = getattr(face, "normal", np.array([0.0, 0.0, 1.0])) * 0.05
+                    tris = self._trim_tris_by_section(face.tris + lift)
+                    if len(tris):
+                        self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris.reshape(-1, 3).astype(np.float32))
+                elif isinstance(face, np.ndarray):
+                    self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, face.reshape(-1, 3).astype(np.float32))
+
+                if body is not None and hasattr(face, "normal"):
+                    fe = self._edges_of_face(face, body)
+                    all_selected_edge_lines.extend(self._edge_render_lines(fe))
+                elif isinstance(face, np.ndarray):
+                    b_segs = patch_boundary_segments(face)
+                    if len(b_segs):
+                        all_selected_edge_lines.extend(b_segs.flatten())
+
+            GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+            GL.glDepthMask(GL.GL_TRUE)
+
+            if all_selected_edge_lines:
+                # Dimmed hidden outline through the body (hidden_face_outline)
+                GL.glDisable(GL.GL_DEPTH_TEST)
+                self.draw_thick_lines(mvp, all_selected_edge_lines, (0.0, 0.48, 1.0, 0.30), 1.4, halo=False)
+                # Crisp vivid sel_edge on top (#007aff)
+                GL.glEnable(GL.GL_DEPTH_TEST)
+                self.draw_thick_lines(mvp, all_selected_edge_lines, (0.0, 0.48, 1.0, 1.0), 2.2, halo=True)
 
         if self.prog_thick is None:
             return
@@ -811,6 +930,12 @@ class PickerMixin:
             GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
             GL.glDisable(GL.GL_DEPTH_TEST)
         for hf in self.highlighted_faces:
+            if isinstance(hf, dict) and "tris" in hf:
+                tris = self._trim_tris_by_section(np.asarray(hf["tris"]).reshape(-1, 3, 3))
+                if len(tris):
+                    GL.glUniform4f(loc_col, 0.95, 0.35, 0.25, 0.6)
+                    self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris.reshape(-1, 3).astype(np.float32))
+                continue
             face = getattr(hf, "face", hf) if not isinstance(hf, dict) else None
             if face is not None and hasattr(face, "tris"):
                 lift = face.normal * 0.05
