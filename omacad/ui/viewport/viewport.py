@@ -309,6 +309,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.constraint_help = ConstraintHelp(self)
         self.constraint_help.dismissed.connect(self._constraint_help_dismissed)
+        self.constraint_help.message.connect(self.status_message.emit)
         self._place_constraint_help()
 
     def _constraint_help_dismissed(self):

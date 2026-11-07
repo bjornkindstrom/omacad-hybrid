@@ -1,3 +1,12 @@
+# Hybrid-experiment — 0.9.9.80.167
+
+### Added
+- **SolidWorks-style inference lines in sketches**: While drawing, the cursor lines up with existing end points, midpoints, circle centres and the origin, shown by a dotted yellow line from that point. Two inferences meet at their crossing, and a horizontal, vertical or angled line from the start point stops where it lines up with another point.
+
+### Changed
+- **Snap to Grid is off by default** in the sketch palette.
+- **The constraint help box is gone**: the click steps of a constraint now show in the status bar.
+
 # Hybrid-experiment — 0.9.9.80.166
 
 ### Added

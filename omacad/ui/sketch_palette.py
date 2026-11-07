@@ -89,7 +89,7 @@ class SketchPalette(QFrame):
 
         # Checkboxes
         self.chk_snap_grid = QCheckBox("Snap to Grid")
-        self.chk_snap_grid.setChecked(True)
+        self.chk_snap_grid.setChecked(False)   # off by default: inference lines do the aligning
         self.chk_snap_grid.stateChanged.connect(self.settings_changed)
         content_layout.addWidget(self.chk_snap_grid)
 

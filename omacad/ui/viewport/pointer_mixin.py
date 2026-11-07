@@ -10,6 +10,10 @@ from omacad.model.sketch import SketchLine
 from omacad.model.sketch_snap import SketchSnapper, SnapResult
 from omacad.model.sketch_tangent import snap_tangent_arc
 
+# drawing tools that show SolidWorks-style inference lines from existing points
+_INFER_TOOLS = {"LINE", "ARC", "CIRCLE", "RECT", "CENTER_RECT", "ROUNDED_RECT", "CENTER_ROUNDED_RECT",
+                "SLOT", "POLYGON", "SPLINE", "CONTROL_SPLINE", "TEXT"}
+
 
 class PointerMixin:
     """Mouse press and move handlers used by :class:`Viewport3D`."""
@@ -609,7 +613,8 @@ class PointerMixin:
                     reference_segments=self._reference_segments(),
                     grid_step=grid_step,
                     enable_grid_snap=enable_grid,
-                    enable_geom_snap=enable_pts
+                    enable_geom_snap=enable_pts,
+                    infer=self.sketch_tool in _INFER_TOOLS,
                 )
                 if (self.sketch_tool == "ARC" and self.sketch_start_uv is not None and self.sketch_second_uv is not None
                         and snap_res.snap_type in ("NONE", "GRID")):   # a real snap point wins over the magnet

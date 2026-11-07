@@ -1,3 +1,15 @@
+## SolidWorks-skiss steg 2 — 2026-11-07 (0.9.9.80.167)
+
+Plan (användaren valde ordning 2 → 1 → 5 → 3 → 4 → 6): 2 inferenslinjer, 1 färg per entitet (blå/svart/gul),
+5 Smart Dimension (placering styr typ, värderuta på plats), 3 auto-relationer + Ctrl spärrar, 4 relationsikoner,
+6 status i statusraden + krockande villkor. Steg 2 klart: `SketchSnapper.snap(..., infer=True)` (bara ritverktygen i
+`pointer_mixin._INFER_TOOLS`; flytta/dra punkt går utan, annars låser en dragen punkt mot sig själv).
+`inference_anchors` = ändar, mittpunkter, centrum, origo (startpunkten utesluten). Ny snap_type `INFER` och fältet
+`SnapResult.inferences` (segment ankare→markör), ritas prickat gult i `overlay_mixin`. Ger inga relationer
+(auto-villkor är geometribaserade). Samma version: Snap to Grid av som standard (`sketch_palette`), och
+`ConstraintHelp`-rutan visas inte längre – stegtexten går via `message` → `status_message`. Fälla: testet
+`test_shell_viewport_fields_sync_both_directions_and_cancel` failar redan före ändringen. Test: `tests/test_sketch_inference.py`.
+
 ## Request #221 — 2026-11-07 (0.9.9.80.166)
 
 Coincident linje ↔ cirkel/båge. `sketch_solver.coincident_curve_spec(line, curve)`: cirkel → POINT_ON_CIRCLE

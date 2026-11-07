@@ -40,6 +40,7 @@ class ConstraintHelp(QWidget):
     """Viewport child anchored at bottom-right; its small diagram animates the constraint idea."""
 
     dismissed = Signal()
+    message = Signal(str)   # the step text, shown in the status bar now that the box stays hidden
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -59,10 +60,7 @@ class ConstraintHelp(QWidget):
         self.ctype = ctype
         self.set_progress(0)
         self.phase = 0.0
-        self.show()
-        self.raise_()
-        self.timer.start()
-        self.update()
+        # the help box itself is no longer shown (user request): the steps go to the status bar
 
     def set_progress(self, picked, error=None, done=False):
         steps = GUIDE_STEPS.get(self.ctype, ())
@@ -76,7 +74,9 @@ class ConstraintHelp(QWidget):
         elif picked >= len(steps):
             self.progress_text = "Applying constraint…"
         else:
-            self.progress_text = f"Step {picked + 1} of {len(steps)} · {steps[picked]}"
+            self.progress_text = f"{HELP[self.ctype][0]}: step {picked + 1} of {len(steps)} · {steps[picked]}" \
+                if self.ctype in HELP else steps[picked]
+        self.message.emit(self.progress_text)
         self.update()
 
     def _tick(self):

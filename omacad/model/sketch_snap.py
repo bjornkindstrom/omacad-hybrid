@@ -31,6 +31,73 @@ class SnapResult:
     target_uv: Optional[Tuple[float, float]] = None
     guide_line: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None
     label: str = ""   # ANGLE snaps: the angle shown next to the cursor ("45°", "90°")
+    # SolidWorks-style inference: dotted lines from existing points the cursor lines up with
+    inferences: Tuple[Tuple[Tuple[float, float], Tuple[float, float]], ...] = ()
+
+
+def inference_anchors(sketch, start_uv=None) -> List[Tuple[float, float]]:
+    """Points other geometry can line up with: ends, midpoints, centres and the origin."""
+    pts: List[Tuple[float, float]] = [(0.0, 0.0)]
+    for ent in (sketch.entities if sketch else ()):
+        if isinstance(ent, SketchLine):
+            pts += [ent.p1, ent.p2, ((ent.p1[0] + ent.p2[0]) * 0.5, (ent.p1[1] + ent.p2[1]) * 0.5)]
+        elif isinstance(ent, SketchRect):
+            (x1, y1), (x2, y2) = ent.p1, ent.p2
+            pts += [(x1, y1), (x2, y1), (x2, y2), (x1, y2), ((x1 + x2) * 0.5, (y1 + y2) * 0.5)]
+        elif isinstance(ent, SketchCircle):
+            pts.append(ent.center)
+        elif isinstance(ent, SketchArc):
+            pts += [ent.p_start, ent.p_end]
+        elif isinstance(ent, SketchSpline) and ent.points:
+            pts += [ent.points[0], ent.points[-1]]
+    if start_uv is not None:
+        pts = [p for p in pts if math.hypot(p[0] - start_uv[0], p[1] - start_uv[1]) > 1e-6]
+    return pts
+
+
+def _best_align(ru, rv, anchors, axis, tol):
+    """The anchor whose horizontal (axis 1: same v) or vertical (axis 0: same u) line passes nearest."""
+    best = None
+    for p in anchors:
+        d = abs((rv if axis else ru) - p[axis])
+        if d <= tol:
+            key = (round(d, 9), math.hypot(ru - p[0], rv - p[1]))
+            if best is None or key < best[0]:
+                best = (key, p)
+    return best[1] if best else None
+
+
+def _infer(res: "SnapResult", ru, rv, anchors, tol) -> "SnapResult":
+    """Adds inference lines to a start-point snap (H/V/angle), moving it onto a crossing if one is near."""
+    u, v = res.uv
+    if res.snap_type == "ORTHO_H":           # slide along the horizontal until a vertical inference
+        p = _best_align(ru, rv, anchors, 0, tol)
+        if p is not None:
+            res.uv = (p[0], v)
+            res.inferences = ((p, res.uv),)
+    elif res.snap_type == "ORTHO_V":
+        p = _best_align(ru, rv, anchors, 1, tol)
+        if p is not None:
+            res.uv = (u, p[1])
+            res.inferences = ((p, res.uv),)
+    elif res.snap_type == "ANGLE" and res.target_uv is not None:
+        su, sv = res.target_uv
+        du, dv = u - su, v - sv
+        n = math.hypot(du, dv)
+        best = None
+        for axis in (0, 1):
+            p = _best_align(ru, rv, anchors, axis, tol)
+            if p is None or abs((du, dv)[axis]) < 1e-9 * max(n, 1.0):
+                continue
+            t = (p[axis] - (su, sv)[axis]) / (du, dv)[axis]
+            q = (su + t * du, sv + t * dv)
+            d = math.hypot(q[0] - ru, q[1] - rv)
+            if d <= 2.0 * tol and (best is None or d < best[0]):
+                best = (d, p, q)
+        if best is not None:
+            res.uv = best[2]
+            res.inferences = ((best[1], best[2]),)
+    return res
 
 
 class SketchSnapper:
@@ -46,7 +113,15 @@ class SketchSnapper:
         enable_grid_snap: bool = True,
         enable_geom_snap: bool = True,
         reference_segments=None,  # np.ndarray (N, 2, 2) of projected body edges
+        infer: bool = False,      # dotted inference lines from the sketch's other points (drawing tools)
     ) -> SnapResult:
+        res = SketchSnapper._snap(raw_uv, sketch, start_uv, snap_distance, grid_step, enable_grid_snap,
+                                  enable_geom_snap, reference_segments, infer)
+        return res
+
+    @staticmethod
+    def _snap(raw_uv, sketch, start_uv, snap_distance, grid_step, enable_grid_snap, enable_geom_snap,
+              reference_segments, infer) -> SnapResult:
         ru, rv = raw_uv
 
         if not enable_geom_snap and not enable_grid_snap:
@@ -162,13 +237,15 @@ class SketchSnapper:
             if abs(rv - sv) <= snap_distance:
                 guide = ((su - 500.0, sv), (su + 500.0, sv))
                 u_coord = round(ru / grid_step) * grid_step if enable_grid_snap else ru
-                return SnapResult(uv=(u_coord, sv), snap_type="ORTHO_H", target_uv=(su, sv), guide_line=guide)
+                res = SnapResult(uv=(u_coord, sv), snap_type="ORTHO_H", target_uv=(su, sv), guide_line=guide)
+                return _infer(res, ru, rv, inference_anchors(sketch, start_uv), snap_distance) if infer and enable_geom_snap else res
 
             # Check vertical alignment (u == su)
             if abs(ru - su) <= snap_distance:
                 guide = ((su, sv - 500.0), (su, sv + 500.0))
                 v_coord = round(rv / grid_step) * grid_step if enable_grid_snap else rv
-                return SnapResult(uv=(su, v_coord), snap_type="ORTHO_V", target_uv=(su, sv), guide_line=guide)
+                res = SnapResult(uv=(su, v_coord), snap_type="ORTHO_V", target_uv=(su, sv), guide_line=guide)
+                return _infer(res, ru, rv, inference_anchors(sketch, start_uv), snap_distance) if infer and enable_geom_snap else res
 
             # 45° diagonals, and 90°/45° to the line that ends where this one starts (Björn #98)
             dirs = [((1.0, 1.0), "45°"), ((1.0, -1.0), "45°")]
@@ -190,8 +267,21 @@ class SketchSnapper:
             if best is not None:
                 _, du, dv, t, label = best
                 guide = ((su - 500.0 * du, sv - 500.0 * dv), (su + 500.0 * du, sv + 500.0 * dv))
-                return SnapResult(uv=(su + t * du, sv + t * dv), snap_type="ANGLE", target_uv=(su, sv),
-                                  guide_line=guide, label=label)
+                res = SnapResult(uv=(su + t * du, sv + t * dv), snap_type="ANGLE", target_uv=(su, sv),
+                                 guide_line=guide, label=label)
+                return _infer(res, ru, rv, inference_anchors(sketch, start_uv), snap_distance) if infer and enable_geom_snap else res
+
+        # 3b. Inference: line up with existing points horizontally and/or vertically
+        if infer and enable_geom_snap:
+            anchors = inference_anchors(sketch, start_uv)
+            pv = _best_align(ru, rv, anchors, 0, snap_distance)   # same u: vertical inference line
+            ph = _best_align(ru, rv, anchors, 1, snap_distance)   # same v: horizontal inference line
+            if pv is not None or ph is not None:
+                step = grid_step if enable_grid_snap and grid_step > 0 else 0.0
+                u = pv[0] if pv is not None else (round(ru / step) * step if step else ru)
+                v = ph[1] if ph is not None else (round(rv / step) * step if step else rv)
+                lines = tuple((p, (u, v)) for p in (pv, ph) if p is not None)
+                return SnapResult(uv=(u, v), snap_type="INFER", inferences=lines)
 
         # 4. Grid Snapping
         if enable_grid_snap and grid_step > 0:

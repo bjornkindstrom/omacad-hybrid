@@ -280,6 +280,17 @@ class OverlayMixin:
                     painter.setPen(pen_guide)
                     painter.drawLine(QPointF(scr1[0], scr1[1]), QPointF(scr2[0], scr2[1]))
 
+            # SolidWorks-style inference: dotted line from the point the cursor lines up with
+            for a, b in snap.inferences:
+                sa = self.world_to_screen(plane.uv_to_world(a[0], a[1]))
+                sb = self.world_to_screen(plane.uv_to_world(b[0], b[1]))
+                if sa and sb:
+                    painter.setPen(QPen(qcolor(250, 204, 21, 220), 1.2, Qt.PenStyle.DotLine))
+                    painter.setBrush(Qt.BrushStyle.NoBrush)
+                    painter.drawLine(QPointF(*sa), QPointF(*sb))
+                    painter.setPen(QPen(qcolor(250, 204, 21), 1.5))
+                    painter.drawEllipse(QPointF(*sa), 3.5, 3.5)
+
             # Snap Target Marker
             target_uv = snap.target_uv or snap.uv
             tgt_world = plane.uv_to_world(target_uv[0], target_uv[1])
