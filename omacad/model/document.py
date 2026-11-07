@@ -5,6 +5,7 @@ Holds active bodies, sketches, origin reference geometry, and timeline.
 
 from dataclasses import dataclass
 from typing import Dict, Optional, List, Callable, Tuple, Any
+from omacad.model.sketch_linked_clearance import follower_walls, link_clearances, push_value
 from omacad.model import quality
 import copy
 import functools
@@ -978,6 +979,7 @@ class Document:
             return False
         if not sketch.set_dimension_value(dim.dim_id, value):
             return False
+        push_value(sketch, dim)
         res = self._solve_anchored(sketch, dim)
         if not res.ok:
             sketch.restore_from_dict(before)
@@ -3236,7 +3238,7 @@ class Document:
         if not sketch or not any(d.dim_id == dim_id for d in sketch.dimensions):
             return False
         before = sketch.to_dict()
-        sketch.dimensions = [d for d in sketch.dimensions if d.dim_id != dim_id]
+        sketch.dimensions = [d for d in sketch.dimensions if d.dim_id != dim_id and d.follows != dim_id]
         solve_sketch(sketch)
         self.record_sketch_change(sketch, before)
         self.last_message = "Dimension deleted. " + self.sketch_status(sketch)
@@ -3272,6 +3274,9 @@ class Document:
         dim = sketch.dimensions[-1]
         dim.expr = expr
         dim.moving_entity_id = moving_entity_id
+        if link_clearances(sketch, [dim]):
+            sketch.dimensions.remove(dim)
+            sketch.dimensions.append(dim)  # callers read the new dimension as the last one
         res = self._solve_anchored(sketch, dim)
         if not res.ok:
             sketch.restore_from_dict(before)
@@ -3315,6 +3320,11 @@ class Document:
             ctr = next((m for m in sketch.group_entities(ent) if m.entity_type == "circle"), None)
             if ctr is not None:   # a polygon grows round its centre
                 anchor = {"pinned": [(ctr.entity_id, "center")]}
+        walls = follower_walls(sketch, dim)
+        if walls:  # linked holes move to their own walls, the walls stay
+            res = solve_sketch(sketch, **{**anchor, "fixed_ids": [*anchor.get("fixed_ids", []), *walls]})
+            if res.ok:
+                return res
         res = solve_sketch(sketch, **anchor)
         if not res.ok and anchor and (not dim.refs or dim.moving_entity_id is None):
             res = solve_sketch(sketch)
@@ -3348,6 +3358,11 @@ class Document:
             dim = next((d for d in sketch.dimensions if d.dim_id == dim_id), None)
             if dim is not None:
                 dim.expr = expr
+                if dim.follows:
+                    dim.follows = None  # edited on its own: this hole leaves its master's clearance
+                else:
+                    link_clearances(sketch, [dim])
+                    push_value(sketch, dim)
             res = self._solve_anchored(sketch, dim) if dim is not None else solve_sketch(sketch)
             if not res.ok:
                 sketch.restore_from_dict(before)

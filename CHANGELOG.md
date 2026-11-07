@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.164
+
+### Added
+- **Linked holes follow the master's wall distance (#216)**: A rim or centre distance from the master hole to a wall now drives every linked pattern copy that sits the same distance from a parallel wall (the mirrored wall for four-corner patterns). Works whether the distance was dimensioned before or after the pattern; change the master and all copies move with it. Editing a copy's own distance unlinks just that copy; deleting the master distance removes the linked ones. Unlinked patterns and copies at other distances are untouched. Survives undo/redo and project saving.
+
 # Hybrid-experiment — 0.9.9.80.163
 
 ### Added

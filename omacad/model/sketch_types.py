@@ -65,9 +65,11 @@ class SketchDimension:
     expr: Optional[str] = None
     # First picked object for multi-object dimensions; kept when editing or reloading.
     moving_entity_id: Optional[str] = None
+    # Linked pattern hole: the master clearance this dimension copies its value from (#216).
+    follows: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        data = {
             "dim_id": self.dim_id,
             "name": self.name,
             "dim_type": self.dim_type,
@@ -79,6 +81,9 @@ class SketchDimension:
             "expr": self.expr,
             "moving_entity_id": self.moving_entity_id,
         }
+        if self.follows:
+            data["follows"] = self.follows
+        return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SketchDimension":
@@ -93,4 +98,5 @@ class SketchDimension:
             pts=list(data.get("pts", [])),
             expr=data.get("expr"),
             moving_entity_id=data.get("moving_entity_id"),
+            follows=data.get("follows"),
         )

@@ -1,3 +1,15 @@
+## Länkade håls kantavstånd — 2026-11-07 (0.9.9.80.164, #216 forts.)
+
+Björn: länkade hål ska även följa masterns avstånd till väggarna. `model/sketch_linked_clearance.py`:
+`link_clearances(sketch, dims)` ger varje EQUAL-länkad kopia som står lika långt från en parallell vägg
+(spegelväggen i hörnmönster) ett eget PT_LINE_DIST med `SketchDimension.follows = <masterns dim_id>`
+(sparas bara när satt). Anropas före lösning i `add_dimension_constraint` (nya måttet flyttas sist i listan,
+anropare läser `dimensions[-1]`), i `update_dimension` och i Pattern-förhandsvisningen när Linked är på.
+`push_value` kopierar värdet; `_solve_anchored` håller följarnas väggar fasta (annars kan lösaren flytta
+väggen). Redigerat följarmått → `follows = None`; borttaget mastermått tar följarna. Kopior som redan har
+eget avstånd åt samma håll länkas inte. Test: `tests/test_linked_hole_clearance.py`.
+Fälla: `RuntimeError: libshiboken … Viewport3D already deleted` vid testavslut fanns redan före.
+
 ## Requests #216, #217 — 2026-11-07 (0.9.9.80.163)
 
 #216: `sketch_pattern._fresh` skapar EQUAL från originalcirkel till varje kopia (alla tre

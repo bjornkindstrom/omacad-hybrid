@@ -1,6 +1,7 @@
 """Sketch Pattern tool (Björn #75): live copies of the selection while the panel's numbers change; OK is one undo
 step, Cancel / Esc / another tool puts the sketch back."""
 
+from omacad.model.sketch_linked_clearance import link_clearances
 from omacad.model.sketch_pattern import circular_copies, corner_bounds, corner_copies, default_spacing, rectangular_copies, selection_centre
 from omacad.model.sketch_rotate import sketch_face_pivot
 from omacad.ui.sketch_pattern_panel import SketchPatternPanel
@@ -52,6 +53,8 @@ class SketchPatternMixin:
         else:
             copies = rectangular_copies(sk, ents, int(panel.count_x.value()), panel.spacing_x.value(),
                                         int(panel.count_y.value()), panel.spacing_y.value(), linked=panel.linked.isChecked())
+        if panel.linked.isChecked():
+            link_clearances(sk)  # copies at the master's wall distance follow it
         sk._bind_texts()
         sk.solve_profiles()
         p["copies"] = [c.entity_id for c in copies]
