@@ -1,3 +1,12 @@
+## Japandi: inga streck över inre kantbandet — 2026-11-07 (0.9.9.80.152)
+
+Rapport 20261107-110203: skivningen gav nästan sammanfallande punkter och extra
+punkter längs raka kordor. Normalerna vid dessa punkter vek `_inner_rims` tillbaka
+över sig själv och gav verkliga veck med svarta kantlinjer. Konturen förenklas nu
+med 0,00001 mm tolerans före normalberäkningen. Regression med rapportens dokument:
+`test_japandi_inner_rim.py` kontrollerar att tvärgående veck saknas och att öppning,
+vägg och kantbandets mått består.
+
 ## Japandi: slätt kantband vid ribbornas ändar — 2026-11-07 (0.9.9.80.150)
 
 Rapport 20261107-094826: `rim_follow` kopierade ribbornas tvärprofil till fasen.

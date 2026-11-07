@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.152
+
+### Fixed
+- **Stripes on the inner Japandi rim (report 20261107-110203)**: Remove redundant slice points before building the inner round lip, preventing folded strips and false edge lines while retaining the lip dimensions.
+
 # Hybrid-experiment — 0.9.9.80.150
 
 ### Fixed

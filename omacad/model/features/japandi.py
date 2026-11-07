@@ -257,7 +257,11 @@ def _inner_rims(manifold, M, bottom, top, distances, relief):
             area = np.sum(pts[:, 0] * np.roll(pts[:, 1], -1) - pts[:, 1] * np.roll(pts[:, 0], -1))
             if area >= 0:
                 continue
-            pts = np.asarray(orient(Polygon(pts), sign=1.).exterior.coords)[:-1]
+            # Slices contain near-coincident and collinear points from triangle cuts.
+            # Offsetting their independently estimated normals folds the band back
+            # over itself, leaving real creases across an otherwise smooth lip.
+            contour = Polygon(pts).simplify(1e-5)
+            pts = np.asarray(orient(contour, sign=1.).exterior.coords)[:-1]
             tangent = np.roll(pts, -1, axis=0) - np.roll(pts, 1, axis=0)
             normals = np.column_stack((-tangent[:, 1], tangent[:, 0]))
             tools.append(_wall_band(pts, normals, edge + sign * distances, relief, True).transform(M[:3, :]))
