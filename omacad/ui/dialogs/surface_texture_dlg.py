@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QCheckBox, QComboBox, QFileDialog, QFormLayout, QH
 from omacad.model.document import Document
 from omacad.model.features.cell_patterns import HOLE_SHAPES, MAX_RELAXATION, VORONOI_STYLES
 from omacad.model.features.honeycomb import SHAPES, HoneycombFeature
-from omacad.model.features.japandi import DIRECTIONS, HEIGHTS as RIB_HEIGHTS, PATHS as RIB_PATHS, SHAPES as RIB_SHAPES, apply_japandi
+from omacad.model.features.japandi import DIRECTIONS, RIMS, HEIGHTS as RIB_HEIGHTS, PATHS as RIB_PATHS, SHAPES as RIB_SHAPES, apply_japandi
 from omacad.model.features.knurl import PATTERNS, apply_knurl
 from omacad.model.features.wavy_slices import slice_body
 from omacad.ui.expr_spin import ExprDoubleSpinBox
@@ -250,6 +250,20 @@ class _JapandiPage(_Page):
         self.field("spacing", "Spacing:", 0.0, 100.0, 2, " mm", 0.0, "Distance between two ribs. It is adjusted a little so whole ribs fit.")
         self.field("twist", "Twist:", -3600.0, 3600.0, 1, " °", 0.0, "How far the ribs turn from one end of the face to the other.")
         self.field("margin", "Margin to ends:", 0.0, 10000.0, 2, " mm", 0.0, "Plain length left at both ends of the face.")
+        self.cmb_rim = QComboBox()
+        self.cmb_rim.addItems(["None", "Straight", "Chamfer", "Round"])
+        self.cmb_rim.setToolTip("A continuous raised lip in the margin at both ends, following the whole selected wall.")
+        self.form.addRow("End rim:", self.cmb_rim)
+        self.field("rim_depth", "Rim projection:", 0.01, 100., 2, " mm", 2., "How far the lip projects from the wall. Margin to ends sets its height.")
+        self.chk_rim_inside = QCheckBox("Also inside opening")
+        self.chk_rim_inside.setToolTip("Extend a round lip into the opening of a hollow body as well.")
+        self.form.addRow(self.chk_rim_inside)
+        self.chk_rim_follow = QCheckBox("Follow rib ends")
+        self.chk_rim_follow.setToolTip("Join the rim to the exact outward rib profile at both ends, without a ledge.")
+        self.form.addRow(self.chk_rim_follow)
+        self.chk_rim_follow.toggled.connect(lambda *_: self.changed.emit())
+        self.cmb_rim.currentIndexChanged.connect(self._sync)
+        self.chk_rim_inside.toggled.connect(lambda *_: self.changed.emit())
         self.cmb_path = QComboBox()
         self.cmb_path.addItems([p.capitalize() for p in RIB_PATHS])
         self.cmb_path.setToolTip("Straight: the ribs run straight along the face. Curve: each rib bows to one side in a single arc. "
@@ -264,6 +278,7 @@ class _JapandiPage(_Page):
         self.form.addRow("Rib height:", self.cmb_height)
         self.field("end_height", "End height:", 1.0, 100.0, 0, " %", 20.0, "Height at both ends of the ribs, as a share of the height in the middle.")
         BaseFeatureDialog.pair_form_rows(self.form, [
+            (self.cmb_rim, self.spins["rim_depth"]),
             (self.cmb_height, self.spins["end_height"]),
             (self.cmb_shape, self.cmb_direction),
             (self.spins["width"], self.spins["depth"]),
@@ -271,11 +286,12 @@ class _JapandiPage(_Page):
             (self.spins["twist"], self.spins["margin"]),
             (self.spins["bend"], self.spins["waves"])])
         # not setRowVisible: docking moves each field into a slider widget, which follows the field
-        self.toggled = {key: [self.form.labelForField(self.spins[key]), self.spins[key]] for key in ("radius", "width", "depth", "bend", "waves", "end_height")}
+        self.toggled = {key: [self.form.labelForField(self.spins[key]), self.spins[key]] for key in ("radius", "width", "depth", "bend", "waves", "end_height", "rim_depth")}
+        self.cmb_direction.currentIndexChanged.connect(self._sync)
         self.cmb_shape.currentIndexChanged.connect(self._sync)
         self.cmb_path.currentIndexChanged.connect(self._sync)
         self.cmb_height.currentIndexChanged.connect(self._sync)
-        for combo in (self.cmb_shape, self.cmb_direction, self.cmb_path, self.cmb_height):
+        for combo in (self.cmb_shape, self.cmb_direction, self.cmb_path, self.cmb_height, self.cmb_rim):
             combo.currentIndexChanged.connect(lambda *_: self.changed.emit())
         self._sync()
 
@@ -284,20 +300,27 @@ class _JapandiPage(_Page):
         path = RIB_PATHS[self.cmb_path.currentIndex()]
         for key, shown in (("radius", half_round), ("width", not half_round), ("depth", not half_round),
                            ("bend", path != "straight"), ("waves", path == "wave"),
-                           ("end_height", RIB_HEIGHTS[self.cmb_height.currentIndex()] == "arch")):
+                           ("end_height", RIB_HEIGHTS[self.cmb_height.currentIndex()] == "arch"),
+                           ("rim_depth", self.cmb_rim.currentIndex() != 0)):
             for widget in self.toggled[key]:
                 widget.setVisible(shown)
+        self.chk_rim_follow.setVisible(RIMS[self.cmb_rim.currentIndex()] in ("chamfer", "round") and DIRECTIONS[self.cmb_direction.currentIndex()] == "outward")
+        self.chk_rim_inside.setVisible(RIMS[self.cmb_rim.currentIndex()] == "round")
 
     def params(self):
         return {"shape": RIB_SHAPES[self.cmb_shape.currentIndex()], "direction": DIRECTIONS[self.cmb_direction.currentIndex()],
                 "path": RIB_PATHS[self.cmb_path.currentIndex()],
-                "height_profile": RIB_HEIGHTS[self.cmb_height.currentIndex()], **super().params()}
+                "height_profile": RIB_HEIGHTS[self.cmb_height.currentIndex()],
+                "rim": RIMS[self.cmb_rim.currentIndex()], "rim_inside": self.chk_rim_inside.isChecked(), "rim_follow": self.chk_rim_follow.isChecked(), **super().params()}
 
     def load(self, feature):
         self.cmb_shape.setCurrentIndex(RIB_SHAPES.index(feature.shape))
         self.cmb_direction.setCurrentIndex(DIRECTIONS.index(feature.direction))
         self.cmb_path.setCurrentIndex(RIB_PATHS.index(feature.path))
         self.cmb_height.setCurrentIndex(RIB_HEIGHTS.index(feature.height_profile))
+        self.cmb_rim.setCurrentIndex(RIMS.index(feature.rim))
+        self.chk_rim_inside.setChecked(feature.rim_inside)
+        self.chk_rim_follow.setChecked(feature.rim_follow)
         super().load(feature)
 
 

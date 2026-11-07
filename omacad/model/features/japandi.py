@@ -20,6 +20,7 @@ SHAPES = ("half-round", "rectangular")
 DIRECTIONS = ("outward", "inward")
 PATHS = ("straight", "curve", "wave")
 HEIGHTS = ("even", "arch")
+RIMS = ("none", "straight", "chamfer", "round")
 MAX_FACETS = 2_000_000      # triangles in a tool: more would take minutes and be finer than a printer can show
 # How far straight pieces may leave the true curve, in mm. Coarser than the rest of the model on purpose: a printer shows no
 # less, and the face analysis after each step grows quickly with the triangles (a real pot took 20 s at a tenth of these).
@@ -176,26 +177,160 @@ def _tube(radii, zs, nr, nz, angles, near, far) -> m3d.Manifold:
         radius = np.maximum(radii[:, None] + heights * nr[:, None], 1e-2)
         return np.stack((radius * np.cos(angles), radius * np.sin(angles), zs[:, None] + heights * nz[:, None]), axis=-1)
 
-    rows, cols = angles.shape
-    verts = np.concatenate((layer(near).reshape(-1, 3), layer(far).reshape(-1, 3)))
-    i, j = np.meshgrid(np.arange(rows - 1), np.arange(cols), indexing="ij")
+    return _strip(layer(near), layer(far))
+
+
+def _strip(near: np.ndarray, far: np.ndarray, closed: bool = True) -> m3d.Manifold:
+    """Watertight band between two sampled sheets, with caps also on an open wall's ends."""
+    rows, cols = near.shape[:2]
+    verts = np.concatenate((near.reshape(-1, 3), far.reshape(-1, 3)))
+    i, j = np.meshgrid(np.arange(rows - 1), np.arange(cols if closed else cols - 1), indexing="ij")
     i, j = i.ravel(), j.ravel()
     k = (j + 1) % cols
     at = lambda sheet, row, col: sheet * rows * cols + row * cols + col
     a, b, c, d = at(1, i, j), at(1, i, k), at(1, i + 1, k), at(1, i + 1, j)
     e, f, g, h = at(0, i, j), at(0, i, k), at(0, i + 1, k), at(0, i + 1, j)
-    col = np.arange(cols)
+    col = np.arange(cols if closed else cols - 1)
     nxt = (col + 1) % cols
     low = [at(0, 0, col), at(0, 0, nxt), at(1, 0, nxt), at(1, 0, col)]
     top = rows - 1
     high = [at(0, top, nxt), at(0, top, col), at(1, top, col), at(1, top, nxt)]
     quads = [np.column_stack(q) for q in ((a, b, c, d), (f, e, h, g), low, high)]
+    if not closed:
+        row = np.arange(rows - 1)
+        for col, reverse in ((0, False), (cols - 1, True)):
+            cap = np.column_stack((at(0, row, col), at(1, row, col),
+                                   at(1, row + 1, col), at(0, row + 1, col)))
+            quads.append(cap[:, ::-1] if reverse else cap)
     quads = np.concatenate(quads)
     tris = np.concatenate((quads[:, [0, 1, 2]], quads[:, [0, 2, 3]]))
     solid = m3d.Manifold(m3d.Mesh64(vert_properties=verts, tri_verts=np.ascontiguousarray(tris, dtype=np.uint64)))
     if solid.status() != m3d.Error.NoError or solid.is_empty():
         raise ValueError("These values give no usable ribs on this face.")
-    return solid
+    return ensure_positive_volume(solid)
+
+
+def _rim_rows(params):
+    """Distance from a free edge toward the ribs and added relief at that distance."""
+    margin, depth = float(params["margin"]), float(params.get("rim_depth", 2.0))
+    if margin <= 0 or depth <= 0:
+        raise ValueError("A rim needs a margin and a rim depth above zero.")
+    kind = params.get("rim", "none")
+    pieces = max(16, 2 * math.ceil(math.pi * math.sqrt(depth / (8. * PROFILE_SAG)) / 2.))
+    u = np.linspace(0., 1., pieces + 1) if kind == "round" else np.array([0., 1.])
+    relief = depth * (np.sin(math.pi * u) if kind == "round" else (1. - u if kind == "chamfer" else np.ones_like(u)))
+    return u * margin, np.maximum(relief, 0.)
+
+
+def _rim_columns(params, radius, ribs, end, length, distances, relief, scale=1.):
+    """Use the ribs' own columns and endpoint phase so the band meets every crest and valley."""
+    places, shares = rib_columns(params, radius, ribs)
+    columns = (np.arange(ribs)[:, None] + places).ravel() / ribs
+    turn = math.radians(params["twist"]) * end + float(path_turn(params, np.array(end)))
+    columns = columns + turn / (2. * math.pi)
+    height = params["radius"] if params["shape"] == "half-round" else params["depth"]
+    end_relief = np.tile(shares, ribs) * height * scale * float(height_share(params, height, length, np.array(end)))
+    u = distances / distances[-1]
+    return columns, relief[:, None] + u[:, None] * end_relief[None, :]
+
+
+def _wall_band(coords, normals, zs, relief, closed):
+    """Follow every segment of a ruled wall, including the seam of a closed perimeter."""
+    coords, normals = np.asarray(coords), np.asarray(normals)
+    if closed and np.linalg.norm(coords[-1] - coords[0]) < 1e-6:
+        coords, normals = coords[:-1], normals[:-1]
+    normals = normals / np.maximum(np.linalg.norm(normals, axis=1)[:, None], 1e-12)
+    near_xy = coords - BURIED * normals
+    far_xy = coords[None, :, :] + (relief[:, None] if relief.ndim == 1 else relief)[:, :, None] * normals[None, :, :]
+    near = np.empty((len(zs), len(coords), 3))
+    near[:, :, :2], near[:, :, 2] = near_xy, np.asarray(zs)[:, None]
+    far = near.copy()
+    far[:, :, :2] = far_xy
+    return _strip(near, far, closed)
+
+
+def _inner_rims(manifold, M, bottom, top, distances, relief):
+    """Optional matching round lip inside a hollow, ruled body. Solid bodies have no inner contour."""
+    from shapely.geometry.polygon import orient
+    local = manifold.transform(np.linalg.inv(M)[:3, :])
+    tools = []
+    for edge, sign in ((bottom, 1.), (top, -1.)):
+        sample = edge + sign * min(float(distances[-1]) / 2., (top - bottom) / 4.)
+        # CrossSection contours use negative signed area for holes.
+        for ring in local.slice(sample).to_polygons():
+            pts = np.asarray(ring)
+            area = np.sum(pts[:, 0] * np.roll(pts[:, 1], -1) - pts[:, 1] * np.roll(pts[:, 0], -1))
+            if area >= 0:
+                continue
+            pts = np.asarray(orient(Polygon(pts), sign=1.).exterior.coords)[:-1]
+            tangent = np.roll(pts, -1, axis=0) - np.roll(pts, 1, axis=0)
+            normals = np.column_stack((-tangent[:, 1], tangent[:, 0]))
+            tools.append(_wall_band(pts, normals, edge + sign * distances, relief, True).transform(M[:3, :]))
+    return tools
+
+
+def japandi_rims(manifold, ref, params):
+    """Add continuous end bands independently of the ribs' shape, twist, path or direction."""
+    if params.get("rim", "none") == "none":
+        return []
+    distances, relief = _rim_rows(params)
+    tools = []
+    follow = (params.get("rim_follow", False) and params["direction"] == "outward"
+              and params.get("rim") in ("chamfer", "round"))
+    if ref.get("kind") == "surface":
+        wall = curved_wall(manifold, ref)
+        if wall is None:
+            raise ValueError("The curved surface could not be analyzed for the rim.")
+        if 2. * distances[-1] >= wall.height:
+            raise ValueError("The margin leaves no room for ribs.")
+        M, bottom, top = wall.M, wall.z0, wall.z1
+        for edge, sign in ((bottom, 1.), (top, -1.)):
+            coords, normals, heights = wall.coords, wall.normals, relief
+            if follow:
+                radius = wall.L / (2. * math.pi)
+                ribs = max(1, int(round(wall.L / rib_period(params))))
+                columns, heights = _rim_columns(params, radius, ribs, 0. if sign > 0 else 1.,
+                                                wall.height - 2. * distances[-1], distances, relief)
+                positions = columns * wall.L
+                positions = np.mod(positions, wall.L) if wall.closed else np.clip(positions, 0., wall.L)
+                if wall.closed:
+                    # Resolve bends between rib columns at least as finely as the warped rib prism.
+                    order = np.argsort(positions)
+                    positions, heights = positions[order], heights[:, order]
+                    samples = np.unique(np.concatenate((positions, wall.s[:-1],
+                                                        np.linspace(0., wall.L, math.ceil(wall.L / 0.25), endpoint=False))))
+                    heights = np.array([np.interp(samples, positions, row, period=wall.L) for row in heights])
+                    positions = samples
+                coords = np.column_stack([np.interp(positions, wall.s, wall.coords[:, i]) for i in (0, 1)])
+                normals = np.column_stack([np.interp(positions, wall.s, wall.normals[:, i]) for i in (0, 1)])
+            tools.append(_wall_band(coords, normals, edge + sign * distances,
+                                    heights, wall.closed).transform(M[:3, :]))
+    else:
+        ref = _refitted(manifold, ref)
+        M = _frame(ref["origin"], ref["axis"])
+        wall = _wall(manifold, ref, M)
+        low, high = wall.s[0] + END_OVERSHOOT, wall.s[-1] - END_OVERSHOOT
+        bottom, top = np.interp([low, high], wall.s, wall.z)
+        count = max(64, int(math.ceil(2. * math.pi / math.sqrt(8. * SAG / wall.R))))
+        angles = np.broadcast_to(np.arange(count) * 2. * math.pi / count, (len(distances), count))
+        for edge, sign in ((low, 1.), (high, -1.)):
+            along = edge + sign * distances
+            radii, zs = np.interp(along, wall.s, wall.r), np.interp(along, wall.s, wall.z)
+            nr, nz = np.interp(along, wall.s, wall.nr), np.interp(along, wall.s, wall.nz)
+            size = np.maximum(np.hypot(nr, nz), 1e-12)
+            band_angles = angles
+            far = np.broadcast_to(relief[:, None], angles.shape)
+            if follow:
+                join_radius = float(np.interp(along[-1], wall.s, wall.r))
+                scale = join_radius / wall.R if params["shape"] == "half-round" else 1.
+                columns, far = _rim_columns(params, wall.R, rib_count(wall.R, params), 0. if sign > 0 else 1.,
+                                            high - low - 2. * distances[-1], distances, relief, scale)
+                band_angles = np.broadcast_to(columns * 2. * math.pi, far.shape)
+            near = np.full(far.shape, -BURIED)
+            tools.append(_tube(radii, zs, nr / size, nz / size, band_angles, near, far).transform(M[:3, :]))
+    if params.get("rim_inside", False) and params.get("rim") == "round":
+        tools.extend(_inner_rims(manifold, M, bottom, top, distances, relief))
+    return tools
 
 
 def surface_japandi_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, Any]) -> Tuple[m3d.Manifold, int]:
@@ -332,19 +467,23 @@ def japandi_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, 
 
 def apply_japandi(manifold: m3d.Manifold, faces: List[Dict[str, Any]], params: Dict[str, Any]):
     """(new manifold, ribs per turn in all faces, why any face was left out)."""
-    tools, ribs, notes = [], 0, []
+    tools, rim_tools, ribs, notes = [], [], 0, []
     for ref in faces:
         try:
             tool, count = japandi_tool(manifold, ref, params)
+            rims = japandi_rims(manifold, ref, params)
         except ValueError as e:         # one odd face must not break the history; the panel shows the reason
             notes.append(str(e))
             continue
         tools.append(tool)
+        rim_tools.extend(rims)
         ribs += count
     if not tools:
         return manifold, 0, notes
     together = m3d.Manifold.batch_boolean(tools, m3d.OpType.Add)
     result = manifold - together if params["direction"] == "inward" else manifold + together
+    if rim_tools:
+        result += m3d.Manifold.batch_boolean(rim_tools, m3d.OpType.Add)
     return CadKernel.drop_slivers(result), ribs, notes
 
 
@@ -352,12 +491,13 @@ class JapandiFeature(Feature):
     """Ribs or grooves along the chosen round faces of one body."""
 
     PARAMS = ("shape", "direction", "radius", "width", "depth", "spacing", "twist", "margin", "path", "bend", "waves",
-              "height_profile", "end_height")
+              "height_profile", "end_height", "rim", "rim_depth", "rim_inside", "rim_follow")
 
     def __init__(self, feature_id: str, name: str, target_body_id: str, faces=None, shape: str = "half-round",
                  direction: str = "outward", radius: float = 1.5, width: float = 2.0, depth: float = 2.0,
                  spacing: float = 0.0, twist: float = 0.0, margin: float = 0.0, path: str = "straight",
-                 bend: float = 20.0, waves: float = 2.0, height_profile: str = "even", end_height: float = 20.0):
+                 bend: float = 20.0, waves: float = 2.0, height_profile: str = "even", end_height: float = 20.0,
+                 rim: str = "none", rim_depth: float = 2.0, rim_inside: bool = False, rim_follow: bool = False):
         super().__init__(feature_id, "japandi", name)
         self.target_body_id = target_body_id
         self.faces = list(faces or [])
@@ -369,6 +509,9 @@ class JapandiFeature(Feature):
         self.bend, self.waves = float(bend), float(waves)
         self.height_profile = height_profile if height_profile in HEIGHTS else HEIGHTS[0]
         self.end_height = float(end_height)
+        self.rim = rim if rim in RIMS else RIMS[0]
+        self.rim_depth, self.rim_inside = float(rim_depth), bool(rim_inside)
+        self.rim_follow = bool(rim_follow)
         self.ribs = 0
         self.notes: List[str] = []
 

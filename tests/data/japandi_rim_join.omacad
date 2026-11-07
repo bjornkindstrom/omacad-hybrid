@@ -1,0 +1,123 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "cylinder_1": "object_cylinder_1",
+      "japandi_2": "object_cylinder_1"
+    },
+    "names": {},
+    "outputs": {
+      "cylinder_1": [
+        "body_cylinder_1"
+      ],
+      "japandi_2": [
+        "body_cylinder_1"
+      ]
+    },
+    "dependencies": {
+      "cylinder_1": [],
+      "japandi_2": [
+        "cylinder_1"
+      ]
+    },
+    "markers": {},
+    "active_id": "object_cylinder_1"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "cylinder_1",
+      "feature_type": "cylinder",
+      "name": "Cylinder 1",
+      "suppressed": false,
+      "radius": 34.0,
+      "height": 40.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 2.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "japandi_2",
+      "feature_type": "japandi",
+      "name": "Japandi 1",
+      "suppressed": false,
+      "target_body_id": "body_cylinder_1",
+      "faces": [
+        {
+          "kind": "cylinder",
+          "origin": [
+            1.2434497875801753e-14,
+            1.2538989511301146e-15,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "radius": 33.999999846225336,
+          "length": 40.0,
+          "internal": false
+        }
+      ],
+      "shape": "rectangular",
+      "direction": "outward",
+      "radius": 1.5,
+      "width": 2.0,
+      "depth": 5.0,
+      "spacing": 1.0,
+      "twist": 0.0,
+      "margin": 3.0,
+      "path": "wave",
+      "bend": 1.0,
+      "waves": 2.0,
+      "height_profile": "arch",
+      "end_height": 20.0,
+      "rim": "chamfer",
+      "rim_depth": 1.0,
+      "rim_inside": true,
+      "exprs": {},
+      "target_body_ids": null
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "body_colors": {},
+  "construction_bodies": [],
+  "canvases": {},
+  "favorites": [],
+  "object_groups": [],
+  "lids": [],
+  "curve_segments": 192
+}

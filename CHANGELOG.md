@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.149
+
+### Added
+- **Japandi rim joins (report 20261107-093936)**: Follow rib ends joins Chamfer and Round rims to the outward ribs at both ends, using their end height, shape and rotation. Existing projects retain their original rims until enabled.
+
 # Hybrid-experiment — 0.9.9.80.147
 
 ### Fixed

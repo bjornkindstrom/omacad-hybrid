@@ -1,3 +1,12 @@
+## Japandi: kantband möter ribborna — 2026-11-07 (0.9.9.80.149)
+
+Rapport 20261107-093936: fasen slutade vid väggen medan ribborna fortfarande stack ut
+1 mm. `rim_follow` (av i äldre filer) och kryssrutan Follow rib ends låter Chamfer/Round
+möta utåtriktade ribbors ändprofil vid båda marginalerna. Kantbandet återanvänder
+`rib_columns`, ändhöjd och ändrotation; halvrunda ribbor följer väggens radieskala.
+Sparning, redigering, ångra och panel täcks av `test_japandi_rim_join.py`, med rapportens
+lilla dokument som fixture. Rak kant och inåtriktade spår behåller vanliga kantband.
+
 ## Länkade objekt följer originalet — 2026-11-01 (0.9.9.80.103)
 
 `BranchFeature.follow` (True när länken görs från objektets senaste steg) tar originalets senaste kropp;
