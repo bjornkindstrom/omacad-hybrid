@@ -43,6 +43,7 @@ class ShellDialog(BaseFeatureDialog):
         # Wall Thickness
         self.spn_thickness = ExprDoubleSpinBox()
         self.spn_thickness.setRange(0.05, 500.0)
+        self.spn_thickness.setSingleStep(0.1)
         self.spn_thickness.setDecimals(2)
         self.spn_thickness.setSuffix(" mm")
         self.spn_thickness.setValue(2.0)
@@ -50,6 +51,7 @@ class ShellDialog(BaseFeatureDialog):
         form.addRow(self.lbl_thick, self.spn_thickness)
         self.spn_thickness2 = ExprDoubleSpinBox()
         self.spn_thickness2.setRange(0.05, 500.0)
+        self.spn_thickness2.setSingleStep(0.1)
         self.spn_thickness2.setDecimals(2)
         self.spn_thickness2.setSuffix(" mm")
         self.spn_thickness2.setValue(2.0)
@@ -67,11 +69,13 @@ class ShellDialog(BaseFeatureDialog):
         form.addRow("", self.btn_clear_faces)
 
         self.pair_form_rows(form, [
-            (self.cmb_target, self.cmb_dir),
-            (self.spn_thickness, self.spn_thickness2)])
+            (self.cmb_target, self.cmb_dir)])
 
         self.main_layout.addLayout(form)
         self.add_buttons()
+
+        from omacad.ui.numeric_slider import add_numeric_sliders
+        add_numeric_sliders(self)
 
         self.spn_thickness.valueChanged.connect(lambda *_: self.changed.emit())
         self.spn_thickness2.valueChanged.connect(lambda *_: self.changed.emit())

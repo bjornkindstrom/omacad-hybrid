@@ -151,8 +151,8 @@ COMMANDS: Dict[str, Command] = {c.cid: c for c in _ALL}
 PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Pipe, Thread / Coil, Jar with Lid (each "
               "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"])
 INSERT = ("insert", "Insert", "🖼️", "Canvas (Image), Import SVG and Import 3MF", ["canvas", "import_svg", "import_3mf"])
-MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Split Body, Shell, Offset Face, Move",
-               ["combine", "split_body", "shell", "offset_face", "move"])
+MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Split Body, Offset Face, Move",
+               ["combine", "split_body", "offset_face", "move"])
 INSPECT = ("inspect", "Inspect", "📏", "Measure, Section View, Document Statistics", ["measure", "section", "statistics"])
 EXPORT = ("export", "Export", "📤", "Screenshot, Copy Image, Rotating Video of the model as it is shown",
           ["screenshot", "copy_image", "turntable"])
@@ -161,7 +161,7 @@ PATTERNS = ["pattern_linear", "pattern_circular", "mirror", "pattern_fill"]   # 
 SOLID_GROUPS: List[Tuple[str, list]] = [
     ("CREATE", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", PRIMITIVES, "pattern", "offset_plane",
                 INSERT]),
-    ("MODIFY", ["fillet", "chamfer", "surface_texture", MODIFY_BODY, "parameters", "delete"]),
+    ("MODIFY", ["fillet", "chamfer", "shell", "surface_texture", MODIFY_BODY, "parameters", "delete"]),
     ("INSPECT", [INSPECT]),
     ("EXPORT", [EXPORT]),
 ]

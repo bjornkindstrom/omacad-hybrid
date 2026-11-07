@@ -541,7 +541,12 @@ class PickerMixin:
 
                 if body is not None and hasattr(face, "normal"):
                     fe = self._edges_of_face(face, body)
-                    all_selected_edge_lines.extend(self._edge_render_lines(fe))
+                    if fe:
+                        all_selected_edge_lines.extend(self._edge_render_lines(fe))
+                    elif hasattr(face, "tris") and len(face.tris):
+                        b_segs = patch_boundary_segments(face.tris)
+                        if len(b_segs):
+                            all_selected_edge_lines.extend(b_segs.flatten())
                 elif isinstance(face, np.ndarray):
                     b_segs = patch_boundary_segments(face)
                     if len(b_segs):
@@ -556,19 +561,22 @@ class PickerMixin:
                 self.draw_thick_lines(mvp, all_selected_edge_lines, (0.0, 0.48, 1.0, 0.30), 1.4, halo=False)
                 # Crisp vivid sel_edge on top (#007aff)
                 GL.glEnable(GL.GL_DEPTH_TEST)
-                self.draw_thick_lines(mvp, all_selected_edge_lines, (0.0, 0.48, 1.0, 1.0), 2.2, halo=True)
+                GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+                GL.glPolygonOffset(-3.0, -3.0)
+                self.draw_thick_lines(mvp, all_selected_edge_lines, (0.0, 0.48, 1.0, 1.0), 2.2, halo=False)
+                GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
 
         if self.prog_thick is None:
             return
         GL.glDisable(GL.GL_DEPTH_TEST)
         if self.edge_xray:   # every pickable edge, also the hidden ones
-            self.draw_thick_lines(mvp, self._edge_render_lines([e for b in self.doc.bodies.values() if b.visible for e in b.edges]), (0.75, 0.8, 0.9, 0.55), 1.6)
+            self.draw_thick_lines(mvp, self._edge_render_lines([e for b in self.doc.bodies.values() if b.visible for e in b.edges]), (0.75, 0.8, 0.9, 0.55), 1.6, halo=False)
         if self.hover_edge is not None and not any(self._same_edge(self.hover_edge, s) for s in self.selected_edges):
             from omacad.ui.settings import hover_line_style
             hv_col, hv_w = hover_line_style()
-            self.draw_thick_lines(mvp, self._edge_render_lines([self.hover_edge]), hv_col, hv_w)
+            self.draw_thick_lines(mvp, self._edge_render_lines([self.hover_edge]), hv_col, hv_w, halo=False)
         if self.selected_edges:
-            self.draw_thick_lines(mvp, self._edge_render_lines(self.selected_edges, getattr(self, "fillet_rail_offset", 0.0)), (*theme.palette().highlight01(), 1.0), 4.0)
+            self.draw_thick_lines(mvp, self._edge_render_lines(self.selected_edges, getattr(self, "fillet_rail_offset", 0.0)), (*theme.palette().highlight01(), 1.0), 4.0, halo=False)
         GL.glEnable(GL.GL_DEPTH_TEST)
 
     def _edge_render_lines(self, edges, offset: float = 0.0) -> list:

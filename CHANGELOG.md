@@ -1,3 +1,17 @@
+# Hybrid-experiment — 0.9.9.80.156
+
+### Added
+- **Quick button, thickness slider & auto open face for Shell (requests #193)**:
+  - Direct quick button for Shell ("🐚 Shell") in the SOLID tab under the MODIFY group on the ribbon, rather than buried in the "Body" dropdown.
+  - Interactive wall thickness slider in the Shell panel paired directly with the spinbox (`0.1 mm` steps), giving smooth live preview while dragging.
+  - Automatic open face default: Shell auto-detects and opens the body's top planar face (highest Z with upward normal) or preselected face by default, highlighted in 3D and easily cleared or changed with the "Clear Open Faces" button.
+
+### Fixed
+- **Clean selection & hover outlines without dark halo (requests #194)**:
+  - Removed dark/black halo rim (`halo=False`) when rendering boundary outlines for selected faces and edges, producing crisp, vivid blue outlines (`#007aff`) with polygon offset to eliminate z-fighting.
+- **Face boundary outline on filleted cylinder caps (requests #195)**:
+  - Fixed missing face boundary outline when selecting top/bottom caps of filleted cylinders: when planar faces have no sharp edges in `body.edges`, fallback boundary segment extraction (`patch_boundary_segments`) cleanly traces and outlines the true circular boundary loop.
+
 # Hybrid-experiment — 0.9.9.80.155
 
 ### Added

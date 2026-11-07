@@ -1,3 +1,21 @@
+## Snabbknapp för Shell, reglage & auto-öppning samt ren markering utan svart halo — 2026-11-07 (0.9.9.80.156)
+
+Åtgärdar önskemål #193, #194 och #195 från feedback/kanban:
+1. Snabbknapp för Shell (#193): Shell ("🐚 Shell") ligger nu som en direkt knapp i MODIFY-gruppen
+   på ribbon-listen (inte gömd i Body-menyn).
+2. Tjockleksreglage (#193): `ShellDialog` har fått ett interaktivt skjutreglage (slider) kopplat
+   direkt till väggtjockleken, med mjuk realtidsförhandsgranskning i 3D.
+3. Automatisk öppningsyta (#193): Shell väljer nu automatiskt kroppens översta plana yta som
+   öppningsyta (eller förvald yta), markerar den i 3D och visar den i panelen där den enkelt kan
+   tas bort via "Clear Open Faces" eller klickas om.
+4. Bort med ful svart kant (#194): `halo=False` skickas till `draw_thick_lines` vid markering
+   och hovring av ytor och kanter, vilket tar bort den mörka/svarta ranten och ger skarpa,
+   klara blå konturer (`#007aff`) med polygon-offset.
+5. Markering på avrundad cylinder (#195): När en cylinder har avrundats uppe och nere finns
+   inga skarpa kanter i `body.edges`. `render_edge_pick` faller nu tillbaka på `patch_boundary_segments`
+   för plana ytor så att lockens cirkulära kontur ritas ut perfekt.
+Tester: `tests/test_requests_193_195.py`.
+
 ## SolidCraft-hovring: studioljusbelysning av ytor och tangenskanter — 2026-11-07 (0.9.9.80.155)
 
 Feedback med video: efterlikna exakt hur SolidCraft hovrar ytor och krökta ytor.

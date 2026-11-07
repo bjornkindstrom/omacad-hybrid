@@ -139,7 +139,41 @@ class BodyPromptsMixin:
             return
 
         selected_id = target_body_id or (self.doc.selected_body_ids[0] if self.doc.selected_body_ids else "")
+        if not selected_id and getattr(self.viewport, "selected_faces", None):
+            item = self.viewport.selected_faces[0]
+            bid = item[0] if isinstance(item, tuple) else getattr(item, "body_id", "")
+            if bid and bid in self.doc.bodies:
+                selected_id = bid
+        if not selected_id and self.doc.bodies:
+            selected_id = list(self.doc.bodies.keys())[0]
+
+        self.viewport.shell_target_body_id = selected_id
         dlg = ShellDialog(self.doc, self, preselected_body_id=selected_id or None)
+
+        # Auto-detect opening face (Björn #193):
+        # 1. Use face from pre-selection if present on this body
+        # 2. Otherwise default to the body's top planar face (normal.z > 0.5, highest origin.z)
+        auto_face = None
+        if getattr(self.viewport, "selected_faces", None):
+            for item in self.viewport.selected_faces:
+                bid = item[0] if isinstance(item, tuple) else getattr(item, "body_id", "")
+                f = item[1] if isinstance(item, tuple) else item
+                if bid == selected_id and hasattr(f, "normal"):
+                    auto_face = f
+                    break
+        if auto_face is None and selected_id in self.doc.bodies:
+            body = self.doc.bodies[selected_id]
+            if body.faces:
+                top_faces = [f for f in body.faces if getattr(f, "normal", [0, 0, 0])[2] > 0.5]
+                if top_faces:
+                    auto_face = max(top_faces, key=lambda f: float(f.origin[2]))
+                else:
+                    auto_face = max(body.faces, key=lambda f: float(f.origin[2]))
+
+        if auto_face is not None:
+            dlg.toggle_face(auto_face)
+            self.viewport.highlighted_faces = [auto_face]
+
         self.dock(dlg)
         self.doc.hide_used_sketches()
 
@@ -193,6 +227,7 @@ class BodyPromptsMixin:
             except (RuntimeError, TypeError):
                 pass
             self.viewport.end_plane_pick()
+            self.viewport.highlighted_faces = []
             self.viewport.set_preview(None)
             if current_hidden_id[0] and current_hidden_id[0] in self.doc.bodies:
                 self.doc.bodies[current_hidden_id[0]].visible = True
