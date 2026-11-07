@@ -232,7 +232,10 @@ class SketchPalette(QFrame):
         add_numeric_sliders(self.content_widget)
 
     def set_tool(self, tool_name: str) -> None:
-        """Show Polygon sides / Corner radius only for the tools that use them."""
+        """Show the selected tool's settings, expanding a collapsed palette when needed."""
+        if tool_name != "NONE":
+            self.content_widget.show()
+            self.btn_toggle.setText("▼")
         # the tool panel above shows Sides / Radius now (with sliders); the spinners here keep the defaults
         self.sides_row.setVisible(False)
         self.radius_row.setVisible(False)
@@ -308,7 +311,7 @@ class SketchPalette(QFrame):
         super().mouseReleaseEvent(event)
 
     def toggle_collapsed(self):
-        is_visible = self.content_widget.isVisible()
+        is_visible = not self.content_widget.isHidden()
         self.content_widget.setVisible(not is_visible)
         self.btn_toggle.setText("▶" if is_visible else "▼")
         self.adjustSize()

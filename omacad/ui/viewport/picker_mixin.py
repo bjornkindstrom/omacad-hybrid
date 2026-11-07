@@ -452,66 +452,10 @@ class PickerMixin:
         if not (self.edge_pick_mode or self._idle_hover_ok() or has_sel_faces):
             return
         # SolidCraft match: Shaded Studio Hover (faces & curved surfaces light up cleanly in 3D studio light)
-        if self.hover_face is not None and self.hover_edge is None and self.prog_solid is not None:
-            body = self.doc.bodies.get(self.hover_face.body_id)
-            if body is not None:
-                GL.glUseProgram(self.prog_solid)
-                loc_mvp = GL.glGetUniformLocation(self.prog_solid, "u_mvp")
-                loc_col = GL.glGetUniformLocation(self.prog_solid, "u_color")
-                loc_eye = GL.glGetUniformLocation(self.prog_solid, "u_eye_dir")
-                loc_pos = GL.glGetAttribLocation(self.prog_solid, "in_pos")
-                loc_norm = GL.glGetAttribLocation(self.prog_solid, "in_normal")
-                GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
-                if loc_eye >= 0:
-                    az = math.radians(getattr(self, "azimuth", 0.0))
-                    el = math.radians(getattr(self, "elevation", 0.0))
-                    GL.glUniform3f(loc_eye, math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el))
-                c = body.color
-                lift = 40.0 / 255.0
-                GL.glUniform4f(loc_col, min(1.0, c[0] + lift), min(1.0, c[1] + lift), min(1.0, c[2] + lift), 1.0)
-                GL.glEnable(GL.GL_DEPTH_TEST)
-                GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
-                GL.glPolygonOffset(-2.0, -2.0)
-                tris = self._trim_tris_by_section(self.hover_face.tris)
-                if len(tris):
-                    pos_data = tris.reshape(-1, 3).astype(np.float32)
-                    norm_data = np.repeat(self.hover_face.normal.reshape(1, 3).astype(np.float32), len(pos_data), axis=0)
-                    self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, pos_data, loc_norm, norm_data)
-                GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
-                GL.glUseProgram(0)
-
-        if self.hover_surface is not None and self.hover_edge is None and self.prog_solid is not None:
-            body = self.doc.bodies.get(self.hover_surface[0])
-            if body is not None:
-                GL.glUseProgram(self.prog_solid)
-                loc_mvp = GL.glGetUniformLocation(self.prog_solid, "u_mvp")
-                loc_col = GL.glGetUniformLocation(self.prog_solid, "u_color")
-                loc_eye = GL.glGetUniformLocation(self.prog_solid, "u_eye_dir")
-                loc_pos = GL.glGetAttribLocation(self.prog_solid, "in_pos")
-                loc_norm = GL.glGetAttribLocation(self.prog_solid, "in_normal")
-                GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
-                if loc_eye >= 0:
-                    az = math.radians(getattr(self, "azimuth", 0.0))
-                    el = math.radians(getattr(self, "elevation", 0.0))
-                    GL.glUniform3f(loc_eye, math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el))
-                c = body.color
-                lift = 40.0 / 255.0
-                GL.glUniform4f(loc_col, min(1.0, c[0] + lift), min(1.0, c[1] + lift), min(1.0, c[2] + lift), 1.0)
-                GL.glEnable(GL.GL_DEPTH_TEST)
-                GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
-                GL.glPolygonOffset(-2.0, -2.0)
-                tris = self.hover_surface[1]
-                norms = self.hover_surface[2] if len(self.hover_surface) > 2 else None
-                if norms is None:
-                    d1 = tris[:, 1] - tris[:, 0]
-                    d2 = tris[:, 2] - tris[:, 0]
-                    tn = np.cross(d1, d2)
-                    norms = np.repeat((tn / np.maximum(np.linalg.norm(tn, axis=1, keepdims=True), 1e-12))[:, np.newaxis, :], 3, axis=1)
-                pos_data = tris.reshape(-1, 3).astype(np.float32)
-                norm_data = norms.reshape(-1, 3).astype(np.float32)
-                self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, pos_data, loc_norm, norm_data)
-                GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
-                GL.glUseProgram(0)
+        if self.hover_face is not None and self.hover_edge is None:
+            self._draw_hover_patch(mvp, self.hover_face.body_id, self.hover_face.tris, self.hover_face.normal)
+        if self.hover_surface is not None and self.hover_edge is None:
+            self._draw_hover_patch(mvp, self.hover_surface[0], self.hover_surface[1], None)
 
         # SolidCraft match: Selected face(s) are highlighted with sel_face fill + sel_edge boundary outline
         if has_sel_faces and self.prog_flat is not None:
@@ -531,26 +475,27 @@ class PickerMixin:
                 body_id = item[0] if isinstance(item, tuple) else getattr(item, "body_id", "")
                 face = item[1] if isinstance(item, tuple) else item
                 body = self.doc.bodies.get(body_id)
-                if hasattr(face, "tris"):
-                    lift = getattr(face, "normal", np.array([0.0, 0.0, 1.0])) * 0.05
-                    tris = self._trim_tris_by_section(face.tris + lift)
-                    if len(tris):
-                        self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris.reshape(-1, 3).astype(np.float32))
-                elif isinstance(face, np.ndarray):
-                    self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, face.reshape(-1, 3).astype(np.float32))
-
+                lines = []
+                patch = getattr(face, "tris", face if isinstance(face, np.ndarray) else None)
                 if body is not None and hasattr(face, "normal"):
                     fe = self._edges_of_face(face, body)
                     if fe:
-                        all_selected_edge_lines.extend(self._edge_render_lines(fe))
+                        lines = self._edge_render_lines(fe)
                     elif hasattr(face, "tris") and len(face.tris):
                         b_segs = patch_boundary_segments(face.tris)
-                        if len(b_segs):
-                            all_selected_edge_lines.extend(b_segs.flatten())
+                        lines = b_segs.reshape(-1, 3)
                 elif isinstance(face, np.ndarray):
                     b_segs = patch_boundary_segments(face)
-                    if len(b_segs):
-                        all_selected_edge_lines.extend(b_segs.flatten())
+                    lines = b_segs.reshape(-1, 3)
+                if patch is not None:
+                    vertices = np.asarray(patch, dtype=np.float32).reshape(-1, 3)
+                    mesh = self._pick_mesh(body) if body is not None else None
+                    if mesh is not None:
+                        vertices, _, lines = mesh.display_patch_arrays(patch, np.asarray(lines, dtype=np.float32).reshape(-1, 3))
+                    tris = self._trim_tris_by_section(vertices.reshape(-1, 3, 3))
+                    if len(tris):
+                        self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris.reshape(-1, 3))
+                all_selected_edge_lines.extend(np.asarray(lines).ravel())
 
             GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
             GL.glDepthMask(GL.GL_TRUE)
@@ -578,6 +523,55 @@ class PickerMixin:
         if self.selected_edges:
             self.draw_thick_lines(mvp, self._edge_render_lines(self.selected_edges, getattr(self, "fillet_rail_offset", 0.0)), (*theme.palette().highlight01(), 1.0), 4.0, halo=False)
         GL.glEnable(GL.GL_DEPTH_TEST)
+
+    def _draw_hover_patch(self, mvp: np.ndarray, body_id: str, tris, normal):
+        """A hovered face or curved surface in studio light, a little brighter than its body. Drawn with the same
+        display smoothing as the body (`display_patch_arrays`), otherwise the smoothed body lies a hair in front
+        of the raw triangles and the highlight shows only in stripes or patches (#203, #204)."""
+        body = self.doc.bodies.get(body_id)
+        if body is None or self.prog_solid is None or tris is None or not len(tris):
+            return
+        tris = np.asarray(tris, dtype=np.float32).reshape(-1, 3, 3)
+        mesh = self._pick_mesh(body)
+        normals = None
+        if mesh is not None and hasattr(mesh, "display_patch_arrays"):
+            vertices, normals, _ = mesh.display_patch_arrays(tris, np.zeros((0, 3), dtype=np.float32))
+            tris = np.asarray(vertices, dtype=np.float32).reshape(-1, 3, 3)
+        if normals is None or len(normals) != len(tris) * 3:
+            own = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
+            own /= np.maximum(np.linalg.norm(own, axis=1, keepdims=True), 1e-12)
+            if normal is not None:
+                own[:] = np.asarray(normal, dtype=np.float32).reshape(1, 3)
+            normals = np.repeat(own[:, None, :], 3, axis=1)
+        normals = np.asarray(normals, dtype=np.float32).reshape(-1, 3, 3)
+        if getattr(self, "section", None) is not None:      # cut triangles: their own flat normals
+            tris = np.asarray(self._trim_tris_by_section(tris), dtype=np.float32).reshape(-1, 3, 3)
+            normals = None
+        if not len(tris):
+            return
+        if normals is None:
+            own = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
+            own /= np.maximum(np.linalg.norm(own, axis=1, keepdims=True), 1e-12)
+            normals = np.repeat(own[:, None, :], 3, axis=1)
+        GL.glUseProgram(self.prog_solid)
+        loc_eye = GL.glGetUniformLocation(self.prog_solid, "u_eye_dir")
+        GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.prog_solid, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
+        if loc_eye >= 0:
+            az = math.radians(getattr(self, "azimuth", 0.0))
+            el = math.radians(getattr(self, "elevation", 0.0))
+            GL.glUniform3f(loc_eye, math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el))
+        c = body.color
+        lift = 40.0 / 255.0
+        GL.glUniform4f(GL.glGetUniformLocation(self.prog_solid, "u_color"),
+                       min(1.0, c[0] + lift), min(1.0, c[1] + lift), min(1.0, c[2] + lift), 1.0)
+        GL.glEnable(GL.GL_DEPTH_TEST)
+        GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+        GL.glPolygonOffset(-2.0, -2.0)
+        self.draw_buffer_arrays(GL.GL_TRIANGLES, GL.glGetAttribLocation(self.prog_solid, "in_pos"),
+                                tris.reshape(-1, 3), GL.glGetAttribLocation(self.prog_solid, "in_normal"),
+                                normals.reshape(-1, 3))
+        GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+        GL.glUseProgram(0)
 
     def _edge_render_lines(self, edges, offset: float = 0.0) -> list:
         out = []

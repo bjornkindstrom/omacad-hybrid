@@ -513,7 +513,9 @@ class PointerMixin:
             self._update_profile_hover(x, y)
             if not self.is_orbiting and not self.is_panning:
                 self._update_entity_hover(x, y)
-                if self._idle_hover_ok():
+                # #208: a sketch profile under the cursor wins over the face it lies on; the face's hover light was
+                # drawn over the profile fill, so letters and shapes on a face looked unpickable
+                if self._idle_hover_ok() and self.hover_profile is None:
                     self._update_edge_hover(x, y)
                     if self.hover_edge is None and self.hover_face is None and self.hover_surface is None:
                         self._update_idle_plane_hover(x, y)

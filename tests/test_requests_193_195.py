@@ -116,7 +116,7 @@ def test_request_193_auto_open_face_in_shell(qapp):
     assert len(win.viewport.highlighted_faces) == 0
 
 
-def test_request_194_no_dark_halo(qapp):
+def test_request_194_no_dark_halo(qapp, monkeypatch):
     """Verify render_edge_pick passes halo=False to draw_thick_lines for selected faces and edges."""
     from unittest.mock import MagicMock
 
@@ -157,6 +157,7 @@ def test_request_194_no_dark_halo(qapp):
 
     # Intercept OpenGL calls
     import OpenGL.GL as GL
+    monkeypatch.setattr(GL, "glUniform4f", MagicMock())
     orig_glUseProgram = GL.glUseProgram
     orig_glGetUniformLocation = GL.glGetUniformLocation
     orig_glGetAttribLocation = GL.glGetAttribLocation

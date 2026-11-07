@@ -72,7 +72,7 @@ _ALL = [
        signal="chamfer_clicked"),
     _c("shell", "Shell", "🐚", "Hollow a body to a wall thickness, leaving picked faces open", signal="shell_clicked"),
     _c("surface_texture", "Surface Texture", "🧵", "Texture a body's surface: cells (hexagons, circles, squares, diamonds, triangles, Voronoi), a knurl, Japandi ribs, or wavy slices", signal="surface_texture_clicked"),
-    _c("offset_face", "Offset Face", "↔️", "Move flat faces, or change holes, pins and threads for a fit",
+    _c("offset_face", "Offset Face", "↔️", "Push / Pull: drag a face in or out, or change holes, pins and threads for a fit",
        signal="offset_face_clicked"),
     _c("combine", "Combine", "🔗", "Join, cut or intersect bodies", signal="combine_clicked"),
     _c("split_body", "Split Body", "🪚", "Split a body in two with a plane", signal="split_body_clicked"),

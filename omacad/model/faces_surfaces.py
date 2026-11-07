@@ -70,15 +70,69 @@ def tangent_edge_mask(v, f, tm, sharp_deg: float, min_deg: float = 0.1) -> np.nd
     """Mask over `tm.face_adjacency` of the tangent edges: where a flat face runs smoothly (under `sharp_deg`) into a
     curved surface or into another flat face, like the seam between a straight wall and a tangent arc (Fusion's
     "Show tangent edges"). Joins inside a curved surface and boolean slivers are left out."""
-    roots, _, planar, slivers, _ = _face_groups(v, f, tm)
+    roots, _, planar, slivers, curved = _face_groups(v, f, tm)
     a, b = roots[tm.face_adjacency[:, 0]], roots[tm.face_adjacency[:, 1]]
     is_planar = np.isin(roots, list(planar))
     is_sliver = np.isin(roots, list(slivers))
     pa, pb = is_planar[tm.face_adjacency[:, 0]], is_planar[tm.face_adjacency[:, 1]]
     sa, sb = is_sliver[tm.face_adjacency[:, 0]], is_sliver[tm.face_adjacency[:, 1]]
     angles = tm.face_adjacency_angles
-    return ((a != b) & (pa | pb) & ~sa & ~sb
+    mask = ((a != b) & (pa | pb) & ~sa & ~sb
             & (angles >= np.radians(min_deg)) & (angles <= np.radians(sharp_deg)))
+    return mask & ~_facet_seams(v, tm, roots, is_planar, is_sliver, mask, sharp_deg)
+
+
+FACET_WIDTH_RATIO = 1.5     # a "flat face" at most this many neighbour strips wide is a facet of a curved surface
+
+
+def _facet_seams(v, tm, roots, is_planar, is_sliver, mask, sharp_deg) -> np.ndarray:
+    """Candidate tangent edges that are only the join between two facets of one tessellated curve (Björn #214): a
+    boolean can leave a facet of a cone or cylinder (or a piece of one, split by a zero-area sliver) as a separate
+    flat group, and a line was drawn down its sides. A facet bends smoothly into the curve on both sides and is no
+    wider across the seam than the strip next to it. A real flat face is many strips wide (a box side next to its
+    fillet), and a short real flat side between an arc and a corner bends smoothly on one side only."""
+    out = np.zeros(len(mask), dtype=bool)
+    idx = np.flatnonzero(mask)
+    if not len(idx):
+        return out
+    fa_all = tm.face_adjacency
+    ra_all, rb_all = roots[fa_all[:, 0]], roots[fa_all[:, 1]]
+    # a zero-area sliver's angle means nothing: it counts as a smooth way on into the curve
+    slivered = is_sliver[fa_all[:, 0]] | is_sliver[fa_all[:, 1]]
+    smooth = (ra_all != rb_all) & ((tm.face_adjacency_angles <= np.radians(sharp_deg)) | slivered)
+    onward: dict = {}                                 # group -> the groups it runs smoothly into
+    sliver_roots = set(roots[is_sliver].tolist())
+    for x, y in zip(ra_all[smooth].tolist(), rb_all[smooth].tolist()):
+        onward.setdefault(x, set()).add(y)
+        onward.setdefault(y, set()).add(x)
+    members: dict = {}
+
+    def width(root: int, along: np.ndarray) -> float:
+        if root not in members:
+            tris = np.flatnonzero(roots == root)
+            normal = tm.face_normals[tris].sum(0)
+            members[root] = (np.unique(tm.faces[tris]), normal / max(np.linalg.norm(normal), 1e-12))
+        verts, normal = members[root]
+        across = np.cross(normal, along)
+        return float(np.ptp(v[verts] @ across)) if np.linalg.norm(across) > 1e-6 else 0.0
+
+    for k in idx:
+        edge = v[tm.face_adjacency_edges[k, 1]] - v[tm.face_adjacency_edges[k, 0]]
+        along = edge / max(np.linalg.norm(edge), 1e-12)
+        x, y = int(ra_all[k]), int(rb_all[k])
+        facet = True
+        for side, (r, other) in enumerate(((x, y), (y, x))):
+            if not is_planar[fa_all[k, side]]:
+                continue
+            near = set()
+            for n in onward.get(r, ()):                # through a sliver to the facet on its far side
+                near |= ({m for m in onward.get(n, ()) if m != r} if n in sliver_roots else {n})
+            strips = [n for n in near if n not in sliver_roots] or [other]
+            widest = max(width(n, along) for n in strips)      # a strip split by a sliver is narrower than its facet
+            if len(onward.get(r, ())) < 2 or width(r, along) > FACET_WIDTH_RATIO * widest:
+                facet = False
+        out[k] = facet
+    return out
 
 
 def curved_surface_ids(v, f, tm, sharp_deg: float, radius_ratio: float = 1.5) -> np.ndarray:
@@ -110,8 +164,183 @@ def curved_surface_ids(v, f, tm, sharp_deg: float, radius_ratio: float = 1.5) ->
         if find(ra) != find(rb):
             parent[find(rb)] = find(ra)
     with_curve = {find(r) for r in curved}
-    return np.array([find(r) if r in parent and find(r) in with_curve else -1 for r in roots.tolist()],
-                    dtype=np.int64)
+    ids = np.array([find(r) if r in parent and find(r) in with_curve else -1 for r in roots.tolist()],
+                   dtype=np.int64)
+    ids = _heal_surface_fragments(ids, roots, tm, sharp_deg)
+    return _merge_crumbs(ids, v, tm, sharp_deg)
+
+
+CRUMB_TRIANGLES = 6         # a "curved surface" of at most this many triangles ...
+CRUMB_AREA_SHARE = 0.1      # ... and at most this share of a neighbour's area ...
+CRUMB_SEAM_SHARE = 0.4      # ... which it runs smoothly into along this much of its outline, is part of it
+
+
+def _merge_crumbs(ids, v, tm, sharp_deg):
+    """A bent Japandi rib face came out as one big surface dotted with dozens of two-triangle "surfaces" (the strip
+    widths of the arched profile differ more than `radius_ratio`), so its highlight was full of holes drawn as zigzag
+    outlines (Björn #215). A crumb that mostly borders one much larger curved surface smoothly is part of it. Real
+    small surfaces (a fillet between two walls, a short arc) touch their neighbour along less of their outline or
+    are not that small."""
+    if not np.any(ids >= 0):
+        return ids
+    labels, counts = np.unique(ids[ids >= 0], return_counts=True)
+    crumbs = set(labels[counts <= CRUMB_TRIANGLES].tolist())
+    if not crumbs:
+        return ids
+    area = dict(zip(labels.tolist(), np.bincount(np.searchsorted(labels, ids[ids >= 0]),
+                                                  weights=tm.area_faces[ids >= 0]).tolist()))
+    fa = tm.face_adjacency
+    la, lb = ids[fa[:, 0]], ids[fa[:, 1]]
+    edges = tm.face_adjacency_edges
+    length = np.linalg.norm(v[edges[:, 0]] - v[edges[:, 1]], axis=1)
+    smooth = tm.face_adjacency_angles <= np.radians(sharp_deg)
+    outline: dict = {}
+    seam: dict = {}
+    for x, y, ln, sm in zip(la.tolist(), lb.tolist(), length.tolist(), smooth.tolist()):
+        if x == y:
+            continue
+        for c, o in ((x, y), (y, x)):
+            if c in crumbs:
+                outline[c] = outline.get(c, 0.0) + ln
+                if sm and o >= 0 and o not in crumbs:
+                    seam[c, o] = seam.get((c, o), 0.0) + ln
+    into: dict = {}
+    for (c, o), ln in seam.items():
+        if (ln >= CRUMB_SEAM_SHARE * outline[c] and area[c] <= CRUMB_AREA_SHARE * area[o]
+                and ln > seam.get((c, into.get(c, -1)), 0.0)):
+            into[c] = o
+    if not into:
+        return ids
+    out = ids.copy()
+    for c, o in into.items():
+        out[ids == c] = o
+    return out
+
+
+def _heal_surface_fragments(ids, planar_roots, tm, sharp_deg):
+    """Absorb tiny classification islands in an otherwise continuous curved wall.
+
+    Shells of lofts can split one wall into hundreds of tiny radius/planarity groups.
+    Repair only smooth components overwhelmingly covered by one surface, with no
+    substantial second curved surface or flat face. Sharp creases remain barriers.
+    """
+    if not np.any(ids >= 0):
+        return ids
+    parent = np.arange(len(ids))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return int(i)
+
+    adjacency = tm.face_adjacency[tm.face_adjacency_angles <= np.radians(sharp_deg)]
+    for a, b in adjacency:
+        ra, rb = find(int(a)), find(int(b))
+        if ra != rb:
+            parent[rb] = ra
+    components = _groups_of_roots(np.array([find(i) for i in range(len(ids))]))
+    for triangles in components.values():
+        triangles = np.asarray(triangles)
+        labels = ids[triangles]
+        area = tm.area_faces[triangles]
+        total = float(area.sum())
+        if total <= 0:
+            continue
+        unique, inverse = np.unique(labels, return_inverse=True)
+        sums = np.bincount(inverse, weights=area)
+        curves = [(float(weight), int(label)) for label, weight in zip(unique, sums) if label >= 0]
+        curves.sort(reverse=True)
+        if not curves or curves[0][0] < .95 * total:
+            continue
+        if len(curves) > 1 and curves[1][0] > .005 * total:
+            continue
+        flat = labels < 0
+        if float(area[flat].sum()) > .005 * total:
+            continue
+        # A real planar face must keep its identity even beside a very large curved wall.
+        if np.any(flat):
+            _, inverse = np.unique(planar_roots[triangles][flat], return_inverse=True)
+            if np.bincount(inverse, weights=area[flat]).max() > .001 * total:
+                continue
+        ids[triangles] = curves[0][1]
+    return _absorb_surface_islands(ids, planar_roots, tm, components.values(), sharp_deg)
+
+
+ISLAND_SHARE = .005        # an island (cluster of specks) is at most this part of its smooth region's area
+ISLAND_FLAT_SHARE = .001   # ... and holds no flat group larger than this: a real face keeps its identity
+ISLAND_ENCLOSED = .6       # ... and this much of its outline runs along the main surface (sharp creases, the
+                           # wall's own border, count for neither side)
+
+
+def _absorb_surface_islands(ids, planar_roots, tm, components, sharp_deg: float = 20.0):
+    """Islands left inside a big curved wall join it (#205). The shell of a loft left the inner wall at 94 % one
+    surface plus ~800 specks (one to a few triangles each, read as other curves or flat bits, many in a row along
+    the rim), so `_heal_surface_fragments` kept them all and the selected wall was drawn with an outline around
+    every speck and a zigzag along the rim. Specks that touch each other are judged together: a cluster that is
+    small and mostly bordered by the main surface (or by a sharp crease) joins it. A real fillet between the wall
+    and a flat face clusters with that face, which is too large, so it stays apart."""
+    adj = tm.face_adjacency
+    smooth_pair = tm.face_adjacency_angles <= np.radians(sharp_deg)
+    ends = tm.vertices[tm.face_adjacency_edges]
+    lengths = np.linalg.norm(ends[:, 0] - ends[:, 1], axis=1)
+    area_faces = tm.area_faces
+    planar_roots = np.asarray(planar_roots, dtype=np.int64)
+    for triangles in components:
+        triangles = np.asarray(triangles)
+        labels = ids[triangles]
+        if len(triangles) < 3 or not np.any(labels >= 0) or len(np.unique(labels)) < 2:
+            continue
+        total = float(area_faces[triangles].sum())
+        curved_labels, inverse = np.unique(labels[labels >= 0], return_inverse=True)
+        sums = np.bincount(inverse, weights=area_faces[triangles][labels >= 0])
+        if sums.max() < .5 * total:
+            continue
+        main = int(curved_labels[int(np.argmax(sums))])
+        other = np.zeros(len(ids), dtype=bool)
+        other[triangles[labels != main]] = True
+        is_main = np.zeros(len(ids), dtype=bool)
+        is_main[triangles[labels == main]] = True
+        # clusters of non-main triangles joined across smooth edges
+        parent = {int(t): int(t) for t in np.flatnonzero(other)}
+
+        def find(i):
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+
+        join = smooth_pair & other[adj[:, 0]] & other[adj[:, 1]]
+        for p, q in adj[join].tolist():
+            rp, rq = find(p), find(q)
+            if rp != rq:
+                parent[rq] = rp
+        members = np.fromiter(parent.keys(), dtype=np.int64)
+        cluster = np.array([find(int(t)) for t in members], dtype=np.int64)
+        lookup = np.full(len(ids), -1, dtype=np.int64)
+        lookup[members] = cluster
+        c_uniq, c_inv = np.unique(cluster, return_inverse=True)
+        c_area = np.bincount(c_inv, weights=area_faces[members])
+        # the largest flat group in each cluster
+        flat = ids[members] < 0
+        c_flat = np.zeros(len(c_uniq))
+        if flat.any():
+            pair_key = np.stack([c_inv[flat], planar_roots[members[flat]]], axis=1)
+            pk, pinv = np.unique(pair_key, axis=0, return_inverse=True)
+            np.maximum.at(c_flat, pk[:, 0], np.bincount(pinv.ravel(), weights=area_faces[members[flat]]))
+        # outline along smooth edges: shared with main vs anything else
+        rim = smooth_pair & (other[adj[:, 0]] != other[adj[:, 1]])
+        p, q, length = adj[rim, 0], adj[rim, 1], lengths[rim]
+        inner = np.where(other[p], p, q)
+        outer = np.where(other[p], q, p)
+        pos = np.searchsorted(c_uniq, lookup[inner])
+        outline = np.bincount(pos, weights=length, minlength=len(c_uniq))
+        shared = np.bincount(pos, weights=length * is_main[outer], minlength=len(c_uniq))
+        take = ((c_area <= ISLAND_SHARE * total) & (c_flat <= ISLAND_FLAT_SHARE * total)
+                & (shared >= ISLAND_ENCLOSED * outline) & (outline > 0))
+        if take.any():
+            ids[members[take[c_inv]]] = main
+    return ids
 
 
 def clear_topology_cache():

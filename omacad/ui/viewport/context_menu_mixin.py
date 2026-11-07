@@ -771,7 +771,7 @@ class ContextMenuMixin:
         menu.addSeparator()
         self._add_tool_entries(menu, acts)
         if not self.active_tool_title():
-            acts[theme.action_with_icon(menu, "↔️ Offset Face…")] = ("offset_face", face)
+            acts[theme.action_with_icon(menu, "↔️ Push / Pull Face…")] = ("offset_face", face)
             acts[theme.action_with_icon(menu, "🧵 Surface Texture…")] = ("surface_texture", face)
             acts[theme.action_with_icon(menu, "📐 Offset Plane from this Face…")] = ("offset_plane", self.plane_from_target(("face", face)))
         body = self.doc.bodies.get(face.body_id)
@@ -786,7 +786,7 @@ class ContextMenuMixin:
         context_items = [
             FanItem("sk_on_face", "Sketch on Face", theme.named_icon("sketch", "✏️", 20), callback=lambda: self.plane_picked.emit(self.plane_from_target(("face", face)))),
             FanItem("extrude_face", "Extrude Face", theme.named_icon("extrude", "⬆️", 20), shortcut="E", tooltip="Pull face into body to cut, or out to add material", callback=lambda: self.face_extrude_requested.emit(face)),
-            FanItem("offset_face", "Offset Face", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(face)),
+            FanItem("offset_face", "Push / Pull", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(face)),
             FanItem("surface_texture", "Surface Texture", theme.command_icon("surface_texture", "🧵", 20), callback=lambda: self.surface_texture_requested.emit(face)),
             FanItem("canvas_face", "Insert Canvas", theme.named_icon("canvas", "🖼️", 20), callback=lambda: self.canvas_face_requested.emit(face)),
             FanItem("offset_plane_face", "Offset Plane", theme.named_icon("offset_plane", "📐", 20), callback=lambda: self.offset_base_picked.emit(self.plane_from_target(("face", face)))),
@@ -828,12 +828,12 @@ class ContextMenuMixin:
         self._add_tool_entries(menu, acts)
         if not self.active_tool_title():
             acts[theme.action_with_icon(menu, "🧵 Surface Texture…")] = ("surface_texture", ref)
-            acts[theme.action_with_icon(menu, "↔️ Offset Face…")] = ("offset_face", ref)
+            acts[theme.action_with_icon(menu, "↔️ Push / Pull Face…")] = ("offset_face", ref)
         self._add_history_and_view(menu, acts, False)
 
         context_items = [
             FanItem("surface_texture", "Surface Texture", theme.command_icon("surface_texture", "🧵", 20), callback=lambda: self.surface_texture_requested.emit(ref)),
-            FanItem("offset_face", "Offset Face", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(ref)),
+            FanItem("offset_face", "Push / Pull", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(ref)),
         ]
         if body_id in self.doc.bodies:
             context_items.append(FanItem("move_body", "Move Body", theme.named_icon("move", "✥", 20), shortcut="M", callback=lambda: self.move_body_requested.emit(body_id)))
@@ -855,12 +855,12 @@ class ContextMenuMixin:
         self._add_tool_entries(menu, acts)
         if not self.active_tool_title():
             acts[theme.action_with_icon(menu, "🧵 Surface Texture…")] = ("surface_texture", ref)
-            acts[theme.action_with_icon(menu, "↔️ Offset Face…")] = ("offset_face", ref)
+            acts[theme.action_with_icon(menu, "↔️ Push / Pull Face…")] = ("offset_face", ref)
         self._add_history_and_view(menu, acts, False)
 
         context_items = [
             FanItem("surface_texture", "Surface Texture", theme.command_icon("surface_texture", "🧵", 20), callback=lambda: self.surface_texture_requested.emit(ref)),
-            FanItem("offset_face", "Offset Face", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(ref)),
+            FanItem("offset_face", "Push / Pull", theme.named_icon("offset_face", "↔️", 20), callback=lambda: self.offset_face_requested.emit(ref)),
         ]
         if body_id in self.doc.bodies:
             context_items.append(FanItem("move_body", "Move Body", theme.named_icon("move", "✥", 20), shortcut="M", callback=lambda: self.move_body_requested.emit(body_id)))

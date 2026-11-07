@@ -1,3 +1,61 @@
+# Hybrid-experiment — 0.9.9.80.163
+
+### Added
+- **Linked hole sizes in sketch Pattern (#216)**: Rectangular, circular and four-corner patterns link each copied circle's diameter to its original by default. Turn off "Linked holes (same diameter)" for independent sizes. Hole positions remain separately dimensionable. Links survive preview, undo/redo and project saving; existing independent holes are left as saved.
+
+### Fixed
+- **Dimensions move the first selection (#217)**: New sketch distances and angles hold the second picked element still while the first moves. Circle/line distances remember the click order even though their geometry references are stored point-first. Editing and reloading preserve that order; existing dimensions retain their saved behavior. Redundant dimensions on a fixed rectangle side no longer prevent a valid hole distance.
+- **Linked hole edge clearances (#216)**: Changing the master diameter also updates the radius used to solve each linked hole's rim-to-line clearance.
+
+# Hybrid-experiment — 0.9.9.80.162
+
+### Added
+- **Planes branch in the browser (#210)**: Every plane, the XY/XZ/YZ origin planes and every offset/construction plane, now sits in its own "Planes" branch with one eye for all of them. Origin keeps the axes.
+
+### Fixed
+- **No streaks or bumps on a plain jar wall (#214)**: The smooth Fast view look pushed points along needle and zero-area triangles of boolean seams up to 0.9 mm out of the wall, which showed as light streaks and bumps on the jar's outside. Only real chords of the curve are bulged now, and only sound triangles may move an edge.
+- **No stray lines down cones and rings (#214)**: A boolean could leave single facets of a cone or cylinder as separate "flat faces", and a tangent line was drawn down both sides of each one (the lines on the jar's inner step and in the lid). Facets of a tessellated curve no longer get tangent lines; real flat faces running into a curve keep theirs.
+- **Clean selection on Japandi ribs (#215)**: A bent rib's face was dotted with tiny two-triangle "surfaces", so selecting it showed holes outlined in blue zigzags. Such crumbs now belong to the surface they lie in.
+- **Small stray edge bits are hidden (#214/#215)**: Short runs of edge lines that lead nowhere (dashes and ticks left by booleans and tessellation) are no longer drawn. Picking, snapping and measuring still use every edge.
+
+# Hybrid-experiment — 0.9.9.80.161
+
+### Added
+- **Emboss / Deboss from the Text panel (#207)**: The Text panel has Emboss ⬆ and Deboss ⬇ buttons. They accept the text, finish the sketch and open Emboss with exactly those letters picked and the depth raised (+1 mm) or pressed in (−1 mm).
+- **Delete a whole object (#211)**: Right-click a top object in the browser (Box 1, Split Body 1 r, …) and choose Delete. It lists the steps that go with it and removes them as one undo step.
+
+### Fixed
+- **Sketch profiles are easy to pick on a face (#208)**: With a finished sketch on a body face, the face's hover light was drawn over the profile under the cursor, so letters and shapes looked unpickable. A profile under the cursor now wins the hover over the face it lies on.
+- **Split Body fields no longer cut in half (#209)**: In the Studio theme, side-by-side fields (Target Body / Splitting Plane and every other paired row) were squeezed to a single field's height once the panel had a wrapping status line. Paired rows keep their full height.
+- **No shard where a groove crosses a rounded cut face (#212)**: Rounding the outline of a cut face left the corner sharp where a groove's flank crosses it (there is no pickable edge there), so slivers stuck out of the rounding. A straight edge interrupted by such a short gap now reaches across it to where the parallel edge beyond continues.
+- **Smooth shading on shelled fillets (#213)**: A rounded corner of a shelled box still showed a vertical line per facet. A few needle triangles without a normal made the whole body fall back to flat shading; they now take their triangle's normal. The facets of a round wall split up by Shell (needles between them, T-junctions, corners a few micrometres apart) are recognised as strips and get smooth normals across them, while flat faces and narrow flat rims stay flat.
+
+# Hybrid-experiment — 0.9.9.80.160
+
+### Fixed
+- **Hover lights the whole face (#203, #204)**: Hovering a box side next to rounded edges lit it only in stripes or triangle patches. Large flat faces borrowed slightly tilted smooth normals from the neighbouring fillets, so Fast view's display smoothing bulged them up to 0.6 mm in front of the highlight. Wide flat faces now keep their own normal, nearly flat triangles are no longer bulged, and the hover highlight is drawn on the same smoothed geometry as the body.
+- **Clean outline on a shelled loft (#205)**: Selecting the inner wall of a shelled loft still drew small outline fragments across the wall and a zigzag along the rim. Clusters of tiny surface specks enclosed by the wall (or by a sharp crease) now join it, so the wall is one surface outlined only at its real edges. Real fillets and flat faces beside a wall stay separate.
+
+# Hybrid-experiment — 0.9.9.80.159
+
+### Fixed
+- **Clean loft/shell surface selection (#199)**: Tiny radius/planarity fragments in an otherwise continuous curved wall no longer leave scattered triangle outlines. Surface classification repairs smooth regions dominated by one curved surface while preserving sharp creases and substantial adjacent surfaces. Selected faces and outlines use the solid's display smoothing, preventing a coarse highlight from intersecting the smoothed solid. Includes the reported loft/shell model and Python fallback regression coverage.
+- **Ribbon suggestions reflect visible selections (#200)**: Hidden or stale sketch profiles no longer keep Extrude/Revolve/Sweep/Loft/Emboss highlighted. Valid suggestions explain themselves in the tooltip and use an outline, distinct from an active tool's filled background.
+- **Pattern settings reopen (#201)**: Starting a sketch tool expands a previously collapsed sketch palette, so Pattern's Type, corner option and numeric controls remain accessible while its preview runs.
+- **Shell thickness arrows step by 1 mm (#202)**: Both thickness fields use whole-millimetre increments in the tool panel and beside the viewport checkmark. Exact fractional values can still be typed.
+
+# Hybrid-experiment — 0.9.9.80.158
+
+### Added
+- **Sketch Pattern: All four corners (#196)**: Select a hole or other sketch elements inside a closed outline and choose All four corners in Pattern. Copies keep the same inset and orientation at the four corners of the outline's bounds. Preview, Cancel, one-step undo and project saving are supported; the option is disabled without a surrounding outline.
+- **Shell thickness beside the viewport checkmark (#198)**: Editable thickness fields follow the green Apply button while creating or editing Shell. They stay in sync with the panel, accept formulas, show both thicknesses for Both directions, and support Enter to apply and Escape to cancel.
+- **Push / Pull a face (#163)**: Right-click a face and choose Push / Pull, then drag the arrow out to add material or in to remove it. The signed distance is also editable beside the green checkmark and in Offset Face. The arrow follows the selected face and disappears on deselection, Apply or Cancel. Cylindrical hole arrows point into the bore when adding material. Uses the existing editable Offset Face history step, with undo and project saving.
+
+# Hybrid-experiment — 0.9.9.80.157
+
+### Fixed
+- **Requests no longer get stuck in the upload queue**: Background jobs retain their Qt signal receiver and worker until completion; success and error callbacks run on the GUI thread so the upload guard is released reliably. Requests saved during an ongoing upload trigger another queue pass, including those arriving after the pending-folder snapshot. Startup and five-minute retries are retained. Regression tests cover real Qt completion, errors, GUI thread delivery and requests added during upload.
+
 # Hybrid-experiment — 0.9.9.80.156
 
 ### Added

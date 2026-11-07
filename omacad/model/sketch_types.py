@@ -63,6 +63,8 @@ class SketchDimension:
     # Formula the value comes from (e.g. "width/2"); None = a plain number. Re-evaluated whenever a
     # parameter changes.
     expr: Optional[str] = None
+    # First picked object for multi-object dimensions; kept when editing or reloading.
+    moving_entity_id: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -75,6 +77,7 @@ class SketchDimension:
             "refs": list(self.refs),
             "pts": list(self.pts),
             "expr": self.expr,
+            "moving_entity_id": self.moving_entity_id,
         }
 
     @classmethod
@@ -89,4 +92,5 @@ class SketchDimension:
             refs=list(data.get("refs", [])),
             pts=list(data.get("pts", [])),
             expr=data.get("expr"),
+            moving_entity_id=data.get("moving_entity_id"),
         )

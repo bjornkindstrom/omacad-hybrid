@@ -1,3 +1,117 @@
+## Requests #216, #217 — 2026-11-07 (0.9.9.80.163)
+
+#216: `sketch_pattern._fresh` skapar EQUAL från originalcirkel till varje kopia (alla tre
+mönstertyper). Pattern-panelens "Linked holes (same diameter)" är på från början; av =
+fristående storlekar. Placeringar måttsätts separat. Äldre fristående hål länkas inte automatiskt.
+`Document._solve_anchored` sätter först den nya radien på hela EQUAL-kedjan, så att avstånd
+från kopiornas cirkelkant räknas med rätt radie innan lösarsystemet byggs.
+#217: nya UI-mått sparar `SketchDimension.moving_entity_id`; andra valet hålls fast även vid
+redigering/omladdning. Saknat fält = äldre förankring (även för befintliga modell-API-anrop).
+Parallellitet + linjeavstånd läggs till och löses tillsammans i ett ångra-steg.
+Inget fritt omförsök får flytta referensen när ett nytt tvåobjektsmått misslyckas. Lösaren
+provar vid redundant förankring att utesluta ett mått i taget och godtar endast lösningar som
+fortfarande uppfyller samtliga mått. Helt fasta objekt får inte tyst hoppa över ett ändrat mått.
+Test: `tests/test_requests_216_217.py`, inklusive rapportskissen
+`tests/data/hole_pattern_master_216.json`, sparning, ångra, klickordning och kantavstånd.
+
+## Requests #210, #214, #215 — 2026-11-07 (0.9.9.80.162)
+
+#210: browsern har grenen "Planes" (`("group", "planes")`) med XY/XZ/YZ + alla konstruktionsplan;
+Origin har bara axlarna. `Document.any_plane_visible`, `set_group_visibility("planes")` rör även origoplanen.
+#214 streck: `display_smooth._level` buktade kanter längs nålar/nollytor (hörnnormaler från väggens andra
+sida) upp till 0,9 mm ut genom burkväggen. Nu buktas bara kordor (`MAX_LEAN`, `MAX_SAG`, normaler på samma
+sida) och bara friska trianglar (`NEEDLE`, `MIN_AGREE`) får flytta en kantmittpunkt.
+#214 linjer: booleaner lämnar enstaka kon-/cylinderfasetter som plana grupper → tangentlinjer längs dem.
+`faces_surfaces._facet_seams`: plan grupp som går mjukt vidare åt två håll (slivers räknas som genomgång) och
+inte är > `FACET_WIDTH_RATIO` bredare tvärs sömmen än grannremsorna (även bortom en sliver) är en fasett.
+#215: Japandi-ribbans yta prickades av 2-triangel-"ytor" (radiekvoten) → hål med sicksack vid markering.
+`_merge_crumbs` (≤ `CRUMB_TRIANGLES`, ≤ 10 % av grannens area, ≥ 40 % av konturen mjukt mot den).
+Ströbitar: `kernel.stray_line_mask` + `RenderMesh.drawn_edges(tangent)` döljer korta öppna linjeslingor
+(< 1,5 % av diagonalen; slutna < 0,3 %) bara i ritningen (`render_mixin`); plock/snäpp/mått använder allt.
+Test: `tests/test_requests_210_214_215.py` (rapportdokumenten i `tests/data/jar_lid_streaks_214`,
+`japandi_box_rib_select_215`), `test_browser_tree.py::test_planes_branch_holds_every_plane`.
+
+## Requests #207–#213 — 2026-11-07 (0.9.9.80.161)
+
+#213: Manifolds `calculate_normals` gav 17 hörn (nålar efter Shell) nollnormal, och då föll
+hela kroppen tyst tillbaka på platt skuggning (`_shaded_triangles`). Ogiltiga hörn tar nu
+triangelns egen normal. Dessutom håller Manifold "plana ytor med ≥ 3 trianglar" platta, och
+Shell delar remsorna: `CadKernel._strip_normals` svetsar hörn (`_weld`, åtta förskjutna rutnät,
+`WELD_MM`), hittar remsor = plana lappar med likbreda grannar på *båda* sidor (`_patches`,
+bryggar genom nålar oavsett vinkel), och ger hörnen egen normal + grannens viktat efter läget
+tvärs remsan (T-korsningar mitt i en remsa saknar delad hörnpunkt). Tvärriktningen räknas
+oviktat ur unika hörn (areavikter lutar axeln). Nålar längs en remsa tar remsans normal om den
+ligger inom 30°. `_patches` ignorerar sliver-grannar i #204-testet, `_flat_triangles` ignorerar
+skarpa kanter mot nålar. Kostnad ~0,7 s på 136k trianglar.
+#212: snittytans kontur korsar ett vågspår; flankerna saknar valbara kanter, så hörnet stod kvar
+mellan bitarna. `FilletFeature._bridged_ends` förlänger en rak kants verktyg över en lucka
+(≤ 2·r längs, ≤ r i sidled) till en parallell vald kant på samma yta.
+#209: `QFormLayout` med WrapAllRows räknar fel höjd för ett spännande par-fält när dialogen har
+height-for-width (ordbrytande statusrad); `_PairBox` sätter minimihöjd = layoutens sizeHint.
+#208: profil under pekaren ⇒ ingen yt-/kanthovring (ytans ljuslyft täckte profilen).
+#207: `TextDialog.accept_then("emboss"/"deboss")` → `_text_finished` → `prompt_emboss(sketch_id, depth=±1)`.
+#211: `Document.delete_object`/`object_delete_indexes` (objektets steg + beroende, ett ångra-steg).
+Test: `tests/test_requests_207_213.py` (rapportdokumenten i `tests/data/*_209/_212/_213`).
+Fälla: GL-skärmbilder på riktig skärm får hovring från den riktiga muspekaren (+40/255).
+
+## Hovring och markering utan artefakter — 2026-11-07 (0.9.9.80.160)
+
+#203/#204: plana ytor mellan rundade kanter fick mjuka vertexnormaler som lutade
+0,7–5° vid fillet-sömmen. Fast view (`display_smooth`) tolkade dem som kurvor och
+buktade ut ytan upp till 0,6 mm, så hover-färgen (på den verkliga ytan) syntes bara
+i ränder/trianglar. `CadKernel._wide_flat_triangles`: en äkta plan lapp (alla trianglar
+inom 0,5°) som är > 4× bredare än varje slät grannlapp behåller sin platta normal;
+cylinderremsor har lika breda grannar. `display_smooth._curved` buktar inte trianglar
+vars hörnnormaler ligger inom `FLAT_DEG` (1°). Hovring ritas via
+`PickerMixin._draw_hover_patch` → `display_patch_arrays` (samma geometri som kroppen).
+#205: `_absorb_surface_islands` (efter `_heal_surface_fragments`) slår ihop kluster av
+små ytfläckar som till ≥ 60 % omges av huvudytan (skarpa veck neutrala), högst 0,5 %
+av regionens area och utan plan grupp > 0,1 %; en riktig fillet klustras med sin plana
+granne och blir för stor. Test: `tests/test_requests_203_205.py` (rapportdokumenten i
+`tests/data/hover_chamfered_box_203`, `hover_box_row_204`, `selection_loft_shell_205`).
+Fälla: hover-skript i Hyprland får kvadratisk vy; sätt `hover_face` direkt i stället för
+skärmkoordinater.
+
+## Loftmarkering, verktygsförslag, hopfälld Pattern-panel och Shell-steg — 2026-11-07 (0.9.9.80.159)
+
+#199: rapportens Shell/Loft gav hundratals små ytgrupper och över tusen falska
+gränssegment på innerväggen. `curved_surface_ids` lagar fragment i en jämnt
+sammanhängande region där en enda yta dominerar arean; stora andra ytor och skarpa
+kanter förblir gränser. `RenderMesh.display_patch_arrays` återanvänder originalets
+vertexnormaler och displayutjämning för valda ytor och konturer. Ingen 0,05 mm
+förflyttning av plana markeringsytor behövs utöver polygon-offset.
+#200: `Ribbon.selection_context` kräver en synlig, giltig skissprofil. Förslagens
+tooltip förklarar ramen; deras fyllning kan inte förväxlas med aktivt verktyg.
+#201: `SketchPalette.set_tool` fäller ut innehållet när ett verktyg startas.
+#202: Shells båda spinboxar har 1 mm steg, som ärvs av viewportens fält.
+Regression: `tests/test_requests_199_202.py` och
+`tests/data/selection_loft_shell.omacad`, inklusive NumPy-reserven.
+
+## Skissens hörnmönster, Shell-fält i vyn och Push / Pull — 2026-11-07 (0.9.9.80.158)
+
+#196 gäller skissens Pattern, inte det solida mönstret. `corner_bounds` hittar
+minsta slutna omgivande kontur utan de valda elementen. `corner_copies` kopierar
+urvalet till fyra hörn med samma kantavstånd och orientering; undviker överlappande
+kopior när urvalet ligger på en mittlinje. Samma preview/undo/sparning som Pattern.
+#198: `add_apply_button(fields=...)` visar synkade formelfält intill bocken, med
+Enter/Esc och livslängd knuten till dialogen. Shell visar även andra tjockleken
+vid Both och använder fälten både vid skapande och historikredigering.
+#163: Offset Face får dragpil och avståndsfält i vyn, åtkomligt som Push / Pull
+i ytans snabbmeny. Planets normal eller cylinderns utåt-/inåtriktade radial styr
+pilen. Geometriramen cachelagras under dragning; referensgeometrin ändras först
+vid OK. Pil och signalanslutningar städas bort vid Avbryt/OK eller tomt ytval.
+Tester: `tests/test_requests_163_196_198.py`.
+
+## Requests: tillförlitlig bakgrundskö — 2026-11-07 (0.9.9.80.157)
+
+Två requests blev kvar som `pending` efter att föregående uppladdning lyckats.
+`run_async` behåller nu worker och en fönsterägd QObject-mottagare tills resultatet
+levererats. Explicit köade Qt-slots kör återkopplingen på GUI-tråden och frigör
+uppladdningsspärren även vid fel. Requests som tillkommer under en uppladdning
+utlöser ett nytt kövarv, även efter att `send_pending` tagit sin kataloglista.
+Start- och femminuterstimern i `app.py` behålls. Regressioner med riktiga Qt-workers:
+`tests/test_request_queue_ui.py`, samt `tests/test_rfc.py`.
+
 ## Snabbknapp för Shell, reglage & auto-öppning samt ren markering utan svart halo — 2026-11-07 (0.9.9.80.156)
 
 Åtgärdar önskemål #193, #194 och #195 från feedback/kanban:

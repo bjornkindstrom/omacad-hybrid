@@ -152,6 +152,21 @@ class TextDialog(BaseFeatureDialog):
             (self.cmb_place, self.chk_fit)])
 
         self.main_layout.addLayout(form)
+
+        # #207: finish the text and go straight on to raise it out of / press it into the face it sits on
+        self.then = None
+        then_row = QHBoxLayout()
+        then_row.setSpacing(8)
+        for key, text, tip in (("emboss", "Emboss ⬆", "OK, finish the sketch and raise the text out of the face."),
+                               ("deboss", "Deboss ⬇", "OK, finish the sketch and press the text into the face.")):
+            btn = QPushButton(text)
+            btn.setAutoDefault(False)
+            btn.setToolTip(tip)
+            btn.clicked.connect(lambda _=False, k=key: self.accept_then(k))
+            then_row.addWidget(btn)
+            setattr(self, f"btn_{key}", btn)
+        self.main_layout.addLayout(then_row)
+
         self.add_buttons()
         self._path_rows = (self.lbl_path, self.cmb_place, self.chk_fit)
         self._frame_rows = (self.cmb_v, self.spn_angle, self.flip_box)
@@ -168,6 +183,11 @@ class TextDialog(BaseFeatureDialog):
         self._type_changed()
 
     # --- type ----------------------------------------------------------------------------------------------------
+    def accept_then(self, what: str) -> None:
+        """Emboss/Deboss button: accept the text, and the caller opens Emboss on it (#207)."""
+        self.then = what
+        self.accept()
+
     def is_path(self) -> bool:
         return self.cmb_type.currentData() == "path"
 

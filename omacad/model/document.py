@@ -21,7 +21,7 @@ from omacad.model.timeline import (
 )
 from omacad.model.features.knurl import apply_knurl
 from omacad.model.features.japandi import apply_japandi
-from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint
+from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint, SketchCircle
 from omacad.model.sketch_solver import solve_sketch, SolveResult
 from omacad.model import expr as exprlib
 from omacad.model.faces import in_plane_edges
@@ -1431,6 +1431,39 @@ class Document:
         self.notify_changed()
         return removed
 
+    def object_delete_indexes(self, object_id: str) -> list:
+        """Timeline indexes removed when a whole object (Box 1, Split Body 1 r, …) is deleted: all its own steps
+        plus every step built on them."""
+        obj = self.object_history.objects.get(object_id)
+        if obj is None:
+            return []
+        doomed = {i for i in (self.object_history.index(self, fid) for fid in obj.feature_ids) if i is not None}
+        grew = True
+        while grew:
+            grew = False
+            for i in sorted(doomed):
+                for j in self.dependents_of(i):
+                    if j not in doomed:
+                        doomed.add(j)
+                        grew = True
+        return sorted(doomed)
+
+    @undoable("Delete Object")
+    def delete_object(self, object_id: str) -> list:
+        """Removes an object from the browser: all its steps (and what is built on them) in one undo step."""
+        doomed = set(self.object_delete_indexes(object_id))
+        if not doomed:
+            return []
+        t = self.timeline
+        removed = [t.features[i].name for i in sorted(doomed)]
+        t.marker_index -= sum(1 for i in doomed if i < t.marker_index)
+        t.features = [f for i, f in enumerate(t.features) if i not in doomed]
+        t.marker_index = max(0, min(t.marker_index, len(t.features)))
+        self.selected_body_ids = []
+        self.timeline.recompute(self)
+        self.notify_changed()
+        return removed
+
     @undoable("Rename")
     def rename_item(self, kind: str, item_id: str, name: str) -> bool:
         """Renames a sketch, body, section or construction plane. The creating feature is renamed too, so the name survives
@@ -2013,6 +2046,11 @@ class Document:
             return bool(self.origin_vis["all"])
         return bool(self.origin_vis["all"] and self.origin_vis[ORIGIN_GROUPS[kind]].get(name, False))
 
+    def any_plane_visible(self) -> bool:
+        """The eye on the browser's "Planes" branch: is any origin or construction plane drawn?"""
+        return (any(self.origin_visible("plane", n) for n in self.origin_vis[ORIGIN_GROUPS["plane"]])
+                or any(c.get("visible", True) for c in self.construction_planes.values()))
+
     def toggle_construction_plane(self, pid: str) -> None:
         if pid in self.construction_planes:
             self.construction_planes[pid]["visible"] = not self.construction_planes[pid]["visible"]
@@ -2045,6 +2083,10 @@ class Document:
         elif group == "planes":
             for c in self.construction_planes.values():
                 c["visible"] = visible
+            for name in self.origin_vis[ORIGIN_GROUPS["plane"]]:
+                self.origin_vis[ORIGIN_GROUPS["plane"]][name] = bool(visible)
+            if visible:
+                self.origin_vis["all"] = True
         else:
             return
         self.notify_changed()
@@ -3209,13 +3251,17 @@ class Document:
         return "Fully defined" if sketch.dof == 0 else f"Under defined ({sketch.dof} DOF)"
 
     def add_dimension_constraint(self, sketch_id: str, dim_type: str, target: str, value: float,
-                                 refs=(), pts=(), offset: float = 12.0, expr: Optional[str] = None) -> bool:
+                                 refs=(), pts=(), offset: float = 12.0, expr: Optional[str] = None,
+                                 moving_entity_id: Optional[str] = None, extra_constraints=()) -> bool:
         """Adds a driving dimension (angle, distance ...) and solves. Restores the sketch and returns
         False with a message if it conflicts with existing constraints."""
         sketch = self.sketches.get(sketch_id)
         if not sketch:
             return False
         before = sketch.to_dict()
+        for ctype, constraint_refs, constraint_pts in extra_constraints:
+            sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), ctype,
+                                                       list(constraint_refs), list(constraint_pts)))
         tgt = next((e for e in sketch.entities if e.entity_id == target), None)
         if tgt is not None and getattr(tgt, "group", None) and dim_type in ("LENGTH", "DIAMETER", "RADIUS"):
             # a regular polygon has one size: a new side/corner-circle dimension replaces the old one
@@ -3225,6 +3271,7 @@ class Document:
         sketch.add_dimension(dim_type, target, value, offset_distance=offset, refs=list(refs), pts=list(pts))
         dim = sketch.dimensions[-1]
         dim.expr = expr
+        dim.moving_entity_id = moving_entity_id
         res = self._solve_anchored(sketch, dim)
         if not res.ok:
             sketch.restore_from_dict(before)
@@ -3247,26 +3294,48 @@ class Document:
         ):
             anchor = {}  # width/height edits stay centred on their Center constraint axis
         ent = next((e for e in sketch.entities if e.entity_id == dim.target_entity_id), None)
+        if isinstance(ent, SketchCircle) and dim.dim_type in ("DIAMETER", "RADIUS"):
+            # Rim-to-line dimensions read the radius while building the solver system.
+            # Seed all equal holes before that, so their clearances use the new size.
+            linked = {ent.entity_id}
+            pending = [ent.entity_id]
+            while pending:
+                current = pending.pop()
+                for constraint in sketch.constraints:
+                    if constraint.ctype == "EQUAL" and current in constraint.refs:
+                        for eid in constraint.refs:
+                            if eid not in linked:
+                                linked.add(eid)
+                                pending.append(eid)
+            radius = dim.value / 2.0 if dim.dim_type == "DIAMETER" else dim.value
+            for circle in sketch.entities:
+                if isinstance(circle, SketchCircle) and circle.entity_id in linked:
+                    circle.radius = radius
         if ent is not None and getattr(ent, "group", None) and dim.dim_type in ("LENGTH", "DIAMETER", "RADIUS"):
             ctr = next((m for m in sketch.group_entities(ent) if m.entity_type == "circle"), None)
             if ctr is not None:   # a polygon grows round its centre
                 anchor = {"pinned": [(ctr.entity_id, "center")]}
         res = solve_sketch(sketch, **anchor)
-        if not res.ok and anchor:
+        if not res.ok and anchor and (not dim.refs or dim.moving_entity_id is None):
             res = solve_sketch(sketch)
         return res
 
     @staticmethod
     def _anchor_for(dim) -> dict:
-        """What stays put while a dimension is solved/edited: the dimension grows from its first object."""
+        """Hold the second picked object still while the first moves to meet it."""
         if any(r.startswith("ref:") for r in dim.refs):
             return {}  # measured to a fixed face edge: the dimensioned point is the only thing that can move
-        if dim.dim_type == "ANGLE":
-            return {"fixed_ids": [dim.target_entity_id]}
-        if dim.dim_type == "PT_LINE_DIST" and dim.refs:
-            return {"fixed_ids": [dim.refs[0]]}   # the line measured from stays put (also its direction)
-        if dim.dim_type in ("DISTANCE", "HORIZ_DIST", "VERT_DIST") and dim.pts:
-            return {"pinned": [(dim.target_entity_id, "center" if dim.pts[0] in ("edge_near", "edge_far") else dim.pts[0])]}
+        if dim.refs and dim.dim_type in ("ANGLE", "PT_LINE_DIST", "DISTANCE", "HORIZ_DIST", "VERT_DIST"):
+            if dim.moving_entity_id is not None:
+                stationary = dim.target_entity_id if dim.moving_entity_id == dim.refs[0] else dim.refs[0]
+                return {"fixed_ids": [stationary]}
+            # Existing documents and model callers retain their historical anchor.
+            if dim.dim_type == "ANGLE":
+                return {"fixed_ids": [dim.target_entity_id]}
+            if dim.dim_type == "PT_LINE_DIST":
+                return {"fixed_ids": [dim.refs[0]]}
+            if dim.pts:
+                return {"pinned": [(dim.target_entity_id, dim.pts[0])]}
         if dim.dim_type == "LENGTH":
             return {"pinned": [(dim.target_entity_id, "p1")]}
         return {"pinned": [(dim.target_entity_id, "center")]}

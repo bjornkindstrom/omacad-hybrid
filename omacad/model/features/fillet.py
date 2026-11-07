@@ -95,6 +95,35 @@ class FilletFeature(Feature):
             out.append(0.0 if solid else eps)
         return tuple(out)
 
+    @staticmethod
+    def _bridged_ends(edge, ext, others, size: float):
+        """#212: a straight edge interrupted by a short stretch the picker has no edge for (the flank of a groove
+        crossing a cut face) left the corner sharp in the gap, a shard sticking out of the rounding. When another
+        chosen convex edge of the same face runs on parallel past the gap (within the size sideways and twice the
+        size along), the tool reaches across the gap to where that edge starts; the other edge does the same."""
+        d = edge.p1 - edge.p0
+        length = float(np.linalg.norm(d))
+        if length < 1e-9:
+            return ext
+        t = d / length
+        reach = list(ext) if isinstance(ext, (tuple, list)) else [ext, ext]
+        for other in others:
+            if other is edge or not other.convex or getattr(other, "kind", "") != "line":
+                continue
+            od = other.p1 - other.p0
+            if float(np.linalg.norm(od)) < 1e-9 or abs(float(od @ t)) < 0.99 * float(np.linalg.norm(od)):
+                continue
+            if not any(float(na @ nb) > 0.999 for na in (edge.n1, edge.n2) for nb in (other.n1, other.n2)):
+                continue
+            for k, (end, out) in enumerate(((edge.p0, -t), (edge.p1, t))):
+                for q in (other.p0, other.p1):
+                    rel = q - end
+                    along = float(rel @ out)
+                    side = float(np.linalg.norm(rel - (rel @ t) * t))
+                    if 1e-6 < along <= 2.0 * size and side <= size + 1e-6:
+                        reach[k] = max(reach[k], along + 1e-3)
+        return tuple(reach)
+
     def _arc_reach(self, body, edge):
         """How far the tool of an open arc runs past each end (radians): a little where the arc ends in open air
         (the next face meets it at a slant, so a square end would leave a sliver), none where material continues."""
@@ -685,6 +714,8 @@ class FilletFeature(Feature):
 
         for body, edge in seen:
             ext = self._free_ends(body, edge) if edge.convex and getattr(edge, "kind", "") == "line" else 1e-3 if edge.convex else 0.0
+            if edge.convex and getattr(edge, "kind", "") == "line":
+                ext = self._bridged_ends(edge, ext, [e for b, e in seen if b is body], abs(self.size))
             size = abs(self.size)
             if self.size < 0 and self.kind == "fillet":
                 # Negative fillet cuts a concave cove, limited to convex box edges and full circular

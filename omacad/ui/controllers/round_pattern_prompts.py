@@ -247,6 +247,22 @@ class RoundPatternPromptsMixin:
         self.dock(dlg)
         vp = self.viewport
         hidden = [None]    # the body whose preview replaces it
+        handle_state = {"selection": None, "frame": None}
+
+        def sync_handle():
+            selection = (dlg.body_id, tuple(id(ref) for ref in dlg.faces))
+            if selection != handle_state["selection"]:
+                body = self.doc.bodies.get(dlg.body_id)
+                handle_state["frame"] = dlg.drag_frame(body) if body is not None else None
+                handle_state["selection"] = selection
+            frame = handle_state["frame"]
+            if frame is None:
+                vp.clear_extrude_handle()
+            else:
+                vp.set_extrude_handle(*frame, dlg.distance(), show_value=True)
+
+        def on_handle_drag(value):
+            dlg.spn_dist.set_expression(str(value))
 
         def show_body():
             if hidden[0] in self.doc.bodies:
@@ -285,6 +301,8 @@ class RoundPatternPromptsMixin:
         def on_finished(result):
             timer.stop()                    # a pending preview would hide the rebuilt body again
             vp.offset_face_picked.disconnect(on_picked)
+            vp.extrude_handle_dragged.disconnect(on_handle_drag)
+            vp.clear_extrude_handle()
             faces, body_id, dist = list(dlg.faces), dlg.body_id, dlg.distance()
             exprs = dlg.get_expressions()
             show_body()
@@ -306,12 +324,15 @@ class RoundPatternPromptsMixin:
         timer.setInterval(60)
         timer.timeout.connect(refresh_preview)
         dlg.changed.connect(timer.start)
+        dlg.changed.connect(sync_handle)
         dlg.finished.connect(on_finished)
         vp.offset_face_picked.connect(on_picked)
+        vp.extrude_handle_dragged.connect(on_handle_drag)
         vp.begin_plane_pick("offset_face")
-        self.status_label.setText("Offset Face: click flat faces, holes or pins, type the distance, OK. Esc cancels.")
-        from omacad.ui.apply_button import add_apply_button, face_ref_anchor
-        add_apply_button(vp, dlg, lambda: face_ref_anchor(vp, lambda: dlg.faces))
+        self.status_label.setText("Push / Pull: select a face, drag the arrow out to add material or in to remove it. Enter applies; Esc cancels.")
+        from omacad.ui.apply_button import add_apply_button, face_ref_anchor, arrow_anchor
+        add_apply_button(vp, dlg, lambda: arrow_anchor(vp) or face_ref_anchor(vp, lambda: dlg.faces),
+                         fields=[("Distance:", dlg.spn_dist)])
         if face is not None:
             if isinstance(face, dict):
                 dlg.toggle({k: v for k, v in face.items() if k != "body_id"}, face.get("body_id", ""))

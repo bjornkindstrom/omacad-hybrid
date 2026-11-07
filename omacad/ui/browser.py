@@ -353,27 +353,32 @@ class BrowserTree(QWidget):
             it = QTreeWidgetItem(views_item, [f"🎥 {view}", ""])
             it.setData(0, Qt.ItemDataRole.UserRole, ("view", view.upper()))
 
-        # Origin
+        # Origin: the axes only; every plane lives in its own "Planes" branch (Björn #210)
         origin_item = QTreeWidgetItem(root, ["🌐 Origin", ""])
         origin_item.setExpanded(False)
         origin_item.setData(0, Qt.ItemDataRole.UserRole, ("origin", "all"))
         self._style_eye(origin_item, self.doc.origin_visible("all"))
-        origin_item.setToolTip(1, "Show or hide the whole origin (axes and planes)")
+        origin_item.setToolTip(1, "Show or hide the whole origin (axes and origin planes)")
         for axis, label in (("X", "• X Axis (Red)"), ("Y", "• Y Axis (Green)"), ("Z", "• Z Axis (Blue)")):
             it = QTreeWidgetItem(origin_item, [label, ""])
             it.setData(0, Qt.ItemDataRole.UserRole, ("axis", axis))
             self._style_eye(it, self.doc.origin_visible("axis", axis))
+
+        # Planes: the three origin planes and every offset/construction plane
+        planes_item = QTreeWidgetItem(root, ["📄 Planes", ""])
+        planes_item.setData(0, Qt.ItemDataRole.UserRole, ("group", "planes"))
+        planes_item.setExpanded(bool(self.doc.construction_planes))
+        self._style_eye(planes_item, self.doc.any_plane_visible())
+        planes_item.setToolTip(1, "Show or hide all planes")
         for name_ in ("XY", "XZ", "YZ"):
-            it = QTreeWidgetItem(origin_item, [f"📄 {name_} Plane", ""])
+            it = QTreeWidgetItem(planes_item, [f"📄 {name_} Plane", ""])
             it.setData(0, Qt.ItemDataRole.UserRole, ("plane", name_))
             self._style_eye(it, self.doc.origin_visible("plane", name_))
         for pid, c in self.doc.construction_planes.items():
-            pi = QTreeWidgetItem(origin_item, ["📄 " + c["name"], ""])
+            pi = QTreeWidgetItem(planes_item, ["📄 " + c["name"], ""])
             pi.setData(0, Qt.ItemDataRole.UserRole, ("cplane", pid))
             pi.setFlags(pi.flags() | Qt.ItemFlag.ItemIsEditable)
             self._style_eye(pi, bool(c.get("visible", True)))
-        if self.doc.construction_planes:
-            origin_item.setExpanded(True)
 
         # Analysis (section views live here, as in Fusion)
         analysis = QTreeWidgetItem(root, ["🔍 Analysis", ""])
@@ -474,7 +479,8 @@ class BrowserTree(QWidget):
         elif item_type == "group":
             shown = {"bodies": any(b.visible for b in doc.bodies.values()),
                      "sketches": any(sk.visible for sk in doc.sketches.values()),
-                     "canvases": any(c.get("visible", True) for c in doc.canvases.values())}.get(item_id, False)
+                     "canvases": any(c.get("visible", True) for c in doc.canvases.values()),
+                     "planes": doc.any_plane_visible()}.get(item_id, False)
             doc.set_group_visibility(item_id, not shown)
         else:
             return False
@@ -665,6 +671,18 @@ class BrowserTree(QWidget):
         if current is not None:
             theme.action_with_icon(menu, "☆ Remove from favorites").triggered.connect(lambda: self.doc.remove_favorite(ref))
 
+    def delete_object_prompt(self, object_id):
+        """Right-click > Delete on a top object (#211): asks once, listing the steps that go with it."""
+        from PySide6.QtWidgets import QMessageBox
+        obj = self.doc.object_history.objects.get(object_id)
+        indexes = self.doc.object_delete_indexes(object_id)
+        if obj is None or not indexes:
+            return
+        names = ", ".join(self.doc.timeline.features[i].name for i in indexes)
+        text = f"Delete {obj.name}?\n\nThese steps are removed (Ctrl+Z brings them back):\n{names}"
+        if QMessageBox.question(self, "Delete object", text) == QMessageBox.StandardButton.Yes:
+            self.doc.delete_object(object_id)
+
     def show_context_menu(self, pos):
         reason = getattr(self, 'busy_reason', lambda: '')()
         if reason:
@@ -749,6 +767,8 @@ class BrowserTree(QWidget):
             rename()
             add("Show complete object", lambda: self.doc.object_fast_forward(item_id))
             show_hide()
+            menu.addSeparator()
+            add("🗑️ Delete\tDel", lambda: self.delete_object_prompt(item_id))
         elif item_type == "object_group":
             if hasattr(self.doc, "is_box_row_group") and self.doc.is_box_row_group(item_id):
                 add("🍱 Edit Box in a Row…", lambda: self.edit_box_row_group_prompt(item_id))

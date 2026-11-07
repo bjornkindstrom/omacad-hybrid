@@ -53,6 +53,16 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
         alt, _ = _attempt(sketch, ents, fixed, False, tuple(pinned), corners)
         if alt is not None and _dims_hold(sketch, ents, alt[0], corners):
             sol, msg = alt, ""
+        if sol is None and fixed:
+            # A fixed rectangle side can already imply its opposite side's length.
+            # Drop one redundant equation, retaining all other dimensions, and only
+            # accept a solution that still satisfies every requested dimension.
+            for dim in sketch.dimensions:
+                alt, _ = _attempt(sketch, ents, fixed, True, tuple(pinned), corners,
+                                  skip_dims={dim.dim_id})
+                if alt is not None and _dims_hold(sketch, ents, alt[0], corners):
+                    sol, msg = alt, ""
+                    break
     if sol is None:
         sketch.dof = None
         return SolveResult(False, None, msg)
@@ -154,7 +164,12 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
         a = d.target_entity_id
         if a not in ents:
             continue
-        if d.dim_type == "LENGTH" and isinstance(ents[a], SketchLine):
+        if d.dim_type in ("DIAMETER", "RADIUS") and isinstance(ents[a], SketchCircle):
+            radius = values.get(f"{a}#r", ents[a].radius)
+            want = d.value / 2.0 if d.dim_type == "DIAMETER" else d.value
+            if abs(radius - want) > tol * max(1.0, want):
+                return False
+        elif d.dim_type == "LENGTH" and isinstance(ents[a], SketchLine):
             x, y = line_vec(a)
             if abs(math.hypot(x, y) - d.value - add.get(a, 0.0)) > tol * max(1.0, d.value):
                 return False
@@ -189,7 +204,7 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
     return True
 
 
-def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=()):
+def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=()):
     ents = _solver_entities(sketch)
 
     spline_points = _spline_points(sketch)
@@ -332,6 +347,8 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=()):
 
     # Dimensions that belong to solver entities
     for d in (sketch.dimensions if use_dims else []):
+        if d.dim_id in skip_dims:
+            continue
         ent = ents.get(d.target_entity_id)
         if d.dim_type in SOLVER_DIM_TYPES:
             _add_multi_dimension(sys_, wp, ents, pts, geo, fixed, d, ref_lines)
@@ -404,8 +421,6 @@ def _add_multi_dimension(sys_, wp, ents, pts, geo, fixed, d, ref_lines) -> None:
     others_ents = [o for o in others if o not in edge_refs]
     if a not in ents or any(o not in ents for o in others_ents):
         return
-    if all(e in fixed for e in [a] + others_ents):
-        return  # nothing free to move
     value = float(d.value)
 
     if edge_refs:  # distance from a point to a fixed face edge

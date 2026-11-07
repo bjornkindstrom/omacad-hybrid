@@ -12,6 +12,44 @@ import trimesh
 from omacad.model import quality
 
 
+STRAY_OPEN_SHARE = 0.015      # an open run of edge lines shorter than this share of the body diagonal is stray
+STRAY_LOOP_SHARE = 0.003      # a closed one only below this (small holes and round ends are real)
+
+
+def stray_line_mask(segments: np.ndarray, diag: float) -> np.ndarray:
+    """Mask over line segments (k, 2, 3) of the stray bits: connected runs of lines that are short compared with the
+    body and lead nowhere. A boolean seam or the tessellation of a bent rib leaves such dashes and ticks along
+    smooth surfaces; real edges join into long runs or close around a hole."""
+    k = len(segments)
+    if k == 0 or diag <= 0:
+        return np.zeros(k, dtype=bool)
+    q = np.round(np.asarray(segments, dtype=np.float64).reshape(-1, 3) / (diag * 1e-6)).astype(np.int64)
+    _, vid = np.unique(q, axis=0, return_inverse=True)
+    vid = vid.ravel().reshape(-1, 2)
+    parent = np.arange(vid.max() + 1)
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for a, b in vid:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+    comp = np.array([find(a) for a in vid[:, 0]])
+    length = np.linalg.norm(segments[:, 1] - segments[:, 0], axis=1)
+    total = np.bincount(comp, weights=length, minlength=len(parent))
+    degree = np.bincount(vid.ravel(), minlength=len(parent))
+    open_end = np.zeros(len(parent), dtype=bool)
+    ends = np.flatnonzero(degree == 1)
+    if len(ends):
+        open_end[[find(e) for e in ends]] = True
+    limit = np.where(open_end, STRAY_OPEN_SHARE, STRAY_LOOP_SHARE) * diag
+    return total[comp] < limit[comp]
+
+
 @dataclass
 class RenderMesh:
     """Holds tessellated data ready for OpenGL rendering."""
@@ -25,6 +63,20 @@ class RenderMesh:
     _tangent: Optional[np.ndarray] = field(default=None, repr=False)
     _surface_ids: Optional[np.ndarray] = field(default=None, repr=False)
     _display: Optional[dict] = field(default=None, repr=False)
+    _patch_display: dict = field(default_factory=dict, repr=False)
+
+    def drawn_edges(self, tangent: bool) -> np.ndarray:
+        """Edge lines to draw: the sharp lines (+ tangent lines when shown) without the stray bits a boolean or a
+        tessellation leaves (`stray_line_mask`), so only edges the user made show (Björn #214/#215). Picking,
+        snapping and measuring keep using every sharp line."""
+        cache = self.__dict__.setdefault("_drawn_edges", {})
+        if tangent not in cache:
+            lines = np.vstack([self.sharp_lines, self.tangent_lines()]) if tangent else self.sharp_lines
+            lines = np.asarray(lines, dtype=np.float32).reshape(-1, 3)
+            diag = float(np.linalg.norm(np.asarray(self.bounds_max) - np.asarray(self.bounds_min)))
+            keep = ~stray_line_mask(lines.reshape(-1, 2, 3), diag)
+            cache[tangent] = np.ascontiguousarray(lines.reshape(-1, 2, 3)[keep].reshape(-1, 3))
+        return cache[tangent]
 
     def display_arrays(self, edge_lines: np.ndarray):
         """(vertices, normals, edge lines) to draw: smoothed (display_smooth) while "Fast view, exact export" is
@@ -38,6 +90,35 @@ class RenderMesh:
             from omacad.model.display_smooth import smooth_arrays
             self._display = {key: smooth_arrays(self.vertices, self.normals, edge_lines)}
         return self._display[key]
+
+    def display_patch_arrays(self, triangles, lines):
+        """Draw a selected patch and its outline with the same smoothing as the solid."""
+        vertices = np.asarray(triangles, dtype=np.float32).reshape(-1, 3)
+        if not quality.fast_view_enabled() or not len(vertices):
+            return vertices, None, lines
+        key = (id(triangles), len(lines))
+        cached = self._patch_display.get(key)
+        if cached is not None and cached[0] is triangles:
+            return cached[1]
+        tri = vertices.reshape(-1, 3, 3)
+        full = np.ascontiguousarray(self.vertices.reshape(-1, 9), dtype=np.float32)
+        subset = np.ascontiguousarray(vertices.reshape(-1, 9))
+        dtype = np.dtype((np.void, 9 * full.dtype.itemsize))
+        keys, wanted = full.view(dtype).ravel(), subset.view(dtype).ravel()
+        order = np.argsort(keys)
+        at = np.searchsorted(keys[order], wanted)
+        at = np.minimum(at, len(order) - 1)
+        matched = keys[order[at]] == wanted
+        normal = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+        normal /= np.maximum(np.linalg.norm(normal, axis=1)[:, None], 1e-12)
+        normals = np.repeat(normal[:, None, :], 3, axis=1)
+        normals[matched] = self.normals.reshape(-1, 3, 3)[order[at[matched]]]
+        from omacad.model.display_smooth import smooth_arrays
+        result = smooth_arrays(vertices, normals.reshape(-1, 3), lines)
+        if len(self._patch_display) >= 4:
+            self._patch_display.clear()
+        self._patch_display[key] = (triangles, result)
+        return result
 
     def tangent_lines(self) -> np.ndarray:
         """Line pairs (like `sharp_lines`) where a flat face runs smoothly into a curved one (Settings > Show tangent
@@ -730,9 +811,14 @@ class CadKernel:
         dark fans on the flat wall. A strip of a cylinder wall has sharp edges in one direction only (its rim)."""
         tm = trimesh.Trimesh(vertices=v, faces=f, process=False)
         angles, adj = tm.face_adjacency_angles, tm.face_adjacency
+        # a needle triangle (boolean/Shell leftover) has a meaningless normal: its "sharp" edges must not wall in
+        # the strips of a fillet beside it, or they are shaded flat (#213)
+        diag = float(np.linalg.norm(np.ptp(v, axis=0))) if len(v) else 1.0
+        areas = tm.area_faces
+        solid = (areas[adj[:, 0]] > 1e-7 * diag * diag) & (areas[adj[:, 1]] > 1e-7 * diag * diag)
         from omacad import viewport_accel
         if viewport_accel.backend_name() == "rust":
-            sharp = angles >= np.radians(smooth_below_deg)
+            sharp = (angles >= np.radians(smooth_below_deg)) & solid
             edges = tm.face_adjacency_edges[sharp]
             diffs = v[edges[:, 1]] - v[edges[:, 0]]
             norms = np.linalg.norm(diffs, axis=1, keepdims=True)
@@ -748,7 +834,7 @@ class CadKernel:
 
         for a, b in adj[angles < np.radians(coplanar_deg)]:
             parent[root(a)] = root(b)
-        sharp = angles >= np.radians(smooth_below_deg)
+        sharp = (angles >= np.radians(smooth_below_deg)) & solid
         directions = {}          # patch -> first sharp edge direction
         flat_roots = set()
         edges = tm.face_adjacency_edges[sharp]
@@ -770,6 +856,242 @@ class CadKernel:
                         flat_roots.add(patch)
         return np.array([root(i) in flat_roots for i in range(len(f))], dtype=bool)
 
+    WIDE_FLAT_RATIO = 4.0       # a flat patch this many times wider than every smooth neighbour patch is a face
+
+    @staticmethod
+    def _patches(v, f, smooth_below_deg: float = 30.0, coplanar_deg: float = 0.5):
+        """Coplanar patches of a mesh (triangles joined edge to edge at under `coplanar_deg`): per triangle its patch
+        `inv`; per patch `planar` (every triangle within `coplanar_deg` of the patch normal) and `width` (2 * std of
+        its corners along the minor in-plane axis); `pa`/`pb` the pairs of patches meeting smoothly
+        (under `smooth_below_deg`) where neither is a needle leftover of a boolean/Shell (narrower than
+        SLIVER_MIN_WIDTH): a fillet strip whose only smooth neighbours were such slivers counted as a wide flat
+        face and was shaded flat, a band per facet (#213)."""
+        from omacad.model.faces_topology import SLIVER_MIN_WIDTH
+        tm = trimesh.Trimesh(vertices=v, faces=f, process=False)
+        angles, adj = tm.face_adjacency_angles, tm.face_adjacency
+        n_f = len(f)
+        # coplanar patches by label propagation (vectorised union-find)
+        join = adj[angles < np.radians(coplanar_deg)]
+        label = np.arange(n_f)
+        if len(join):
+            while True:
+                low = np.minimum(label[join[:, 0]], label[join[:, 1]])
+                new = label.copy()
+                np.minimum.at(new, join[:, 0], low)
+                np.minimum.at(new, join[:, 1], low)
+                new = new[new]
+                if np.array_equal(new, label):
+                    break
+                label = new
+        roots, inv = np.unique(label, return_inverse=True)
+        k = len(roots)
+        normals = tm.face_normals
+        area = tm.area_faces
+        mean_n = np.zeros((k, 3))
+        np.add.at(mean_n, inv, normals * area[:, None])
+        mean_n /= np.maximum(np.linalg.norm(mean_n, axis=1, keepdims=True), 1e-12)
+        planar = np.ones(k, dtype=bool)
+        np.logical_and.at(planar, inv, (normals * mean_n[inv]).sum(1) > np.cos(np.radians(coplanar_deg)))
+        w = np.repeat(area[:, None] / 3.0, 3, axis=1).ravel()
+        pts = v[f].reshape(-1, 3)
+        pin = np.repeat(inv, 3)
+        tot = np.maximum(np.bincount(pin, weights=w, minlength=k), 1e-18)
+        mu = np.stack([np.bincount(pin, weights=w * pts[:, i], minlength=k) for i in range(3)], 1) / tot[:, None]
+        d = pts - mu[pin]
+        cov = np.zeros((k, 3, 3))
+        for i in range(3):
+            for j in range(i, 3):
+                cov[:, i, j] = cov[:, j, i] = np.bincount(pin, weights=w * d[:, i] * d[:, j], minlength=k) / tot
+        eig = np.linalg.eigvalsh(cov)                          # ascending: [~0 normal, minor, major]
+        width = 2.0 * np.sqrt(np.maximum(eig[:, 1], 0.0))
+        smooth = (angles < np.radians(smooth_below_deg)) & (inv[adj[:, 0]] != inv[adj[:, 1]])
+        pa, pb = inv[adj[smooth, 0]], inv[adj[smooth, 1]]
+        thin = width < SLIVER_MIN_WIDTH
+        real = ~thin[pa] & ~thin[pb]
+        # patches that meet only across a needle still meet: bridge each sliver to the real patches around it, at any
+        # angle (a needle's own normal means nothing; whoever uses the pairs compares the real patches' normals)
+        bridge_a, bridge_b = [], []
+        qa, qb = inv[adj[:, 0]], inv[adj[:, 1]]
+        touch = np.r_[np.c_[qa, qb], np.c_[qb, qa]]
+        touch = touch[thin[touch[:, 0]] & ~thin[touch[:, 1]]]
+        if len(touch):
+            touch = np.unique(touch[:, 0] * np.int64(k) + touch[:, 1])               # sorted (sliver, patch) pairs
+            touch = np.c_[touch // k, touch % k]
+            cuts = np.flatnonzero(np.diff(touch[:, 0])) + 1
+            sizes = np.diff(np.r_[0, cuts, len(touch)])
+            for size in np.unique(sizes):
+                if not 1 < size <= 32:
+                    continue
+                starts = np.r_[0, cuts][sizes == size]
+                ia, ib = np.triu_indices(size, 1)
+                bridge_a.append(touch[(starts[:, None] + ia).ravel(), 1])
+                bridge_b.append(touch[(starts[:, None] + ib).ravel(), 1])
+        if bridge_a:
+            ba, bb = np.concatenate(bridge_a), np.concatenate(bridge_b)
+            keep = (mean_n[ba] * mean_n[bb]).sum(1) > np.cos(np.radians(smooth_below_deg))
+            bridge_a, bridge_b = [ba[keep]], [bb[keep]]
+        pa = np.concatenate([pa[real], *bridge_a]).astype(np.int64)
+        pb = np.concatenate([pb[real], *bridge_b]).astype(np.int64)
+        return dict(tm=tm, inv=inv, k=k, planar=planar, width=width, pa=pa, pb=pb, normal=mean_n)
+
+    @staticmethod
+    def _wide_flat_triangles(v, f, smooth_below_deg: float = 30.0, coplanar_deg: float = 0.5, patches=None):
+        """Mask of triangles in a truly flat patch that is much wider than each patch it meets smoothly: a box side
+        or bottom between rounded edges. Smooth vertex normals tilted such a face by several degrees where it meets
+        the fillets, and the view's Phong smoothing then bulged the whole face up to 0.6 mm, in front of the hover
+        and selection highlights (#204). A cylinder strip meets strips of the same width and keeps smooth normals;
+        a fine curved mesh chained into one "coplanar" patch fails the planarity test."""
+        if len(f) == 0:
+            return np.zeros(0, dtype=bool)
+        p = patches or CadKernel._patches(v, f, smooth_below_deg, coplanar_deg)
+        k, width, pa, pb = p["k"], p["width"], p["pa"], p["pb"]
+        neighbour = np.zeros(k)
+        np.maximum.at(neighbour, pa, width[pb])
+        np.maximum.at(neighbour, pb, width[pa])
+        has_neighbour = np.zeros(k, dtype=bool)
+        has_neighbour[pa] = True
+        has_neighbour[pb] = True
+        wide = p["planar"] & has_neighbour & (width > CadKernel.WIDE_FLAT_RATIO * neighbour)
+        return wide[p["inv"]]
+
+    STRIP_WIDTH_RATIO = 2.0     # the facets of one curved surface are about equally wide
+    WELD_MM = 1e-2              # corners within half of this (per axis) are one vertex for smooth normals
+
+    @staticmethod
+    def _weld(v, grid: float):
+        """Vertex labels where corners closer than grid/2 on every axis share a label (eight shifted grids, so no pair
+        is split by a cell boundary; nothing further apart than grid * sqrt(3) is joined)."""
+        n = len(v)
+        label = np.arange(n)
+        q = np.asarray(v, dtype=np.float64) / grid
+        pairs = []
+        lo = np.floor(q.min(0)) - 1
+        span = (np.floor(q.max(0)) - lo + 2).astype(np.int64)
+        for shift in np.array(np.meshgrid([0, 0.5], [0, 0.5], [0, 0.5])).T.reshape(-1, 3):
+            ijk = (np.floor(q + shift) - lo).astype(np.int64)
+            key = (ijk[:, 0] * span[1] + ijk[:, 1]) * span[2] + ijk[:, 2]
+            _u, cell = np.unique(key, return_inverse=True)
+            cell = cell.ravel()
+            first = np.full(cell.max() + 1, -1)
+            first[cell[::-1]] = np.arange(n)[::-1]
+            pairs.append(np.c_[np.arange(n), first[cell]])
+        pairs = np.concatenate(pairs)
+        pairs = pairs[pairs[:, 0] != pairs[:, 1]]
+        while len(pairs):
+            low = np.minimum(label[pairs[:, 0]], label[pairs[:, 1]])
+            new = label.copy()
+            np.minimum.at(new, pairs[:, 0], low)
+            np.minimum.at(new, pairs[:, 1], low)
+            new = new[new]
+            if np.array_equal(new, label):
+                break
+            label = new
+        return np.unique(label, return_inverse=True)[1].ravel()
+
+    @staticmethod
+    def _strip_normals(v, f, normals, smooth_below_deg: float = 30.0):
+        """Smooth corner normals for the facets of a curved surface (#213). Manifold's calculate_normals keeps
+        "flat faces of three or more triangles" flat, and a Shell leaves the strips of a round wall split, joined
+        through needle triangles, with T-junctions and corners a few micrometres apart: the wall showed a band per
+        facet. On the welded mesh (needles gone) a strip is a planar patch with smooth neighbour patches of about
+        its width on both sides (a flat face beside a fillet is much wider, a narrow flat rim has one at most). Each strip corner gets the mean of its own
+        strip's normal and those of the strips beside it, weighted by where the corner lies across the strip
+        (a T-junction has no shared vertex); needles along a strip take the strips' normal at their corners."""
+        if len(f) == 0:
+            return normals
+        from omacad.model.faces_topology import SLIVER_MIN_WIDTH
+        v = np.asarray(v, dtype=np.float64)
+        weld = CadKernel._weld(v, CadKernel.WELD_MM)
+        fw = weld[f]
+        p0, p1, p2 = v[f[:, 0]], v[f[:, 1]], v[f[:, 2]]
+        cross = np.cross(p1 - p0, p2 - p0)
+        live = (fw[:, 0] != fw[:, 1]) & (fw[:, 1] != fw[:, 2]) & (fw[:, 0] != fw[:, 2]) \
+            & (np.linalg.norm(cross, axis=1) > 1e-9)
+        if not live.any():
+            return normals
+        rep = np.zeros((weld.max() + 1, 3))
+        rep[weld] = v
+        lf = np.flatnonzero(live)
+        try:
+            p = CadKernel._patches(rep, fw[lf], smooth_below_deg)
+        except Exception:
+            return normals
+        width, pa, pb, inv, pn, k = p["width"], p["pa"], p["pb"], p["inv"], p["normal"], p["k"]
+        ratio = np.maximum(width[pa], width[pb]) / np.maximum(np.minimum(width[pa], width[pb]), 1e-12)
+        similar = (ratio < CadKernel.STRIP_WIDTH_RATIO) & p["planar"][pa] & p["planar"][pb]
+        links = np.r_[np.c_[pa[similar], pb[similar]], np.c_[pb[similar], pa[similar]]]
+        if not len(links):
+            return normals
+        links = np.unique(links[:, 0] * np.int64(k) + links[:, 1])
+        links = np.c_[links // k, links % k]                                     # (patch, neighbour), sorted
+        # across each patch: minor in-plane axis of its distinct corners, unweighted (area weights count the corners
+        # on a strip's diagonal twice and tilt the axis toward its length)
+        nv = np.int64(weld.max() + 1)
+        pv = np.unique(np.repeat(inv, 3).astype(np.int64) * nv + fw[lf].ravel())
+        pv = np.c_[pv // nv, pv % nv]
+        cnt = np.maximum(np.bincount(pv[:, 0], minlength=k), 1)
+        pts = rep[pv[:, 1]]
+        centre = np.stack([np.bincount(pv[:, 0], weights=pts[:, i], minlength=k) for i in range(3)], 1) / cnt[:, None]
+        dd = pts - centre[pv[:, 0]]
+        cov = np.zeros((k, 3, 3))
+        for i in range(3):
+            for j in range(i, 3):
+                cov[:, i, j] = cov[:, j, i] = np.bincount(pv[:, 0], weights=dd[:, i] * dd[:, j], minlength=k) / cnt
+        axis = np.linalg.eigh(cov)[1][:, :, 1]
+        proj = ((v[f[lf]] - centre[inv][:, None, :]) * axis[inv][:, None, :]).sum(2)     # (live tris, 3)
+        lo = np.full(k, np.inf)
+        hi = np.full(k, -np.inf)
+        np.minimum.at(lo, inv, proj.min(1))
+        np.maximum.at(hi, inv, proj.max(1))
+        span = np.maximum(hi - lo, 1e-12)
+        side = ((centre[links[:, 1]] - centre[links[:, 0]]) * axis[links[:, 0]]).sum(1)
+        beside = np.abs(side) > 0.25 * span[links[:, 0]]                           # not a patch above or below
+        links, side = links[beside], side[beside]
+        # a strip has strips of its width on both sides; a narrow flat rim beside a fillet has one at most
+        plus = np.zeros(k, dtype=bool)
+        minus = np.zeros(k, dtype=bool)
+        plus[links[side > 0, 0]] = True
+        minus[links[side < 0, 0]] = True
+        strip = plus & minus
+        patch_of = np.full(len(f), -1)
+        patch_of[lf] = inv
+        tri = np.zeros(len(f), dtype=bool)
+        tri[lf] = strip[inv]
+        if not tri.any():
+            return normals
+        out = normals.reshape(-1, 3, 3).copy()
+        # strip corners: own patch normal + each neighbour beside it, weighted by where the corner lies across the
+        # strip: one at the edge toward that neighbour, none at the far edge (a T-junction in the middle of a
+        # strip, which shares no vertex with anyone, gets half of each side)
+        c_f, c_k = np.nonzero(np.repeat(tri[:, None], 3, axis=1))
+        x = v[f[c_f, c_k]]
+        own = patch_of[c_f]
+        acc = pn[own].copy()
+        t = np.clip((((x - centre[own]) * axis[own]).sum(1) - lo[own]) / span[own], 0.0, 1.0)   # 0 at lo, 1 at hi
+        start = np.searchsorted(links[:, 0], own, side="left")
+        count = np.searchsorted(links[:, 0], own, side="right") - start
+        ci = np.repeat(np.arange(len(own)), count)
+        li = np.repeat(start - np.cumsum(np.r_[0, count[:-1]]), count) + np.arange(int(count.sum()))
+        weight = np.where(side[li] > 0, t[ci], 1.0 - t[ci])
+        np.add.at(acc, ci, pn[links[li, 1]] * weight[:, None])
+        out[c_f, c_k] = acc / np.maximum(np.linalg.norm(acc, axis=1, keepdims=True), 1e-12)
+        # needles along a strip: the strip normal at the same welded vertex
+        e = np.stack([np.linalg.norm(p1 - p0, axis=1), np.linalg.norm(p2 - p1, axis=1),
+                      np.linalg.norm(p0 - p2, axis=1)], 1)
+        needle = ~tri & (np.linalg.norm(cross, axis=1) / np.maximum(e.max(1), 1e-18) < SLIVER_MIN_WIDTH)
+        needle &= (patch_of < 0) | (width[np.maximum(patch_of, 0)] < SLIVER_MIN_WIDTH)   # not part of a real face
+        if needle.any():
+            sums = np.zeros((weld.max() + 1, 3))
+            np.add.at(sums, fw[c_f, c_k], out[c_f, c_k])
+            n_f, n_k = np.nonzero(np.repeat(needle[:, None], 3, axis=1))
+            got = sums[fw[n_f, n_k]]
+            length = np.linalg.norm(got, axis=1)
+            got = got / np.maximum(length, 1e-12)[:, None]
+            # only where the strip continues the surface the needle lies in (not a strip around a sharp corner)
+            ok = (length > 1e-12) & ((got * out[n_f, n_k]).sum(1) > np.cos(np.radians(smooth_below_deg)))
+            out[n_f[ok], n_k[ok]] = got[ok]
+        return out.reshape(-1, 3)
+
     @staticmethod
     def _shaded_triangles(manifold: m3d.Manifold, v, f, smooth_below_deg: float = 30.0, smooth: bool = True):
         """Unrolled triangle corners and their normals. Curved surfaces are shaded smooth (vertex normals shared
@@ -785,9 +1107,20 @@ class CadKernel:
             if props.shape[1] >= 6 and len(tris) == len(f):
                 normals = props[tris].reshape(-1, props.shape[1])[:, 3:6]
                 length = np.linalg.norm(normals, axis=1, keepdims=True)
+                # a few corners of degenerate (needle) triangles get no normal from Manifold, e.g. after a Shell:
+                # they take their triangle's own normal instead of the whole body falling back to flat shading,
+                # which showed every facet of a fillet as a band (#213)
+                bad = ~(np.all(np.isfinite(normals), axis=1) & (length[:, 0] > 0.5))
+                if bad.any() and bad.mean() < 0.05:
+                    face = np.repeat(CadKernel._face_normals(v, f), 3, axis=0)
+                    face_len = np.linalg.norm(face, axis=1)
+                    face[face_len < 0.5] = (0.0, 0.0, 1.0)
+                    normals = np.where(bad[:, None], face, normals)
+                    length = np.where(bad[:, None], 1.0, length)
                 if np.all(np.isfinite(normals)) and np.all(length > 0.5):
                     normals = normals / length
-                    flat = CadKernel._flat_triangles(v, f)
+                    normals = CadKernel._strip_normals(v, f, normals, smooth_below_deg)
+                    flat = CadKernel._flat_triangles(v, f) | CadKernel._wide_flat_triangles(v, f, smooth_below_deg)
                     if flat.any():
                         normals = normals.reshape(-1, 3, 3)
                         normals[flat] = CadKernel._face_normals(v, f)[flat][:, None, :]

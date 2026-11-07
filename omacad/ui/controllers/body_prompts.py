@@ -262,7 +262,8 @@ class BodyPromptsMixin:
         from omacad.ui.apply_button import add_apply_button, face_ref_anchor, preview_anchor
         add_apply_button(
             self.viewport, dlg,
-            lambda: face_ref_anchor(self.viewport, lambda: dlg.open_faces) or preview_anchor(self.viewport)
+            lambda: face_ref_anchor(self.viewport, lambda: dlg.open_faces) or preview_anchor(self.viewport),
+            fields=[(dlg.lbl_thick.text, dlg.spn_thickness), (dlg.lbl_thick2.text, dlg.spn_thickness2)]
         )
         refresh_preview()
         dlg.show()

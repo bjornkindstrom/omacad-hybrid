@@ -502,13 +502,14 @@ class DimensionOverlayMixin:
             return spin.value(), spin.expression(), chk.isChecked()
         return spin.value(), spin.expression()
 
-    def _dim_create(self, dim_type, target, measured, refs=(), pts=(), offset=12.0, label="", lo=0.1, hi=50000.0, suffix=" mm"):
+    def _dim_create(self, dim_type, target, measured, refs=(), pts=(), offset=12.0, label="", lo=0.1, hi=50000.0, suffix=" mm", moving_entity_id=None):
         sk = self.doc.active_sketch
         res = self.prompt_dimension_value(f"New dimension", label, measured, lo, hi, suffix, inline=True)
         if res is None:
             return
         val, ex = res
-        self.doc.add_dimension_constraint(sk.sketch_id, dim_type, target, val, refs=refs, pts=pts, offset=offset, expr=ex)
+        self.doc.add_dimension_constraint(sk.sketch_id, dim_type, target, val, refs=refs, pts=pts, offset=offset, expr=ex,
+                                          moving_entity_id=moving_entity_id or target)
         self.status_message.emit(self.doc.last_message)
         self.update()
 
@@ -594,14 +595,16 @@ class DimensionOverlayMixin:
         if res is None:
             return
         val, ex = res
+        extra = []
         if not any(c.ctype == "PARALLEL" and set(c.refs) == {a.entity_id, b.entity_id} for c in sk.constraints):
-            self.doc.add_constraints(sk.sketch_id, [("PARALLEL", [a.entity_id, b.entity_id], [])])
+            extra = [("PARALLEL", [a.entity_id, b.entity_id], [])]
         self.doc.add_dimension_constraint(sk.sketch_id, "PT_LINE_DIST", a.entity_id, val, refs=[b.entity_id], pts=["p1"],
-                                          offset=PT_LINE_DEFAULT_OFFSET, expr=ex)
+                                          offset=PT_LINE_DEFAULT_OFFSET, expr=ex, moving_entity_id=a.entity_id,
+                                          extra_constraints=extra)
         self.status_message.emit(self.doc.last_message)
         self.update()
 
-    def _dim_pt_line(self, pt_pick, line):
+    def _dim_pt_line(self, pt_pick, line, moving_entity_id=None):
         ent, pname = pt_pick[1], pt_pick[2]
         if ent is line:
             return
@@ -613,9 +616,9 @@ class DimensionOverlayMixin:
         if existing:
             self.prompt_edit_dimension(self.doc.active_sketch.sketch_id, existing.dim_id, existing.value)
             return
-        self._dim_create("PT_LINE_DIST", ent.entity_id, dist, refs=[line.entity_id], pts=[pname], label="Distance to line (mm):", lo=0.0)
+        self._dim_create("PT_LINE_DIST", ent.entity_id, dist, refs=[line.entity_id], pts=[pname], label="Distance to line (mm):", lo=0.0, moving_entity_id=moving_entity_id)
 
-    def _dim_edge_to_circle(self, line_pick, circ, u: float, v: float):
+    def _dim_edge_to_circle(self, line_pick, circ, u: float, v: float, moving_entity_id=None):
         """Distance from a face edge / line to the near or far edge of a circle. Which one is decided
         by where on the circle you clicked: the side facing the line is the near edge."""
         if line_pick[0] == "ref":
@@ -638,7 +641,8 @@ class DimensionOverlayMixin:
             self.prompt_edit_dimension(self.doc.active_sketch.sketch_id, existing.dim_id, existing.value)
             return
         self._dim_create("PT_LINE_DIST", circ.entity_id, measured, refs=[line_ref], pts=[pname],
-                         label=f"Distance to the circle's {'near' if near else 'far'} edge (mm):", lo=0.0)
+                         label=f"Distance to the circle's {'near' if near else 'far'} edge (mm):", lo=0.0,
+                         moving_entity_id=moving_entity_id)
 
     def _dim_pt_ref(self, pt_pick, seg):
         """Distance from a point (or circle centre) to a face edge, which stays fixed."""
@@ -670,7 +674,7 @@ class DimensionOverlayMixin:
         sk = self.doc.active_sketch
         value, expr_text = typed if typed is not None else (measured, None)
         self.doc.add_dimension_constraint(sk.sketch_id, dim_type, ea.entity_id, value, refs=[eb.entity_id], pts=[na, nb],
-                                          offset=offset, expr=expr_text)
+                                          offset=offset, expr=expr_text, moving_entity_id=ea.entity_id)
         self.status_message.emit(self.doc.last_message)
         self.update()
 
@@ -790,7 +794,7 @@ class DimensionOverlayMixin:
         elif first[0] == "ref" and circle_pick(pick):
             self._dim_edge_to_circle(first, pick[1], u, v)
         elif first[0] == "ent" and isinstance(first[1], SketchLine) and circle_pick(pick):
-            self._dim_edge_to_circle(first, pick[1], u, v)
+            self._dim_edge_to_circle(first, pick[1], u, v, moving_entity_id=first[1].entity_id)
         elif first[0] == "ref":  # a face edge is waiting
             if pick and pick[0] == "pt":
                 self._dim_pt_ref(pick, first[1])
@@ -808,7 +812,7 @@ class DimensionOverlayMixin:
                 else:
                     self._dim_angle(line, pick[1])
             elif pick and pick[0] == "pt" and pick[1] is not line:
-                self._dim_pt_line(pick, line)
+                self._dim_pt_line(pick, line, moving_entity_id=line.entity_id)
             else:
                 self._dim_length(line)
         else:                  # a point is waiting

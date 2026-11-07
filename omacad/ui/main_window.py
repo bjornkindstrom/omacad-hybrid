@@ -10,7 +10,7 @@ Connects Ribbon, Viewport, Browser, Timeline, and Menu Bar.
 from pathlib import Path
 from typing import Optional
 import numpy as np
-from PySide6.QtCore import Qt, QSize, QTimer, QThreadPool, QRunnable, Signal, QObject
+from PySide6.QtCore import Qt, QSize, QTimer, QThreadPool, QRunnable, Signal, Slot, QObject
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QDockWidget,
     QFileDialog, QMessageBox, QLabel, QMenu, QPushButton, QProgressBar
@@ -37,6 +37,37 @@ class _BackgroundWorker(QRunnable):
             self.signals.finished.emit(res)
         except Exception as e:
             self.signals.error.emit(str(e))
+
+
+class _BackgroundCallbacks(QObject):
+    """Keep the worker alive and deliver completion to the window's Qt thread."""
+
+    def __init__(self, window, worker, on_success, on_error):
+        super().__init__(window)
+        self.window = window
+        self.worker = worker
+        self.on_success = on_success
+        self.on_error = on_error
+
+    @Slot(object)
+    def finished(self, result):
+        try:
+            self.window.progress_bar.setVisible(False)
+            if self.on_success:
+                self.on_success(result)
+        finally:
+            self.deleteLater()
+
+    @Slot(str)
+    def failed(self, error):
+        try:
+            self.window.progress_bar.setVisible(False)
+            if self.on_error:
+                self.on_error(error)
+            else:
+                self.window.status_label.setText(f"Error: {error}")
+        finally:
+            self.deleteLater()
 
 from omacad.model.document import Document, ORIGIN_GROUPS
 from omacad.model.timeline import ExtrudeFeature, CombineFeature, SplitBodyFeature, ShellFeature, MoveFeature
@@ -352,21 +383,9 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.progress_bar.setVisible(True)
 
         worker = _BackgroundWorker(fn)
-
-        def _handle_done(result):
-            self.progress_bar.setVisible(False)
-            if on_success:
-                on_success(result)
-
-        def _handle_err(err):
-            self.progress_bar.setVisible(False)
-            if on_error:
-                on_error(err)
-            else:
-                self.status_label.setText(f"Error: {err}")
-
-        worker.signals.finished.connect(_handle_done)
-        worker.signals.error.connect(_handle_err)
+        callbacks = _BackgroundCallbacks(self, worker, on_success, on_error)
+        worker.signals.finished.connect(callbacks.finished, Qt.ConnectionType.QueuedConnection)
+        worker.signals.error.connect(callbacks.failed, Qt.ConnectionType.QueuedConnection)
         self.thread_pool.start(worker)
 
     def on_change_parameters(self):
@@ -909,6 +928,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         from omacad import rfc
         if getattr(self, "_request_upload_active", False):
             if folder is not None:
+                self._request_upload_queued = True
                 self.status_label.setText("Request saved in the upload queue.")
             return
         tok = rfc.token()  # settings belong to the GUI thread
@@ -917,20 +937,27 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
                 self.status_label.setText("No GitHub token is set; request saved for later.")
             return
         self._request_upload_active = True
+        self._request_upload_queued = False
 
         def upload():
             result = rfc.send(folder, tok=tok) if folder is not None else None
             rfc.send_pending(tok=tok, exclude=folder)
             return result
 
-        def finished(result):
+        def release_queue():
             self._request_upload_active = False
+            if self._request_upload_queued:
+                self._request_upload_queued = False
+                QTimer.singleShot(0, self.retry_requests)
+
+        def finished(result):
+            release_queue()
             if result is not None:
                 self.status_label.setText(result[1])
                 QMessageBox.information(self, "Request a change", result[1])
 
         def failed(error):
-            self._request_upload_active = False
+            release_queue()
             self.status_label.setText(f"Request saved for later: {error}")
 
         self.run_async(upload, on_success=finished, on_error=failed,

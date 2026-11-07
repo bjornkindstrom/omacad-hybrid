@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtWidgets import QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QPushButton
 
 from omacad.ui.expr_spin import ExprDoubleSpinBox
 from omacad.ui.numeric_slider import add_numeric_sliders
@@ -22,7 +22,16 @@ class SketchPatternPanel(QGroupBox):
         self.kind = QComboBox()
         self.kind.addItem("Rectangular", "rectangular")
         self.kind.addItem("Circular", "circular")
+        self.kind.addItem("All four corners", "corners")
         form.addRow("Type", self.kind)
+        self.linked = QCheckBox("Linked holes (same diameter)")
+        self.linked.setChecked(True)
+        self.linked.setToolTip("The original circle controls the copies’ diameter. Positions remain independent.")
+        self.linked.toggled.connect(self.changed)
+        form.addRow(self.linked)
+        self.corner_info = QLabel("Keeps the same inset from the surrounding outline at all four corners.")
+        self.corner_info.setWordWrap(True)
+        form.addRow(self.corner_info)
 
         def spin(suffix, lo, hi, decimals=2, step=1.0):
             s = ExprDoubleSpinBox()
@@ -66,22 +75,32 @@ class SketchPatternPanel(QGroupBox):
         self._show_rows()
 
     def _show_rows(self):
-        circular = self.kind.currentData() == "circular"
-        for rows, visible in ((self.rect_rows, not circular), (self.circ_rows, circular)):
+        kind = self.kind.currentData()
+        self.corner_info.setVisible(kind == "corners")
+        for rows, visible in ((self.rect_rows, kind == "rectangular"), (self.circ_rows, kind == "circular")):
             for _label, w in rows:
                 w.setVisible(visible)
-                if w is self.centre:
-                    self._form.setRowVisible(w, visible)
+                parent = w.parentWidget()
+                host = parent if getattr(parent, "field", None) is w else w
+                host.setVisible(visible)
+                label = self._form.labelForField(w) or self._form.labelForField(host)
+                if label is not None:
+                    label.setVisible(visible)
 
     def _accept(self):
         for s in (self.count_x, self.count_y, self.spacing_x, self.spacing_y, self.count, self.angle):
             s.interpretText()
         self.accepted.emit()
 
-    def configure(self, spacing, centres):
+    def configure(self, spacing, centres, corners_available=False):
         """Start values: three copies along X a sensible distance apart, or six around the first centre."""
         for w in (self.count_x, self.count_y, self.spacing_x, self.spacing_y, self.count, self.angle, self.centre):
             w.blockSignals(True)
+        index = self.kind.findData("corners")
+        self.kind.model().item(index).setEnabled(corners_available)
+        self.kind.setItemData(index, "Select elements inside a closed sketch outline.", Qt.ItemDataRole.ToolTipRole)
+        if not corners_available and self.kind.currentData() == "corners":
+            self.kind.setCurrentIndex(0)
         self.count_x.setValue(3)
         self.count_y.setValue(1)
         self.spacing_x.setValue(round(spacing[0], 2))

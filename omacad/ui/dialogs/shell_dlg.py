@@ -43,7 +43,7 @@ class ShellDialog(BaseFeatureDialog):
         # Wall Thickness
         self.spn_thickness = ExprDoubleSpinBox()
         self.spn_thickness.setRange(0.05, 500.0)
-        self.spn_thickness.setSingleStep(0.1)
+        self.spn_thickness.setSingleStep(1.0)
         self.spn_thickness.setDecimals(2)
         self.spn_thickness.setSuffix(" mm")
         self.spn_thickness.setValue(2.0)
@@ -51,7 +51,7 @@ class ShellDialog(BaseFeatureDialog):
         form.addRow(self.lbl_thick, self.spn_thickness)
         self.spn_thickness2 = ExprDoubleSpinBox()
         self.spn_thickness2.setRange(0.05, 500.0)
-        self.spn_thickness2.setSingleStep(0.1)
+        self.spn_thickness2.setSingleStep(1.0)
         self.spn_thickness2.setDecimals(2)
         self.spn_thickness2.setSuffix(" mm")
         self.spn_thickness2.setValue(2.0)

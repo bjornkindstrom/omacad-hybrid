@@ -378,7 +378,7 @@ class RenderGLMixin:
                 continue
 
             is_selected = body.selected
-            edge_lines = np.vstack([mesh.sharp_lines, mesh.tangent_lines()]) if tangent else mesh.sharp_lines
+            edge_lines = mesh.drawn_edges(tangent) if hasattr(mesh, "drawn_edges") else mesh.sharp_lines
 
             # Fetch or build GPU VAO/VBO for this body mesh
             draw_verts, draw_normals, edge_lines = mesh.display_arrays(edge_lines)   # smoothed in Fast view

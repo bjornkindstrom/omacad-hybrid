@@ -1,7 +1,7 @@
 """Sketch Pattern tool (Björn #75): live copies of the selection while the panel's numbers change; OK is one undo
 step, Cancel / Esc / another tool puts the sketch back."""
 
-from omacad.model.sketch_pattern import circular_copies, default_spacing, rectangular_copies, selection_centre
+from omacad.model.sketch_pattern import circular_copies, corner_bounds, corner_copies, default_spacing, rectangular_copies, selection_centre
 from omacad.model.sketch_rotate import sketch_face_pivot
 from omacad.ui.sketch_pattern_panel import SketchPatternPanel
 
@@ -26,9 +26,11 @@ class SketchPatternMixin:
         face = sketch_face_pivot(self.doc, sk)
         if face is not None:
             centres["face"] = tuple(face)
-        self._pattern = {"before": sk.to_dict(), "ids": [e.entity_id for e in ents], "centres": centres}
+        bounds = corner_bounds(sk, ents)
+        self._pattern = {"before": sk.to_dict(), "ids": [e.entity_id for e in ents], "centres": centres,
+                         "corner_bounds": bounds}
         labels = {"selection": "Selection centre", "origin": "Sketch origin", "face": "Face centre"}
-        self.pattern_panel.configure(default_spacing(ents), [(k, labels[k]) for k in centres])
+        self.pattern_panel.configure(default_spacing(ents), [(k, labels[k]) for k in centres], bounds is not None)
         self.pattern_panel.show()
         self.sketch_palette.adjustSize()
         self._pattern_preview()
@@ -44,10 +46,12 @@ class SketchPatternMixin:
         panel = self.pattern_panel
         if panel.kind.currentData() == "circular":
             copies = circular_copies(sk, ents, int(panel.count.value()), p["centres"][panel.centre.currentData()],
-                                     panel.angle.value())
+                                     panel.angle.value(), linked=panel.linked.isChecked())
+        elif panel.kind.currentData() == "corners":
+            copies = corner_copies(sk, ents, p["corner_bounds"], linked=panel.linked.isChecked())
         else:
             copies = rectangular_copies(sk, ents, int(panel.count_x.value()), panel.spacing_x.value(),
-                                        int(panel.count_y.value()), panel.spacing_y.value())
+                                        int(panel.count_y.value()), panel.spacing_y.value(), linked=panel.linked.isChecked())
         sk._bind_texts()
         sk.solve_profiles()
         p["copies"] = [c.entity_id for c in copies]

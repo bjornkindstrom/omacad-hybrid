@@ -12,6 +12,12 @@ import numpy as np
 SHAPE = 0.5
 MAX_TRIANGLES = 2_000_000       # drawn triangles a smoothed body may grow to
 LEVELS = 2                      # each level halves the angle a piece spans
+FLAT_DEG = 1.0                  # corner normals this close to the triangle's own normal: drawn flat, not bulged
+                                # (a 72-piece circle spans 5° per piece, its corners lean 2.5°)
+MAX_LEAN = 0.35                 # sin of the most an edge may lean on a corner normal and still be bulged (~40° span)
+NEEDLE = 1e-3                   # 2·area / longest² below this: a needle, never moves an edge (height < 0.1 % of length)
+MIN_AGREE = 0.5                 # a corner normal further than 60° from its triangle's own normal is borrowed
+MAX_SAG = 0.1                  # largest bulge per edge length (a 40° chord sags 0.044 of its length)
 
 
 def _vertex_ids(points: np.ndarray):
@@ -22,11 +28,21 @@ def _vertex_ids(points: np.ndarray):
     return p[first].astype(np.float64), inverse.ravel()
 
 
-def _curved(normals: np.ndarray) -> np.ndarray:
-    """Triangles whose corners have different normals (smooth shaded); flat triangles share one normal."""
+def _curved(normals: np.ndarray, points: np.ndarray = None) -> np.ndarray:
+    """Triangles whose corners have different normals (smooth shaded); flat triangles share one normal.
+    With `points`, a triangle whose corner normals all stay within FLAT_DEG of its own normal is flat too: a big
+    box side next to a rounded corner borrows a slightly tilted normal at the seam (0.7°), and bulging it lifted
+    the middle of the side 0.1 mm off the real face, so the hover highlight sank behind it in stripes (#203)."""
     n0, n1, n2 = normals[:, 0], normals[:, 1], normals[:, 2]
     least = np.minimum(np.minimum((n0 * n1).sum(1), (n1 * n2).sum(1)), (n0 * n2).sum(1))
-    return least < 1.0 - 1e-7
+    curved = least < 1.0 - 1e-7
+    if points is not None and curved.any():
+        t = points.reshape(-1, 3, 3)
+        own = np.cross(t[:, 1] - t[:, 0], t[:, 2] - t[:, 0])
+        own /= np.maximum(np.linalg.norm(own, axis=1, keepdims=True), 1e-12)
+        closest = np.min((normals * own[:, None, :]).sum(2), axis=1)
+        curved &= ~(closest > np.cos(np.radians(FLAT_DEG)))
+    return curved
 
 
 def _level(P, T, N, curved, L):
@@ -45,8 +61,27 @@ def _level(P, T, N, curved, L):
     proj_a = mid - ((mid - pa) * na).sum(1, keepdims=True) * na
     proj_b = mid - ((mid - pb) * nb).sum(1, keepdims=True) * nb
     bulged = mid + SHAPE * (0.5 * (proj_a + proj_b) - mid)
+    # Only an edge that lies in both corners' tangent planes is a chord of the curve. A needle or a degenerate
+    # triangle of a boolean seam can join an inner and an outer wall, or run across a cap while its corners carry
+    # the wall's normals; bulging such an edge pushed points up to 0.9 mm out of the wall and drew streaks and
+    # bumps on a plain jar (Björn #214). A real chord leans sin(span/2) on its normals and bulges by its sagitta.
+    edge = pb - pa
+    length = np.linalg.norm(edge, axis=1)
+    unit = edge / np.maximum(length, 1e-12)[:, None]
+    lean = np.maximum(np.abs((unit * na).sum(1)), np.abs((unit * nb).sum(1)))
+    shift = np.linalg.norm(bulged - mid, axis=1)
+    chord = (lean < MAX_LEAN) & (shift <= MAX_SAG * length) & ((na * nb).sum(1) > 0.0)
+    bulged = np.where(chord[:, None], bulged, mid)
 
-    w = np.repeat(curved, 3).astype(np.float64)
+    # Only a sound triangle may move an edge: a needle or a zero-area sliver has no direction of its own, and its
+    # corners often carry a neighbour's normals from the far side of a thin wall (#214)
+    tri = P[T]
+    own = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    twice_area = np.linalg.norm(own, axis=1)
+    own /= np.maximum(twice_area, 1e-30)[:, None]
+    longest = np.max(np.linalg.norm(tri - np.roll(tri, 1, axis=1), axis=2), axis=1)
+    sound = (twice_area > NEEDLE * longest * longest) & np.all((N * own[:, None, :]).sum(2) > MIN_AGREE, axis=1)
+    w = np.repeat(curved & sound, 3).astype(np.float64)
     count = np.bincount(inv, weights=w, minlength=len(ukeys))
     total = np.zeros((len(ukeys), 3))
     linear = np.zeros((len(ukeys), 3))
@@ -96,7 +131,7 @@ def smooth_arrays(vertices: np.ndarray, normals: np.ndarray, lines: np.ndarray, 
     corner_n = np.asarray(normals, dtype=np.float64).reshape(-1, 3, 3)
     if len(corner_n) == 0:
         return vertices, normals, lines
-    curved = _curved(corner_n)
+    curved = _curved(corner_n, vertices.astype(np.float64))
     n_curved = int(curved.sum())
     while levels > 0 and len(corner_n) + n_curved * (4 ** levels) * 2 > MAX_TRIANGLES:
         levels -= 1

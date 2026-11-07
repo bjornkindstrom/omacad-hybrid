@@ -149,6 +149,41 @@ class OffsetFaceDialog(FacePickMixin, BaseFeatureDialog):
         self.lbl_note.setText(text)
         self.lbl_note.setVisible(bool(text))
 
+    def drag_frame(self, body):
+        """Anchor the push/pull arrow on the last selected face, pointing out of the material."""
+        import numpy as np
+        if not self.faces:
+            return None
+        ref = self.faces[-1]
+        highlights = self.highlights(body)
+        triangles = None
+        if highlights:
+            face = highlights[-1]
+            triangles = face.get("tris") if isinstance(face, dict) else face.tris
+        if ref["kind"] == "surface":
+            point = np.asarray(ref["point"], dtype=float)
+        elif triangles is not None and len(triangles):
+            triangles = np.asarray(triangles).reshape(-1, 3, 3)
+            if ref["kind"] == "cylinder":
+                point = triangles[0].mean(axis=0)
+            else:
+                weights = np.linalg.norm(np.cross(triangles[:, 1] - triangles[:, 0],
+                                                 triangles[:, 2] - triangles[:, 0]), axis=1)
+                point = np.average(triangles.mean(axis=1), axis=0, weights=weights) if weights.sum() else triangles.mean(axis=(0, 1))
+        else:
+            point = np.asarray(ref.get("point", ref.get("origin")), dtype=float)
+        if ref["kind"] == "cylinder":
+            axis = np.asarray(ref["axis"], dtype=float)
+            axis /= np.linalg.norm(axis)
+            radial = point - np.asarray(ref["origin"])
+            normal = radial - axis * np.dot(radial, axis)
+            if ref.get("internal"):
+                normal = -normal
+        else:
+            normal = np.asarray(ref.get("normal", [0., 0., 0.]), dtype=float)
+        length = np.linalg.norm(normal)
+        return (point, normal / length) if length > 1e-9 else None
+
     def distance(self) -> float:
         return self.spn_dist.value()
 

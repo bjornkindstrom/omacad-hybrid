@@ -97,6 +97,10 @@ class BaseFeatureDialog(QDialog):
                     if vis:
                         any_vis = True
                 self.setVisible(any_vis)
+                # QFormLayout's height-for-width (used once a word-wrapped label makes the dialog height-for-width)
+                # undercounts a spanning row under WrapAllRows (Studio), so the pair got only a field's height and
+                # its fields were cut in half (#209). A minimum height it does respect.
+                self.setMinimumHeight(self.layout().sizeHint().height() if any_vis else 0)
 
             def eventFilter(self, obj, event):
                 if event.type() in (QEvent.Type.ShowToParent, QEvent.Type.HideToParent):

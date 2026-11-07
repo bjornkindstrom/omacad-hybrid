@@ -37,5 +37,6 @@ def test_rounded_rectangle_has_eight_tangent_edges_box_and_cylinder_none():
     assert len(_segments(m3d.Manifold.cylinder(10, 5, circular_segments=96))) == 0
 
 
-def test_tangent_edges_are_off_by_default():
-    assert DEFAULT_SETTINGS["show_tangent_edges"] is False
+def test_tangent_edges_are_on_by_default():
+    # on since 0.9.9.80.155 (SolidCraft look: the seam where a flat wall runs into a curve is drawn)
+    assert DEFAULT_SETTINGS["show_tangent_edges"] is True

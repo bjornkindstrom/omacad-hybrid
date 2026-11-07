@@ -684,6 +684,10 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             vp.shell_target_body_id = feat.target_body_id
             vp.begin_plane_pick("shell_face")
 
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(vp, dlg, lambda: preview_anchor(vp),
+                         fields=[(dlg.lbl_thick.text, dlg.spn_thickness), (dlg.lbl_thick2.text, dlg.spn_thickness2)])
+
         if not _exec_with_preview(win, doc, dlg, _preview_shell, [feat.target_body_id],
                                   wiring=[(vp.shell_face_picked, _shell_face_picked)], start=_start_shell_pick):
             return False

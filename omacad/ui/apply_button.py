@@ -1,7 +1,29 @@
 """A green check button floating in the viewport that applies the open tool panel or sketch selection (Björn #160)."""
 import numpy as np
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QToolButton
+from PySide6.QtWidgets import QToolButton, QWidget, QHBoxLayout, QLabel
+from omacad.ui.expr_spin import ExprDoubleSpinBox
+
+
+class _ApplyValue(ExprDoubleSpinBox):
+    """A viewport field shares its tool's Enter/Esc behavior and parameter completion."""
+
+    def __init__(self, dialog, parent):
+        super().__init__(parent)
+        self.dialog = dialog
+
+    def keyPressEvent(self, event):
+        if self.suggestion_key(event):
+            return
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.interpretText()
+            self.editingFinished.emit()
+            self.dialog.accept()
+            return
+        if event.key() == Qt.Key.Key_Escape:
+            self.dialog.reject()
+            return
+        super().keyPressEvent(event)
 
 BUTTON_STYLE = (
     "QToolButton { background: #2E9F4F; color: white; border: 2px solid #BFF0CC; "
@@ -123,20 +145,62 @@ def profile_anchor(viewport, doc):
     return (float(scr[0]), float(scr[1])) if scr is not None else None
 
 
-def add_apply_button(viewport, dialog, anchor, interval_ms: int = 60) -> QToolButton:
+def add_apply_button(viewport, dialog, anchor, interval_ms: int = 60, fields=()) -> QToolButton:
     """Show a green ✓ next to `anchor()` (a viewport pixel (x, y), or None to hide it) while `dialog` is open;
     clicking it accepts the dialog, so the mouse never has to travel to OK. It follows the anchor when the camera
     moves and is removed when the dialog finishes."""
     btn = _make_button(viewport)
+    host = btn
+    field_rows = []
+    if fields:
+        host = QWidget(viewport)
+        host.setObjectName("viewport_apply_controls")
+        from omacad.ui.theme import style
+        style(host, "QWidget#viewport_apply_controls { background: @surface; border: 1px solid @border; border-radius: 5px; }")
+        layout = QHBoxLayout(host)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(6)
+
+        def copy_value(source, target):
+            blocked = target.blockSignals(True)
+            target.set_expression(source.expression() or str(source.value()))
+            target.blockSignals(blocked)
+
+        for title, source in fields:
+            label = QLabel(host)
+            editor = _ApplyValue(dialog, host)
+            editor.source_field = source
+            editor.setRange(source.minimum(), source.maximum())
+            editor.setDecimals(source.decimals())
+            editor.setSingleStep(source.singleStep())
+            editor.setSuffix(source.suffix())
+            editor.setFixedWidth(120)
+            copy_value(source, editor)
+            source.valueChanged.connect(lambda _v, s=source, e=editor: copy_value(s, e))
+            editor.valueChanged.connect(lambda _v, s=source, e=editor: s.set_expression(e.expression() or str(e.value())))
+            editor.editingFinished.connect(lambda s=source, e=editor: s.set_expression(e.expression() or str(e.value())))
+            layout.addWidget(label)
+            layout.addWidget(editor)
+            field_rows.append((title, source, label, editor))
+        layout.addWidget(btn)
+        btn.show()
+        host.hide()
     btn.clicked.connect(dialog.accept)
 
     def place():
         try:
             ok_btn = getattr(dialog, "btn_ok", None)
             if ok_btn is not None and not ok_btn.isEnabled():
-                btn.hide()
+                host.hide()
                 return
-            _place_button(btn, viewport, anchor(), avoid_widget=dialog)
+            for title, source, label, editor in field_rows:
+                label.setText(title() if callable(title) else title)
+                visible = not source.isHidden()
+                label.setVisible(visible)
+                editor.setVisible(visible)
+            if field_rows:
+                host.adjustSize()
+            _place_button(host, viewport, anchor(), avoid_widget=dialog)
         except RuntimeError:        # the button or viewport is already gone
             pass
 
@@ -154,8 +218,8 @@ def add_apply_button(viewport, dialog, anchor, interval_ms: int = 60) -> QToolBu
     def done(*_):
         timer.stop()
         try:
-            btn.hide()
-            btn.deleteLater()
+            host.hide()
+            host.deleteLater()
         except RuntimeError:
             pass
 

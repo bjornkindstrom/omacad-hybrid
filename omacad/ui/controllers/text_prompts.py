@@ -1,6 +1,8 @@
 """Sketch Text tool: the dialog, placing the text, editing it later. One session at a time, one undo step."""
 from typing import Optional
 
+from PySide6.QtCore import QTimer
+
 from omacad.model.sketch import SketchText
 from omacad.ui.dialogs import EmbossDialog, TextDialog
 from omacad.ui.controllers.prompt_guards import leaves_sketch
@@ -176,6 +178,11 @@ class TextPromptsMixin:
         if result and s.entity is not None:
             self.doc.record_sketch_change(s.sketch, s.before_text())  # one undo step for placing and editing it
             self.status_label.setText("Text added to the sketch.")
+            then = getattr(s.dlg, "then", None)
+            if then in ("emboss", "deboss"):                          # #207: Emboss/Deboss straight from the Text panel
+                sketch_id = s.sketch.sketch_id
+                QTimer.singleShot(0, self, lambda: self.prompt_emboss(
+                    sketch_id=sketch_id, depth=1.0 if then == "emboss" else -1.0))
         else:
             if s.entity is not None and s.orig is None:
                 s.sketch.delete_entities([s.entity.entity_id])        # only the text placed in this session
@@ -191,7 +198,9 @@ class EmbossPromptMixin:
     """Mixin for MainWindow: Emboss. The profiles (letters) are picked in the view, the options are in the panel."""
 
     @leaves_sketch
-    def prompt_emboss(self):
+    def prompt_emboss(self, sketch_id=None, depth: float = 1.0):
+        """`sketch_id`/`depth` come from the Text panel's Emboss/Deboss buttons: all letters of that sketch,
+        raised (+) or pressed in (-)."""
         from omacad.model.timeline import EmbossFeature, ExtrudeFeature
         from PySide6.QtWidgets import QMessageBox
         if getattr(self, "_emboss_dlg", None) is not None:
@@ -202,7 +211,7 @@ class EmbossPromptMixin:
                                     "then emboss it.")
             return
         doc, vp = self.doc, self.viewport
-        dlg = EmbossDialog(self)
+        dlg = EmbossDialog(self, depth=depth)
         self._emboss_dlg = dlg
         self.dock(dlg)
 
@@ -269,6 +278,8 @@ class EmbossPromptMixin:
         dlg.finished.connect(finished)
         from omacad.ui.apply_button import add_apply_button, profile_anchor
         add_apply_button(vp, dlg, lambda: profile_anchor(vp, doc) if doc.selected_profile else None)
-        if not doc.selected_profile:
+        if sketch_id is not None:
+            select_text(sketch_id)                          # from the Text panel: exactly that text
+        elif not doc.selected_profile:
             select_text()                                   # a sketch with text: start with all its letters picked
         refresh()

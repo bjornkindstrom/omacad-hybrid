@@ -33,7 +33,7 @@ def find(w, kind, name=""):
 
 def test_structure_follows_fusion(win):
     assert win.browser.tree.topLevelItem(0).text(0).endswith("(Unsaved)")
-    assert top_labels(win) == ["Document Settings", "Named Views", "Origin", "Analysis", "Objects"]
+    assert top_labels(win) == ["Document Settings", "Named Views", "Origin", "Planes", "Analysis", "Objects"]
     views = find(win, "view", "HOME").parent()
     assert [views.child(i).text(0) for i in range(views.childCount())] == ["Home", "Top", "Front", "Right", "Back", "Left", "Bottom"]
 
@@ -118,3 +118,18 @@ def test_browser_is_only_as_tall_as_its_rows_and_grows_when_a_branch_opens(win):
     root.child(0).setExpanded(True)                     # Document Settings opens: two more rows
     assert b.preferred_height(2000) > short
     assert b.preferred_height(150) == 150               # no more room: the tree scrolls inside the cap
+
+
+def test_planes_branch_holds_every_plane(win):
+    """Björn #210: a "Planes" branch with the origin planes and every offset plane."""
+    win.doc.construction_planes["cp1"] = {"name": "Plane 1", "visible": True, "origin": [0, 0, 5], "normal": [0, 0, 1]}
+    win.doc.notify_changed()
+    planes = find(win, "group", "planes")
+    kids = [planes.child(i).data(0, Qt.ItemDataRole.UserRole) for i in range(planes.childCount())]
+    assert kids == [("plane", "XY"), ("plane", "XZ"), ("plane", "YZ"), ("cplane", "cp1")]
+    origin = find(win, "origin", "all")
+    assert all(origin.child(i).data(0, Qt.ItemDataRole.UserRole)[0] == "axis" for i in range(origin.childCount()))
+    win.browser.on_item_clicked(find(win, "group", "planes"), 1)
+    assert not win.doc.any_plane_visible()
+    win.browser.on_item_clicked(find(win, "group", "planes"), 1)
+    assert win.doc.origin_visible("plane", "XY") and win.doc.construction_planes["cp1"]["visible"]

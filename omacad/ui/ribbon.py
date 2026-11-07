@@ -46,7 +46,7 @@ _STUDIO_BUTTON = """
     QToolButton:hover { background-color: @field; border: 1px solid @border; color: @text; }
     QToolButton:pressed, QToolButton:checked { background-color: @selection; border: 1px solid @selection; color: @accent; }
     QToolButton:disabled { color: @muted; }
-    QToolButton[suggested="true"] { background-color: @selection; border: 1px solid @accent; }
+    QToolButton[suggested="true"] { border: 1px solid @accent; }
     QToolButton::menu-indicator { image: none; width: 0; }
 """
 
@@ -590,7 +590,10 @@ class Ribbon(QWidget):
         if self.selected_edge_count():
             return "edges"
         if doc.selected_profile:
-            return "profile"
+            sid, index = doc.selected_profile
+            sketch = doc.sketches.get(sid)
+            if sketch is not None and sketch.visible and 0 <= index < len(sketch.profiles):
+                return "profile"
         bodies = [b for b in doc.selected_body_ids if b in doc.bodies]
         return "bodies" if len(bodies) >= 2 else ("body" if bodies else "")
 
@@ -607,7 +610,10 @@ class Ribbon(QWidget):
             try:
                 on = cid in cids
                 if bool(btn.property("suggested")) != on:
+                    if not hasattr(btn, "_context_tooltip"):
+                        btn._context_tooltip = btn.toolTip()
                     btn.setProperty("suggested", on)
+                    btn.setToolTip(btn._context_tooltip + ("\nSuggested for the current selection." if on else ""))
                     btn.style().unpolish(btn)
                     btn.style().polish(btn)
             except RuntimeError:        # a button of a rebuilt tab that is already gone
