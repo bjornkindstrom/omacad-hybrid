@@ -23,7 +23,7 @@ def _wall(lines, x=None, y=None):
 
 def _clearances(sk, holes):
     """(distance to nearest vertical wall, to nearest horizontal wall) from each rim."""
-    return [(50. - abs(h.center[0]) - h.radius, 30. - abs(h.center[1]) - h.radius) for h in holes]
+    return [v for h in holes for v in (50. - abs(h.center[0]) - h.radius, 30. - abs(h.center[1]) - h.radius)]
 
 
 def _dim(doc, sk, hole, wall, value):
@@ -48,21 +48,21 @@ def test_corner_holes_follow_the_master_wall_distance(dims_first, tmp_path):
         left = _dim(doc, sk, master, _wall(lines, x=-50.), 6.)
         top = _dim(doc, sk, master, _wall(lines, y=30.), 6.)
     holes = [master, *copies]
-    assert _clearances(sk, holes) == pytest.approx([(6., 6.)] * 4)
+    assert _clearances(sk, holes) == pytest.approx([6., 6.] * 4)
     assert doc.update_dimension(sk.sketch_id, left.dim_id, 12.)
     assert doc.update_dimension(sk.sketch_id, top.dim_id, 3.)
-    assert _clearances(sk, holes) == pytest.approx([(12., 3.)] * 4)
+    assert _clearances(sk, holes) == pytest.approx([12., 3.] * 4)
     diameter = next(d for d in sk.dimensions if d.target_entity_id == master.entity_id and d.dim_type == "DIAMETER")
     assert doc.update_dimension(sk.sketch_id, diameter.dim_id, 10.)
     assert all(h.radius == pytest.approx(5.) for h in holes)
-    assert _clearances(sk, holes) == pytest.approx([(12., 3.)] * 4)
+    assert _clearances(sk, holes) == pytest.approx([12., 3.] * 4)
     ids = [h.entity_id for h in holes]
     doc.undo()
     doc.undo()
     sk = doc.sketches[sk.sketch_id]
     holes = [sk.get_entity(i) for i in ids]
     assert all(h.radius == pytest.approx(4.) for h in holes)
-    assert _clearances(sk, holes) == pytest.approx([(12., 6.)] * 4)
+    assert _clearances(sk, holes) == pytest.approx([12., 6.] * 4)
     doc.redo()
     path = tmp_path / "plate.omacad"
     doc.finish_sketch()
@@ -70,7 +70,7 @@ def test_corner_holes_follow_the_master_wall_distance(dims_first, tmp_path):
     loaded = Exporter.load_project(str(path))
     assert loaded.update_dimension(sk.sketch_id, left.dim_id, 8.)
     restored = loaded.sketches[sk.sketch_id]
-    assert _clearances(restored, [restored.get_entity(h.entity_id) for h in holes]) == pytest.approx([(8., 3.)] * 4)
+    assert _clearances(restored, [restored.get_entity(h.entity_id) for h in holes]) == pytest.approx([8., 3.] * 4)
 
 
 def test_editing_a_copy_clearance_unlinks_only_that_hole():
