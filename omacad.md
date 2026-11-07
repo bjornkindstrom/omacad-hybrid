@@ -1,3 +1,18 @@
+## SolidCraft-hovring: studioljusbelysning av ytor och tangenskanter — 2026-11-07 (0.9.9.80.155)
+
+Feedback med video: efterlikna exakt hur SolidCraft hovrar ytor och krökta ytor.
+1. Hovring med studioljus: plana ytor och krökta ytlappar (cylinderväggar, avrundningar)
+   renderas nu med `prog_solid` (3D-studioljus-shadern) och SolidCrafts exakta `hover_face_lift`
+   (+40/255 = 0,157 ljusstyrka) samt jämna vertexnormaler. Ytan behåller spegelglans,
+   ljusgradient och 3D-djup i stället för att tvättas ut i en platt alfa-färg.
+2. Inga tjocka linjer vid hovring: de störande vita/blå konturlinjerna vid hovring har
+   tagits bort så att ytan inramas rent av modellens egna antracitgrå kanter (`#282c34`).
+3. Tangenskanter på som standard: `show_tangent_edges: True` ritar den skarpa vertikala
+   skarvlinjen mellan plana väggar och krökta cylindrar.
+4. Ytföreträde i viloläge: muspekaren kan röras fritt över ytor utan att hovringen
+   avbryts av 8 px kant-snappning.
+Tester: `tests/test_solidcraft_face_selection_and_rendering.py`.
+
 ## SolidCraft-ytmarkering, kantlinjer och studiobelysning — 2026-11-07 (0.9.9.80.154)
 
 Rapport 20261107-121711: efterlikna SolidCrafts markering/hantering av ytor och streck

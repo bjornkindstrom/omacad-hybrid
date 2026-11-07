@@ -360,7 +360,7 @@ class RenderGLMixin:
                 if k[0] not in live_bids:
                     self._delete_gpu_cache_entry(gpu_cache.pop(k))
         from omacad.ui.settings import get_settings
-        tangent = bool(get_settings().get("show_tangent_edges", False))
+        tangent = bool(get_settings().get("show_tangent_edges", True))
 
         # construction bodies last: see-through helpers drawn over what is solid
         for body in sorted(self.doc.bodies.values(), key=lambda b: b.construction):

@@ -57,6 +57,12 @@ class RenderMesh:
     def curved_surface(self, tri: int) -> Optional[np.ndarray]:
         """The triangles (k, 3, 3) of the curved surface that drawn triangle `tri` lies on (a fillet, a cylinder
         wall), for the hover highlight; None on a flat face. Worked out the first time a curve is hovered."""
+        res = self.curved_surface_with_normals(tri)
+        return res[0] if res is not None else None
+
+    def curved_surface_with_normals(self, tri: int) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        """The triangles (k, 3, 3) and vertex normals (k, 3, 3) of the curved surface that drawn triangle `tri`
+        lies on; None on a flat face."""
         if self.source is None:
             return None
         v, f, keep = self.source
@@ -67,7 +73,10 @@ class RenderMesh:
         sid = int(self._surface_ids[tri])
         if sid < 0:
             return None
-        return np.asarray(self.vertices, dtype=np.float64).reshape(-1, 3, 3)[self._surface_ids == sid]
+        mask = (self._surface_ids == sid)
+        verts = np.asarray(self.vertices, dtype=np.float32).reshape(-1, 3, 3)[mask]
+        norms = np.asarray(self.normals, dtype=np.float32).reshape(-1, 3, 3)[mask]
+        return verts, norms
 
 
 class CadKernel:

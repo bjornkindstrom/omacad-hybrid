@@ -10,6 +10,11 @@ from omacad.ui.viewport.shaders import FRAGMENT_SHADER_SOLID
 FIXTURE = Path(__file__).parent / "data" / "solidcraft_face_selection_fillet_box.omacad"
 
 
+class DummySignal:
+    def emit(self, *args, **kwargs):
+        pass
+
+
 class DummyViewport(PickerMixin):
     def __init__(self, doc):
         self.doc = doc
@@ -20,6 +25,7 @@ class DummyViewport(PickerMixin):
         self.hover_surface = None
         self.edge_pick_mode = False
         self.plane_pick_mode = False
+        self.hover_info_changed = DummySignal()
         self._matrices = None
         self._w = 1200
         self._h = 800
@@ -86,3 +92,52 @@ def test_face_selection_and_boundary_edges_on_report_document():
     # Clear selection
     vp.clear_face_selection()
     assert len(vp.selected_faces) == 0
+
+
+def test_curved_surface_with_normals_and_tangent_settings():
+    from omacad.ui.settings import get_settings
+    # Tangent edges are enabled by default like SolidCraft
+    assert get_settings().get("show_tangent_edges") is True
+
+    doc = Exporter.load_project(str(FIXTURE))
+    body = next(iter(doc.bodies.values()))
+    rm = body.render_mesh
+    assert rm is not None
+    # If there are curved surface triangles (e.g. fillet), curved_surface_with_normals returns vertices and normals
+    if rm.source is not None:
+        v, f, keep = rm.source
+        from omacad.model.faces_surfaces import curved_surface_ids
+        import trimesh
+        from omacad.model.kernel import CadKernel
+        ids = curved_surface_ids(v, f, trimesh.Trimesh(vertices=v, faces=f, process=False), CadKernel.SHARP_EDGE_DEG)
+        curved_tris = np.where(ids >= 0)[0]
+        if len(curved_tris) > 0:
+            res = rm.curved_surface_with_normals(int(curved_tris[0]))
+            assert res is not None
+            verts, norms = res
+            assert verts.shape == norms.shape
+            assert verts.ndim == 3 and verts.shape[1:] == (3, 3)
+            assert norms.dtype == np.float32
+
+
+def test_idle_hover_precedence_over_edges():
+    doc = Exporter.load_project(str(FIXTURE))
+    vp = DummyViewport(doc)
+    body = next(iter(doc.bodies.values()))
+    planar_faces = [f for f in body.faces if f.index >= 0]
+    top_face = max(planar_faces, key=lambda f: f.area)
+
+    # In idle mode (edge_pick_mode = False), mock _pick_face returning top_face
+    # and _pick_edge returning an edge: face should take precedence
+    vp._pick_face = lambda x, y: (body, top_face)
+    vp._pick_edge = lambda x, y: "dummy_edge"
+    vp._pick_curved_surface = lambda x, y: None
+
+    vp._update_edge_hover(100.0, 100.0)
+    assert vp.hover_face is top_face
+    assert vp.hover_edge is None
+
+    # In edge pick mode, edge takes precedence
+    vp.edge_pick_mode = True
+    vp._update_edge_hover(100.0, 100.0)
+    assert vp.hover_edge == "dummy_edge"

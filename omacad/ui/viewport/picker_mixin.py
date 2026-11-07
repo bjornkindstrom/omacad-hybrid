@@ -335,18 +335,26 @@ class PickerMixin:
                     or self._move or self.active_tool_title())
 
     def _update_edge_hover(self, x: float, y: float):
-        e = self._pick_edge(x, y)
-        face = None
-        if e is None:
+        if self.edge_pick_mode:
+            e = self._pick_edge(x, y)
+            face = None
+            if e is None:
+                hit = self._pick_face(x, y)
+                if hit is not None:
+                    face = hit[1]
+            surface = None
+        else:
+            # SolidCraft idle mode: Faces & curved surfaces take hover precedence over edges
             hit = self._pick_face(x, y)
-            if hit is not None:
-                face = hit[1]
+            face = hit[1] if hit is not None else None
+            surface = self._pick_curved_surface(x, y) if face is None else None
+            e = self._pick_edge(x, y) if face is None and surface is None else None
+
         edge_changed = (e is None) != (self.hover_edge is None) or (e is not None and not self._same_edge(e, self.hover_edge))
         # the same triangles, not only the same number: a rebuilt (moved) body numbers its faces the same (Björn #112)
         old_face = self.hover_face
         face_changed = (face is None) != (old_face is None) or (face is not None and (
             face.body_id != old_face.body_id or face.index != old_face.index or face.tris is not old_face.tris))
-        surface = self._pick_curved_surface(x, y) if e is None and face is None and not self.edge_pick_mode else None
         old = self.hover_surface
         surface_changed = (surface is None) != (old is None) or (surface is not None and (
             surface[0] != old[0] or surface[1].shape != old[1].shape or not np.array_equal(surface[1][0], old[1][0])))
@@ -359,8 +367,8 @@ class PickerMixin:
             self.update()
 
     def _pick_curved_surface(self, x: float, y: float):
-        """(body_id, triangles) of the curved surface (a fillet, a round wall) nearest under the cursor, or None
-        when a flat face or nothing is there. Only for the hover highlight: curved surfaces are not faces."""
+        """(body_id, triangles, normals) of the curved surface (a fillet, a round wall) nearest under the cursor,
+        or None when a flat face or nothing is there. Only for the hover highlight: curved surfaces are not faces."""
         from omacad.model.faces import ray_mesh_hit
         proj, view, _ = self.get_matrices()
         origin, ray_dir = ray_from_screen(x, y, self.width(), self.height(), view, proj)
@@ -376,6 +384,10 @@ class PickerMixin:
         if best is None:
             return None
         _, tri, mesh, body_id = best
+        if hasattr(mesh, "curved_surface_with_normals"):
+            res = mesh.curved_surface_with_normals(tri)
+            if res is not None:
+                return (body_id, res[0], res[1])
         tris = mesh.curved_surface(tri) if hasattr(mesh, "curved_surface") else None
         return None if tris is None else (body_id, tris)
 
@@ -439,56 +451,67 @@ class PickerMixin:
         has_sel_faces = bool(getattr(self, "selected_faces", None))
         if not (self.edge_pick_mode or self._idle_hover_ok() or has_sel_faces):
             return
-        # If hovering a face, highlight it with translucent flat shading
-        if self.hover_face is not None and self.hover_edge is None and self.prog_flat is not None:
-            GL.glUseProgram(self.prog_flat)
-            loc_mvp = GL.glGetUniformLocation(self.prog_flat, "u_mvp")
-            loc_col = GL.glGetUniformLocation(self.prog_flat, "u_color")
-            loc_pos = GL.glGetAttribLocation(self.prog_flat, "in_pos")
-            GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
-            GL.glDepthMask(GL.GL_FALSE)
-            GL.glEnable(GL.GL_DEPTH_TEST)
-            GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
-            GL.glPolygonOffset(-2.0, -2.0)
-            lift = self.hover_face.normal * 0.05
-            tris = self._trim_tris_by_section(self.hover_face.tris + lift)
-            if len(tris):
-                GL.glUniform4f(loc_col, *theme.palette().highlight01(0.1), 0.35)
-                self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris.reshape(-1, 3).astype(np.float32))
-            GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
-            GL.glDepthMask(GL.GL_TRUE)
-
-            # SolidCraft match: Outline boundary edges of hovered face
+        # SolidCraft match: Shaded Studio Hover (faces & curved surfaces light up cleanly in 3D studio light)
+        if self.hover_face is not None and self.hover_edge is None and self.prog_solid is not None:
             body = self.doc.bodies.get(self.hover_face.body_id)
             if body is not None:
-                fe = self._edges_of_face(self.hover_face, body)
-                if fe:
-                    lines = self._edge_render_lines(fe)
-                    if lines:
-                        from omacad.ui.settings import hover_line_style
-                        hv_col, hv_w = hover_line_style()
-                        self.draw_thick_lines(mvp, lines, hv_col, hv_w)
+                GL.glUseProgram(self.prog_solid)
+                loc_mvp = GL.glGetUniformLocation(self.prog_solid, "u_mvp")
+                loc_col = GL.glGetUniformLocation(self.prog_solid, "u_color")
+                loc_eye = GL.glGetUniformLocation(self.prog_solid, "u_eye_dir")
+                loc_pos = GL.glGetAttribLocation(self.prog_solid, "in_pos")
+                loc_norm = GL.glGetAttribLocation(self.prog_solid, "in_normal")
+                GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
+                if loc_eye >= 0:
+                    az = math.radians(getattr(self, "azimuth", 0.0))
+                    el = math.radians(getattr(self, "elevation", 0.0))
+                    GL.glUniform3f(loc_eye, math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el))
+                c = body.color
+                lift = 40.0 / 255.0
+                GL.glUniform4f(loc_col, min(1.0, c[0] + lift), min(1.0, c[1] + lift), min(1.0, c[2] + lift), 1.0)
+                GL.glEnable(GL.GL_DEPTH_TEST)
+                GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+                GL.glPolygonOffset(-2.0, -2.0)
+                tris = self._trim_tris_by_section(self.hover_face.tris)
+                if len(tris):
+                    pos_data = tris.reshape(-1, 3).astype(np.float32)
+                    norm_data = np.repeat(self.hover_face.normal.reshape(1, 3).astype(np.float32), len(pos_data), axis=0)
+                    self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, pos_data, loc_norm, norm_data)
+                GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+                GL.glUseProgram(0)
 
-        if self.hover_surface is not None and self.hover_edge is None and self.prog_flat is not None:
-            # depth-tested (the back of a round wall stays hidden), pulled forward so it is not lost in the body
-            GL.glUseProgram(self.prog_flat)
-            GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.prog_flat, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
-            GL.glUniform4f(GL.glGetUniformLocation(self.prog_flat, "u_color"), *theme.palette().highlight01(0.1), 0.35)
-            GL.glDepthMask(GL.GL_FALSE)
-            GL.glEnable(GL.GL_DEPTH_TEST)
-            GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
-            GL.glPolygonOffset(-2.0, -2.0)
-            self.draw_buffer_arrays(GL.GL_TRIANGLES, GL.glGetAttribLocation(self.prog_flat, "in_pos"),
-                                    self.hover_surface[1].reshape(-1, 3).astype(np.float32))
-            GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
-            GL.glDepthMask(GL.GL_TRUE)
-
-            # SolidCraft match: Outline boundary edges of hovered curved surface
-            b_segs = patch_boundary_segments(self.hover_surface[1])
-            if len(b_segs):
-                from omacad.ui.settings import hover_line_style
-                hv_col, hv_w = hover_line_style()
-                self.draw_thick_lines(mvp, b_segs.flatten(), hv_col, hv_w)
+        if self.hover_surface is not None and self.hover_edge is None and self.prog_solid is not None:
+            body = self.doc.bodies.get(self.hover_surface[0])
+            if body is not None:
+                GL.glUseProgram(self.prog_solid)
+                loc_mvp = GL.glGetUniformLocation(self.prog_solid, "u_mvp")
+                loc_col = GL.glGetUniformLocation(self.prog_solid, "u_color")
+                loc_eye = GL.glGetUniformLocation(self.prog_solid, "u_eye_dir")
+                loc_pos = GL.glGetAttribLocation(self.prog_solid, "in_pos")
+                loc_norm = GL.glGetAttribLocation(self.prog_solid, "in_normal")
+                GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
+                if loc_eye >= 0:
+                    az = math.radians(getattr(self, "azimuth", 0.0))
+                    el = math.radians(getattr(self, "elevation", 0.0))
+                    GL.glUniform3f(loc_eye, math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el))
+                c = body.color
+                lift = 40.0 / 255.0
+                GL.glUniform4f(loc_col, min(1.0, c[0] + lift), min(1.0, c[1] + lift), min(1.0, c[2] + lift), 1.0)
+                GL.glEnable(GL.GL_DEPTH_TEST)
+                GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+                GL.glPolygonOffset(-2.0, -2.0)
+                tris = self.hover_surface[1]
+                norms = self.hover_surface[2] if len(self.hover_surface) > 2 else None
+                if norms is None:
+                    d1 = tris[:, 1] - tris[:, 0]
+                    d2 = tris[:, 2] - tris[:, 0]
+                    tn = np.cross(d1, d2)
+                    norms = np.repeat((tn / np.maximum(np.linalg.norm(tn, axis=1, keepdims=True), 1e-12))[:, np.newaxis, :], 3, axis=1)
+                pos_data = tris.reshape(-1, 3).astype(np.float32)
+                norm_data = norms.reshape(-1, 3).astype(np.float32)
+                self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, pos_data, loc_norm, norm_data)
+                GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+                GL.glUseProgram(0)
 
         # SolidCraft match: Selected face(s) are highlighted with sel_face fill + sel_edge boundary outline
         if has_sel_faces and self.prog_flat is not None:

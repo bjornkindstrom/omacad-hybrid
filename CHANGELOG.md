@@ -1,3 +1,12 @@
+# Hybrid-experiment — 0.9.9.80.155
+
+### Added
+- **Exact SolidCraft face & curved surface hover illumination (feedback video)**:
+  - Hovering over a flat face or curved surface (cylinder, fillet) now renders it using the 3D studio lighting shader with SolidCraft's exact `hover_face_lift` (+40/255 lift) and matching smooth vertex normals, preserving specular highlights and lighting gradients instead of washing out with flat alpha tints.
+  - Clean boundary presentation: Removed thick white/blue outline overlays on hover so the surface is framed cleanly by the model's dark charcoal feature edges (`#282c34`).
+  - Enabled tangent edges by default (`show_tangent_edges: True`), cleanly drawing the vertical seam edge separating flat walls from curved cylinders.
+  - Face hover precedence in idle mode: moving the pointer across solid bodies smoothly illuminates the face or curved patch under the cursor without being interrupted by 8px edge snapping.
+
 # Hybrid-experiment — 0.9.9.80.154
 
 ### Added

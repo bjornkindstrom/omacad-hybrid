@@ -387,7 +387,7 @@ class SettingsDialog(QDialog):
         lay_sketch.addWidget(self.chk_invert_zoom)
 
         self.chk_tangent_edges = QCheckBox("Show tangent edges (a line where a flat face runs smoothly into a curve)")
-        self.chk_tangent_edges.setChecked(bool(self.settings.get("show_tangent_edges", False)))
+        self.chk_tangent_edges.setChecked(bool(self.settings.get("show_tangent_edges", True)))
         lay_sketch.addWidget(self.chk_tangent_edges)
 
         # Grid step
