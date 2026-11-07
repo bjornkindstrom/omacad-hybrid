@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.166
+
+### Added
+- **Coincident between a line and a circle or arc (#221)**: Select a line and a circle or arc with Coincident. The line end nearest the curve goes onto it; on a circle an end near the centre goes to the centre, and on an arc an end beside the arc's sweep joins the arc's nearest end. Circles take part in the solver as before; an arc stays where it is and the line follows it whenever the sketch is solved. Saved with the sketch and undoable.
+
 # Hybrid-experiment — 0.9.9.80.165
 
 ### Changed

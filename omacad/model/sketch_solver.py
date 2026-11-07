@@ -15,8 +15,8 @@ from typing import Dict, Iterable, Optional, Tuple
 
 from python_solvespace import SolverSystem
 
-from omacad.model.sketch import (Sketch, SketchLine, SketchCircle, SketchSpline, SOLVER_DIM_TYPES, EDGE_PTS,
-                                 point_of, ref_segment)
+from omacad.model.sketch import (Sketch, SketchArc, SketchLine, SketchCircle, SketchSpline, SOLVER_DIM_TYPES,
+                                 EDGE_PTS, point_of, ref_segment)
 
 SUPPORTED = (SketchLine, SketchCircle)
 FIXED_GROUP, FREE_GROUP = 1, 2
@@ -287,7 +287,37 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
         sys_.midpoint(center_point, diagonal, wp)
         return center_point, center
 
+    arcs = {e.entity_id: e for e in sketch.entities if isinstance(e, SketchArc)}
+    arc_handles: Dict[str, Optional[dict]] = {}
+
+    def arc_handle(eid):
+        """A 3-point arc is not solved: it is held where it is (centre, radius and end points as constants), so a
+        line end can be put on it (#221) and follows the arc the next time the sketch is solved."""
+        if eid not in arc_handles:
+            params = arcs[eid].get_circle_params()
+            if params is None:
+                arc_handles[eid] = None
+            else:
+                arc = arcs[eid]
+                sys_.set_group(FIXED_GROUP)
+                arc_handles[eid] = {"center": sys_.add_point_2d(params[0][0], params[0][1], wp), "r": params[1],
+                                    "p_start": sys_.add_point_2d(arc.p_start[0], arc.p_start[1], wp),
+                                    "p_end": sys_.add_point_2d(arc.p_end[0], arc.p_end[1], wp)}
+                sys_.set_group(FREE_GROUP)
+        return arc_handles[eid]
+
     for c in sketch.constraints:
+        if c.ctype in ("POINT_ON_CIRCLE", "ARC_END") and len(c.refs) == 2 and c.pts and any(r in arcs for r in c.refs):
+            arc_id, line_id = (c.refs[0], c.refs[1]) if c.ctype == "POINT_ON_CIRCLE" else (c.refs[1], c.refs[0])
+            handle = arc_handle(arc_id) if arc_id in arcs else None
+            if handle is None or not isinstance(ents.get(line_id), SketchLine) or line_id in fixed:
+                continue
+            point = pts[(line_id, c.pts[0])]
+            if c.ctype == "POINT_ON_CIRCLE":
+                sys_.distance(point, handle["center"], handle["r"], wp)
+            elif len(c.pts) == 2 and c.pts[1] in ("p_start", "p_end"):
+                sys_.coincident(point, handle[c.pts[1]], wp)
+            continue
         if any(r not in ents for r in c.refs):
             continue  # references an entity the solver does not handle (e.g. rectangle)
         if c.ctype == "FIX" or all(r in fixed for r in c.refs):
@@ -532,6 +562,46 @@ def coincident_spec(a, b):
             if foot is not None and foot[0] < best_d - 1e-9:
                 best, best_d = ("POINT_ON_LINE", [x.entity_id, y.entity_id], [name]), foot[0]
     return best
+
+
+def _on_arc_span(p, center, start, end, ccw) -> bool:
+    """p's direction from the arc's centre lies within the arc's sweep."""
+    t = math.atan2(p[1] - center[1], p[0] - center[0]) % (2 * math.pi)
+    if ccw:
+        return (t - start) % (2 * math.pi) <= (end - start) % (2 * math.pi)
+    return (start - t) % (2 * math.pi) <= (start - end) % (2 * math.pi)
+
+
+def coincident_curve_spec(line, curve):
+    """(ctype, refs, pts) for Coincident on a line and a circle or arc (#221), as Fusion: the line end nearest the curve
+    goes onto it (POINT_ON_CIRCLE). On a circle an end nearer the centre than the curve goes to the centre; on an arc an
+    end beside the arc's sweep joins the nearest arc end (ARC_END). An arc stays where it is; the line moves."""
+    best = None
+    if isinstance(curve, SketchCircle):
+        for name in ("p1", "p2"):
+            p = getattr(line, name)
+            to_center = math.dist(p, curve.center)
+            options = [(abs(to_center - curve.radius), ("POINT_ON_CIRCLE", [curve.entity_id, line.entity_id], [name])),
+                       (to_center, ("COINCIDENT", [line.entity_id, curve.entity_id], [name, "center"]))]
+            for d, spec in options:
+                if best is None or d < best[0] - 1e-9:
+                    best = (d, spec)
+        return best[1]
+    params = curve.get_circle_params()
+    if params is None:
+        return None
+    center, radius, start, end, ccw = params
+    for name in ("p1", "p2"):
+        p = getattr(line, name)
+        if _on_arc_span(p, center, start, end, ccw):
+            options = [(abs(math.dist(p, center) - radius), ("POINT_ON_CIRCLE", [curve.entity_id, line.entity_id], [name]))]
+        else:
+            options = [(math.dist(p, getattr(curve, end_name)), ("ARC_END", [line.entity_id, curve.entity_id], [name, end_name]))
+                       for end_name in ("p_start", "p_end")]
+        for d, spec in options:
+            if best is None or d < best[0] - 1e-9:
+                best = (d, spec)
+    return best[1]
 
 
 def midpoint_spec(lines, circles):

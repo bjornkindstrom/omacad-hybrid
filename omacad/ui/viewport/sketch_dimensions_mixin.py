@@ -7,7 +7,7 @@ from PySide6.QtGui import QCursor, QPainter, QPen, QBrush, QFont
 from PySide6.QtWidgets import QMenu
 from omacad.model.sketch import SketchArc, SketchCircle, SketchLine, SketchSlot, SketchText, point_of
 from omacad.model.dim_layout import offset_for_point
-from omacad.model.sketch_solver import coincident_spec, midpoint_spec, symmetric_spec
+from omacad.model.sketch_solver import coincident_curve_spec, coincident_spec, midpoint_spec, symmetric_spec
 from omacad.ui import theme
 from omacad.ui.theme import qcolor
 
@@ -62,6 +62,7 @@ class SketchDimensionsMixin:
             sel = [e for e in sk.entities if e.entity_id in self.selected_entities]
         lines = [e for e in sel if isinstance(e, SketchLine)]
         circles = [e for e in sel if isinstance(e, SketchCircle)]
+        arcs = [e for e in sel if isinstance(e, SketchArc)]
         unsupported = [e for e in sel if not isinstance(e, (SketchLine, SketchCircle))]
         specs = []
         if ctype in ("HORIZONTAL", "VERTICAL"):
@@ -78,6 +79,9 @@ class SketchDimensionsMixin:
             specs = [(ctype, [circles[0].entity_id, circles[1].entity_id], [])]
         elif ctype == "COINCIDENT" and len(lines) == 2 and not circles:
             specs = [coincident_spec(*lines)]
+        elif ctype == "COINCIDENT" and len(sel) == 2 and len(lines) == 1 and len(circles) + len(arcs) == 1:
+            spec = coincident_curve_spec(lines[0], (circles + arcs)[0])
+            specs = [spec] if spec else []
         elif ctype == "MIDPOINT" and len(lines) + len(circles) == 2 and lines:
             specs = [midpoint_spec(lines, circles)]
         elif ctype == "SYMMETRIC":
@@ -117,7 +121,7 @@ class SketchDimensionsMixin:
             if requested:
                 self.status_message.emit("That constraint is already applied.")
             elif unsupported and not (lines or circles):
-                self.status_message.emit("Constraints work on lines and circles for now (not rectangles, arcs or slots).")
+                self.status_message.emit("Constraints work on lines and circles for now (arcs only with Coincident; not rectangles or slots).")
             else:
                 self.status_message.emit(self.CONSTRAINT_HINTS.get(ctype, ""))
             return False
@@ -180,8 +184,12 @@ class SketchDimensionsMixin:
                 continue   # the built-in relations of a polygon stay out of sight
             if not show_all and not (set(c.refs) & focus) and c.ctype != "OFFSET":
                 continue
-            if c.ctype in ("COINCIDENT", "MIDPOINT", "POINT_ON_LINE") and c.pts:
+            if c.ctype in ("COINCIDENT", "MIDPOINT", "POINT_ON_LINE", "ARC_END") and c.pts:
                 uv = point_of(ent, c.pts[0])
+                if uv is None:
+                    continue
+            elif c.ctype == "POINT_ON_CIRCLE" and isinstance(ent, SketchArc) and len(c.refs) == 2 and c.pts:
+                uv = point_of(ents.get(c.refs[1]), c.pts[0]) if c.refs[1] in ents else None   # the line's end on the arc
                 if uv is None:
                     continue
             elif isinstance(ent, SketchLine):

@@ -425,7 +425,10 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     @staticmethod
     def _constraint_guide_accepts(ctype, chosen, ent):
         line, circle = isinstance(ent, SketchLine), isinstance(ent, SketchCircle)
-        if ctype in ("HORIZONTAL", "VERTICAL", "PARALLEL", "PERPENDICULAR", "COINCIDENT"):
+        if ctype == "COINCIDENT":
+            curve = circle or isinstance(ent, SketchArc)
+            return line or curve if not chosen or isinstance(chosen[0], SketchLine) else line
+        if ctype in ("HORIZONTAL", "VERTICAL", "PARALLEL", "PERPENDICULAR"):
             return line
         if ctype == "FIX":
             return line or circle
@@ -451,7 +454,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         hints = {
             "HORIZONTAL": "Choose a straight line.", "VERTICAL": "Choose a straight line.",
             "PARALLEL": "Choose a straight line.", "PERPENDICULAR": "Choose a straight line.",
-            "COINCIDENT": "Choose a straight line.", "FIX": "Choose a line or circle.",
+            "COINCIDENT": "Choose a line, circle or arc (one of the two must be a line).", "FIX": "Choose a line or circle.",
             "EQUAL": "Choose a line or circle matching the first item.",
             "TANGENT": "Choose a line and circle, or two circles.",
             "CONCENTRIC": "Choose a circle.", "MIDPOINT": "Choose a line as the target.",
@@ -562,7 +565,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     # ---- Constraints -----------------------------------------------------------
     CONSTRAINT_GLYPHS = {
         "HORIZONTAL": "H", "VERTICAL": "V", "PARALLEL": "∥", "PERPENDICULAR": "⟂",
-        "EQUAL": "=", "TANGENT": "T", "CONCENTRIC": "◎", "COINCIDENT": "•", "FIX": "F", "POINT_ON_CIRCLE": "○", "POINT_ON_LINE": "•",
+        "EQUAL": "=", "TANGENT": "T", "CONCENTRIC": "◎", "COINCIDENT": "•", "FIX": "F", "POINT_ON_CIRCLE": "○", "POINT_ON_LINE": "•", "ARC_END": "•",
         "MIDPOINT": "M", "SYMMETRIC": "S", "CENTER": "⊙", "OFFSET": "⧉",
     }
     CONSTRAINT_HINTS = {
@@ -573,7 +576,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         "EQUAL": "Equal: select two or more lines, or two or more circles.",
         "TANGENT": "Tangent: select a line and a circle, or two circles.",
         "CONCENTRIC": "Concentric: select two circles.",
-        "COINCIDENT": "Coincident: select two lines (the nearest end point goes onto the other line, or the nearest end points are joined).",
+        "COINCIDENT": "Coincident: select two lines, or a line and a circle or arc (the nearest end point goes onto the other curve, or the nearest end points are joined).",
         "MIDPOINT": "Midpoint: select a circle or line (its nearest end point) and the line whose middle it goes to.",
         "SYMMETRIC": "Symmetric: select two lines (or two circles) and the line they mirror across.",
         "CENTER": "Center: select two square-cornered rectangles to align their horizontal centres; use an edge distance for vertical offset.",

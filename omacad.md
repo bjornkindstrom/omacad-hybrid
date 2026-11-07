@@ -1,3 +1,13 @@
+## Request #221 — 2026-11-07 (0.9.9.80.166)
+
+Coincident linje ↔ cirkel/båge. `sketch_solver.coincident_curve_spec(line, curve)`: cirkel → POINT_ON_CIRCLE
+(närmaste linjeände på kurvan) eller COINCIDENT med `"center"` om änden ligger närmare mitten; båge → POINT_ON_CIRCLE
+(refs: båge, linje) när änden ligger inom bågens svep, annars ny ctype `ARC_END` (refs: linje, båge; pts: ände,
+`p_start`/`p_end`). 3-punktsbågar är inte med i lösaren: `_attempt.arc_handle` lägger centrum/ändar som konstanter i
+FIXED_GROUP och `sys_.distance(punkt, centrum, r)`, så bågen står still och linjen följer vid nästa lösning. Fälla:
+gamla COINCIDENT mot bågar (fillet-bågar, `sketch_fix`) är medvetet inerta – därför nya ctypes i stället för att
+aktivera COINCIDENT mot bågar. Guide/hjälptext/märke uppdaterade. Test: `tests/test_coincident_line_curve.py`.
+
 ## Requests #219, #220 — 2026-11-07 (0.9.9.80.165)
 
 Split Body: `Document.split_body` kör `_copy_body_steps(body_id)` (klonar alla steg som byggt kroppen till ett

@@ -30,7 +30,8 @@ class SketchConstraint:
     """A geometric relation between sketch entities, enforced by the constraint solver.
 
     ctype: HORIZONTAL, VERTICAL, PARALLEL, PERPENDICULAR, EQUAL, TANGENT, CONCENTRIC,
-           COINCIDENT (pts names the touching points), POINT_ON_CIRCLE (refs: circle, line; pts: the line's point),
+           COINCIDENT (pts names the touching points), POINT_ON_CIRCLE (refs: circle or arc, line; pts: the line's point),
+           ARC_END (refs: line, arc; pts: the line's point, p_start/p_end of the arc),
            POINT_ON_LINE (refs: line with the point, target line; pts: that point), FIX
     """
     cid: str
