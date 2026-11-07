@@ -75,14 +75,25 @@ class SplitBodyFeature(Feature):
         plane_normal: Optional[List[float]] = None,
         new_body_name: Optional[str] = None,
         frozen_source: Optional[Dict[str, Any]] = None,
+        keep: str = "both",
+        other_body_id: Optional[str] = None,
     ):
         super().__init__(feature_id, "split_body", name)
+        # "both" (older files): the far half becomes body_<id>. "front"/"back" (#219): only that half of the
+        # target is kept; the other half is a separate object with its own copy of the history (other_body_id).
+        self.keep = keep
+        self.other_body_id = other_body_id
         self.target_body_id = target_body_id
         self.plane_id = plane_id
         self.plane_origin = [float(x) for x in plane_origin] if plane_origin is not None else None
         self.plane_normal = [float(x) for x in plane_normal] if plane_normal is not None else None
         self.new_body_name = new_body_name
         self.frozen_source = frozen_source
+
+    @property
+    def result_body_id(self) -> str:
+        """The body holding the other half."""
+        return self.other_body_id or f"body_{self.feature_id}"
 
     def execute(self, doc: Any) -> None:
         target = doc.bodies.get(self.target_body_id)
@@ -127,6 +138,11 @@ class SplitBodyFeature(Feature):
         if part1.is_empty() or part2.is_empty() or part1.volume() < 1e-6 or part2.volume() < 1e-6:
             return
 
+        if self.keep in ("front", "back"):
+            target.manifold = part1 if self.keep == "front" else part2
+            target.update_render_mesh()
+            return
+
         target.manifold = part1
         target.update_render_mesh()
 
@@ -153,4 +169,6 @@ class SplitBodyFeature(Feature):
             "plane_normal": self.plane_normal,
             "new_body_name": self.new_body_name,
             "frozen_source": self.frozen_source,
+            "keep": self.keep,
+            "other_body_id": self.other_body_id,
         }

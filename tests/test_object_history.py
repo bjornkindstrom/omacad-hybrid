@@ -124,23 +124,48 @@ def test_inserting_into_object_keeps_later_steps_and_other_objects():
     assert not doc.object_history.markers
 
 
-def test_split_results_have_their_own_history_and_keep_frozen_source():
+def test_split_halves_are_separate_objects_with_their_own_editable_history():
+    """#219/#220: each half is its own object with every step that built the body; editing one leaves the other."""
     from omacad.model.sketch import SketchPlane
     doc = Document()
     source = doc.add_box(10, 10, 10)
     root = doc.timeline.last_added.feature_id
     plane = doc.add_construction_plane(SketchPlane.create_named('XY'), 5)
     split = doc.split_body(source.body_id, plane)
-    child_id = 'body_' + split.feature_id
+    child_id = split.result_body_id
+    history = doc.object_history
+    assert set(doc.bodies) == {source.body_id, child_id}
+    child_root = next(f.feature_id for f in doc.timeline.features if f.feature_type == 'box' and f.feature_id != root)
+    assert history.owners[child_root] != history.owners[root]
+    assert history.objects[history.owners[child_root]].body_ids == [child_id]
     doc.move_body(child_id, dx=20)
     child_step = doc.timeline.last_added.feature_id
-    assert doc.object_history.owners[child_step] != doc.object_history.owners[root]
+    assert history.owners[child_step] == history.owners[child_root]
     doc.edit_feature_dimension(root, 'height', '20')
-    assert doc.bodies[source.body_id].manifold.volume() == pytest.approx(500)
+    assert doc.bodies[source.body_id].manifold.volume() == pytest.approx(1500)
     assert doc.bodies[child_id].manifold.volume() == pytest.approx(500)
+    doc.edit_feature_dimension(child_root, 'width', '20')
+    assert doc.bodies[child_id].manifold.volume() == pytest.approx(1000)
+    assert doc.bodies[source.body_id].manifold.volume() == pytest.approx(1500)
     loaded = Document()
     Exporter.apply_dict(loaded, Exporter.document_to_dict(doc))
     assert loaded.object_history.owners[child_step] == doc.object_history.owners[child_step]
+    assert loaded.bodies[child_id].manifold.volume() == pytest.approx(1000)
+
+
+def test_old_split_with_frozen_source_still_loads():
+    from omacad.model.features.boolean import SplitBodyFeature
+    doc = Document()
+    source = doc.add_box(10, 10, 10)
+    mesh = source.manifold.to_mesh()
+    frozen = {"vertices": mesh.vert_properties[:, :3].tolist(), "triangles": mesh.tri_verts.tolist()}
+    feat = SplitBodyFeature("split_9", "Split Body 1", source.body_id, "gone_plane", [0, 0, 5], [0, 0, 1], frozen_source=frozen)
+    doc.timeline.add_feature(feat)
+    doc.timeline.recompute(doc)
+    loaded = Document()
+    Exporter.apply_dict(loaded, Exporter.document_to_dict(doc))
+    assert loaded.bodies["body_split_9"].manifold.volume() == pytest.approx(500)
+    assert loaded.bodies[source.body_id].manifold.volume() == pytest.approx(500)
 
 
 def test_shared_sketch_updates_both_objects_and_branch_delete_dependency():

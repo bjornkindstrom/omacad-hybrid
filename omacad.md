@@ -1,3 +1,16 @@
+## Requests #219, #220 — 2026-11-07 (0.9.9.80.165)
+
+Split Body: `Document.split_body` kör `_copy_body_steps(body_id)` (klonar alla steg som byggt kroppen till ett
+nytt objekt vid markören), sedan två `SplitBodyFeature` med `keep="front"` (originalet, del 1 = normalens sida)
+och `keep="back"` (klonen). Båda bär `other_body_id`; `result_body_id` ger andra halvans kropp (gamla:
+`body_<fid>`), använd den i stället för `f"body_{feat.feature_id}"`. Klonens skapande steg döps till
+"<namn> (Split)" (kroppen heter efter steget) och objektnamnet sätts i `history.names`. Ingen `frozen_source`
+längre (det var just den som gjorde att parametrarna "inte gjorde något" efter split, #220); gamla filer med
+`frozen_source`/`keep="both"` är orörda. `ObjectHistory.sync`: split räknas som "creates" bara vid `keep == "both"`
+(annars tomt "Split Body N result"-objekt). Kvar: plan-byte i en halvas Split-steg ändrar inte den andra halvan
+(planet delas, så en flyttad offset-plan följer båda). Test: `tests/test_requests_219_220.py`,
+`test_object_history.py::test_split_halves_are_separate_objects_with_their_own_editable_history`.
+
 ## Länkade håls kantavstånd — 2026-11-07 (0.9.9.80.164, #216 forts.)
 
 Björn: länkade hål ska även följa masterns avstånd till väggarna. `model/sketch_linked_clearance.py`:

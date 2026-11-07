@@ -129,7 +129,7 @@ def split_box():
     plane = doc.add_construction_plane(SketchPlane.create_named("YZ"), left + 30)
     split = doc.split_body(source.body_id, plane)
     assert right - left == pytest.approx(40)
-    return doc, source.body_id, split, f"body_{split.feature_id}"
+    return doc, source.body_id, split, split.result_body_id
 
 
 @pytest.mark.parametrize("by_move", [True, False])
@@ -156,7 +156,10 @@ def test_a_copy_of_a_sliced_body_is_that_slice_only(by_move):
 def test_the_other_half_can_be_copied_and_the_original_halves_stay():
     doc, kept, split, half = split_box()
     volumes = {b: doc.bodies[b].manifold.volume() for b in (kept, half)}
-    copy = doc.branch_object(split.feature_id, half, linked=False)
+    history = doc.object_history
+    own_split = history.objects[history.owners[next(f.feature_id for f in doc.timeline.features
+                                                     if half in history.outputs.get(f.feature_id, []))]].feature_ids[-1]
+    copy = doc.branch_object(own_split, half, linked=False)   # the half's own object ends in its own Split step
     assert set(doc.bodies) == {kept, half, copy.body_id}
     assert copy.manifold.volume() == pytest.approx(volumes[half])
     assert {b: doc.bodies[b].manifold.volume() for b in (kept, half)} == pytest.approx(volumes)

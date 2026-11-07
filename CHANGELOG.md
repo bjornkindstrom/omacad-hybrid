@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.165
+
+### Changed
+- **Split Body makes two truly separate objects (#219, #220)**: The far half is now its own object with a copy of every step that built the body (e.g. Cylinder → Shell → Split). Each half keeps all its parameters in the browser and can be edited on its own: changing the lid's Shell thickness or cylinder radius no longer touches the jar, and vice versa. The split is one undo step. Older files with frozen split halves load unchanged; a body without steps (imported mesh) still splits the old way.
+
 # Hybrid-experiment — 0.9.9.80.164
 
 ### Added

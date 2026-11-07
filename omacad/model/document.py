@@ -1546,7 +1546,29 @@ class Document:
             op = self.origin_planes[plane_id]
             plane_origin = list(op.origin)
             plane_normal = list(op.normal)
-        frozen_source = None
+        source_name = self.bodies[body_id].name
+        copy_id = self._copy_body_steps(body_id)
+        if copy_id is not None:
+            # #219/#220: the far half becomes its own object with a copy of every step that built the body, so
+            # both halves keep all their parameters and editing one never reshapes the other.
+            name = f"Split Body {n}"
+            feat = SplitBodyFeature(feat_id, name, body_id, plane_id, plane_origin=plane_origin,
+                                    plane_normal=plane_normal, keep="front", other_body_id=copy_id)
+            self.timeline.add_feature(feat)
+            other = SplitBodyFeature(self._feature_id("split"), name, copy_id, plane_id, plane_origin=plane_origin,
+                                     plane_normal=plane_normal, keep="back", other_body_id=body_id)
+            self.timeline.add_feature(other)
+            history = self.object_history
+            maker = next(f for f in self.timeline.features if copy_id in history.outputs.get(f.feature_id, []))
+            maker.name = new_body_name or f"{source_name} (Split)"   # the body is named after the step that made it
+            copy_object = history.owners.get(maker.feature_id)
+            if copy_object:
+                history.owners[other.feature_id] = copy_object
+                history.names[copy_object] = new_body_name or f"{source_name} (Split)"
+            self.timeline.recompute(self)
+            self.notify_changed()
+            return feat
+        # A body without steps (nothing to copy): cut a saved copy, both halves in one step as before.
         source_body = self.bodies[body_id].manifold.to_mesh()
         frozen_source = {
             "vertices": np.asarray(source_body.vert_properties[:, :3], dtype=np.float32).tolist(),

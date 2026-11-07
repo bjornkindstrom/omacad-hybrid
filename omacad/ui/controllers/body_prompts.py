@@ -116,7 +116,7 @@ class BodyPromptsMixin:
                     feat = self.doc.split_body(b_id, p_id)
                     if feat:
                         target = self.doc.bodies.get(b_id)
-                        new_body = self.doc.bodies.get(f"body_{feat.feature_id}")
+                        new_body = self.doc.bodies.get(feat.result_body_id)
                         t_name = target.name if target else b_id
                         n_name = new_body.name if new_body else "Split"
                         self.status_label.setText(f"Split body {t_name} into {t_name} and {n_name}.")

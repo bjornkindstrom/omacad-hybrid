@@ -107,7 +107,8 @@ class ObjectHistory:
             outputs = self.outputs.get(fid, [])
             if not outputs and getattr(feat, '_last_body_outputs', None):
                 outputs = self.outputs[fid] = list(feat._last_body_outputs)
-            creates = (feat.feature_type in ('box', 'cylinder', 'cone', 'prism', 'sphere', 'import_mesh', 'branch', 'split_body')
+            creates = (feat.feature_type in ('box', 'cylinder', 'cone', 'prism', 'sphere', 'import_mesh', 'branch')
+                       or (feat.feature_type == 'split_body' and getattr(feat, 'keep', 'both') == 'both')
                        or getattr(feat, 'operation', None) == 'new_body'
                        or (feat.feature_type == 'move' and feat.copy_body))
             if creates or created in doc.bodies or (after is not None and created in after):
