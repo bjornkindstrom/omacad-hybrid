@@ -170,8 +170,8 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
                 INSERT]),
     ("MODIFY", ["fillet", "chamfer", "shell", "surface_texture", MODIFY_BODY, "parameters", "delete"]),
     ("INSPECT", [INSPECT]),
-    ("EXPORT", [EXPORT]),
     ("SCRIPTS", ["scripts", "new_script_ai"]),
+    ("EXPORT", [EXPORT]),                     # Export stays the last group
 ]
 SKETCH_GROUPS: List[Tuple[str, list]] = [
     ("CREATE", ["line", "rect", "circle", "arc", "spline", "control_spline", "polygon", "slot", "text", "import_svg", "offset_sketch", "mirror_sketch", "project",

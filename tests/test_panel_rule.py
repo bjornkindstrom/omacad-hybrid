@@ -13,7 +13,10 @@ def win():
     w = MainWindow()
     w.resize(1400, 900)
     w.show()
-    return w
+    yield w
+    w.close()                     # no window left open for the tests after these (they draw and compare pixels)
+    w.deleteLater()
+    QApplication.processEvents()
 
 
 def _cut(dlg):
@@ -51,4 +54,26 @@ def test_script_panel_pairs_numbers_and_keeps_text_whole(win, monkeypatch):
     assert _cut(dlg) == []
     auto_pair_rows(dlg)                                      # a second dock changes nothing
     assert len([c for c in dlg.findChildren(QWidget) if getattr(c, "omacad_pair", False)]) == len(pairs)
+    dlg.reject()
+
+
+def test_a_pair_that_got_too_wide_is_split_when_docked(win):
+    """A dialog pairs its fields in __init__, before the panel's style (other fonts on another machine can make a
+    choice wider than half the panel): docking gives such fields their own rows instead of cutting them."""
+    from PySide6.QtWidgets import QFormLayout
+    from omacad.ui.dialogs.base import BaseFeatureDialog
+    dlg = BaseFeatureDialog("Pairs")
+    form = QFormLayout()
+    a, b = QComboBox(), QComboBox()
+    a.addItem("Fillet")
+    b.addItem("Chamfer")
+    form.addRow("Outer:", a)
+    form.addRow("Inner:", b)
+    dlg.main_layout.addLayout(form)
+    dlg.pair_form_rows(form, [(a, b)])
+    assert any(getattr(c, "omacad_pair", False) for c in dlg.findChildren(QWidget))
+    b.addItem("Chamfer, two distances")      # now wider than half the panel
+    win.dock(dlg)
+    assert not any(getattr(c, "omacad_pair", False) for c in dlg.findChildren(QWidget))
+    assert _cut(dlg) == []
     dlg.reject()

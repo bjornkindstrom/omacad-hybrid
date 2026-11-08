@@ -55,6 +55,7 @@ def studio_layout(dlg) -> None:
 PAIR_FIELD_WIDTH = 160      # px a field may need to share a row with another in the docked panel
 PANEL_CONTENT_WIDTH = 358 - 2 * 14 - 16   # docked panel width minus margins and a scroll bar
 GROUP_BOX_INSET = 44                       # px a group box's frame and margins take from the width
+PAIR_COLUMN_WIDTH = (358 - 2 * 14 - 8) // 2  # half the docked panel: what each field of a pair gets
 PANEL_LABEL_PX = 13        # the docked panels' label size (Studio uses 12)
 PAIR_LABEL_WIDTH = 158      # px a label may need above a half-width field: wider text would be cut, so it keeps its row
 
@@ -95,13 +96,25 @@ def _rows_fit_beside_labels(form) -> bool:
     return all(widest + gap + f.minimumSize().width() <= room for _l, f in rows)
 
 
+def _pair_too_narrow(box) -> bool:
+    """A label or a field of the pair needs more than half the panel (measured now, in the panel's style)."""
+    for lab, f in box._items:
+        if _label_too_wide(lab):
+            return True
+        f.ensurePolished()
+        if f.minimumSizeHint().width() > PAIR_COLUMN_WIDTH:
+            return True
+    return False
+
+
 def _unpair_cut_labels(form) -> None:
-    """A pair made before the panel's style applied may turn out to cut a label: its fields get their own rows back."""
+    """A pair made before the panel's style applied (other fonts, e.g. on Windows) may turn out to cut a label or a
+    choice: its fields get their own rows back."""
     from PySide6.QtWidgets import QFormLayout
     for row in reversed(range(form.rowCount())):
         item = form.itemAt(row, QFormLayout.ItemRole.SpanningRole) or form.itemAt(row, QFormLayout.ItemRole.FieldRole)
         box = item.widget() if item is not None else None
-        if not getattr(box, "omacad_pair", False) or not any(_label_too_wide(lab) for lab, _f in box._items):
+        if not getattr(box, "omacad_pair", False) or not _pair_too_narrow(box):
             continue
         items = box._items
         form.takeRow(row)
