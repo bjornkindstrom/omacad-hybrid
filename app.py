@@ -63,6 +63,9 @@ def main():
         i = sys.argv.index("--check-script")
         out = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv[:-1] else None
         sys.exit(check_script(sys.argv[i + 1], out) if len(sys.argv) > i + 1 else 2)
+    if "--create-script-images" in sys.argv:
+        from tools.create_script_images import main as create_images_main
+        sys.exit(create_images_main([arg for arg in sys.argv[1:] if arg != "--create-script-images"]))
     # Set default OpenGL surface format with 4x MSAA anti-aliasing
     fmt = QSurfaceFormat()
     fmt.setSamples(4)

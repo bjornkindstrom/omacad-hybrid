@@ -84,7 +84,10 @@ class ScriptPromptsMixin:
 
     def manage_user_script(self, what: str, path: str) -> None:
         """Right-click on a script in a menu: rename, modify (with AI, a copy) or delete it."""
-        if what == "rename":
+        if what == "easy":
+            from omacad.ui.script_easy import configure_easy
+            configure_easy(self, path)
+        elif what == "rename":
             self.rename_user_script(path)
         elif what == "delete":
             self.delete_user_script(path)
@@ -268,6 +271,7 @@ class ScriptPromptsMixin:
             return
         wish, name = dlg.wish(), dlg.file_name()
         images = self._save_ai_images(dlg, folder, name)
+        self._save_script_preview_image(dlg, folder, name)
         watcher = self.script_watcher
         if dlg.mode == "agent":
             prompt = write_agent_prompt(wish, folder, name, images=images)
@@ -291,6 +295,36 @@ class ScriptPromptsMixin:
         except OSError as e:
             QMessageBox.warning(self, "Pictures", f"The pictures could not be saved for the AI: {e}")
             return []
+
+    def _save_script_preview_image(self, dlg, folder: Path, name: str, base: Optional[Path] = None) -> Optional[Path]:
+        """Saves a screenshot (<stem>.png) for the script's explanation."""
+        from omacad.scripting.folder import save_script_screenshot
+        if hasattr(self, "viewport") and self.viewport is not None:
+            try:
+                shot = self.viewport.grabFramebuffer()
+                if shot is not None and not shot.isNull():
+                    return save_script_screenshot(shot, folder, name)
+            except Exception as e:
+                applog.log("scripts", f"grab viewport screenshot: {e}")
+        dlg_imgs = dlg.images() if hasattr(dlg, "images") else []
+        if dlg_imgs:
+            return save_script_screenshot(dlg_imgs[0], folder, name)
+        if base is not None:
+            from omacad.scripting.loader import read_info
+            info = read_info(base)
+            if info.image_path and info.image_path.exists():
+                return save_script_screenshot(info.image_path, folder, name)
+        return None
+
+    def create_script_picture(self, path) -> Optional[Path]:
+        """Renders an illustration image (<stem>.png) for `path` from its 3D geometry."""
+        from omacad.scripting.images import render_script_image
+        if not hasattr(self, "viewport") or self.viewport is None:
+            return None
+        res = render_script_image(self.viewport, path)
+        if res:
+            self.status_label.setText(f"Created picture for “{Path(path).stem}”.")
+        return res
 
     def _copied_box(self, text: str, steps: str, images: list) -> None:
         """After the instructions went to the clipboard: what to do in the web chat (attach the pictures too)."""
@@ -329,6 +363,7 @@ class ScriptPromptsMixin:
             return
         wish, name, src = dlg.wish(), dlg.file_name(), dlg.base()
         images = self._save_ai_images(dlg, folder, name)
+        self._save_script_preview_image(dlg, folder, name, base=src)
         watcher = self.script_watcher
         if dlg.mode == "agent":
             target = make_copy(src, folder, name, wish)

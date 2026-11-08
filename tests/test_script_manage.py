@@ -144,3 +144,98 @@ def test_right_click_in_a_tool_menu_manages_the_script(win, folder, monkeypatch)
     monkeypatch.setattr(win, "rename_user_script", lambda p: got.append(("rename", Path(p).name)))
     win.manage_user_script("rename", str(copy))
     assert got == [("jar", "jar_tall.py"), ("rename", "jar_tall.py")]
+
+
+def test_script_screenshot_creation_and_dialog_display(win, folder, monkeypatch):
+    from omacad.ui.scripts_ui import ScriptParamsDialog, ScriptsDialog, AiScriptDialog
+    # 1. Test save_script_screenshot directly
+    shot = _img("blue")
+    img_path = sfolder.save_script_screenshot(shot, folder, "box_tool.py")
+    assert img_path is not None and img_path.exists()
+    assert img_path.name == "box_tool.png"
+
+    # 2. Test read_info detects the image
+    script_file = folder / "box_tool.py"
+    script_file.write_text('NAME = "Box Tool"\nDESCRIPTION = "Makes a box."\nPARAMS = []\n\ndef run(ctx, params):\n    pass\n', encoding="utf-8")
+    info = read_info(script_file)
+    assert info.image_path == img_path
+
+    # 3. Test ScriptParamsDialog shows the image in the script explanation
+    dlg = ScriptParamsDialog(info, {}, win)
+    assert dlg.lbl_image is not None and dlg.lbl_image.pixmap() is not None
+    assert not dlg.lbl_image.pixmap().isNull()
+    dlg.deleteLater()
+
+    # 4. Test ScriptsDialog shows the image for the script
+    sdlg = ScriptsDialog(win, win.script_watcher)
+    for idx in range(sdlg.list.count()):
+        item = sdlg.list.item(idx)
+        if "box_tool.py" in str(item.data(Qt.ItemDataRole.UserRole)):
+            sdlg.list.setCurrentItem(item)
+            break
+    assert not sdlg.lbl_image.isHidden()
+    sdlg.reject()
+    sdlg.deleteLater()
+
+    # 5. Test prompt_new_script_ai creates screenshot automatically from viewport
+    fake_shot = _img("magenta")
+    monkeypatch.setattr(win.viewport, "grabFramebuffer", lambda: fake_shot)
+
+    def fake_ai_exec(self):
+        self.edt_name.setText("auto_widget.py")
+        self.mode = "agent"
+        return True
+
+    monkeypatch.setattr(AiScriptDialog, "exec", fake_ai_exec)
+    monkeypatch.setattr("omacad.feedback.launch_agent_text", lambda *a, **k: True)
+    win.prompt_new_script_ai()
+
+    auto_img = folder / "auto_widget.png"
+    assert auto_img.exists()
+
+    # 6. Test delete_script also removes the image
+    auto_script = folder / "auto_widget.py"
+    auto_script.write_text('NAME = "Auto"\n\ndef run(ctx, params):\n    pass\n', encoding="utf-8")
+    assert sfolder.delete_script(auto_script)
+    assert not auto_img.exists()
+
+
+def test_render_script_images_for_own_scripts(win, folder):
+    from omacad.scripting.images import render_script_image, render_script_images
+    from omacad.ui.scripts_ui import ScriptsDialog
+
+    # Create a user script that creates a solid box
+    user_script = folder / "own_flange.py"
+    user_script.write_text('NAME = "Own Flange"\nDESCRIPTION = "Flange part."\nPARAMS = []\n\ndef run(ctx, params):\n    ctx.box(30, 20, 10)\n', encoding="utf-8")
+    assert not (folder / "own_flange.png").exists()
+
+    # 1. Test render_script_image
+    img = render_script_image(win.viewport, user_script)
+    assert img is not None and img.exists()
+    assert img.name == "own_flange.png"
+    assert img.stat().st_size > 0
+    img.unlink()
+
+    # 2. Test render_script_images batch
+    made = render_script_images(win.viewport, folder=folder, only_own=True)
+    assert any(p.name == "own_flange.png" for p in made)
+    assert (folder / "own_flange.png").exists()
+
+    # 3. Test create_script_picture on window
+    (folder / "own_flange.png").unlink()
+    res = win.create_script_picture(user_script)
+    assert res is not None and res.exists()
+
+    # 4. Test ScriptsDialog Create Picture action
+    sdlg = ScriptsDialog(win, win.script_watcher)
+    for idx in range(sdlg.list.count()):
+        item = sdlg.list.item(idx)
+        if "own_flange.py" in str(item.data(Qt.ItemDataRole.UserRole)):
+            sdlg.list.setCurrentItem(item)
+            break
+    assert sdlg.btn_pic.isEnabled()
+    (folder / "own_flange.png").unlink()
+    sdlg._create_picture()
+    assert (folder / "own_flange.png").exists()
+    sdlg.reject()
+    sdlg.deleteLater()

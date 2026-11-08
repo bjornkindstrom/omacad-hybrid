@@ -134,13 +134,18 @@ def rename_script(path, new_name: str) -> None:
 
 
 def delete_script(path) -> bool:
-    """Moves one of the user's own scripts (and its test report) to the trash, or deletes it where there is none.
+    """Moves one of the user's own scripts (and its test report and picture) to the trash, or deletes it where there is none.
     Refuses Omacad's bundled scripts. Returns True when the script is gone."""
     from omacad.scripting.runner import check_file_for
     path = Path(path)
     if not is_own(path):
         raise ValueError("Omacad's own scripts can't be deleted.")
-    for p in (path, check_file_for(path)):
+    targets = [path, check_file_for(path)]
+    for ext in IMAGE_SUFFIXES:
+        img = path.with_suffix(ext)
+        if img.exists():
+            targets.append(img)
+    for p in targets:
         if p.exists() and not _to_trash(p):
             p.unlink()
     return not path.exists()
@@ -178,3 +183,30 @@ def save_images(images, folder, stem: str) -> List[Path]:
                 continue
         saved.append(dst)
     return saved
+
+
+def save_script_screenshot(image, folder, stem: str) -> Optional[Path]:
+    """Saves `image` (a QImage or file path) as `<folder>/<stem>.png` for the script's explanation."""
+    from PySide6.QtGui import QImage
+    if image is None:
+        return None
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    clean_stem = Path(stem).stem
+    dst = folder / f"{clean_stem}.png"
+    if isinstance(image, (str, Path)):
+        src = Path(image)
+        if src.exists() and src.resolve() != dst.resolve():
+            shutil.copyfile(src, dst)
+            return dst
+    elif isinstance(image, QImage):
+        if not image.isNull():
+            image.save(str(dst), "PNG")
+            return dst
+    elif hasattr(image, "save"):
+        try:
+            image.save(str(dst), "PNG")
+            return dst
+        except Exception:
+            pass
+    return dst if dst.exists() else None

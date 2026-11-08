@@ -98,12 +98,21 @@ def make_copy(base: Path, folder: Path, file_name: str, wish: str) -> Path:
     """Copies the script to modify into `file_name` (the original is never changed) and marks its NAME as a copy, so
     it is told apart in the menus until the AI gives it a better name."""
     import re
-    target = Path(folder) / file_name
-    text = Path(base).read_text(encoding="utf-8")
+    import shutil
+    base, folder = Path(base), Path(folder)
+    target = folder / file_name
+    text = base.read_text(encoding="utf-8")
     label = " ".join(wish.split()[:5]).strip(" .,") or "copy"
     text, n = re.subn(r'^NAME\s*=\s*(["\'])(.*?)\1', lambda m: f'NAME = {(m.group(2).replace(" (script)", "") + " – " + label)!r}',
                       text, count=1, flags=re.M)
     target.write_text(text, encoding="utf-8")
+    for ext in (".png", ".jpg", ".jpeg", ".webp", ".bmp"):
+        img = base.with_suffix(ext)
+        if img.exists():
+            tgt_img = target.with_suffix(ext)
+            if not tgt_img.exists():
+                shutil.copyfile(img, tgt_img)
+            break
     return target
 
 

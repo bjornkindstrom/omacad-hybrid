@@ -1,3 +1,15 @@
+# Hybrid-experiment — 0.9.9.80.172
+
+### Added
+- **Script Easy mode**: choose visible parameters and drag them into order through the script context menu. Choices are saved in the script; Advanced restores all fields.
+- **Script illustration images & auto-screenshots**:
+  - When making a new script via **New Script with AI** (or **Modify with AI…**), Omacad automatically creates a screenshot from the 3D viewport (or user-attached image) and saves it as `<script>.png` next to the script in the scripts folder.
+  - Script illustrations (`<script>.png` or explicit `IMAGE = "..."`) are displayed at the top of the script explanation in the docked parameters panel (`ScriptParamsDialog`) when choosing the script from the menu, and in the **Scripts** window (Shift+S).
+  - Deleting a script cleans up its associated illustration image, and making an AI copy inherits the original's picture.
+- **Generate images for user scripts**:
+  - New standalone tool `tools/create_script_images.py` (also `omacad --create-script-images`) renders 3D models with default parameters, crops them cleanly to geometry, and saves illustration images for all scripts or user-added scripts (`--own-only`).
+  - Added **Create Picture** button and right-click context menu action in the **Scripts** dialog (Shift+S) to render or update pictures for any script directly inside Omacad.
+
 # Hybrid-experiment — 0.9.9.80.171
 
 ### Added

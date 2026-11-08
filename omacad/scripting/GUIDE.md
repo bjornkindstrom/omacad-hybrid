@@ -32,6 +32,9 @@ Rules:
 
 - `NAME`, `DESCRIPTION`, `PARAMS`, `OUTPUT_NAME` and `FAMILY` are read **without running the file**, so they must
   be literal values.
+- **Pictures:** Omacad saves a screenshot of the 3D view when creating a new script (`<script>.png` next to the script).
+  An `IMAGE = "picture.png"` line or a picture next to the script is shown as an illustration in the script explanation
+  in the tool panel when the user chooses the script.
 - **Names:** the panel always has a **Name** field (default `OUTPUT_NAME`, else `NAME`); the script reads it as
   `ctx.name`. Name what you make from it, e.g. `ctx.solid(jar, ctx.name)` and `ctx.solid(lid, f"{ctx.name} lid")`,
   or `body.rename(ctx.name)`. Objects the script does not name get `ctx.name`, `ctx.name 2` … automatically.
@@ -236,3 +239,9 @@ def run(ctx, params):
                    edges=lambda e: e.kind == "circle" and abs(e.radius - r) < 1e-3)
     ctx.log(f"Bolt circle diameter {2 * circle_r:.1f} mm, volume {flange.volume:.0f} mm³")
 ```
+
+### Easy mode
+
+Optional metadata: `EASY_PARAMS = ["width", "height"]` lists parameters visible in Easy mode. An empty list hides all parameters; omitted metadata shows all. Advanced always shows every parameter. Hidden parameters retain their values. Users can edit this list through the script context menu, “Easy mode settings…”.
+
+The order in `EASY_PARAMS` determines the field order in Easy mode. Drag entries in “Easy mode settings…” to reorder them. Advanced uses the original `PARAMS` order.

@@ -1,3 +1,17 @@
+## Easy mode: ordning och synlighet — 2026-11-08
+
+Högerklick → Easy mode settings har en krysslista med drag-and-drop. EASY_PARAMS
+anger även visningsordningen i Easy; Advanced återställer PARAMS-ordningen.
+_set_mode flyttar befintliga formulärrader och döljer hela raden inklusive etikett.
+Test visar dialogen och kontrollerar etiketter, fält, tomt urval, ordning och bevarade värden.
+
+## Script Easy mode — 2026-11-08
+
+Scriptpanelen har Advanced/Easy; högerklick → Easy mode settings sparar synliga
+parameternamn som EASY_PARAMS i scriptfilen. Dolda fält behåller sina värden.
+Saknad metadata visar alla fält; tom lista döljer alla parametrar.
+Test: tests/test_script_easy.py.
+
 ## Script-versioner av Jar/Star/Box + Namn-fält — 2026-11-08 (0.9.9.80.171)
 
 Björn: Jar, stjärna och box som script man kan använda och låta AI ändra; ändrade kopior i undermeny på

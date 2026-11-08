@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 from PySide6.QtCore import QObject, QProcess, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QKeySequence, QPixmap
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QFormLayout, QHBoxLayout, QLabel,
                                QLineEdit, QListWidget, QListWidgetItem, QPlainTextEdit, QPushButton, QSpinBox,
                                QVBoxLayout, QWidget)
@@ -197,6 +197,9 @@ class ScriptsDialog(QDialog):
         self.lbl_title = QLabel()
         self.lbl_title.setStyleSheet("font-size: 16px; font-weight: 600;")
         self.lbl_file = QLabel()
+        self.lbl_image = QLabel()
+        self.lbl_image.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.lbl_image.hide()
         self.lbl_desc = QLabel()
         self.lbl_desc.setWordWrap(True)
         self.lbl_params = QLabel()
@@ -204,7 +207,7 @@ class ScriptsDialog(QDialog):
         self.lbl_status = QLabel()
         self.lbl_status.setWordWrap(True)
         self.lbl_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        for w in (self.lbl_title, self.lbl_file, self.lbl_desc, self.lbl_params, self.lbl_status):
+        for w in (self.lbl_title, self.lbl_file, self.lbl_image, self.lbl_desc, self.lbl_params, self.lbl_status):
             right.addWidget(w)
         right.addStretch()
         body.addLayout(right, 1)
@@ -227,6 +230,9 @@ class ScriptsDialog(QDialog):
         self.btn_copy.clicked.connect(self._copy_error)
         self.btn_edit = QPushButton("Edit")
         self.btn_edit.clicked.connect(self._edit)
+        self.btn_pic = QPushButton("Create Picture")
+        self.btn_pic.setToolTip("Renders a 3D illustration picture of this script for its explanation")
+        self.btn_pic.clicked.connect(self._create_picture)
         self.btn_test = QPushButton("Test")
         self.btn_test.setToolTip("Test-run the script on an empty model with its default values")
         self.btn_test.clicked.connect(self._test)
@@ -236,7 +242,7 @@ class ScriptsDialog(QDialog):
         btn_close = QPushButton("Close")
         btn_close.setAutoDefault(False)
         btn_close.clicked.connect(self.reject)
-        for b in (self.btn_copy, self.btn_edit, self.btn_test, self.btn_run, btn_close):
+        for b in (self.btn_copy, self.btn_edit, self.btn_pic, self.btn_test, self.btn_run, btn_close):
             row.addWidget(b)
         lay.addLayout(row)
 
@@ -293,22 +299,38 @@ class ScriptsDialog(QDialog):
     def _show(self) -> None:
         info = self._info()
         has = info is not None
-        for b in (self.btn_run, self.btn_test, self.btn_edit, self.btn_modify):
+        for b in (self.btn_run, self.btn_test, self.btn_edit, self.btn_modify, self.btn_pic):
             b.setEnabled(has)
         self.btn_copy.setEnabled(False)
         if not has:
             self.lbl_title.setText("No scripts yet")
             self.lbl_file.setText("")
+            self.lbl_image.clear()
+            self.lbl_image.hide()
             self.lbl_desc.setText("Press “New Script with AI…” and describe a tool you want, or put a .py file in the folder.")
             self.lbl_params.setText("")
             self.lbl_status.setText("")
             return
         self.lbl_title.setText(info.name)
         self.lbl_file.setText(info.path.name)
+        img_path = getattr(info, "image_path", None)
+        if img_path and img_path.exists():
+            pix = QPixmap(str(img_path))
+            if not pix.isNull():
+                scaled = pix.scaled(240, 140, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                self.lbl_image.setPixmap(scaled)
+                self.lbl_image.show()
+            else:
+                self.lbl_image.clear()
+                self.lbl_image.hide()
+        else:
+            self.lbl_image.clear()
+            self.lbl_image.hide()
         self.lbl_desc.setText(info.description)
         self.lbl_params.setText(("Values: " + ", ".join(p.title for p in info.params)) if info.params else "")
         if info.error:
             self.btn_run.setEnabled(False)
+            self.btn_pic.setEnabled(False)
             self.lbl_status.setText(f"⚠ Can't run: {info.error}")
             self.btn_copy.setEnabled(True)
             return
@@ -338,24 +360,45 @@ class ScriptsDialog(QDialog):
         self.list.setCurrentItem(item)
         info = self._info()
         menu = QMenu(self)
+        easy = menu.addAction("Easy mode settings…")
         run = menu.addAction("Run")
         run.setEnabled(not info.error)
         rename = menu.addAction("Rename…  (F2)")
         modify = menu.addAction("Modify with AI…")
+        pic = menu.addAction("Create Picture")
+        pic.setEnabled(not info.error)
+        pic.setToolTip("Renders a 3D illustration picture for this script's explanation")
         menu.addSeparator()
         delete = menu.addAction("Delete…  (Del)")
         delete.setEnabled(is_own(info.path))
         delete.setToolTip("" if is_own(info.path) else "Omacad's own scripts can't be deleted")
         menu.setToolTipsVisible(True)
         chosen = menu.exec(self.list.viewport().mapToGlobal(pos))
-        if chosen is run:
+        if chosen is easy:
+            self.window_.manage_user_script("easy", str(info.path))
+            self.refresh()
+        elif chosen is run:
             self._run()
+        elif chosen is pic:
+            self._create_picture()
         elif chosen is rename:
             self._rename()
         elif chosen is modify:
             self._modify()
         elif chosen is delete:
             self._delete()
+
+    def _create_picture(self) -> None:
+        info = self._info()
+        if info is None or info.error:
+            return
+        if hasattr(self.window_, "create_script_picture"):
+            self.window_.create_script_picture(info.path)
+        else:
+            from omacad.scripting.images import render_script_image
+            if hasattr(self.window_, "viewport"):
+                render_script_image(self.window_.viewport, info.path)
+        self.refresh()
 
     def _rename(self) -> None:
         info = self._info()
@@ -428,10 +471,24 @@ class ScriptParamsDialog(BaseFeatureDialog):
         super().__init__(info.name, parent)
         self.info = info
         self.fields = {}
+        self.lbl_image = None
+        if getattr(info, "image_path", None) and info.image_path.exists():
+            pix = QPixmap(str(info.image_path))
+            if not pix.isNull():
+                self.lbl_image = QLabel()
+                self.lbl_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                scaled = pix.scaled(280, 160, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                self.lbl_image.setPixmap(scaled)
+                self.lbl_image.setStyleSheet("QLabel { background-color: rgba(0, 0, 0, 0.08); border-radius: 6px; padding: 2px; }")
+                self.lbl_image.setToolTip(info.name)
+                self.main_layout.addWidget(self.lbl_image)
         if info.description:
             desc = QLabel(info.description)
             desc.setWordWrap(True)
             self.main_layout.addWidget(desc)
+        self.mode = QComboBox()
+        self.mode.addItems(["Advanced", "Easy"])
+        self.main_layout.addWidget(self.mode)
         form = QFormLayout()
         self.edt_name = QLineEdit(name or info.default_name)
         self.edt_name.setPlaceholderText(info.default_name)
@@ -448,6 +505,8 @@ class ScriptParamsDialog(BaseFeatureDialog):
             sig = (w.toggled if isinstance(w, QCheckBox) else w.currentIndexChanged if isinstance(w, QComboBox)
                    else w.textChanged if isinstance(w, QLineEdit) else w.valueChanged)
             sig.connect(lambda *_: self.changed.emit())
+        self.param_form = form
+        self.mode.currentTextChanged.connect(self._set_mode)
         self.main_layout.addLayout(form)
         self.lbl_problem = QLabel("")
         self.lbl_problem.setWordWrap(True)
@@ -455,6 +514,22 @@ class ScriptParamsDialog(BaseFeatureDialog):
         self.main_layout.addWidget(self.lbl_problem)
         self.add_buttons()
         self.btn_ok.setText("Run")
+
+    def _set_mode(self, mode):
+        form = self.param_form
+        names = list(self.fields)
+        if mode == "Easy" and self.info.easy_params is not None:
+            names = list(dict.fromkeys([n for n in self.info.easy_params if n in self.fields] + names))
+        rows = {}
+        for key, (_, widget) in self.fields.items():
+            form.setRowVisible(widget, True)
+            row = form.takeRow(widget)
+            rows[key] = row.labelItem.widget()
+        for key in names:
+            widget = self.fields[key][1]
+            form.addRow(rows[key], widget)
+            form.setRowVisible(widget, mode == "Advanced" or self.info.easy_params is None
+                               or key in self.info.easy_params)
 
     @staticmethod
     def _field(p: Param, value) -> QWidget:

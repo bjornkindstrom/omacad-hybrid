@@ -63,6 +63,9 @@ class ScriptInfo:
     error: str = ""          # why the script can't be run as it is ("" = fine)
     family: str = ""         # a built-in tool it is a version of ("jar", "star_brackets", "box_row"): its submenu
     output_name: str = ""    # default for the Name field (what the made things are called); "" = NAME
+    image_path: Optional[Path] = None
+
+    easy_params: Optional[List[str]] = None
 
     @property
     def default_name(self) -> str:
@@ -154,9 +157,24 @@ def read_info(path) -> ScriptInfo:
         if isinstance(out_name, str):
             info.output_name = out_name.strip()
         info.params = parse_params(_literal(tree, "PARAMS"))
+        easy = _literal(tree, "EASY_PARAMS")
+        if easy is not None and (not isinstance(easy, list) or not all(isinstance(x, str) for x in easy)):
+            raise ScriptError("EASY_PARAMS must be a list of parameter names.")
+        info.easy_params = easy
+        img = _literal(tree, "IMAGE")
+        if isinstance(img, str) and img.strip():
+            candidate = (path.parent / img.strip()).resolve()
+            if candidate.exists():
+                info.image_path = candidate
     except ScriptError as e:
         info.error = str(e)
         return info
+    if info.image_path is None:
+        for ext in (".png", ".jpg", ".jpeg", ".webp", ".bmp"):
+            candidate = path.with_suffix(ext)
+            if candidate.exists():
+                info.image_path = candidate
+                break
     if not any(isinstance(n, ast.FunctionDef) and n.name == "run" for n in tree.body):
         info.error = "The script needs a top-level function `def run(ctx, params):`."
     return info
