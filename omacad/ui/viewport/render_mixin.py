@@ -10,6 +10,7 @@ from omacad.ui import theme
 from omacad.ui.viewport.sketch_rotate_mixin import INFO as ROTATE_INFO
 from omacad.model.timeline import profile_cross_section
 from omacad.model.sketch import Sketch, SketchArc, SketchSlot, SketchSpline
+from omacad.model.sketch_solver import entity_defined
 
 
 
@@ -521,6 +522,27 @@ class RenderGLMixin:
             gap_px = float(get_settings().get("guide_line_gap", 6.0))
         return dash_lines(flat_segments, self.world_to_screen, dash_px, gap_px)
 
+    CONFLICT_SHOW_S = 3.0
+
+    def _recent_conflicts(self, sketch) -> set:
+        """Elements of a constraint/dimension just refused as over defining, for a few seconds."""
+        import time
+        info = getattr(self.doc, "last_conflicts", None)
+        if not info or info[0] != sketch.sketch_id:
+            return set()
+        left = self.CONFLICT_SHOW_S - (time.monotonic() - info[2])
+        if left <= 0:
+            return set()
+        if not getattr(self, "_conflict_timer_armed", False):
+            from PySide6.QtCore import QTimer
+            self._conflict_timer_armed = True
+
+            def _clear():
+                self._conflict_timer_armed = False
+                self.update()
+            QTimer.singleShot(int(left * 1000) + 50, _clear)
+        return info[1]
+
     def draw_thick_lines(self, mvp: np.ndarray, flat_segments, rgba, width_px: float, halo: bool = True,
                          halo_px: float = 3.5, halo_color=None):
         """Draws line segments (flat [x1,y1,z1,x2,y2,z2,...]) as screen-space quads.
@@ -604,6 +626,9 @@ class RenderGLMixin:
 
             # Render Sketch Entities
             normal_lines = []
+            defined_lines = []
+            conflict_lines = []
+            clash = self._recent_conflicts(sketch) if is_active else set()
             construction_lines = []
             projected_lines = []
             selected_lines = []
@@ -626,6 +651,10 @@ class RenderGLMixin:
                     dest = hover_lines
                 else:
                     dest = projected_lines if getattr(ent, "projected", False) else (construction_lines if ent.is_construction else normal_lines)
+                    if dest is normal_lines and is_active and ent.entity_id in clash:
+                        dest = conflict_lines      # SolidWorks: over defined geometry in yellow
+                    elif dest is normal_lines and is_active and entity_defined(sketch, ent):
+                        dest = defined_lines       # SolidWorks: black when it cannot move any more
                 for p1, p2 in ent.to_lines():
                     w1 = plane.uv_to_world(p1[0], p1[1])
                     w2 = plane.uv_to_world(p2[0], p2[1])
@@ -641,17 +670,18 @@ class RenderGLMixin:
             from omacad.ui.settings import get_settings, hex_to_rgb01, sketch_line_widths
             line_w, sel_w = sketch_line_widths()     # Björn #74: set in Settings, thinner than before
             halo_px = 0.4 + 0.8 * line_w             # a thin dark rim, not a second line
+            if conflict_lines:
+                self.draw_thick_lines(mvp, conflict_lines, (1.0, 0.82, 0.10, 1.0), line_w + 0.8, halo_px=halo_px)
+            if defined_lines:
+                scol = get_settings().sketch_fully_constrained_color_rgb01()
+                # On dark background or canvas, a subtle lighter rim keeps black lines visible
+                halo_col = (0.75, 0.78, 0.82, 0.75) if sum(theme.palette().canvas_rgb01()) / 3 < 0.5 else (0.03, 0.04, 0.06, 0.85)
+                self.draw_thick_lines(mvp, defined_lines, (*scol, 1.0), line_w, halo_px=halo_px, halo_color=halo_col)
             if normal_lines:
                 if is_active:
-                    is_fully_constrained = (sketch.dof == 0)
-                    if is_fully_constrained:
-                        scol = get_settings().sketch_fully_constrained_color_rgb01()
-                        # On dark background or canvas, a subtle lighter rim keeps black lines visible
-                        halo_col = (0.75, 0.78, 0.82, 0.75) if sum(theme.palette().canvas_rgb01()) / 3 < 0.5 else (0.03, 0.04, 0.06, 0.85)
-                    else:
-                        scol = get_settings().sketch_line_color_rgb01()
-                        halo_col = (0.03, 0.04, 0.06, 0.85)
-                    self.draw_thick_lines(mvp, normal_lines, (*scol, 1.0), line_w, halo_px=halo_px, halo_color=halo_col)
+                    scol = get_settings().sketch_line_color_rgb01()
+                    self.draw_thick_lines(mvp, normal_lines, (*scol, 1.0), line_w, halo_px=halo_px,
+                                          halo_color=(0.03, 0.04, 0.06, 0.85))
                 else:
                     fcol = get_settings().sketch_finished_color_rgb01()    # grey by default (Björn #90)
                     self.draw_thick_lines(mvp, normal_lines, (*fcol, 1.0), line_w, halo=False)   # no dark rim

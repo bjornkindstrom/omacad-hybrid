@@ -10,7 +10,7 @@ spline without dimensions adds no degrees of freedom.
 """
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional, Tuple
 
 from python_solvespace import SolverSystem
@@ -27,6 +27,7 @@ class SolveResult:
     ok: bool
     dof: Optional[int] = None
     message: str = ""
+    conflicts: set = field(default_factory=set)   # elements of the constraints that clash (over defined)
 
 
 def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable[Tuple[str, str]] = ()) -> SolveResult:
@@ -41,11 +42,14 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
     ents = _solver_entities(sketch)
     if not sketch.constraints and not any(d.dim_type in SOLVER_DIM_TYPES for d in sketch.dimensions):
         sketch.dof = None
+        sketch.free_ids = sketch.solved_ids = None
         return SolveResult(True, None, "")
     fixed = {c.refs[0] for c in sketch.constraints if c.ctype == "FIX" and c.refs} | set(fixed_ids)
 
     corners = _sharp_corners(sketch, ents)
+    sketch.conflict_ids = set()
     sol, msg = _attempt(sketch, ents, fixed, True, tuple(pinned), corners)
+    conflicts = set(sketch.conflict_ids)
     if sol is None and not msg.startswith("Constraints would collapse"):
         # SolveSpace reports redundant-but-consistent systems (e.g. a closed triangle with all
         # three lengths dimensioned) as failures: retry without dimensions and accept the
@@ -65,9 +69,14 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
                     break
     if sol is None:
         sketch.dof = None
-        return SolveResult(False, None, msg)
+        sketch.free_ids = sketch.solved_ids = None
+        sketch.conflict_ids = conflicts
+        return SolveResult(False, None, msg, conflicts)
 
     values, dof = sol
+    sketch.conflict_ids = set()
+    sketch.free_ids = values.pop("#free", None)
+    sketch.solved_ids = set(ents)
     for eid, ent in ents.items():
         if isinstance(ent, SketchLine):
             ent.p1, ent.p2 = values[eid]
@@ -306,7 +315,9 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
                 sys_.set_group(FREE_GROUP)
         return arc_handles[eid]
 
+    owners = []        # (solver constraints before it, entity ids): tells which elements a failure involves
     for c in sketch.constraints:
+        owners.append((sys_.cons_len(), list(c.refs)))
         if c.ctype in ("POINT_ON_CIRCLE", "ARC_END") and len(c.refs) == 2 and c.pts and any(r in arcs for r in c.refs):
             arc_id, line_id = (c.refs[0], c.refs[1]) if c.ctype == "POINT_ON_CIRCLE" else (c.refs[1], c.refs[0])
             handle = arc_handle(arc_id) if arc_id in arcs else None
@@ -377,6 +388,7 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
 
     # Dimensions that belong to solver entities
     for d in (sketch.dimensions if use_dims else []):
+        owners.append((sys_.cons_len(), [d.target_entity_id] + list(d.refs)))
         if d.dim_id in skip_dims:
             continue
         ent = ents.get(d.target_entity_id)
@@ -396,6 +408,7 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
     flag = sys_.solve()
     if flag != 0:
         failed = sys_.failures()
+        sketch.conflict_ids = _conflicting_entities(failed, owners, ents)
         return None, "Conflicting or unsolvable constraints" + (f" ({len(failed)} involved)" if failed else "")
 
     # Reject solutions that collapse geometry (e.g. a line forced both horizontal and vertical)
@@ -405,9 +418,10 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
         if isinstance(ent, SketchLine):
             p1, p2 = _xy(sys_, pts[(eid, "p1")]), _xy(sys_, pts[(eid, "p2")])
             if math.hypot(p1[0] - p2[0], p1[1] - p2[1]) < 1e-3:
+                sketch.conflict_ids = {eid}
                 return None, "Constraints would collapse a line to a point"
 
-    values = {}
+    values = {"#free": _free_entities(sys_, ents, fixed, pts, radii)}
     for eid, ent in ents.items():
         if isinstance(ent, SketchLine):
             values[eid] = (_xy(sys_, pts[(eid, "p1")]), _xy(sys_, pts[(eid, "p2")]))
@@ -420,6 +434,65 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
                 values[f"{eid}#r"] = solved_r
     return (values, int(sys_.dof())), ""
 
+
+
+def _conflicting_entities(failed, owners, ents) -> set:
+    """Solver constraint handles that failed -> the sketch elements of the constraints/dimensions behind them."""
+    out = set()
+    for h in failed or ():
+        owner = None
+        for start, ids in owners:
+            if start < h:
+                owner = ids
+            else:
+                break
+        if owner:
+            out |= {i for i in owner if i in ents}
+    return out
+
+
+def entity_defined(sketch, ent) -> bool:
+    """True when this entity is fully defined by the last solve (drawn black, SolidWorks style)."""
+    free = getattr(sketch, "free_ids", None)
+    solved = getattr(sketch, "solved_ids", None) or set()
+    if free is None or sketch.dof is None:
+        return sketch.dof == 0
+    if isinstance(ent, SUPPORTED):     # drawn after the last solve: not known to be defined yet
+        return ent.entity_id in solved and ent.entity_id not in free
+    if sketch.dof == 0:
+        return True
+    info = getattr(ent, "fillet_info", None)
+    if isinstance(info, dict) and info.get("line_a") and info.get("line_b"):   # a rounded corner follows its lines
+        lines = [sketch.get_entity(info["line_a"]), sketch.get_entity(info["line_b"])]
+        return all(isinstance(l, SketchLine) and l.entity_id not in free for l in lines)
+    return False
+
+
+def _free_entities(sys_, ents, fixed, pts, radii, step=1e-2, tries=2) -> set:
+    """Entities that can still move (SolidWorks: blue = under defined, black = fully defined).
+
+    Every free parameter is nudged at once, by a random amount, in a copy of the solved system,
+    which is then solved again. A parameter the constraints pin down has only one value nearby
+    and springs back exactly; a free one keeps part of its nudge (the solver takes the smallest
+    correction, so a random nudge leaves some of it in every free direction)."""
+    if sys_.dof() == 0:
+        return set()
+    import random
+    rnd = random.Random(221)
+    handles = [(eid, h) for (eid, _name), h in pts.items() if eid not in fixed]
+    handles += [(eid, h) for eid, h in radii.items() if eid not in fixed]
+    base = [list(sys_.params(h.params)) for _eid, h in handles]
+    free = set()
+    for _ in range(tries):
+        probe = sys_.copy()
+        for (eid, h), vals in zip(handles, base):
+            probe.set_params(h.params, [v + step * rnd.uniform(0.3, 1.0) * rnd.choice((-1, 1)) for v in vals])
+        if probe.solve() != 0:
+            return {eid for eid, _h in handles}       # cannot tell: leave everything blue
+        for (eid, h), vals in zip(handles, base):
+            if eid not in free and any(abs(float(a) - b) > 1e-6 for a, b in zip(probe.params(h.params), vals)):
+                free.add(eid)
+    return free & set(ents)
 
 
 def _side_sign(p, a, b) -> float:
@@ -562,6 +635,35 @@ def coincident_spec(a, b):
             if foot is not None and foot[0] < best_d - 1e-9:
                 best, best_d = ("POINT_ON_LINE", [x.entity_id, y.entity_id], [name]), foot[0]
     return best
+
+
+def curve_relation(sketch, line, pname, rel_tol=0.02):
+    """Auto relation for a line end drawn onto a circle or arc (the snap puts it on the drawn polygon,
+    so a few percent of the radius counts as on it): circle/arc edge, circle centre or arc end."""
+    p = getattr(line, pname)
+    eid = line.entity_id
+    for ent in sketch.entities:
+        if ent is line or getattr(ent, "projected", False):
+            continue
+        if isinstance(ent, SketchCircle):
+            d = math.hypot(p[0] - ent.center[0], p[1] - ent.center[1])
+            if d < 1e-6:
+                return ("COINCIDENT", [eid, ent.entity_id], [pname, "center"])
+            if abs(d - ent.radius) <= rel_tol * ent.radius + 1e-6:
+                return ("POINT_ON_CIRCLE", [ent.entity_id, eid], [pname])
+        elif isinstance(ent, SketchArc):
+            for end in ("p_start", "p_end"):
+                q = getattr(ent, end)
+                if math.hypot(p[0] - q[0], p[1] - q[1]) < 1e-6:
+                    return ("ARC_END", [eid, ent.entity_id], [pname, end])
+            params = ent.get_circle_params()
+            if params is None:
+                continue
+            center, r, _a1, _a3, ccw = params
+            d = math.hypot(p[0] - center[0], p[1] - center[1])
+            if abs(d - r) <= rel_tol * r + 1e-6 and _on_arc_span(p, center, ent.p_start, ent.p_end, ccw):
+                return ("POINT_ON_CIRCLE", [ent.entity_id, eid], [pname])
+    return None
 
 
 def _on_arc_span(p, center, start, end, ccw) -> bool:

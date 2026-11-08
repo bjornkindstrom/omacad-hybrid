@@ -44,6 +44,9 @@ class Sketch(SketchEditingMixin):
         self.dimensions: List[SketchDimension] = []
         self.constraints: List[SketchConstraint] = []
         self.dof: Optional[int] = None  # degrees of freedom from the last solve (None = unknown)
+        self.free_ids: Optional[set] = None  # entities that can still move after the last solve (None = unknown)
+        self.solved_ids: Optional[set] = None  # entities the last solve took part in
+        self.conflict_ids: set = set()  # elements of clashing constraints from the last failed solve
         # In-plane edges of existing bodies (face outlines). They close regions that the sketch
         # geometry alone leaves open, e.g. an arc whose ends sit on the edge of a face.
         self.reference_segments: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []

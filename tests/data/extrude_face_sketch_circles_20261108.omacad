@@ -1,0 +1,3389 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "box_1": "object_box_1",
+      "shell_2": "object_box_1",
+      "box_3": "object_box_3",
+      "shell_3": "object_box_3",
+      "split_6": "object_box_3",
+      "split_3": "object_box_1",
+      "offset_face_7": "object_box_1",
+      "combine_8": "object_box_1",
+      "feat_sketch_1": "object_box_1",
+      "extrude_10": "object_extrude_10",
+      "combine_11": "object_box_1",
+      "feat_sketch_2": "object_box_1",
+      "feat_sketch_3": "object_box_1",
+      "feat_sketch_4": "object_box_1",
+      "extrude_15": "object_extrude_15",
+      "branch_16": "object_branch_16",
+      "move_17": "object_branch_16",
+      "move_18": "object_branch_16",
+      "feat_sketch_5": "object_extrude_15",
+      "feat_sketch_6": "object_extrude_15"
+    },
+    "names": {
+      "object_box_3": "Box 1 (Split)"
+    },
+    "outputs": {
+      "box_1": [
+        "body_box_1"
+      ],
+      "shell_2": [
+        "body_box_1"
+      ],
+      "box_3": [
+        "body_box_3"
+      ],
+      "shell_3": [
+        "body_box_3"
+      ],
+      "split_3": [
+        "body_box_1"
+      ],
+      "split_6": [
+        "body_box_3"
+      ],
+      "offset_face_7": [
+        "body_box_1"
+      ],
+      "combine_8": [
+        "body_box_1",
+        "body_box_3"
+      ],
+      "extrude_10": [
+        "body_extrude_10"
+      ],
+      "combine_11": [
+        "body_box_1",
+        "body_extrude_10"
+      ],
+      "extrude_15": [
+        "body_extrude_15"
+      ],
+      "branch_16": [
+        "body_branch_16"
+      ],
+      "move_17": [
+        "body_branch_16"
+      ],
+      "move_18": [
+        "body_branch_16"
+      ]
+    },
+    "dependencies": {
+      "box_1": [],
+      "shell_2": [
+        "box_1"
+      ],
+      "box_3": [],
+      "shell_3": [
+        "box_3"
+      ],
+      "split_3": [
+        "shell_2"
+      ],
+      "split_6": [
+        "shell_3"
+      ],
+      "offset_face_7": [
+        "split_3"
+      ],
+      "combine_8": [
+        "offset_face_7",
+        "split_6"
+      ],
+      "feat_sketch_1": [
+        "combine_8"
+      ],
+      "extrude_10": [
+        "feat_sketch_1"
+      ],
+      "combine_11": [
+        "combine_8",
+        "extrude_10",
+        "feat_sketch_1"
+      ],
+      "feat_sketch_2": [
+        "combine_11",
+        "combine_8"
+      ],
+      "feat_sketch_3": [
+        "combine_11",
+        "combine_8",
+        "feat_sketch_2"
+      ],
+      "feat_sketch_4": [
+        "combine_11",
+        "combine_8",
+        "feat_sketch_3"
+      ],
+      "extrude_15": [
+        "feat_sketch_3"
+      ],
+      "branch_16": [
+        "extrude_15"
+      ],
+      "move_17": [
+        "branch_16",
+        "combine_11"
+      ],
+      "move_18": [
+        "move_17"
+      ],
+      "feat_sketch_5": [
+        "extrude_15",
+        "combine_11",
+        "combine_8"
+      ],
+      "feat_sketch_6": [
+        "extrude_15",
+        "combine_11",
+        "combine_8",
+        "feat_sketch_5"
+      ]
+    },
+    "markers": {},
+    "active_id": "object_extrude_15"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "box_1",
+      "feature_type": "box",
+      "name": "Box 1",
+      "suppressed": false,
+      "length": 1500.0,
+      "width": 800.0,
+      "height": 500.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "lip_height": 0.0,
+      "lip_step": 0.0,
+      "bottom_thickness": 0.0,
+      "honeycomb": false,
+      "honeycomb_size": 4.0,
+      "honeycomb_wall": 1.2,
+      "honeycomb_margin": 2.0,
+      "is_lid": false,
+      "clearance": 0.2,
+      "lid_top": 2.0,
+      "tab_size": 4.0,
+      "snap_size": 0.6,
+      "slot_length": 0.0,
+      "slot_width": 0.0,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "shell_2",
+      "feature_type": "shell",
+      "name": "Shell 1",
+      "suppressed": false,
+      "target_body_id": "body_box_1",
+      "thickness": 15.0,
+      "direction": "inside",
+      "thickness2": 2.0,
+      "open_faces": [
+        {
+          "normal": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "origin": [
+            -750.0,
+            400.0,
+            500.0
+          ],
+          "body_id": "body_box_1"
+        }
+      ],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "box_3",
+      "feature_type": "box",
+      "name": "Box 1 (Split)",
+      "suppressed": false,
+      "length": 1500.0,
+      "width": 800.0,
+      "height": 500.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "lip_height": 0.0,
+      "lip_step": 0.0,
+      "bottom_thickness": 0.0,
+      "honeycomb": false,
+      "honeycomb_size": 4.0,
+      "honeycomb_wall": 1.2,
+      "honeycomb_margin": 2.0,
+      "is_lid": false,
+      "clearance": 0.2,
+      "lid_top": 2.0,
+      "tab_size": 4.0,
+      "snap_size": 0.6,
+      "slot_length": 0.0,
+      "slot_width": 0.0,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "shell_3",
+      "feature_type": "shell",
+      "name": "Shell 1",
+      "suppressed": false,
+      "target_body_id": "body_box_3",
+      "thickness": 15.0,
+      "direction": "inside",
+      "thickness2": 2.0,
+      "open_faces": [
+        {
+          "normal": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "origin": [
+            -750.0,
+            400.0,
+            500.0
+          ],
+          "body_id": "body_box_3"
+        }
+      ],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "split_3",
+      "feature_type": "split_body",
+      "name": "Split Body 1",
+      "suppressed": false,
+      "target_body_id": "body_box_1",
+      "plane_id": "plane_1",
+      "plane_origin": [
+        0.0,
+        0.0,
+        485.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "new_body_name": null,
+      "frozen_source": null,
+      "keep": "front",
+      "other_body_id": "body_box_3",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "split_6",
+      "feature_type": "split_body",
+      "name": "Split Body 1",
+      "suppressed": false,
+      "target_body_id": "body_box_3",
+      "plane_id": "plane_1",
+      "plane_origin": [
+        0.0,
+        0.0,
+        485.0
+      ],
+      "plane_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "new_body_name": null,
+      "frozen_source": null,
+      "keep": "back",
+      "other_body_id": "body_box_1",
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "offset_face_7",
+      "feature_type": "offset_face",
+      "name": "Offset Face 1",
+      "suppressed": false,
+      "target_body_id": "body_box_1",
+      "faces": [
+        {
+          "kind": "plane",
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "origin": [
+            -735.0,
+            385.0,
+            500.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            1.0,
+            -0.0,
+            0.0
+          ],
+          "origin": [
+            -735.0,
+            -385.0,
+            500.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            -0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            -735.0,
+            -385.0,
+            500.0
+          ]
+        },
+        {
+          "kind": "plane",
+          "normal": [
+            -1.0,
+            0.0,
+            -0.0
+          ],
+          "origin": [
+            735.0,
+            -385.0,
+            500.0
+          ]
+        }
+      ],
+      "distance": 15.0,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_8",
+      "feature_type": "combine",
+      "name": "Combine (join)",
+      "suppressed": false,
+      "target_body_id": "body_box_1",
+      "tool_body_id": "body_box_3",
+      "operation": "join",
+      "keep_tool": false,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            720.0,
+            0.0,
+            492.5
+          ],
+          "u_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "normal": [
+            -1.0,
+            0.0,
+            0.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -370.0,
+              7.5
+            ],
+            "p2": [
+              370.0,
+              7.5
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              370.0,
+              7.5
+            ],
+            "p2": [
+              370.0,
+              -7.5
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              370.0,
+              -7.5
+            ],
+            "p2": [
+              -370.0,
+              -7.5
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -370.0,
+              -7.5
+            ],
+            "p2": [
+              -370.0,
+              7.5
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -7.5,
+              -7.5
+            ],
+            "p2": [
+              7.5,
+              -7.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              7.5,
+              -7.5
+            ],
+            "p2": [
+              7.5,
+              7.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              7.5,
+              7.5
+            ],
+            "p2": [
+              -7.5,
+              7.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_8",
+            "entity_type": "line",
+            "p1": [
+              -7.5,
+              7.5
+            ],
+            "p2": [
+              -7.5,
+              -7.5
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Width",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_5",
+            "value": 15.0,
+            "offset_distance": -10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Height",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_6",
+            "value": 15.0,
+            "offset_distance": -10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_5"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c2",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_6"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c3",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_7"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c4",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_8"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c5",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_6",
+              "line_5"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c6",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_7",
+              "line_6"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c7",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_8",
+              "line_7"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c8",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_5",
+              "line_8"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          }
+        ],
+        "face_key": null,
+        "parent_body_id": "body_box_1",
+        "face_center": [
+          0.0,
+          0.0
+        ],
+        "visible": false
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "extrude_10",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 1,
+      "extra_profiles": [],
+      "distance": 1440.0,
+      "operation": "new_body",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "twist": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -0.0,
+          -0.0,
+          225.0
+        ]
+      ],
+      "profile_sigs_for": [
+        1,
+        []
+      ],
+      "follows_text": false,
+      "exprs": {},
+      "target_body_ids": []
+    },
+    {
+      "feature_id": "combine_11",
+      "feature_type": "combine",
+      "name": "Combine (join)",
+      "suppressed": false,
+      "target_body_id": "body_box_1",
+      "tool_body_id": "body_extrude_10",
+      "operation": "join",
+      "keep_tool": false,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "feat_sketch_2",
+      "feature_type": "sketch",
+      "name": "Sketch 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_2",
+        "name": "Sketch 2",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            -400.0,
+            250.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "normal": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              -250.0
+            ],
+            "p2": [
+              -750.0,
+              250.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              250.0
+            ],
+            "p2": [
+              750.0,
+              250.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              250.0
+            ],
+            "p2": [
+              750.0,
+              -250.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              -250.0
+            ],
+            "p2": [
+              -750.0,
+              -250.0
+            ],
+            "is_construction": false,
+            "projected": true
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": "body_box_1",
+        "face_center": [
+          0.0,
+          0.0
+        ],
+        "visible": false
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "feat_sketch_3",
+      "feature_type": "sketch",
+      "name": "Sketch 3",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_3",
+        "name": "Sketch 3",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            0.0,
+            500.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              400.0
+            ],
+            "p2": [
+              750.0,
+              400.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              400.0
+            ],
+            "p2": [
+              750.0,
+              -400.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              -400.0
+            ],
+            "p2": [
+              -750.0,
+              -400.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              -400.0
+            ],
+            "p2": [
+              -750.0,
+              400.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -720.0,
+              -7.5
+            ],
+            "p2": [
+              -720.0,
+              -370.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              -720.0,
+              -370.0
+            ],
+            "p2": [
+              720.0,
+              -370.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              720.0,
+              -370.0
+            ],
+            "p2": [
+              720.0,
+              -7.5
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_8",
+            "entity_type": "line",
+            "p1": [
+              720.0,
+              -7.5
+            ],
+            "p2": [
+              -720.0,
+              -7.5
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_9",
+            "entity_type": "line",
+            "p1": [
+              -720.0,
+              370.0
+            ],
+            "p2": [
+              -720.0,
+              7.5
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_10",
+            "entity_type": "line",
+            "p1": [
+              -720.0,
+              7.5
+            ],
+            "p2": [
+              720.0,
+              7.5
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_11",
+            "entity_type": "line",
+            "p1": [
+              720.0,
+              7.5
+            ],
+            "p2": [
+              720.0,
+              370.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_12",
+            "entity_type": "line",
+            "p1": [
+              720.0,
+              370.0
+            ],
+            "p2": [
+              -720.0,
+              370.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_13",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              400.0
+            ],
+            "p2": [
+              750.0,
+              400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_14",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              400.0
+            ],
+            "p2": [
+              750.0,
+              0.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_15",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              0.0
+            ],
+            "p2": [
+              -750.0,
+              0.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_16",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              0.0
+            ],
+            "p2": [
+              -750.0,
+              400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_17",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              -400.0
+            ],
+            "p2": [
+              -750.0,
+              -400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_18",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              -400.0
+            ],
+            "p2": [
+              -750.0,
+              0.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_19",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              0.0
+            ],
+            "p2": [
+              750.0,
+              0.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_20",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              0.0
+            ],
+            "p2": [
+              750.0,
+              -400.0
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Width",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_13",
+            "value": 1500.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Height",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_14",
+            "value": 400.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d3",
+            "name": "Width",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_17",
+            "value": 1500.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d4",
+            "name": "Height",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_18",
+            "value": 400.0,
+            "offset_distance": 10.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_13"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c2",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_14"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c3",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_15"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c4",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_16"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c5",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_14",
+              "line_13"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c6",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_15",
+              "line_14"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c7",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_16",
+              "line_15"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c8",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_13",
+              "line_16"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c9",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_17"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c10",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_18"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c11",
+            "ctype": "HORIZONTAL",
+            "refs": [
+              "line_19"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c12",
+            "ctype": "VERTICAL",
+            "refs": [
+              "line_20"
+            ],
+            "pts": []
+          },
+          {
+            "cid": "c13",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_18",
+              "line_17"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c14",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_19",
+              "line_18"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c15",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_20",
+              "line_19"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          },
+          {
+            "cid": "c16",
+            "ctype": "COINCIDENT",
+            "refs": [
+              "line_17",
+              "line_20"
+            ],
+            "pts": [
+              "p1",
+              "p2"
+            ]
+          }
+        ],
+        "face_key": null,
+        "parent_body_id": "body_box_1",
+        "face_center": [
+          0.0,
+          0.0
+        ],
+        "visible": false
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "feat_sketch_4",
+      "feature_type": "sketch",
+      "name": "Face 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_4",
+        "name": "Face 1",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            0.0,
+            500.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              400.0
+            ],
+            "p2": [
+              750.0,
+              400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              400.0
+            ],
+            "p2": [
+              750.0,
+              -400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              -400.0
+            ],
+            "p2": [
+              -750.0,
+              -400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              -400.0
+            ],
+            "p2": [
+              -750.0,
+              400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -720.0,
+              -7.5
+            ],
+            "p2": [
+              -720.0,
+              -370.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              -720.0,
+              -370.0
+            ],
+            "p2": [
+              720.0,
+              -370.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              720.0,
+              -370.0
+            ],
+            "p2": [
+              720.0,
+              -7.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_8",
+            "entity_type": "line",
+            "p1": [
+              720.0,
+              -7.5
+            ],
+            "p2": [
+              -720.0,
+              -7.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_9",
+            "entity_type": "line",
+            "p1": [
+              -720.0,
+              370.0
+            ],
+            "p2": [
+              -720.0,
+              7.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_10",
+            "entity_type": "line",
+            "p1": [
+              -720.0,
+              7.5
+            ],
+            "p2": [
+              720.0,
+              7.5
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_11",
+            "entity_type": "line",
+            "p1": [
+              720.0,
+              7.5
+            ],
+            "p2": [
+              720.0,
+              370.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_12",
+            "entity_type": "line",
+            "p1": [
+              720.0,
+              370.0
+            ],
+            "p2": [
+              -720.0,
+              370.0
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": [
+          0.0,
+          0.0,
+          1.0,
+          500.0,
+          156000.0,
+          0.0,
+          0.0
+        ],
+        "parent_body_id": "body_box_1",
+        "face_center": [
+          0.0,
+          0.0
+        ],
+        "visible": false
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "extrude_15",
+      "feature_type": "extrude",
+      "name": "Extrude 2",
+      "suppressed": false,
+      "sketch_id": "sketch_3",
+      "profile_idx": 0,
+      "extra_profiles": [
+        3
+      ],
+      "distance": 15.0,
+      "operation": "new_body",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "twist": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -0.0,
+          275.28846153846155,
+          78000.0
+        ],
+        [
+          -0.0,
+          188.75,
+          522000.0
+        ]
+      ],
+      "profile_sigs_for": [
+        0,
+        [
+          3
+        ]
+      ],
+      "follows_text": false,
+      "exprs": {},
+      "target_body_ids": []
+    },
+    {
+      "feature_id": "feat_sketch_5",
+      "feature_type": "sketch",
+      "name": "Sketch 5",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_5",
+        "name": "Sketch 5",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            200.0,
+            500.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "normal": [
+            -0.0,
+            -0.0,
+            -1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              -200.0
+            ],
+            "p2": [
+              -750.0,
+              -200.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              -200.0
+            ],
+            "p2": [
+              -750.0,
+              600.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              600.0
+            ],
+            "p2": [
+              750.0,
+              600.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              600.0
+            ],
+            "p2": [
+              750.0,
+              -200.0
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "circle_5",
+            "entity_type": "circle",
+            "center": [
+              -650.0,
+              -150.0
+            ],
+            "radius": 25.0,
+            "is_construction": false
+          },
+          {
+            "entity_id": "circle_6",
+            "entity_type": "circle",
+            "center": [
+              650.0,
+              -150.0
+            ],
+            "radius": 25.0,
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Diameter",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "circle_5",
+            "value": 50.0,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Dim 2",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "circle_5",
+            "value": 50.0,
+            "offset_distance": 12.0,
+            "refs": [
+              "line_1"
+            ],
+            "pts": [
+              "center"
+            ],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d3",
+            "name": "Dim 3",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "circle_5",
+            "value": 100.0,
+            "offset_distance": 12.0,
+            "refs": [
+              "line_2"
+            ],
+            "pts": [
+              "center"
+            ],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d4",
+            "name": "Dim 4",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "circle_6",
+            "value": 50.0,
+            "offset_distance": 12.0,
+            "refs": [
+              "line_1"
+            ],
+            "pts": [
+              "center"
+            ],
+            "expr": null,
+            "moving_entity_id": "circle_6",
+            "follows": "d2"
+          },
+          {
+            "dim_id": "d5",
+            "name": "Dim 5",
+            "dim_type": "PT_LINE_DIST",
+            "target_entity_id": "circle_6",
+            "value": 100.0,
+            "offset_distance": 12.0,
+            "refs": [
+              "line_4"
+            ],
+            "pts": [
+              "center"
+            ],
+            "expr": null,
+            "moving_entity_id": "circle_6",
+            "follows": "d3"
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "EQUAL",
+            "refs": [
+              "circle_5",
+              "circle_6"
+            ],
+            "pts": []
+          }
+        ],
+        "face_key": null,
+        "parent_body_id": "body_extrude_15",
+        "face_center": [
+          0.0,
+          0.0
+        ],
+        "visible": true
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "feat_sketch_6",
+      "feature_type": "sketch",
+      "name": "Face 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_6",
+        "name": "Face 2",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            0.0,
+            0.0,
+            500.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "normal": [
+            -0.0,
+            -0.0,
+            -1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              0.0
+            ],
+            "p2": [
+              750.0,
+              0.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_2",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              0.0
+            ],
+            "p2": [
+              750.0,
+              -400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              750.0,
+              -400.0
+            ],
+            "p2": [
+              -750.0,
+              -400.0
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_4",
+            "entity_type": "line",
+            "p1": [
+              -750.0,
+              -400.0
+            ],
+            "p2": [
+              -750.0,
+              0.0
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [],
+        "constraints": [],
+        "face_key": [
+          -0.0,
+          -0.0,
+          -1.0,
+          -500.0,
+          600000.0,
+          0.0,
+          -200.0
+        ],
+        "parent_body_id": "body_extrude_15",
+        "face_center": [
+          0.0,
+          -200.0
+        ],
+        "visible": false
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_type": "branch",
+      "feature_id": "branch_16",
+      "name": "Extrude 2 Linked copy",
+      "suppressed": false,
+      "source_feature_id": "extrude_15",
+      "source_body_id": "body_extrude_15",
+      "follow": true,
+      "beside": true,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "move_17",
+      "feature_type": "move",
+      "name": "Move Extrude 2 Linked copy (1)",
+      "suppressed": false,
+      "target_body_id": "body_branch_16",
+      "copy_body": false,
+      "dx": 0.0,
+      "dy": 0.0,
+      "dz": 0.0,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": 0.0,
+      "pivot": "point",
+      "from_point": {
+        "body": "body_branch_16",
+        "kind": "end",
+        "xyz": [
+          1500.0,
+          0.0,
+          500.0
+        ]
+      },
+      "to_point": {
+        "body": "body_box_1",
+        "kind": "end",
+        "xyz": [
+          -750.0,
+          -400.0,
+          500.0
+        ]
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "move_18",
+      "feature_type": "move",
+      "name": "Move Extrude 2 Linked copy (2)",
+      "suppressed": false,
+      "target_body_id": "body_branch_16",
+      "copy_body": false,
+      "dx": 0.0,
+      "dy": 0.0,
+      "dz": 0.0,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": 180.0,
+      "pivot": "center",
+      "from_point": null,
+      "to_point": null,
+      "exprs": {},
+      "target_body_ids": null
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          720.0,
+          0.0,
+          492.5
+        ],
+        "u_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "normal": [
+          -1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -370.0,
+            7.5
+          ],
+          "p2": [
+            370.0,
+            7.5
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            370.0,
+            7.5
+          ],
+          "p2": [
+            370.0,
+            -7.5
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            370.0,
+            -7.5
+          ],
+          "p2": [
+            -370.0,
+            -7.5
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -370.0,
+            -7.5
+          ],
+          "p2": [
+            -370.0,
+            7.5
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -7.5,
+            -7.5
+          ],
+          "p2": [
+            7.5,
+            -7.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            7.5,
+            -7.5
+          ],
+          "p2": [
+            7.5,
+            7.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            7.5,
+            7.5
+          ],
+          "p2": [
+            -7.5,
+            7.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_8",
+          "entity_type": "line",
+          "p1": [
+            -7.5,
+            7.5
+          ],
+          "p2": [
+            -7.5,
+            -7.5
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Width",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_5",
+          "value": 15.0,
+          "offset_distance": -10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Height",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_6",
+          "value": 15.0,
+          "offset_distance": -10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_5"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c2",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_6"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c3",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_7"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c4",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_8"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c5",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_6",
+            "line_5"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c6",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_7",
+            "line_6"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c7",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_8",
+            "line_7"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c8",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_5",
+            "line_8"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        }
+      ],
+      "face_key": null,
+      "parent_body_id": "body_box_1",
+      "face_center": [
+        0.0,
+        0.0
+      ],
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_2",
+      "name": "Sketch 2",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          -400.0,
+          250.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          -0.0,
+          0.0,
+          1.0
+        ],
+        "normal": [
+          0.0,
+          -1.0,
+          0.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            -250.0
+          ],
+          "p2": [
+            -750.0,
+            250.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            250.0
+          ],
+          "p2": [
+            750.0,
+            250.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            250.0
+          ],
+          "p2": [
+            750.0,
+            -250.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            -250.0
+          ],
+          "p2": [
+            -750.0,
+            -250.0
+          ],
+          "is_construction": false,
+          "projected": true
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": "body_box_1",
+      "face_center": [
+        0.0,
+        0.0
+      ],
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_3",
+      "name": "Sketch 3",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          0.0,
+          500.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            400.0
+          ],
+          "p2": [
+            750.0,
+            400.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            400.0
+          ],
+          "p2": [
+            750.0,
+            -400.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            -400.0
+          ],
+          "p2": [
+            -750.0,
+            -400.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            -400.0
+          ],
+          "p2": [
+            -750.0,
+            400.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -720.0,
+            -7.5
+          ],
+          "p2": [
+            -720.0,
+            -370.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            -720.0,
+            -370.0
+          ],
+          "p2": [
+            720.0,
+            -370.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            720.0,
+            -370.0
+          ],
+          "p2": [
+            720.0,
+            -7.5
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_8",
+          "entity_type": "line",
+          "p1": [
+            720.0,
+            -7.5
+          ],
+          "p2": [
+            -720.0,
+            -7.5
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_9",
+          "entity_type": "line",
+          "p1": [
+            -720.0,
+            370.0
+          ],
+          "p2": [
+            -720.0,
+            7.5
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_10",
+          "entity_type": "line",
+          "p1": [
+            -720.0,
+            7.5
+          ],
+          "p2": [
+            720.0,
+            7.5
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_11",
+          "entity_type": "line",
+          "p1": [
+            720.0,
+            7.5
+          ],
+          "p2": [
+            720.0,
+            370.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_12",
+          "entity_type": "line",
+          "p1": [
+            720.0,
+            370.0
+          ],
+          "p2": [
+            -720.0,
+            370.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_13",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            400.0
+          ],
+          "p2": [
+            750.0,
+            400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_14",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            400.0
+          ],
+          "p2": [
+            750.0,
+            0.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_15",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            0.0
+          ],
+          "p2": [
+            -750.0,
+            0.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_16",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            0.0
+          ],
+          "p2": [
+            -750.0,
+            400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_17",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            -400.0
+          ],
+          "p2": [
+            -750.0,
+            -400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_18",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            -400.0
+          ],
+          "p2": [
+            -750.0,
+            0.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_19",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            0.0
+          ],
+          "p2": [
+            750.0,
+            0.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_20",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            0.0
+          ],
+          "p2": [
+            750.0,
+            -400.0
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Width",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_13",
+          "value": 1500.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Height",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_14",
+          "value": 400.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d3",
+          "name": "Width",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_17",
+          "value": 1500.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d4",
+          "name": "Height",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_18",
+          "value": 400.0,
+          "offset_distance": 10.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_13"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c2",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_14"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c3",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_15"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c4",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_16"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c5",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_14",
+            "line_13"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c6",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_15",
+            "line_14"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c7",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_16",
+            "line_15"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c8",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_13",
+            "line_16"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c9",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_17"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c10",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_18"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c11",
+          "ctype": "HORIZONTAL",
+          "refs": [
+            "line_19"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c12",
+          "ctype": "VERTICAL",
+          "refs": [
+            "line_20"
+          ],
+          "pts": []
+        },
+        {
+          "cid": "c13",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_18",
+            "line_17"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c14",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_19",
+            "line_18"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c15",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_20",
+            "line_19"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        },
+        {
+          "cid": "c16",
+          "ctype": "COINCIDENT",
+          "refs": [
+            "line_17",
+            "line_20"
+          ],
+          "pts": [
+            "p1",
+            "p2"
+          ]
+        }
+      ],
+      "face_key": null,
+      "parent_body_id": "body_box_1",
+      "face_center": [
+        0.0,
+        0.0
+      ],
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_4",
+      "name": "Face 1",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          0.0,
+          500.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            400.0
+          ],
+          "p2": [
+            750.0,
+            400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            400.0
+          ],
+          "p2": [
+            750.0,
+            -400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            -400.0
+          ],
+          "p2": [
+            -750.0,
+            -400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            -400.0
+          ],
+          "p2": [
+            -750.0,
+            400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -720.0,
+            -7.5
+          ],
+          "p2": [
+            -720.0,
+            -370.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            -720.0,
+            -370.0
+          ],
+          "p2": [
+            720.0,
+            -370.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            720.0,
+            -370.0
+          ],
+          "p2": [
+            720.0,
+            -7.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_8",
+          "entity_type": "line",
+          "p1": [
+            720.0,
+            -7.5
+          ],
+          "p2": [
+            -720.0,
+            -7.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_9",
+          "entity_type": "line",
+          "p1": [
+            -720.0,
+            370.0
+          ],
+          "p2": [
+            -720.0,
+            7.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_10",
+          "entity_type": "line",
+          "p1": [
+            -720.0,
+            7.5
+          ],
+          "p2": [
+            720.0,
+            7.5
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_11",
+          "entity_type": "line",
+          "p1": [
+            720.0,
+            7.5
+          ],
+          "p2": [
+            720.0,
+            370.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_12",
+          "entity_type": "line",
+          "p1": [
+            720.0,
+            370.0
+          ],
+          "p2": [
+            -720.0,
+            370.0
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": [
+        0.0,
+        0.0,
+        1.0,
+        500.0,
+        156000.0,
+        0.0,
+        0.0
+      ],
+      "parent_body_id": "body_box_1",
+      "face_center": [
+        0.0,
+        0.0
+      ],
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_5",
+      "name": "Sketch 5",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          200.0,
+          500.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "normal": [
+          -0.0,
+          -0.0,
+          -1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            -200.0
+          ],
+          "p2": [
+            -750.0,
+            -200.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            -200.0
+          ],
+          "p2": [
+            -750.0,
+            600.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            600.0
+          ],
+          "p2": [
+            750.0,
+            600.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            600.0
+          ],
+          "p2": [
+            750.0,
+            -200.0
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "circle_5",
+          "entity_type": "circle",
+          "center": [
+            -650.0,
+            -150.0
+          ],
+          "radius": 25.0,
+          "is_construction": false
+        },
+        {
+          "entity_id": "circle_6",
+          "entity_type": "circle",
+          "center": [
+            650.0,
+            -150.0
+          ],
+          "radius": 25.0,
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Diameter",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "circle_5",
+          "value": 50.0,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Dim 2",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "circle_5",
+          "value": 50.0,
+          "offset_distance": 12.0,
+          "refs": [
+            "line_1"
+          ],
+          "pts": [
+            "center"
+          ],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d3",
+          "name": "Dim 3",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "circle_5",
+          "value": 100.0,
+          "offset_distance": 12.0,
+          "refs": [
+            "line_2"
+          ],
+          "pts": [
+            "center"
+          ],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d4",
+          "name": "Dim 4",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "circle_6",
+          "value": 50.0,
+          "offset_distance": 12.0,
+          "refs": [
+            "line_1"
+          ],
+          "pts": [
+            "center"
+          ],
+          "expr": null,
+          "moving_entity_id": "circle_6",
+          "follows": "d2"
+        },
+        {
+          "dim_id": "d5",
+          "name": "Dim 5",
+          "dim_type": "PT_LINE_DIST",
+          "target_entity_id": "circle_6",
+          "value": 100.0,
+          "offset_distance": 12.0,
+          "refs": [
+            "line_4"
+          ],
+          "pts": [
+            "center"
+          ],
+          "expr": null,
+          "moving_entity_id": "circle_6",
+          "follows": "d3"
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "EQUAL",
+          "refs": [
+            "circle_5",
+            "circle_6"
+          ],
+          "pts": []
+        }
+      ],
+      "face_key": null,
+      "parent_body_id": "body_extrude_15",
+      "face_center": [
+        0.0,
+        0.0
+      ],
+      "visible": true
+    },
+    {
+      "sketch_id": "sketch_6",
+      "name": "Face 2",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          0.0,
+          0.0,
+          500.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "normal": [
+          -0.0,
+          -0.0,
+          -1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            0.0
+          ],
+          "p2": [
+            750.0,
+            0.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_2",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            0.0
+          ],
+          "p2": [
+            750.0,
+            -400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            750.0,
+            -400.0
+          ],
+          "p2": [
+            -750.0,
+            -400.0
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_4",
+          "entity_type": "line",
+          "p1": [
+            -750.0,
+            -400.0
+          ],
+          "p2": [
+            -750.0,
+            0.0
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [],
+      "constraints": [],
+      "face_key": [
+        -0.0,
+        -0.0,
+        -1.0,
+        -500.0,
+        600000.0,
+        0.0,
+        -200.0
+      ],
+      "parent_body_id": "body_extrude_15",
+      "face_center": [
+        0.0,
+        -200.0
+      ],
+      "visible": false
+    }
+  ],
+  "construction_planes": {
+    "plane_1": {
+      "name": "Plane 1",
+      "origin": [
+        0.0,
+        0.0,
+        485.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "visible": false
+    }
+  },
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "body_colors": {},
+  "construction_bodies": [],
+  "canvases": {},
+  "favorites": [],
+  "object_groups": [],
+  "lids": [],
+  "curve_segments": 32
+}

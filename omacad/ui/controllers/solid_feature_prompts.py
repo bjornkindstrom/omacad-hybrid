@@ -147,8 +147,10 @@ class SolidFeaturePromptsMixin:
 
     @leaves_sketch
     def prompt_extrude(self, default_distance=None):
-        if getattr(self.viewport, "selected_faces", None):
+        if not self.doc.selected_profile and getattr(self.viewport, "selected_faces", None):
             item = self.viewport.selected_faces[0]
+            if getattr(self.viewport, "clear_face_selection", None):
+                self.viewport.clear_face_selection()
             face = item[1] if isinstance(item, tuple) else item
             if hasattr(face, "normal") and hasattr(self, "on_extrude_face"):
                 self.on_extrude_face(face)

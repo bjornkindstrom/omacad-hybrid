@@ -6,7 +6,7 @@ import numpy as np
 from PySide6.QtCore import Qt, QEvent, QRectF, QPointF
 from PySide6.QtGui import QPainter, QPen, QBrush, QFont, QPolygonF
 from omacad.model.hover_info import describe_entity
-from omacad.model.sketch_solver import solve_sketch
+from omacad.model.sketch_solver import curve_relation, solve_sketch
 from omacad.model.sketch import Sketch, SketchLine, SketchSpline, ref_id
 from omacad.model import expr as expr_lib
 from omacad.ui import dyn_input, smart_circle, theme
@@ -298,7 +298,9 @@ class SketchToolsMixin:
                 d_new.expr = typed_formulas[d_new.name]
         if isinstance(created, list):
             solve_sketch(sketch)  # rectangle: refresh the degrees-of-freedom status
-        if created is not None and isinstance(created, SketchLine) and self.sketch_palette.chk_auto_constraints.isChecked():
+        from omacad.ui.viewport.pointer_mixin import _ctrl_held
+        if (created is not None and isinstance(created, SketchLine) and self.sketch_palette.chk_auto_constraints.isChecked()
+                and not _ctrl_held()):             # SolidWorks: Ctrl while drawing adds no relations
             self._auto_constrain_line(sketch, created)
         self.doc.record_sketch_change(sketch, before)
         self.dyn.reset()
@@ -397,6 +399,10 @@ class SketchToolsMixin:
                 if joined:
                     break
             if joined:
+                continue
+            curve = curve_relation(sketch, line, pname)    # an end on a circle or arc stays there (#221)
+            if curve is not None:
+                specs.append(curve)
                 continue
             # an end snapped onto the inside of another line (any angle) stays on it
             for other in sketch.entities:

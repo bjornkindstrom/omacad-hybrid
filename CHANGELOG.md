@@ -1,3 +1,10 @@
+# Hybrid-experiment — 0.9.9.80.168
+
+### Fixed
+- **Extruding preselected faces and intact sketch circles (report 20261108-073007)**:
+  - Extrude crashed with a RecursionError when a face was preselected: `prompt_extrude` called `on_extrude_face`, which re-invoked `prompt_extrude` without clearing preselected faces. Preselected faces are now consumed, profile clicks clear face selection, and pre-chosen sketch profiles take precedence.
+  - Sketches on a body face (`parent_body_id`) now only draw reference edges from their own parent body, preventing coplanar edges of unrelated bodies (such as an underlying box rim) from cutting circles into pieces.
+
 # Hybrid-experiment — 0.9.9.80.167
 
 ### Added

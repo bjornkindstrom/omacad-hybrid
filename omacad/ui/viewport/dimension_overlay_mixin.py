@@ -667,6 +667,18 @@ class DimensionOverlayMixin:
         self._dim_place = None           # (this also closes the floating box)
         (ea, na), (eb, nb) = (place["a"][1], place["a"][2]), (place["b"][1], place["b"][2])
         dim_type, measured, _label, offset = self._dim_points_kind(place, u, v, with_offset=True)
+        if dim_type == "LENGTH":
+            existing = self._dim_existing("LENGTH", ea.entity_id)
+            if existing:
+                self.prompt_edit_dimension(self.doc.active_sketch.sketch_id, existing.dim_id, existing.value)
+                return
+            sk = self.doc.active_sketch
+            value, expr_text = typed if typed is not None else (measured, None)
+            self.doc.add_dimension_constraint(sk.sketch_id, "LENGTH", ea.entity_id, value, offset=offset,
+                                              expr=expr_text, moving_entity_id=ea.entity_id)
+            self.status_message.emit(self.doc.last_message)
+            self.update()
+            return
         existing = self._dim_existing(dim_type, ea.entity_id, refs=[eb.entity_id], pts=[na, nb])
         if existing:
             self.prompt_edit_dimension(self.doc.active_sketch.sketch_id, existing.dim_id, existing.value)
@@ -696,7 +708,16 @@ class DimensionOverlayMixin:
             L = measured or 1.0
             nx, ny = -(B[1] - A[1]) / L, (B[0] - A[0]) / L
             offset = (u - A[0]) * nx + (v - A[1]) * ny
-        label = self.DIM_POINT_LABELS[dim_type] + " (mm) - type a value, Enter or click to place"
+        line = place.get("line")
+        if line is not None:
+            # Smart Dimension on one line (SolidWorks): beside it = its length, above/below = horizontal
+            # extent, left/right = vertical extent; a level or upright line only has a length
+            level = abs(A[1] - B[1]) < 1e-6 or abs(A[0] - B[0]) < 1e-6
+            if dim_type == "DISTANCE" or level:
+                dim_type, measured = "LENGTH", math.hypot(A[0] - B[0], A[1] - B[1])
+                L = measured or 1.0
+                offset = (u - A[0]) * -(B[1] - A[1]) / L + (v - A[1]) * (B[0] - A[0]) / L
+        label = self.DIM_POINT_LABELS.get(dim_type, "Length") + " (mm) - type a value, Enter or click to place"
         return (dim_type, measured, label, offset) if with_offset else (dim_type, measured, label)
 
     def _show_dim_box(self):
@@ -743,11 +764,20 @@ class DimensionOverlayMixin:
         Clicking a dimension that already exists edits it. Always consumes the click."""
         if not self.doc.active_sketch:
             return False
+        pick = None
         if self._dim_place:
-            self._dim_finish_points(u, v)
-            self.update()
-            return True
-        pick = self._dim_pick(u, v)
+            line = self._dim_place.get("line")
+            pick = self._dim_pick(u, v) if line is not None else None
+            if pick is not None and pick[0] in ("ent", "pt") and pick[1] is not line:
+                # a line is being placed, but another line/point was clicked: angle or distance instead
+                self._dim_place = None
+                self._dim_pending = [("ent", line)]
+            else:
+                self._dim_finish_points(u, v)
+                self.update()
+                return True
+        else:
+            pick = self._dim_pick(u, v)
         pend = self._dim_pending
         if not pend:
             if pick is None:
@@ -773,12 +803,17 @@ class DimensionOverlayMixin:
             elif pick[0] == "ref":
                 pend.append(pick)
                 self.status_message.emit("Dimension: now click the point or circle centre to measure from this edge.")
+            elif pick[0] == "ent":
+                # SolidWorks Smart Dimension: the value follows the cursor at once, where you click places it
+                line = pick[1]
+                self._dim_place = {"a": ("pt", line, "p1"), "b": ("pt", line, "p2"), "line": line}
+                self._show_dim_box()
+                self.status_message.emit(
+                    "Dimension: click to place (beside = length, above/below = horizontal, left/right = vertical), "
+                    "or click another line for an angle or an end point for a distance.")
             else:
                 pend.append(pick)
-                self.status_message.emit(
-                    "Dimension: click another line for an angle, an end point for a distance, or click away to dimension the length."
-                    if pick[0] == "ent" else
-                    "Dimension: click a second end point (distance) or a line (distance to line).")
+                self.status_message.emit("Dimension: click a second end point (distance) or a line (distance to line).")
             self.update()
             return True
 

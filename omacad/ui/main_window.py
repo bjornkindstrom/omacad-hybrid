@@ -731,6 +731,8 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
 
     def on_extrude_face(self, face):
         """Right-click > Extrude this Face: the face outline becomes the profile; default is 5 mm into the body."""
+        if getattr(self.viewport, "clear_face_selection", None):
+            self.viewport.clear_face_selection()
         sk, idx = self.doc.face_to_sketch(face)
         if idx is None:
             self.status_label.setText("That face has no closed outline to extrude.")

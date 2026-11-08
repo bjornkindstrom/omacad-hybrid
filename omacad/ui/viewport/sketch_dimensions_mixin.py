@@ -184,35 +184,50 @@ class SketchDimensionsMixin:
                 continue   # the built-in relations of a polygon stay out of sight
             if not show_all and not (set(c.refs) & focus) and c.ctype != "OFFSET":
                 continue
-            if c.ctype in ("COINCIDENT", "MIDPOINT", "POINT_ON_LINE", "ARC_END") and c.pts:
-                uv = point_of(ent, c.pts[0])
+            # SolidWorks shows a two-element relation (parallel, equal…) on both elements
+            owners = [c.refs[0]] + ([c.refs[1]] if c.ctype in self.BOTH_SIDE_RELATIONS and len(c.refs) > 1 else [])
+            for k, owner in enumerate(owners):
+                ent = ents.get(owner)
+                if ent is None:
+                    continue
+                uv = self._badge_uv(c, ent, ents) if k == 0 else self._badge_uv(None, ent, ents)
                 if uv is None:
                     continue
-            elif c.ctype == "POINT_ON_CIRCLE" and isinstance(ent, SketchArc) and len(c.refs) == 2 and c.pts:
-                uv = point_of(ents.get(c.refs[1]), c.pts[0]) if c.refs[1] in ents else None   # the line's end on the arc
-                if uv is None:
+                scr = self.world_to_screen(plane.uv_to_world(uv[0], uv[1]))
+                if scr is None:
                     continue
-            elif isinstance(ent, SketchLine):
-                uv = ((ent.p1[0] + ent.p2[0]) / 2.0, (ent.p1[1] + ent.p2[1]) / 2.0)
-            elif isinstance(ent, SketchCircle):
-                uv = (ent.center[0] + ent.radius * 0.7071, ent.center[1] + ent.radius * 0.7071)
-            elif isinstance(ent, SketchSpline):
-                pts = ent.get_points()
-                uv = pts[len(pts) // 2] if pts else ent.points[len(ent.points) // 2]
-            else:
-                continue
-            scr = self.world_to_screen(plane.uv_to_world(uv[0], uv[1]))
-            if scr is None:
-                continue
-            n = stacked.get(c.refs[0], 0)
-            stacked[c.refs[0]] = n + 1
-            rect = QRectF(scr[0] + 8 + n * 20, scr[1] - 24, 18, 18)
-            painter.setBrush(QBrush(qcolor(30, 34, 40, 235)))
-            painter.setPen(QPen(qcolor(56, 189, 248), 1.2))
-            painter.drawRoundedRect(rect, 3, 3)
-            painter.setPen(qcolor(224, 227, 231))
-            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, self.CONSTRAINT_GLYPHS.get(c.ctype, "?"))
-            self.constraint_badges.append((rect, c.cid))
+                n = stacked.get(owner, 0)
+                stacked[owner] = n + 1
+                rect = QRectF(scr[0] + 8 + n * 20, scr[1] - 24, 18, 18)
+                hot = bool(set(c.refs) & focus)
+                # pale yellow relation boxes, as in SolidWorks (brighter for the hovered/selected element)
+                painter.setBrush(QBrush(qcolor(255, 226, 92, 245) if hot else qcolor(255, 240, 170, 235)))
+                painter.setPen(QPen(qcolor(120, 96, 10), 1.0))
+                painter.drawRect(rect)
+                painter.setPen(qcolor(30, 30, 30))
+                painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, self.CONSTRAINT_GLYPHS.get(c.ctype, "?"))
+                self.constraint_badges.append((rect, c.cid))
+
+    BOTH_SIDE_RELATIONS = ("PARALLEL", "PERPENDICULAR", "EQUAL", "TANGENT", "CONCENTRIC")
+
+    @staticmethod
+    def _badge_uv(c, ent, ents):
+        """Where an element's relation box sits: at the point it is about, else beside the element."""
+        from omacad.model.sketch_entities import SketchSpline
+        if c is not None and c.ctype in ("COINCIDENT", "MIDPOINT", "POINT_ON_LINE", "ARC_END") and c.pts:
+            return point_of(ent, c.pts[0])
+        if c is not None and c.ctype == "POINT_ON_CIRCLE" and isinstance(ent, SketchArc) and len(c.refs) == 2 and c.pts:
+            return point_of(ents.get(c.refs[1]), c.pts[0]) if c.refs[1] in ents else None   # the line's end on the arc
+        if isinstance(ent, SketchLine):
+            return ((ent.p1[0] + ent.p2[0]) / 2.0, (ent.p1[1] + ent.p2[1]) / 2.0)
+        if isinstance(ent, SketchCircle):
+            return (ent.center[0] + ent.radius * 0.7071, ent.center[1] + ent.radius * 0.7071)
+        if isinstance(ent, SketchSpline):
+            pts = ent.get_points()
+            return pts[len(pts) // 2] if pts else ent.points[len(ent.points) // 2]
+        if isinstance(ent, SketchArc):
+            return ent.p_mid
+        return None
 
     @property
     def _dim_place(self):

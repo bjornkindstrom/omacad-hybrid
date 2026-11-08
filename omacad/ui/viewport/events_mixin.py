@@ -646,11 +646,17 @@ class ViewportEventsMixin:
                 doc.selected_extra = []
                 self.profile_picked.emit()
                 self.update()
+            if picked is not None:
+                if getattr(self, "selected_faces", None):
+                    self.clear_face_selection()
             if picked is None:
                 hit_face = self._pick_face(event.position().x(), event.position().y())
                 hit_surf = self._pick_curved_surface(event.position().x(), event.position().y()) if hit_face is None else None
                 multi = bool(event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
                 if hit_face is not None or hit_surf is not None:
+                    if not multi:
+                        doc.selected_profile = None
+                        doc.selected_extra = []
                     if hit_face is not None:
                         body_id = hit_face[0].body_id
                         face_item = hit_face[1]

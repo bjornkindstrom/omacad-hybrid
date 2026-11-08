@@ -176,6 +176,7 @@ class Document:
         self.parameters: List[Parameter] = []
         self.step_states: dict = {}
         self.last_message: str = ""  # feedback from the last constraint/dimension operation
+        self.last_conflicts = None  # (sketch id, clashing element ids, time) after a constraint was refused
         # Undo / redo: ("sketch", sketch_id, snapshot) for edits inside a sketch, ("doc", label, snapshot) for everything else
         self.undo_stack: List[tuple] = []
         self.redo_stack: List[tuple] = []
@@ -564,7 +565,13 @@ class Document:
 
     def refresh_sketch_references(self, sketch: Sketch, body_ids=None) -> None:
         """Face outlines of the bodies that exist now (or only `body_ids`), so regions bounded by them can be profiles."""
-        bodies = self.bodies.values() if body_ids is None else [self.bodies[b] for b in body_ids if b in self.bodies]
+        if body_ids is None:
+            if getattr(sketch, "parent_body_id", None) and sketch.parent_body_id in self.bodies:
+                bodies = [self.bodies[sketch.parent_body_id]]
+            else:
+                bodies = list(self.bodies.values())
+        else:
+            bodies = [self.bodies[b] for b in body_ids if b in self.bodies]
         sketch.reference_segments = in_plane_edges(bodies, sketch.plane)
         sketch.solve_profiles()
 
@@ -3209,7 +3216,8 @@ class Document:
                 res = solve_sketch(sketch)
         if not res.ok:
             sketch.restore_from_dict(before)
-            self.last_message = res.message + " - constraint not added."
+            self._note_conflicts(sketch, res)
+            self.last_message = self._over_defined_text(res) + res.message + " - constraint not added."
             return False
         self.record_sketch_change(sketch, before)
         self.last_message = self.sketch_status(sketch) + (f" ({released} conflicting dimension(s) released)" if released else "")
@@ -3268,6 +3276,17 @@ class Document:
         self.notify_changed()
         return True
 
+    def _note_conflicts(self, sketch, res) -> None:
+        """Remember the clashing elements so the view can show them in yellow for a moment (SolidWorks)."""
+        import time
+        ids = {i for i in getattr(res, "conflicts", ()) if sketch.get_entity(i) is not None}
+        self.last_conflicts = (sketch.sketch_id, ids, time.monotonic()) if ids else None
+
+    @staticmethod
+    def _over_defined_text(res) -> str:
+        n = len(getattr(res, "conflicts", ()) or ())
+        return f"Over defined: {n} element(s) shown in yellow clash. " if n else ""
+
     @staticmethod
     def sketch_status(sketch: Sketch) -> str:
         if sketch.dof is None:
@@ -3302,7 +3321,8 @@ class Document:
         res = self._solve_anchored(sketch, dim)
         if not res.ok:
             sketch.restore_from_dict(before)
-            self.last_message = res.message + " - dimension not added."
+            self._note_conflicts(sketch, res)
+            self.last_message = self._over_defined_text(res) + res.message + " - dimension not added."
             self.notify_changed()
             return False
         self.record_sketch_change(sketch, before)

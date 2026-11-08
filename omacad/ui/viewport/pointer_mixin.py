@@ -15,6 +15,13 @@ _INFER_TOOLS = {"LINE", "ARC", "CIRCLE", "RECT", "CENTER_RECT", "ROUNDED_RECT", 
                 "SLOT", "POLYGON", "SPLINE", "CONTROL_SPLINE", "TEXT"}
 
 
+
+def _ctrl_held() -> bool:
+    from PySide6.QtCore import Qt as _Qt
+    from PySide6.QtWidgets import QApplication
+    return bool(QApplication.keyboardModifiers() & _Qt.KeyboardModifier.ControlModifier)
+
+
 class PointerMixin:
     """Mouse press and move handlers used by :class:`Viewport3D`."""
 
@@ -603,6 +610,8 @@ class PointerMixin:
             if uv is not None:
                 enable_grid = self.sketch_palette.chk_snap_grid.isChecked()
                 enable_pts = self.sketch_palette.chk_snap_points.isChecked()
+                if self.sketch_tool in _INFER_TOOLS and _ctrl_held():
+                    enable_pts = False         # SolidWorks: Ctrl while drawing = no snaps and no relations
                 grid_step = 5.0 if enable_grid else 0.0
 
                 snap_res = SketchSnapper.snap(

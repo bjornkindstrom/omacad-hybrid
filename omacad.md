@@ -1,3 +1,13 @@
+## Extrude förvald yta & skissreferenser — 2026-11-08 (0.9.9.80.168, rapport 20261108-073007)
+
+Extrude kraschade med RecursionError vid förvald yta: `prompt_extrude` anropade `on_extrude_face`, som i sin tur
+anropade `prompt_extrude` utan att förvalda ytor (`selected_faces`) rensades. Dessutom tog `refresh_sketch_references`
+in kanter från alla kroppar i dokumentet i stället för bara skissens egen `parent_body_id`, vilket gjorde att coplanara
+kanter från en underliggande burk/låda skar rakt igenom skissade cirklar och delade dem i två bitar.
+`refresh_sketch_references` begränsas nu till `parent_body_id`, `selected_faces` rensas när den konsumeras i
+`prompt_extrude`/`on_extrude_face` och vid profilklick, och `selected_profile` prioriteras före ytförval.
+Test: `tests/test_extrude_face_selection_and_sketch_references.py`.
+
 ## SolidWorks-skiss steg 2 — 2026-11-07 (0.9.9.80.167)
 
 Plan (användaren valde ordning 2 → 1 → 5 → 3 → 4 → 6): 2 inferenslinjer, 1 färg per entitet (blå/svart/gul),
