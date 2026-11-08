@@ -20,7 +20,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Qt system libraries
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1 xvfb xauth libxcb-cursor0 libxkbcommon-x11-0
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1 xvfb xauth libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-randr0 libxcb-shape0
       - name: Install dependencies
         env:
           # Newer gcc defaults to C23, which drops ATOMIC_VAR_INIT; python-solvespace's bundled mimalloc needs it.
@@ -31,17 +31,17 @@ jobs:
       - name: Build native Rust acceleration extension
         run: |
           pip install ./native --no-build-isolation
-      - name: Run tests
-        env:
-          QT_QPA_PLATFORM: offscreen
-          OMACAD_VIEWPORT_BACKEND: rust
-        run: python -m pytest tests -q -n auto --dist loadfile -o faulthandler_timeout=300 -k "not test_render_script_images_for_own_scripts"
       - name: Test script rendering with OpenGL
         env:
           QT_QPA_PLATFORM: xcb
           LIBGL_ALWAYS_SOFTWARE: "1"
           OMACAD_VIEWPORT_BACKEND: rust
-        run: xvfb-run -a python -m pytest tests/test_script_manage.py::test_render_script_images_for_own_scripts -q
+        run: xvfb-run -a python -m pytest tests/test_script_manage.py::test_render_script_images_for_own_scripts -q -s
+      - name: Run tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+          OMACAD_VIEWPORT_BACKEND: rust
+        run: python -m pytest tests -q -n auto --dist loadfile -o faulthandler_timeout=300 -k "not test_render_script_images_for_own_scripts"
 
   build:
     name: Build Omacad.exe (Windows Standalone)
