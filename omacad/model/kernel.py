@@ -1052,7 +1052,8 @@ class CadKernel:
         minus = np.zeros(k, dtype=bool)
         plus[links[side > 0, 0]] = True
         minus[links[side < 0, 0]] = True
-        strip = plus & minus
+        w_cov, _ = np.linalg.eigh(cov)
+        strip = plus & minus & (w_cov[:, 2] > 25.0 * np.maximum(w_cov[:, 1], 1e-12))
         patch_of = np.full(len(f), -1)
         patch_of[lf] = inv
         tri = np.zeros(len(f), dtype=bool)
@@ -1119,6 +1120,10 @@ class CadKernel:
                     length = np.where(bad[:, None], 1.0, length)
                 if np.all(np.isfinite(normals)) and np.all(length > 0.5):
                     normals = normals / length
+                    face_rep = np.repeat(CadKernel._face_normals(v, f), 3, axis=0)
+                    backward = (normals * face_rep).sum(1) < 0.0
+                    if backward.any():
+                        normals = np.where(backward[:, None], face_rep, normals)
                     normals = CadKernel._strip_normals(v, f, normals, smooth_below_deg)
                     flat = CadKernel._flat_triangles(v, f) | CadKernel._wide_flat_triangles(v, f, smooth_below_deg)
                     if flat.any():

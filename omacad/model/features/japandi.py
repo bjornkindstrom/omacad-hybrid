@@ -445,6 +445,19 @@ def japandi_tool(manifold: m3d.Manifold, ref: Dict[str, Any], params: Dict[str, 
     else:
         far = np.where(has_rib, relief, -CLEAR)
         tool = _tube(radii, zs, nr, nz, angles, np.full(far.shape, -BURIED), far)
+    # Ribs on a wall with curved profile (or tilted normals) must not poke past the wall's z ends (#230)
+    z_face_min = float(min(surface.z[1], surface.z[-2]))
+    z_face_max = float(max(surface.z[1], surface.z[-2]))
+    local_mesh = manifold.transform(np.linalg.inv(M)[:3, :]).to_mesh()
+    z_min = float(local_mesh.vert_properties[:, 2].min())
+    z_max = float(local_mesh.vert_properties[:, 2].max())
+    z_lo = z_min if abs(z_face_min - z_min) < 0.1 else z_face_min
+    z_hi = z_max if abs(z_face_max - z_max) < 0.1 else z_face_max
+    z_tool = tool.to_mesh().vert_properties[:, 2]
+    if z_tool.max() > z_hi:
+        tool = tool.trim_by_plane((0.0, 0.0, -1.0), -z_hi)
+    if z_tool.min() < z_lo:
+        tool = tool.trim_by_plane((0.0, 0.0, 1.0), z_lo)
     return tool.transform(M[:3, :]), ribs
 
 

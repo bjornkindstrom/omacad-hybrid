@@ -1,3 +1,9 @@
+# Hybrid-experiment — 0.9.9.80.175
+
+### Fixed
+- **Loft shading on shelled bodies**: thin-walled lofts with shell or hollow cavities no longer produce inverted normals or dark facet stripes in the viewport (#232). Vertex normals pointing backwards into the face normal are replaced with the face normal, and strip normal smoothing is restricted to elongated 1D facet strips (fillets/cylinders) to prevent flattening 2D quad loft meshes.
+- **Japandi ribs with twist on curved profiles**: ribs swept or twisted along curved revolved profiles no longer overshoot the body's top or bottom end planes (#230). Rib tools are clamped to the surface boundary planes, eliminating jagged slivers, ragged black lines, and artifacts on flat rim faces.
+
 # Hybrid-experiment — 0.9.9.80.174
 
 ### Added

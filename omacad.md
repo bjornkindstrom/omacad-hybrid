@@ -1,3 +1,16 @@
+## Requests #230, #232 — 2026-11-08 (0.9.9.80.175)
+
+#232: Ytskuggning på skalsatta/tunna loft-kroppar gav mörka ränder och inverterade normaler. Manifolds
+`calculate_normals` vänder normaler inåt vid motstående väggar nära varandra (dot < 0 mot facenormalen);
+`CadKernel._shaded_triangles` ersätter nu bakåtriktade vertexnormaler med ytans normal. Dessutom körde
+`_strip_normals` på 2D quad-nät för loftar och plattade ut krökningen längs Z-axeln; nu krävs att kovariansens
+aspektkvot (w2/w1) > 25 så att endast 1D-facetter (t.ex. cylindrar och avrundningar) behandlas som remsor.
+#230: Japandi med twist på roterad yta med vinklad profilnormal (nz != 0) stack ut förbi mynningens/bottenens
+ändplan och skar sönder plana ändytor till tusentals mikroskärvor och svarta streck. `japandi_tool` i
+`omacad/model/features/japandi.py` planar nu av verktyget (`trim_by_plane`) mot referensytans och basnätets
+Z-gränser i lokala koordinater.
+Test: `tests/test_request_230_japandi_twist.py`, `tests/test_request_232_loft_shading.py`.
+
 ## Requests #222, #223, #225–#228 — 2026-11-08 (0.9.9.80.174)
 
 #221 var redan klar i .166. #223: `PatternFeature._source_plane` gjorde `steps.index(self)` – förhandsvisningens
