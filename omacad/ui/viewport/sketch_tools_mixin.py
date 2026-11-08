@@ -828,7 +828,7 @@ class SketchToolsMixin:
                 lbl = {"X": u_lbl, "Y": v_lbl}.get(name, name)
                 txt = f"{lbl}  {txt}"
             wbox = max(64, fm.horizontalAdvance(txt) + 18)
-            rect = QRectF(pt.x() - wbox / 2, pt.y() - 12, wbox, 24)
+            rect = self.place_label(QRectF(pt.x() - wbox / 2, pt.y() - 12, wbox, 24))   # clear of badges (#222)
             if focused:
                 self._dyn_focus_rect = rect
             painter.setBrush(QBrush(qcolor(37, 40, 44, 235)))

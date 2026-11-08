@@ -287,6 +287,8 @@ class DimensionOverlayMixin:
                     bx = s_badge[0] - bw * 0.5
                     by = s_badge[1] - bh * 0.5
                     badge_rect = QRectF(bx, by, bw, bh)
+                    if hasattr(self, "place_label"):
+                        self.place_label(badge_rect, movable=False)   # floating hint boxes keep clear (#222)
 
                     self.dim_badges[dim.dim_id] = (badge_rect, sketch.sketch_id, dim.dim_id, dim.value)
 

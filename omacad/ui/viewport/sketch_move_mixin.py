@@ -251,7 +251,7 @@ class SketchMoveMixin:
             raw_uv=uv,
             sketch=sk,
             snap_distance=tol,
-            grid_step=5.0,
+            grid_step=self.grid_step(),
             enable_grid_snap=self.sketch_palette.chk_snap_grid.isChecked(),
             enable_geom_snap=self.sketch_palette.chk_snap_points.isChecked(),
             reference_segments=self._reference_segments(),

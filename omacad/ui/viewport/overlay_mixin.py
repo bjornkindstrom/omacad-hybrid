@@ -20,6 +20,29 @@ from omacad.model.sketch import (
 
 class OverlayMixin:
     """Mixin providing 2D QPainter overlays (dimensions, badges, HUD) for Viewport3D."""
+
+    def _draw_curve_centres(self, painter, sketch):
+        """A small hollow centre point on every circle and arc of the active sketch, so the centre can be seen,
+        snapped to and dimensioned (#225). Construction curves get a dimmer dot."""
+        plane = sketch.plane
+        for ent in sketch.entities:
+            centre = None
+            if isinstance(ent, SketchCircle):
+                centre = ent.center
+            elif isinstance(ent, SketchArc):
+                params = ent.get_circle_params()
+                centre = params[0] if params else None
+            if centre is None:
+                continue
+            scr = self.world_to_screen(plane.uv_to_world(float(centre[0]), float(centre[1])))
+            if not scr:
+                continue
+            selected = ent.entity_id in getattr(self, "selected_entities", ())
+            ring = qcolor(56, 189, 248) if selected else qcolor(120, 128, 140, 150 if ent.is_construction else 235)
+            painter.setPen(QPen(ring, 1.4))
+            painter.setBrush(QBrush(qcolor(255, 255, 255, 235)))
+            painter.drawEllipse(QPointF(*scr), 3.2, 3.2)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
     def _draw_link_badges(self, painter: QPainter):
         """A small chain-link chip above every linked object's body: blue when it follows its original, grey when it
         is frozen at an older step of it."""
@@ -82,9 +105,32 @@ class OverlayMixin:
                              Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, name)
         painter.restore()
 
+    def place_label(self, rect: QRectF, register: bool = True, movable: bool = True) -> QRectF:
+        """Hint boxes must not cover each other (#222). Returns `rect`, or the nearest of a few nudged positions
+        (above, below, right, left, then further out) that overlaps no box placed earlier this frame, and
+        remembers the result. Anchored boxes (relation badges) pass movable=False and are only remembered."""
+        taken = getattr(self, "_label_rects", None)
+        if taken is None:
+            taken = self._label_rects = []
+        out = QRectF(rect)
+        if movable and taken:
+            w, h = rect.width() + 4, rect.height() + 4
+            steps = [(0, 0), (0, -h), (0, h), (w, 0), (-w, 0), (w, -h), (-w, -h), (w, h), (-w, h),
+                     (0, -2 * h), (0, 2 * h), (2 * w, 0), (-2 * w, 0)]
+            for dx, dy in steps:
+                cand = rect.translated(dx, dy)
+                grown = cand.adjusted(-2, -2, 2, 2)
+                if not any(grown.intersects(t) for t in taken):
+                    out = cand
+                    break
+        if register:
+            taken.append(QRectF(out))
+        return out
+
     def draw_painter_overlays(self, painter: QPainter):
         """Draws ViewCube, sketch status banner, and HUD controls."""
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        self._label_rects = []          # hint boxes placed this frame (place_label)
         if getattr(self, "hole_place_plane", None) is not None:
             self._draw_hole_measure_guides(painter)
             painter.save()
@@ -262,6 +308,10 @@ class OverlayMixin:
                         painter.drawEllipse(QPointF(*scr_pt), 4.5, 4.5)
                 painter.setBrush(Qt.BrushStyle.NoBrush)
 
+        # 2d. Centre points of circles and arcs (Fusion shows a small hollow dot, #225)
+        if self.doc.active_sketch:
+            self._draw_curve_centres(painter, self.doc.active_sketch)
+
         self.draw_constraint_badges(painter)
         self.draw_dim_picks(painter)
 
@@ -321,10 +371,25 @@ class OverlayMixin:
                     painter.setBrush(Qt.BrushStyle.NoBrush)
                     painter.drawEllipse(QPointF(sx, sy), 6, 6)
                     painter.drawLine(QPointF(sx - 10, sy - 6), QPointF(sx + 10, sy - 6))
+                elif snap.snap_type == "AXIS":       # locked onto an origin axis (#227): ring + "On X axis"
+                    painter.setPen(QPen(qcolor(226, 109, 40), 2))
+                    painter.setBrush(Qt.BrushStyle.NoBrush)
+                    painter.drawEllipse(QPointF(sx, sy), 6, 6)
+                    painter.drawLine(QPointF(sx - 10, sy), QPointF(sx + 10, sy))
+                    painter.drawLine(QPointF(sx, sy - 10), QPointF(sx, sy + 10))
+                    font_axis = QFont(theme.font_family(), 8, QFont.Weight.Bold)
+                    painter.setFont(font_axis)
+                    w_txt = painter.fontMetrics().horizontalAdvance(snap.label) + 10
+                    badge_rect = self.place_label(QRectF(sx + 12, sy - 24, w_txt, 16))
+                    painter.setPen(QPen(qcolor(226, 109, 40), 1.5))
+                    painter.setBrush(QBrush(qcolor(24, 28, 34, 220)))
+                    painter.drawRoundedRect(badge_rect, 3, 3)
+                    painter.setPen(QPen(qcolor(224, 227, 231)))
+                    painter.drawText(badge_rect, Qt.AlignmentFlag.AlignCenter, snap.label)
                 elif snap.snap_type in ("ORTHO_H", "ORTHO_V", "ANGLE"):
                     painter.setPen(QPen(qcolor(56, 189, 248), 1.5))
                     painter.setBrush(QBrush(qcolor(24, 28, 34, 220)))
-                    badge_rect = QRectF(sx + 10, sy - 20, 30 if snap.label else 20, 16)
+                    badge_rect = self.place_label(QRectF(sx + 10, sy - 20, 30 if snap.label else 20, 16))
                     painter.drawRoundedRect(badge_rect, 3, 3)
                     painter.setPen(QPen(qcolor(224, 227, 231)))
                     font_ortho = QFont(theme.font_family(), 8, QFont.Weight.Bold)
@@ -401,7 +466,7 @@ class OverlayMixin:
                     fm = painter.fontMetrics()
                     badge_w = fm.horizontalAdvance(dim_text) + 18
                     badge_h = 24
-                    b_rect = QRectF(bx, by, badge_w, badge_h)
+                    b_rect = self.place_label(QRectF(bx, by, badge_w, badge_h))
 
                     painter.setPen(QPen(qcolor(226, 109, 40), 1.2))
                     painter.setBrush(QBrush(qcolor(22, 25, 30, 235)))

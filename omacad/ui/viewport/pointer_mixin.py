@@ -612,7 +612,7 @@ class PointerMixin:
                 enable_pts = self.sketch_palette.chk_snap_points.isChecked()
                 if self.sketch_tool in _INFER_TOOLS and _ctrl_held():
                     enable_pts = False         # SolidWorks: Ctrl while drawing = no snaps and no relations
-                grid_step = 5.0 if enable_grid else 0.0
+                grid_step = self.grid_step() if enable_grid else 0.0
 
                 snap_res = SketchSnapper.snap(
                     raw_uv=uv,

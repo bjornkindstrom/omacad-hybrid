@@ -27,7 +27,7 @@ def _closest_on_segment(pt, p1, p2):
 class SnapResult:
     """Holds information about the snapped 2D coordinate and its type."""
     uv: Tuple[float, float]
-    snap_type: str  # "NONE", "ORIGIN", "ENDPOINT", "MIDPOINT", "EDGE", "ORTHO_H", "ORTHO_V", "GRID", "TANGENT"
+    snap_type: str  # "NONE", "ORIGIN", "ENDPOINT", "MIDPOINT", "EDGE", "AXIS", "ORTHO_H", "ORTHO_V", "GRID", "TANGENT"
     target_uv: Optional[Tuple[float, float]] = None
     guide_line: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None
     label: str = ""   # ANGLE snaps: the angle shown next to the cursor ("45°", "90°")
@@ -100,6 +100,30 @@ def _infer(res: "SnapResult", ru, rv, anchors, tol) -> "SnapResult":
     return res
 
 
+def _origin_axes(sketch):
+    """{"u": name, "v": name} of the world axes lying along the plane's u and v axes through its origin, for
+    sketches on XY/XZ/YZ (a face plane's u/v lines are not world axes)."""
+    plane = getattr(sketch, "plane", None)
+    name = str(getattr(plane, "name", "")).upper()
+    if name not in ("XY", "XZ", "YZ"):
+        return None
+    return {"u": name[0], "v": name[1]}
+
+
+def _axis_snap(ru, rv, axes, snap_distance, step):
+    """Lock onto the axis the cursor is near: v == 0 is the plane's u axis (e.g. X), u == 0 its v axis."""
+    du, dv = abs(rv), abs(ru)     # distance to the u axis (v=0) and to the v axis (u=0)
+    if min(du, dv) > snap_distance:
+        return None
+    if du <= dv:
+        u = round(ru / step) * step if step else ru
+        return SnapResult(uv=(u, 0.0), snap_type="AXIS", target_uv=(u, 0.0),
+                          guide_line=((-2000.0, 0.0), (2000.0, 0.0)), label=f"On {axes['u']} axis")
+    v = round(rv / step) * step if step else rv
+    return SnapResult(uv=(0.0, v), snap_type="AXIS", target_uv=(0.0, v),
+                      guide_line=((0.0, -2000.0), (0.0, 2000.0)), label=f"On {axes['v']} axis")
+
+
 class SketchSnapper:
     """Finds the best magnetic snap point for a given 2D cursor coordinate."""
 
@@ -165,6 +189,9 @@ class SketchSnapper:
                     endpoints.append(ent.p_start)
                     endpoints.append(ent.p_end)
                     midpoints.append(ent.p_mid)
+                    params = ent.get_circle_params()
+                    if params:
+                        endpoints.append(tuple(params[0]))     # the arc's centre point (drawn since #225)
                 elif isinstance(ent, SketchSpline) and ent.points:
                     endpoints.extend((ent.points[0], ent.points[-1]))
 
@@ -230,6 +257,9 @@ class SketchSnapper:
             if best_edge is not None:
                 return SnapResult(uv=best_edge, snap_type="EDGE", target_uv=best_edge)
 
+        # 2c. The origin axes of an origin-plane sketch (Fusion: the cursor locks onto the axis, #227)
+        axes = _origin_axes(sketch) if enable_geom_snap else None
+
         # 3. Orthogonal Alignment (Horizontal / Vertical against start point)
         if start_uv is not None:
             su, sv = start_uv
@@ -237,6 +267,8 @@ class SketchSnapper:
             if abs(rv - sv) <= snap_distance:
                 guide = ((su - 500.0, sv), (su + 500.0, sv))
                 u_coord = round(ru / grid_step) * grid_step if enable_grid_snap else ru
+                if axes and abs(ru) <= snap_distance:
+                    u_coord = 0.0                       # where the horizontal line crosses the vertical axis
                 res = SnapResult(uv=(u_coord, sv), snap_type="ORTHO_H", target_uv=(su, sv), guide_line=guide)
                 return _infer(res, ru, rv, inference_anchors(sketch, start_uv), snap_distance) if infer and enable_geom_snap else res
 
@@ -244,9 +276,25 @@ class SketchSnapper:
             if abs(ru - su) <= snap_distance:
                 guide = ((su, sv - 500.0), (su, sv + 500.0))
                 v_coord = round(rv / grid_step) * grid_step if enable_grid_snap else rv
+                if axes and abs(rv) <= snap_distance:
+                    v_coord = 0.0
                 res = SnapResult(uv=(su, v_coord), snap_type="ORTHO_V", target_uv=(su, sv), guide_line=guide)
                 return _infer(res, ru, rv, inference_anchors(sketch, start_uv), snap_distance) if infer and enable_geom_snap else res
 
+        if axes:
+            res = _axis_snap(ru, rv, axes, snap_distance, grid_step if enable_grid_snap else 0.0)
+            if res is not None:
+                if infer:                    # slide along the axis to line up with another point
+                    along = 0 if res.uv[1] == 0.0 else 1
+                    p = _best_align(ru, rv, inference_anchors(sketch, start_uv), along, snap_distance)
+                    if p is not None and abs(p[1 - along]) > 1e-9:
+                        res.uv = (p[0], 0.0) if along == 0 else (0.0, p[1])
+                        res.target_uv = res.uv
+                        res.inferences = ((p, res.uv),)
+                return res
+
+        if start_uv is not None:
+            su, sv = start_uv
             # 45° diagonals, and 90°/45° to the line that ends where this one starts (Björn #98)
             dirs = [((1.0, 1.0), "45°"), ((1.0, -1.0), "45°")]
             prev = next((e for e in reversed(sketch.entities) if getattr(e, "entity_type", "") == "line"

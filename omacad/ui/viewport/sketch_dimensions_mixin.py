@@ -198,7 +198,7 @@ class SketchDimensionsMixin:
                     continue
                 n = stacked.get(owner, 0)
                 stacked[owner] = n + 1
-                rect = QRectF(scr[0] + 8 + n * 20, scr[1] - 24, 18, 18)
+                rect = self.place_label(QRectF(scr[0] + 8 + n * 20, scr[1] - 24, 18, 18), movable=False)
                 hot = bool(set(c.refs) & focus)
                 # pale yellow relation boxes, as in SolidWorks (brighter for the hovered/selected element)
                 painter.setBrush(QBrush(qcolor(255, 226, 92, 245) if hot else qcolor(255, 240, 170, 235)))

@@ -1,3 +1,20 @@
+## Requests #222, #223, #225–#228 — 2026-11-08 (0.9.9.80.174)
+
+#221 var redan klar i .166. #223: `PatternFeature._source_plane` gjorde `steps.index(self)` – förhandsvisningens
+"tmp"-mönster finns inte i tidslinjen → ValueError i första `preview()` innan `finished` kopplats, panelen dog
+men timeline-klick gick kvar till raderade widgets. Nu `len(steps)` om mönstret saknas, `preview()` fångar fel
+(visas i `lbl_info`), och död `_pattern_dlg` (shiboken6.isValid) ignoreras. #226: `grid_step` i Settings användes
+inte (render 10 mm, snap 5 mm fast); `RenderMixin.grid_step()/grid_lines()/_grid_frame()` – rutnät på aktiva
+skissens plan, annars XY eller det origoplan som vetter mot kameran (view[2,:3]), 5x grövre vid utzoomning, var 5:e
+linje kraftigare. #227: `sketch_snap._axis_snap` (snap_type "AXIS", bara XY/XZ/YZ-skisser) efter ORTHO_H/V, som
+också hamnar på axeln. #225: `OverlayMixin._draw_curve_centres`; bågcentrum är snappunkt. #222: `place_label(rect,
+movable=)` nollställs per frame; relations- och måttbrickor registreras fasta, snapbrickor/flytande mått/Tab-rutor
+flyttas till ledig plats. #228: `sketch_trim` hanterar splines via täta polylinjer (DENSE=64 per spann, samma på
+båda sidor så ändpunkterna möts exakt); kontrollpunktsspline-bitar minsta-kvadrat-anpassas (`_fit_control_spline`,
+fasta ändar), fit-splines behåller sina punkter. Kvar: offset av linje+spline-kedja fogar inte ihop hörnet (spline
+offsettas separat). Fälla: `test_fan_menu_rendering_and_mouse_events` failar redan offscreen (ingen GL-kontext).
+Test: `tests/test_request_22{2,3,5,6,7,8}_*.py`.
+
 ## Starta script direkt i Easy — 2026-11-08
 
 Scripts-dialogen har Easy bredvid Run; scriptmenyns högerklick har Run in Easy mode.

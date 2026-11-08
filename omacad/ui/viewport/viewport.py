@@ -710,10 +710,11 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
 
         # 1. Draw 3D Ground Grid
         if self.show_grid:
-            self.render_ground_grid(mvp)
             sk = self.doc.active_sketch
-            if sk is not None and sk.plane.name == "FACE":
-                self.render_plane_grid(mvp, sk.plane)
+            if sk is not None:
+                self.render_plane_grid(mvp, sk.plane)   # the sketch's own plane (XZ/YZ/face too, #226)
+            else:
+                self.render_ground_grid(mvp)
 
         self.render_origin_axes(mvp)
 

@@ -79,7 +79,7 @@ class SketchRotateMixin:
         return SketchSnapper.snap(
             raw_uv=uv, sketch=self.doc.active_sketch,
             snap_distance=max(0.3, min(8.0, self._entity_tolerance() * 1.25)),
-            reference_segments=self._reference_segments(), grid_step=5.0,
+            reference_segments=self._reference_segments(), grid_step=self.grid_step(),
             enable_grid_snap=self.sketch_palette.chk_snap_grid.isChecked(),
             enable_geom_snap=self.sketch_palette.chk_snap_points.isChecked()).uv
 

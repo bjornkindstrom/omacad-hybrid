@@ -499,6 +499,10 @@ class RoundPatternPromptsMixin:
         from omacad.model.timeline import PatternFeature
         existing = getattr(self, "_pattern_dlg", None)
         if existing is not None:
+            import shiboken6
+            if not shiboken6.isValid(existing):
+                existing = self._pattern_dlg = None
+        if existing is not None:
             if kind in existing.KINDS:
                 existing.cmb_kind.setCurrentIndex(existing.KINDS.index(kind))
             existing.raise_()
@@ -518,6 +522,19 @@ class RoundPatternPromptsMixin:
         dlg.bind_timeline(self.timeline_bar)
 
         def preview():
+            try:
+                _preview()
+            except Exception as exc:  # a failed preview must never kill the panel (#223)
+                import traceback
+                from omacad import applog
+                applog.log("ERROR", "Pattern preview: " + traceback.format_exc())
+                try:
+                    dlg.lbl_info.setText(f"Preview failed: {exc}")
+                    self.viewport.set_preview(None)
+                except RuntimeError:
+                    pass
+
+        def _preview():
             ids = dlg.source_ids()
             if not ids:
                 dlg.lbl_info.setText("Tick the steps to copy (for example the hole's sketch, cut and chamfer).")

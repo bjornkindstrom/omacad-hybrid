@@ -1,3 +1,15 @@
+# Hybrid-experiment — 0.9.9.80.174
+
+### Added
+- **Circle and arc centre points** are shown in the active sketch (small hollow dot, like Fusion), and an arc's centre can be snapped to (#225).
+- **Axis lock while drawing**: near an origin axis of an XY/XZ/YZ sketch the cursor locks onto it before the first click, with an "On X axis" badge and guide line (#227).
+- **Trim works with splines**: splines can be trimmed between their crossings, and they cut lines, arcs and circles. Control point splines stay control point splines; the kept part keeps its shape (#228).
+
+### Fixed
+- **Pattern / Mirror**: the Fill pattern preview crashed when the copied steps were a sketch on a face and its cut, which left a dead panel that kept throwing errors (#223). A failing preview now only shows its error in the panel.
+- **Grid**: Settings > grid step is used for both the grid and Snap to Grid (it was ignored), lines get coarser when zoomed out, and the grid lies on the sketch plane (XZ/YZ/face) or, outside a sketch, on the origin plane facing the camera, so it is visible in front and side views (#226).
+- **Hint boxes no longer cover each other**: value boxes, snap badges ("90°"), relation badges and dimension badges are moved to a free spot (#222).
+
 # Hybrid-experiment — 0.9.9.80.173
 
 ### Added

@@ -264,7 +264,8 @@ class PatternFeature(Feature):
                     plane = sk.plane
                     steps = doc.timeline.features
                     source_index = steps.index(f)
-                    pattern_index = steps.index(self)
+                    # A preview pattern is not in the timeline yet: it sits after the last step.
+                    pattern_index = steps.index(self) if self in steps else len(steps)
                     owner = doc.object_history.owners.get(f.feature_id)
                     placement = np.eye(4)
                     for move in steps[source_index + 1:pattern_index]:

@@ -249,64 +249,89 @@ class RenderGLMixin:
                 self.draw_buffer_arrays(GL.GL_LINES, loc_p, border_lines)
                 GL.glUseProgram(0)
 
-    def render_plane_grid(self, mvp: np.ndarray, plane):
-        """Grid on the sketch plane itself, centred on its origin (the face centre) and sized to the
-        face, drawn a hair above it so it shows on the face."""
+    def grid_step(self) -> float:
+        """The sketch grid spacing from Settings (also the snap step when Snap to Grid is on)."""
+        try:
+            from omacad.ui.settings import get_settings
+            step = float(get_settings().get("grid_step", 5.0))
+        except Exception:
+            step = 5.0
+        return step if math.isfinite(step) and step > 1e-6 else 5.0
+
+    def _grid_frame(self, plane=None):
+        """(origin, u, v, normal) of the plane the grid is drawn on. A sketch draws it on its own plane. Without a
+        sketch it lies on XY, unless the camera looks along XY (front/side view, where XY is an edge-on line):
+        then the origin plane that faces the camera is used, so a grid is always visible (#226)."""
+        if plane is not None:
+            return (np.asarray(plane.origin, float), np.asarray(plane.u_axis, float),
+                    np.asarray(plane.v_axis, float), np.asarray(plane.normal, float))
+        _proj, view, _mvp = self.get_matrices()
+        back = np.asarray(view[2, :3], dtype=float)        # world direction from the target towards the eye
+        x, y, z = (abs(float(c)) for c in back)
+        o = np.zeros(3)
+        ex, ey, ez = np.eye(3)
+        if z >= 0.25 or z >= max(x, y):
+            return o, ex, ey, ez
+        if y >= x:
+            return o, ex, ez, ey
+        return o, ey, ez, ex
+
+    def grid_lines(self, plane=None, step=None):
+        """Grid segments in plane (u, v) coordinates: (minor, major). The spacing follows Settings > grid step and
+        grows in 5x steps when zoomed out, so lines stay at least ~7 px apart; every 5th line is a major line."""
+        o, u, v, n = self._grid_frame(plane)
+        step = float(step or self.grid_step())
+        h = max(1, self.height())
+        visible = 2.0 * float(self.distance) * math.tan(math.radians(15.0))
+        while step * h / max(visible, 1e-9) < 7.0:
+            step *= 5.0
+        # Centre on the camera target projected into the plane, rounded to a major line
+        t = np.asarray(self.target, float) - o
+        major = step * 5.0
+        cu = round(float(t @ u) / major) * major
+        cv = round(float(t @ v) / major) * major
+        half = max(150.0, visible * 1.6)
+        if plane is not None and getattr(plane, "name", "") == "FACE":
+            ref = self._reference_segments()
+            half = max(half, float(np.abs(ref).max()) * 1.2 if len(ref) else 50.0)
+        n_lines = min(400, int(math.ceil(half / step)))
+        ext = n_lines * step
+        minor, majors = [], []
+        for i in range(-n_lines, n_lines + 1):
+            dst = majors if i % 5 == 0 else minor
+            dst.append(((cu - ext, cv + i * step), (cu + ext, cv + i * step)))
+            dst.append(((cu + i * step, cv - ext), (cu + i * step, cv + ext)))
+        return (o, u, v, n), minor, majors
+
+    def _render_grid(self, mvp: np.ndarray, plane=None, lift: float = 0.0):
         if not self.prog_flat:
             return
-        step = 10.0
-        ref = self._reference_segments()
-        half = float(np.abs(ref).max()) if len(ref) else 50.0
-        n = max(5, int(math.ceil(half * 1.2 / step)))
-        ext = n * step
-        pts = []
-        for i in range(-n, n + 1):
-            c = i * step
-            pts += [(-ext, c), (ext, c), (c, -ext), (c, ext)]
-        lift = np.asarray(plane.normal, dtype=np.float64) * 0.05
-        data = np.array([plane.uv_to_world(u, v) + lift for u, v in pts], dtype=np.float32)
+        (o, u, v, n), minor, majors = self.grid_lines(plane)
+        off = o + n * lift
         GL.glUseProgram(self.prog_flat)
         GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.prog_flat, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
-        GL.glUniform4f(GL.glGetUniformLocation(self.prog_flat, "u_color"), *theme.palette().grid_rgb01(), 0.72)
-        self.set_line_width(1.0)
-        self.draw_buffer_arrays(GL.GL_LINES, GL.glGetAttribLocation(self.prog_flat, "in_pos"), data.reshape(-1))
-        GL.glUseProgram(0)
-
-    def render_ground_grid(self, mvp: np.ndarray):
-        """Renders concentric grid and colored X/Y/Z coordinate axes."""
-        if not self.prog_flat:
-            return
-
-        GL.glUseProgram(self.prog_flat)
-        loc_mvp = GL.glGetUniformLocation(self.prog_flat, "u_mvp")
         loc_col = GL.glGetUniformLocation(self.prog_flat, "u_color")
         loc_pos = GL.glGetAttribLocation(self.prog_flat, "in_pos")
-
-        GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
-
-        # Draw Grid Lines
-        grid_lines = []
-        grid_extent = 150.0
-        step_minor = 10.0
-
-        num_steps = int(grid_extent / step_minor)
-        for i in range(-num_steps, num_steps + 1):
-            coord = i * step_minor
-            # lines parallel to X
-            grid_lines.extend([-grid_extent, coord, 0.0, grid_extent, coord, 0.0])
-            # lines parallel to Y
-            grid_lines.extend([coord, -grid_extent, 0.0, coord, grid_extent, 0.0])
-
-        grid_data = np.array(grid_lines, dtype=np.float32)
-
-        GL.glUniform4f(loc_col, *theme.palette().grid_rgb01(), 0.72)
         self.set_line_width(1.0)
-        # The ground grid is a backdrop. It must not reject body fragments when the camera is below XY.
+        # The grid is a backdrop. It must not reject body fragments when the camera is below it.
         GL.glDepthMask(GL.GL_FALSE)
-        self.draw_buffer_arrays(GL.GL_LINES, loc_pos, grid_data)
+        for segs, alpha in ((minor, 0.45), (majors, 0.85)):
+            if not segs:
+                continue
+            uv = np.asarray(segs, dtype=np.float64).reshape(-1, 2)
+            data = (off[None, :] + uv[:, :1] * u[None, :] + uv[:, 1:] * v[None, :]).astype(np.float32)
+            GL.glUniform4f(loc_col, *theme.palette().grid_rgb01(), alpha)
+            self.draw_buffer_arrays(GL.GL_LINES, loc_pos, data.reshape(-1))
         GL.glDepthMask(GL.GL_TRUE)
-
         GL.glUseProgram(0)
+
+    def render_plane_grid(self, mvp: np.ndarray, plane):
+        """Grid on the sketch plane itself (drawn a hair above it so it shows on a face)."""
+        self._render_grid(mvp, plane, lift=0.05 if getattr(plane, "name", "") == "FACE" else 0.0)
+
+    def render_ground_grid(self, mvp: np.ndarray):
+        """Grid on XY, or on the origin plane facing the camera in a front/side view."""
+        self._render_grid(mvp, None)
 
     ORIGIN_AXES = {"X": ((0.88, 0.22, 0.22), (1.0, 0.0, 0.0)),
                    "Y": ((0.20, 0.72, 0.30), (0.0, 1.0, 0.0)),
