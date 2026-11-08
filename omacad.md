@@ -1,3 +1,10 @@
+## Starta script direkt i Easy — 2026-11-08
+
+Scripts-dialogen har Easy bredvid Run; scriptmenyns högerklick har Run in Easy mode.
+Läget skickas till ScriptParamsDialog före fälten skapas. Bortvalda parametrar
+finns bara som värden tills Advanced väljs; preview/körning får alla värden.
+Test: test_script_easy.py::test_easy_start_only_constructs_selected_fields.
+
 ## Easy mode: ordning och synlighet — 2026-11-08
 
 Högerklick → Easy mode settings har en krysslista med drag-and-drop. EASY_PARAMS

@@ -46,8 +46,8 @@ class ScriptPromptsMixin:
         dlg = ScriptsDialog(self, self.script_watcher)
         dlg.exec()
         dlg.deleteLater()
-        if dlg.action == "run" and dlg.chosen is not None:
-            self.run_user_script(dlg.chosen)
+        if dlg.action in ("run", "easy") and dlg.chosen is not None:
+            self.run_user_script(dlg.chosen, mode="Easy" if dlg.action == "easy" else "Advanced")
         elif dlg.action == "modify" and dlg.chosen is not None:
             from omacad.scripting.loader import read_info
             self.prompt_modify_script(read_info(dlg.chosen).family, dlg.chosen)
@@ -84,7 +84,9 @@ class ScriptPromptsMixin:
 
     def manage_user_script(self, what: str, path: str) -> None:
         """Right-click on a script in a menu: rename, modify (with AI, a copy) or delete it."""
-        if what == "easy":
+        if what == "run_easy":
+            self.run_user_script(path, mode="Easy")
+        elif what == "easy":
             from omacad.ui.script_easy import configure_easy
             configure_easy(self, path)
         elif what == "rename":
@@ -155,7 +157,7 @@ class ScriptPromptsMixin:
         self.status_label.setText(f"Deleted {path.name}.")
         return gone
 
-    def run_user_script(self, path, values: Optional[dict] = None, name: Optional[str] = None) -> bool:
+    def run_user_script(self, path, values: Optional[dict] = None, name: Optional[str] = None, mode: str = "Advanced") -> bool:
         """Asks for the name of what it makes and the script's values, then runs it on the model as one undo step.
         With `values` given the panel is skipped."""
         from omacad.scripting.loader import read_info, resolve_values
@@ -175,7 +177,7 @@ class ScriptPromptsMixin:
         last = dict(saved.get(key) or {})
         if values is None:
             values = resolve_values(info.params, last)
-            dlg = ScriptParamsDialog(info, values, self, name=last.get("__name__", ""))
+            dlg = ScriptParamsDialog(info, values, self, name=last.get("__name__", ""), mode=mode)
             self._script_preview(dlg, path)
             ok = dlg.exec()
             self.viewport.set_preview(None)

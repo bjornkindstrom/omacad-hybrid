@@ -1,3 +1,12 @@
+# Hybrid-experiment — 0.9.9.80.173
+
+### Added
+- **Start scripts in Easy mode** using Easy beside Run or the script context menu; excluded parameter widgets are created only if Advanced is selected.
+- Hidden parameters retain their values for previews and execution; switching to Advanced reveals all parameters in their original order.
+
+### Fixed
+- Windows build verification runs the script rendering test with software OpenGL; the knurl preview test waits for preview completion.
+
 # Hybrid-experiment — 0.9.9.80.172
 
 ### Added

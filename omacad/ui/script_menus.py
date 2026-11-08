@@ -41,6 +41,7 @@ class ScriptRightClick(QObject):
         ctx = QMenu(self.menu)
         theme.style_menu(ctx)
         ctx.setToolTipsVisible(True)
+        run_easy = ctx.addAction("Run in Easy mode")
         easy = ctx.addAction("Easy mode settings…")
         rename = ctx.addAction("Rename…")
         rename.setToolTip("Change the name shown in the menus (the file stays)")
@@ -52,7 +53,7 @@ class ScriptRightClick(QObject):
         delete.setEnabled(own)
         delete.setToolTip("Moves your script to the trash" if own else "Omacad's own scripts can't be deleted")
         chosen = ctx.exec(at)
-        what = {easy: "easy", rename: "rename", modify: "modify", delete: "delete"}.get(chosen)
+        what = {run_easy: "run_easy", easy: "easy", rename: "rename", modify: "modify", delete: "delete"}.get(chosen)
         if what:
             close_popups()
             QTimer.singleShot(0, lambda: self.manage(what, path))

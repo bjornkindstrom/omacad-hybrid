@@ -236,13 +236,16 @@ class ScriptsDialog(QDialog):
         self.btn_test = QPushButton("Test")
         self.btn_test.setToolTip("Test-run the script on an empty model with its default values")
         self.btn_test.clicked.connect(self._test)
+        self.btn_easy = QPushButton("Easy")
+        self.btn_easy.setToolTip("Open directly in Easy mode")
+        self.btn_easy.clicked.connect(lambda: self._run("easy"))
         self.btn_run = QPushButton("Run")
         self.btn_run.setDefault(True)
         self.btn_run.clicked.connect(self._run)
         btn_close = QPushButton("Close")
         btn_close.setAutoDefault(False)
         btn_close.clicked.connect(self.reject)
-        for b in (self.btn_copy, self.btn_edit, self.btn_pic, self.btn_test, self.btn_run, btn_close):
+        for b in (self.btn_copy, self.btn_edit, self.btn_pic, self.btn_test, self.btn_run, self.btn_easy, btn_close):
             row.addWidget(b)
         lay.addLayout(row)
 
@@ -299,7 +302,7 @@ class ScriptsDialog(QDialog):
     def _show(self) -> None:
         info = self._info()
         has = info is not None
-        for b in (self.btn_run, self.btn_test, self.btn_edit, self.btn_modify, self.btn_pic):
+        for b in (self.btn_run, self.btn_easy, self.btn_test, self.btn_edit, self.btn_modify, self.btn_pic):
             b.setEnabled(has)
         self.btn_copy.setEnabled(False)
         if not has:
@@ -330,6 +333,7 @@ class ScriptsDialog(QDialog):
         self.lbl_params.setText(("Values: " + ", ".join(p.title for p in info.params)) if info.params else "")
         if info.error:
             self.btn_run.setEnabled(False)
+            self.btn_easy.setEnabled(False)
             self.btn_pic.setEnabled(False)
             self.lbl_status.setText(f"⚠ Can't run: {info.error}")
             self.btn_copy.setEnabled(True)
@@ -420,10 +424,10 @@ class ScriptsDialog(QDialog):
             return
         super().keyPressEvent(event)
 
-    def _run(self) -> None:
+    def _run(self, mode="run") -> None:
         info = self._info()
         if info is not None and not info.error:
-            self.chosen, self.action = info.path, "run"
+            self.chosen, self.action = info.path, "easy" if mode == "easy" else "run"
             self.accept()
 
     def _ai(self) -> None:
@@ -467,10 +471,11 @@ class ScriptParamsDialog(BaseFeatureDialog):
 
     changed = Signal()
 
-    def __init__(self, info: ScriptInfo, values: Dict, parent=None, name: str = ""):
+    def __init__(self, info: ScriptInfo, values: Dict, parent=None, name: str = "", mode: str = "Advanced"):
         super().__init__(info.name, parent)
         self.info = info
         self.fields = {}
+        self._values = {p.name: p.coerce(values.get(p.name, p.default)) for p in info.params}
         self.lbl_image = None
         if getattr(info, "image_path", None) and info.image_path.exists():
             pix = QPixmap(str(info.image_path))
@@ -495,17 +500,9 @@ class ScriptParamsDialog(BaseFeatureDialog):
         self.edt_name.setToolTip("What the things this script makes are called in the browser (several get numbers or "
                                  "the script adds its own words, e.g. “… lid”)")
         form.addRow("Name", self.edt_name)
-        for p in info.params:
-            w = self._field(p, values.get(p.name, p.default))
-            if p.help:
-                w.setToolTip(p.help)
-            label = p.title + (f" ({p.unit})" if p.unit and p.type in ("float", "int") else "")
-            form.addRow(label, w)
-            self.fields[p.name] = (p, w)
-            sig = (w.toggled if isinstance(w, QCheckBox) else w.currentIndexChanged if isinstance(w, QComboBox)
-                   else w.textChanged if isinstance(w, QLineEdit) else w.valueChanged)
-            sig.connect(lambda *_: self.changed.emit())
         self.param_form = form
+        self.mode.setCurrentText(mode)
+        self._set_mode(mode)
         self.mode.currentTextChanged.connect(self._set_mode)
         self.main_layout.addLayout(form)
         self.lbl_problem = QLabel("")
@@ -517,7 +514,19 @@ class ScriptParamsDialog(BaseFeatureDialog):
 
     def _set_mode(self, mode):
         form = self.param_form
-        names = list(self.fields)
+        wanted = {p.name for p in self.info.params} if mode == "Advanced" or self.info.easy_params is None else set(self.info.easy_params)
+        for p in self.info.params:
+            if p.name in self.fields or p.name not in wanted:
+                continue
+            w = self._field(p, self._values[p.name])
+            w.setToolTip(p.help)
+            label = p.title + (f" ({p.unit})" if p.unit and p.type in ("float", "int") else "")
+            form.addRow(label, w)
+            self.fields[p.name] = (p, w)
+            sig = (w.toggled if isinstance(w, QCheckBox) else w.currentIndexChanged if isinstance(w, QComboBox)
+                   else w.textChanged if isinstance(w, QLineEdit) else w.valueChanged)
+            sig.connect(lambda *_: self.changed.emit())
+        names = [p.name for p in self.info.params if p.name in self.fields]
         if mode == "Easy" and self.info.easy_params is not None:
             names = list(dict.fromkeys([n for n in self.info.easy_params if n in self.fields] + names))
         rows = {}
@@ -563,7 +572,7 @@ class ScriptParamsDialog(BaseFeatureDialog):
         return self.edt_name.text().strip() or self.info.default_name
 
     def values(self) -> Dict:
-        out = {}
+        out = dict(self._values)
         for name, (p, w) in self.fields.items():
             if isinstance(w, QCheckBox):
                 out[name] = w.isChecked()

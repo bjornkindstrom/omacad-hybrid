@@ -48,3 +48,28 @@ def test_easy_labels_order_and_empty_selection(tmp_path):
                for _, w in dlg.fields.values())
     assert dlg.values() == {"a": 1, "b": 2, "c": 3}
     dlg.close()
+
+
+def test_easy_start_only_constructs_selected_fields(tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QApplication
+    app = QApplication.instance() or QApplication([])
+    path = tmp_path / "start.py"
+    path.write_text('PARAMS = [{"name": "a", "default": 1}, {"name": "b", "default": 2}]\ndef run(ctx, params): pass\n')
+    save_easy(path, ["b"])
+    created = []
+    field = ScriptParamsDialog._field
+    def track(param, value):
+        created.append(param.name)
+        return field(param, value)
+    monkeypatch.setattr(ScriptParamsDialog, "_field", staticmethod(track))
+    dlg = ScriptParamsDialog(read_info(path), {"a": 9}, mode="Easy")
+    assert dlg.mode.currentText() == "Easy"
+    assert created == ["b"]
+    assert dlg.values() == {"a": 9, "b": 2}
+    dlg.fields["b"][1].setValue(4)
+    dlg.mode.setCurrentText("Advanced")
+    assert created == ["b", "a"]
+    assert dlg.values() == {"a": 9, "b": 4}
+    dlg.mode.setCurrentText("Easy")
+    assert dlg.fields["a"][1].isHidden()
+    dlg.close()

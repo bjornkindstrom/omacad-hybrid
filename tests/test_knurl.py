@@ -187,7 +187,10 @@ def test_the_real_tool_picks_previews_and_makes_one_undoable_step():
     assert not dlg.faces and "outer round" in win.status_label.text()
     win.viewport.offset_face_picked.emit(dict(REF), body.body_id)
     assert dlg.faces
-    QTest.qWait(200)
+    for _ in range(100):
+        if win.viewport.preview_mesh is not None:
+            break
+        QTest.qWait(50)
     assert win.viewport.preview_mesh is not None and "teeth per turn" in dlg.lbl_info.text()
     assert not win.doc.bodies[body.body_id].visible
     dlg.page.cmb_pattern.setCurrentText("Straight")
