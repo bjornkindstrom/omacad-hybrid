@@ -578,6 +578,34 @@ class SettingsDialog(QDialog):
         agent_row.addStretch()
         lay_general.addLayout(agent_row)
 
+        # Scripts folder (Scripts, Shift+S): empty = the default for this computer
+        from omacad.scripting.folder import default_folder
+        folder_row = QHBoxLayout()
+        lbl_folder = QLabel("Scripts folder:")
+        lbl_folder.setMinimumWidth(200)
+        self.edt_scripts_folder = QLineEdit(str(self.settings.get("scripts_folder") or ""))
+        self.edt_scripts_folder.setPlaceholderText(str(default_folder()))
+        self.edt_scripts_folder.setToolTip("Where your scripts are kept (Scripts, Shift+S). Empty = the default shown.")
+        btn_browse = QPushButton("Browse…")
+        btn_browse.setAutoDefault(False)
+
+        def browse():
+            from PySide6.QtWidgets import QFileDialog
+            start = self.edt_scripts_folder.text().strip() or str(default_folder())
+            chosen = QFileDialog.getExistingDirectory(self, "Scripts folder", start)
+            if chosen:
+                self.edt_scripts_folder.setText(chosen)
+        btn_browse.clicked.connect(browse)
+        btn_default = QPushButton("Default")
+        btn_default.setAutoDefault(False)
+        btn_default.setToolTip(f"Use {default_folder()}")
+        btn_default.clicked.connect(self.edt_scripts_folder.clear)
+        folder_row.addWidget(lbl_folder)
+        folder_row.addWidget(self.edt_scripts_folder, 1)
+        folder_row.addWidget(btn_browse)
+        folder_row.addWidget(btn_default)
+        lay_general.addLayout(folder_row)
+
         # Restart on a new version
         self.chk_auto_restart = QCheckBox("Restart automatically when a new version has been committed (work is saved and restored)")
         self.chk_auto_restart.setChecked(bool(self.settings.get("auto_restart", True)))
@@ -784,6 +812,7 @@ class SettingsDialog(QDialog):
         idx_ai = self.cmb_ai_agent.findData("omarchy")
         if idx_ai >= 0:
             self.cmb_ai_agent.setCurrentIndex(idx_ai)
+        self.edt_scripts_folder.clear()
 
     def _width_row(self, layout, label: str, key: str, default: float, tip: str) -> QDoubleSpinBox:
         """A labelled px-thickness field for `key`, added to `layout`."""
@@ -838,6 +867,7 @@ class SettingsDialog(QDialog):
             "group_inspect": self.chk_group_inspect.isChecked(),
             "group_constraints": self.chk_group_constraints.isChecked(),
             "ai_agent": str(self.cmb_ai_agent.currentData() or "omarchy"),
+            "scripts_folder": self.edt_scripts_folder.text().strip(),
             "curve_segments": self.cmb_curves.currentData(),
             "fast_view": self.chk_fast_view.isChecked(),
             "view_projection": self.cmb_projection.currentData(),

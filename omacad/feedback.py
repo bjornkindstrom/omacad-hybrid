@@ -102,14 +102,18 @@ def available_agents() -> list:
 
 def agent_command(folder: Path, agent_choice: Optional[str] = None) -> Optional[list]:
     """The command that opens the selected coding agent on this report, or None if the launcher is missing."""
+    return agent_command_for_text(f"Read {folder}/PROMPT.md and follow it. It is a problem report from the running Omacad app.",
+                                  agent_choice)
+
+
+def agent_command_for_text(text: str, agent_choice: Optional[str] = None) -> Optional[list]:
+    """The command that opens the selected coding agent with `text` as its first message, or None if none is found."""
     if agent_choice is None:
         try:
             from omacad.ui.settings import get_settings
             agent_choice = get_settings().get("ai_agent", "omarchy")
         except Exception:
             agent_choice = "omarchy"
-
-    text = f"Read {folder}/PROMPT.md and follow it. It is a problem report from the running Omacad app."
 
     # 1. Antigravity CLI (agy)
     if agent_choice == "agy" and shutil.which("agy"):
@@ -146,6 +150,18 @@ def agent_command(folder: Path, agent_choice: Optional[str] = None) -> Optional[
         return ["agy", "-i", text]
 
     return None
+
+
+def launch_agent_text(text: str, cwd: Path, agent_choice: Optional[str] = None) -> bool:
+    """Opens the selected coding agent in `cwd` with `text` as its first message (New Script with AI)."""
+    cmd = agent_command_for_text(text, agent_choice)
+    if cmd is None:
+        applog.log("scripts", "no AI agent launcher found")
+        return False
+    subprocess.Popen(cmd, cwd=str(cwd), start_new_session=True,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    applog.log("scripts", f"agent ({agent_choice or 'default'}) launched in {cwd}")
+    return True
 
 
 def launch_agent(folder: Path, agent_choice: Optional[str] = None) -> bool:

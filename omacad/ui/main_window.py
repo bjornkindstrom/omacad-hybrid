@@ -2,6 +2,7 @@ from omacad.ui.controllers.tool_prompts import ToolPromptsMixin
 from omacad.ui.controllers.text_prompts import EmbossPromptMixin, TextPromptsMixin
 from omacad.ui.controllers.file_session import FileSessionMixin
 from omacad.ui.controllers.menu_setup import MenuSetupMixin
+from omacad.ui.controllers.script_prompts import ScriptPromptsMixin
 """
 Omacad - Main CAD Application Window
 Connects Ribbon, Viewport, Browser, Timeline, and Menu Bar.
@@ -88,7 +89,8 @@ from omacad.ui.dialogs import (
 from omacad.io.exporter import Exporter
 
 
-class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMixin, FileSessionMixin, MenuSetupMixin):
+class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMixin, FileSessionMixin, MenuSetupMixin,
+                 ScriptPromptsMixin):
     """Main Fusion 360 style window for Omacad."""
 
     # QMainWindow comes first in the bases, so Qt's own closeEvent would hide the mixin's (no "save changes?" on close)
@@ -235,6 +237,11 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.inspect_clicked.connect(self.on_inspect)
         self.ribbon.export_media_clicked.connect(lambda kind: media_export.run(self, kind))
         self.ribbon.settings_clicked.connect(self.on_open_settings)
+        self.ribbon.script_command.connect(self.on_script_command)
+        self.ribbon.script_run_requested.connect(self.run_user_script)
+        self.ribbon.script_modify_requested.connect(self.prompt_modify_script)
+        self.ribbon.script_manage_requested.connect(self.manage_user_script)
+        self.ribbon.family_scripts = self.family_scripts
         self.ribbon.sketch_tool_selected.connect(self.on_sketch_tool_selected)
         self.viewport.sketch_tool_changed.connect(self.sync_sketch_tool_from_viewport)
         self.ribbon.toggle_construction_clicked.connect(self.viewport.construction_command)

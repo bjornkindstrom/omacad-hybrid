@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QFont, QFontMetrics
 from omacad.ui.sketch_tools import RECT_TOOLS, rect_icon
 from omacad.ui import commands
+from omacad.ui import script_menus
 
 CIRCLE_TOOLS = ('CIRCLE', 'SMART_CIRCLE')
 from omacad.ui import theme
@@ -160,6 +161,10 @@ class Ribbon(QWidget):
     inspect_clicked = Signal()
     export_media_clicked = Signal(str)    # "screenshot", "copy" or "video"
     settings_clicked = Signal()
+    script_command = Signal(str)          # "run" (Scripts…), "ai" (New Script with AI…) or "folder"
+    script_run_requested = Signal(str)    # a script chosen in a tool's submenu (its path)
+    script_modify_requested = Signal(str) # "Modify with AI…" in a tool's submenu (the script family)
+    script_manage_requested = Signal(str, str)   # right-click on a script: "rename"/"modify"/"delete", its path
 
     # Sketch Tools
     constraint_clicked = Signal(str)  # HORIZONTAL, VERTICAL, PARALLEL, ...
@@ -320,7 +325,19 @@ class Ribbon(QWidget):
         btn.setProperty("command", cid)
         btn.clicked.connect(lambda _=False, cid=cid: self._emit_command(cid))
         self.command_buttons[cid] = btn
+        if cid in script_menus.FAMILIES:     # its arrow lists the tool's scripts (Jar with Lid, Star Brackets ...)
+            btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+            btn.setMenu(self._family_menu(btn, cid))
         return btn
+
+    def family_scripts(self, family: str) -> list:
+        """The scripts of a tool's family; the main window replaces this (the ribbon knows no folder)."""
+        return []
+
+    def _family_menu(self, parent, cid: str):
+        return script_menus.family_menu(parent, cid, lambda: self._emit_command(cid),
+                                        lambda fam: self.family_scripts(fam), self.script_run_requested.emit,
+                                        self.script_modify_requested.emit, self.script_manage_requested.emit)
 
     def _command_menu(self, parent, cids) -> "QMenu":
         from PySide6.QtWidgets import QMenu
@@ -328,6 +345,9 @@ class Ribbon(QWidget):
         theme.style_menu(menu)
         for cid in cids:
             c = commands.get(cid)
+            if cid in script_menus.FAMILIES:
+                menu.addMenu(self._family_menu(menu, cid))
+                continue
             act = menu.addAction(theme.command_icon(cid, c.icon, 18), commands.menu_text(cid))
             act.setToolTip(c.tip)
             act.triggered.connect(lambda _=False, cid=cid: self._emit_command(cid))

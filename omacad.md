@@ -1,3 +1,45 @@
+## Script-versioner av Jar/Star/Box + Namn-fält — 2026-11-08 (0.9.9.80.171)
+
+Björn: Jar, stjärna och box som script man kan använda och låta AI ändra; ändrade kopior i undermeny på
+respektive funktion; namn på det ett script skapar. `examples/star_brackets.py` = `star_radii` + byggmetoderna ur
+`features/star_bracket.py` ordagrant i klassen `Bracket`; `box_in_a_row.py` = box-hjälparna + `BoxFeature.build_solid`
+(taper/plan-gren borttagen) med lokala `circle_segments`, `region_cross_section`, `hex_cells` (= lattice hexagon +
+fit_cells); båda ger samma solider som verktygen (test). `jar_with_lid.py` är egen: tandprofilen svept längs en
+spiral som egen mesh (+ kärncylinder) – twisted extrude gav 60k trianglar och ytanalysen tog 23 s/kropp.
+`ctx.solid` = `Document.import_mesh` (sparas som mesh). `FAMILY` (jar/star_brackets/box_row = kommando-id) styr
+`ui/script_menus.py` (fylls vid aboutToShow; ribbon-dropdown, knappens pil, Create-menyn – dessa kommandon har
+därför ingen egen QAction i `command_actions`). `prompt.make_copy` + `build_modify_prompt`. Namn: `ScriptContext.name`,
+`_name_body` sätter även `object_history.names`, `_name_new_objects` vid `finish`. `install_examples` för nu lista i
+`.omacad-examples` (gammal markörtext = bara gear). Test: `test_builtin_scripts.py`, `test_scripts_ui.py`.
+Bilder/byt namn/ta bort (Björn): `AiScriptDialog` har bildrad (`_WishEdit` tar inklistrade/släppta bilder i
+stället för text, `grab_view` = `viewport.grabFramebuffer`), `folder.save_images` → `.omacad-ai/images/<stem>-<tid>/`,
+`prompt._pictures` (agent: sökvägar att öppna; chatt: "bifogar N bilder" + Open Pictures). `folder.rename_script`
+skriver om/lägger in `NAME` (filen kvar; betrodd förblir betrodd), `delete_script` bara `is_own` (ej i `EXAMPLES`),
+`QFile.moveToTrash` + `.check.txt`, settings rensas. Högerklick i QMenu: `script_menus.ScriptRightClick` (eventfilter,
+äter höger press/släpp så scriptet inte körs; action.data() = sökväg) → `Ribbon.script_manage_requested` →
+`manage_user_script`. Fälla i test: menyn fylls om vid popup, gamla QAction raderas. Test: `test_script_manage.py`.
+Live-preview i script-panelen: `runner.preview_solid` kör scriptet på ett privat tomt `Document` inom
+`busy.inline()` (annars kör `undoable` i tråd och fönstret fryses/visar busy), `ScriptParamsDialog.changed` +
+`_connect_debounced_preview` (150 ms). Script som läser befintliga kroppar/markering ser dem inte i previewn.
+
+## Scripts + New Script with AI — 2026-11-08 (0.9.9.80.170)
+
+Björn: egna fristående script i Omacad, och en knapp som skickar en instruktion till en AI som skriver dem.
+`omacad/scripting/`: `loader` (läser NAME/DESCRIPTION/PARAMS med `ast.literal_eval` utan att köra filen,
+`Param.coerce` klämmer min/max), `api.ScriptContext` (stabil fasad över `Document`; skissmetoder, extrude/revolve/
+primitiver/combine/move/fillet/shell/pattern/parameter), `runner.run_script` (hela körningen =
+`undoable(f"Script: {NAME}")(body)(doc)`, fel → `restore` + `ScriptRunError` med rad), `check_report`/
+`check_script` (tomt dokument, standardvärden, skriver `<script>.check.txt`), `folder` (standardmapp per OS,
+exemplet kopieras en gång via `.omacad-examples`, trust = sha256 per sökväg i `trusted_scripts`), `prompt`
+(prompten = önskemål + målfil + testflöde + hela `GUIDE.md`). UI: `ui/scripts_ui.py` (`ScriptWatcher` pollar
+mappen var 1,5 s och kör `--check-script` i en QProcess för .py som sparats efter `arm()`, `ScriptsDialog`,
+`ScriptParamsDialog` dockad, `AiScriptDialog`), `controllers/script_prompts.py`, signalen `Ribbon.script_command`
+("run"/"ai"/"folder"), `feedback.launch_agent_text(text, cwd)`. Fällor: skisser plockade upp kanter från
+kroppar i samma plan som extra profiler (låda med sida i XZ + revolve på XZ) – script-skisser får
+`reference_segments = []` och `SketchFeature.reference_bodies = []`. Windows-exen har bara de standardmoduler som
+listas i `omacad.spec` (GUIDE.md säger vilka). `GUIDE.md` är det enda AI:n ser: `test_every_call_in_the_guide_exists`
+och testet av guidens exempel håller den sann. Test: `tests/test_scripting.py`, `tests/test_scripts_ui.py`.
+
 ## Linked copy följer skisser på yta (extrude cut/join) — 2026-11-08 (0.9.9.80.169)
 
 När en skiss ritas på en yta av en kropp (`parent_body_id`) och därefter extruderas (cut/join), hämtar `Feature.execute`
@@ -314,6 +356,19 @@ is isolated in `.state/`. Regression tests: `test_viewport_native.py`,
 This fork does not publish Omacad releases or send requests in the background.
 
 # Omacad: guide för AI-agenter
+
+## Panelregel: kompakt men aldrig avklippt (Björn 2026-11-08)
+
+Verktygspaneler ska gruppera värden så de tar lite plats, men aldrig klippa text. Gäller automatiskt: `side_panel.dock_tool`
+kör `dialogs.base.auto_pair_rows(dlg)` före sliders: grannrader i varje `QFormLayout` paras två och två om fälten är
+korta (spinbox/combo/radtext ≤ `PAIR_FIELD_WIDTH`) och etiketten ryms över en halv kolumn (≤ `PAIR_LABEL_WIDTH`).
+Bara lika slag paras (siffra+siffra får slider, annars sneda rader); kryssrutor och breda fält får egen rad.
+Ryms inte bredaste etikett + fältets minsta bredd (`PANEL_CONTENT_WIDTH`, minus `GROUP_BOX_INSET` per ram) blir
+formuläret `WrapAllRows` (etiketter ovanför); Qt:s `WrapLongRows` räcker inte, det klämde ändå. `pair_form_rows`
+hoppar över par med för bred etikett, men en dialog parad i `__init__` saknar panelens typsnitt (mätningen ger för
+lite), så `_unpair_cut_labels` delar sådana par vid dockning. Ny dialog: rader i `QFormLayout`, inte egna
+`QHBoxLayout`-rader (regeln når dem inte, jfr `thread_dlg` som gjordes om); `auto_pair = False` stänger av.
+Kontroll: `tests/test_panel_rule.py` (ingen synlig etikett/combo/kryssruta smalare än sin `minimumSizeHint`).
 
 ## Senaste lösningar
 

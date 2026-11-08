@@ -28,6 +28,21 @@ class Topic:
 
 # Longer help where the ribbon tooltip is short. Keywords help the search find a command by other names.
 MORE = {
+    "scripts": ("Scripts are your own tools: Python files in the scripts folder (Settings > General). Pick one and press "
+                "Run; a panel asks for its values while a live preview shows the result, and what it makes becomes normal timeline steps, undone with one "
+                "Ctrl+Z. A script that fails changes nothing. The panel's Name field names what it makes. Examples: a Gear "
+                "generator, and script versions of Jar with Lid, Star Brackets and Box in a Row (also in those tools' "
+                "submenus, with Modify with AI… to make a changed copy). Right-click a script in a menu or in Scripts to "
+                "rename it, modify it with AI or delete it (your own scripts only).",
+                "script macro add-in addin python automate generator tool gear plugin rename delete"),
+    "new_script_ai": ("Describe a tool you want (what it makes, which values to set). The AI agent from Settings > "
+                      "General writes it into the scripts folder, or copy the instructions into an AI chat in the "
+                      "browser. Omacad test-runs each saved version on an empty model and writes the result next to "
+                      "it, so the AI can fix it; Scripts > Copy error for AI does the same for a web chat. Add pictures to "
+                      "show what you mean: from a file, pasted (Ctrl+V), dropped, or From 3D view.",
+                      "ai agent claude chatgpt gemini write script generate macro picture image screenshot"),
+    "open_scripts_folder": ("Opens the folder your scripts live in, to add, rename or delete them.",
+                            "script folder directory files"),
     "screenshot": ("Export > Screenshot saves the model alone, cropped with a small margin, from the view as it is: no "
                    "grid, axes, sketches or ViewCube, no selection colour. A section shows its cut face.",
                    "picture image png jpg jpeg save render snapshot"),

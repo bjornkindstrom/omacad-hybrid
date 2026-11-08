@@ -1,3 +1,53 @@
+# Hybrid-experiment — 0.9.9.80.171
+
+### Added
+- **Pictures for the AI**: New Script with AI and Modify with AI… take pictures that show what you mean — Add
+  pictures…, paste (Ctrl+V) or drop into the text, or **From 3D view** (the view as it looks now). They are saved in
+  `.omacad-ai/images/` and the AI agent is told to look at them; for a web chat the instructions ask for them and
+  "Open Pictures" shows the folder to attach them from.
+- **Rename and delete scripts**: right-click a script in a tool's submenu (or in Scripts, also F2 / Del): Rename…
+  (the name in the menus; the file stays, a trusted script stays trusted), Modify with AI…, Delete… (your own scripts
+  only, to the trash).
+- **Compact tool panels, nothing cut**: every docked tool panel now pairs neighbouring short values two per row (numbers
+  with numbers, label above each) when both the fields and their labels fit half the panel; check boxes and wide fields
+  keep their own row, and a field too wide beside its label goes below it instead of being squeezed (the jar script's
+  thread profile showed "trapezoidal_").
+- **Live preview for scripts**: while a script's values are set in its panel, what it would make is shown in the
+  viewport and follows every change (the script runs on a private document, the model is untouched until Run). A
+  script error shows under the fields instead.
+- **Script versions of Jar with Lid, Star Brackets and Box in a Row** (`jar_with_lid.py`, `star_brackets.py`,
+  `box_in_a_row.py`, copied into the scripts folder, also for folders made by 0.9.9.80.170). All their geometry is in
+  the script (manifold3d + the new `ctx.solid`), so an AI can change any detail. Star Brackets and Box in a Row give
+  exactly the built-in tools' solids; the jar has its own lean helical thread (lid checked clash-free).
+- **Tool submenus**: Jar with Lid, Star Brackets and Box in a Row open a submenu (ribbon Primitives dropdown, their own
+  ribbon button's arrow, Create › Primitives): the built-in tool, its script, every changed copy, and **Modify with
+  AI…** – it copies the chosen script (the original is never changed), the AI changes the copy (or the instructions
+  with the whole script go to the clipboard), and the auto-test works as for new scripts. Also in Scripts (Shift+S),
+  where scripts are listed under their tool.
+- **Name field** in every script's panel (default `OUTPUT_NAME`, else `NAME`), remembered per script and readable as
+  `ctx.name`; objects a script doesn't name get it ("Box 1", "Box 1 lid" …). Script API: `ctx.solid(manifold, name,
+  lid)`, `ctx.group(name, bodies)`, `ctx.circle_segments`/`ctx.sphere_segments`; `Body.rename` also names the object.
+
+### Fixed
+- The gear generator's gear showed as "Body 1" in the browser; it is now called by its Name ("Gear").
+
+# Hybrid-experiment — 0.9.9.80.170
+
+### Added
+- **Scripts** (ribbon group SCRIPTS, menu Scripts, Shift+S): your own tools as Python files in a scripts folder
+  (Settings › General; default `~/.config/omacad/scripts`, Windows `%APPDATA%\Omacad\scripts`). A script declares
+  `NAME`, `DESCRIPTION`, `PARAMS` and `run(ctx, params)`; Omacad builds a values panel from `PARAMS`, asks once per
+  new or changed script whether you trust it, and runs it as **one undo step** (an error rolls everything back and
+  names the line). Scripts use a stable API (`omacad/scripting/api.py`: sketches, polyline/rect/circle/arc/polygon/
+  slot/spline, extrude, revolve, box/cylinder/cone/sphere, combine, move, fillet/chamfer, shell, pattern, parameters).
+  A **Gear generator** example (involute spur gear with bore and hub) is copied into the folder.
+- **New Script with AI**: describe a tool; Omacad starts the AI agent from Settings in the scripts folder with
+  `omacad/scripting/GUIDE.md` and your request, or copies the instructions for a web chat. While waiting, the open
+  app test-runs every saved script in a separate process on an empty model and writes `<script>.check.txt`
+  (OK with bodies, sizes, volumes, or the error, line and traceback), so the AI fixes it itself; with a web chat,
+  Scripts › Copy error for AI. `omacad --check-script file.py [--out report.txt]` does the same from a terminal
+  (also the Windows exe).
+
 # Hybrid-experiment — 0.9.9.80.169
 
 ### Fixed

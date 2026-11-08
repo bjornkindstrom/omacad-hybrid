@@ -93,6 +93,7 @@ COMMAND_ICONS = {
     "section": "section", "finish_sketch": "finish", "move_sketch": "move", "modify_body": "body",
     "scale_sketch": "scale", "screenshot": "screenshot", "copy_image": "copy_image", "turntable": "turntable",
     "box_row": "box_row", "star_brackets": "star_brackets", "import_svg": "import_svg",
+    "scripts": "script", "new_script_ai": "script_ai", "open_scripts_folder": "scripts_folder",
 }
 
 STUDIO_ICONS = "studio"   # line icons in one colour (the text), blue while the tool is active

@@ -46,6 +46,9 @@ def _selftest_checks(importlib, pathlib) -> None:
     from omacad.ui import theme
     assert len(theme.available_themes()) >= 10, "bundled themes are missing"
     assert (pathlib.Path(theme.THEMES_DIR).parent / "icon.svg").exists(), "assets are missing"
+    from omacad.scripting import folder as script_folder
+    assert script_folder.GUIDE.exists(), "the scripting guide (New Script with AI) is missing"
+    assert list(script_folder.EXAMPLES.glob("*.py")), "the example scripts are missing"
     from omacad.hybrid_paths import STATE_DIR
     unpacked = getattr(sys, "_MEIPASS", None)
     assert not unpacked or pathlib.Path(unpacked) not in STATE_DIR.parents, "settings would be lost when the app closes"
@@ -55,6 +58,11 @@ def main():
     if "--selftest" in sys.argv:
         i = sys.argv.index("--selftest")
         sys.exit(selftest(sys.argv[i + 1] if len(sys.argv) > i + 1 else None))
+    if "--check-script" in sys.argv:      # test-run a user script without a window (Scripts; the AI uses it too)
+        from omacad.scripting.runner import check_script
+        i = sys.argv.index("--check-script")
+        out = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv[:-1] else None
+        sys.exit(check_script(sys.argv[i + 1], out) if len(sys.argv) > i + 1 else 2)
     # Set default OpenGL surface format with 4x MSAA anti-aliasing
     fmt = QSurfaceFormat()
     fmt.setSamples(4)

@@ -62,6 +62,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "icon_theme": "solid",              # "solid", "blueprint", "semantic"
     "autosave_minutes": 2,              # write unsaved work to a recovery file this often; 0 = off
     "auto_restart": False,               # restart the app (work saved and restored) when a new version is committed
+    "scripts_folder": "",               # user scripts (Scripts, Shift+S); "" = ~/.config/omacad/scripts or %APPDATA%\Omacad\scripts
+    "trusted_scripts": {},              # script path -> sha256 of the content the user allowed to run
+    "script_values": {},                # script path -> {parameter: value} last used in its panel
 }
 
 

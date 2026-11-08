@@ -145,7 +145,9 @@ class InspectorPanel(QWidget):
                 # pick mode and "busy" flag are cleared by its own finish handler
                 previous.reject()
 
+        from omacad.ui.dialogs.base import auto_pair_rows
         from omacad.ui.numeric_slider import add_numeric_sliders
+        auto_pair_rows(dlg)                         # two short values per row when nothing gets cut (the panel rule)
         add_numeric_sliders(dlg)
 
         self.current_tool_dlg = dlg

@@ -5,9 +5,14 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 datas = [
     ('assets', 'assets'),
     ('CHANGELOG.md', '.'),
+    ('omacad/scripting/GUIDE.md', 'omacad/scripting'),          # what the AI gets (New Script with AI)
+    ('omacad/scripting/examples', 'omacad/scripting/examples'),
 ]
 
 hiddenimports = [
+    # standard modules user scripts may import (GUIDE.md lists them); the exe only has what is bundled
+    'math', 'cmath', 'random', 'statistics', 'fractions', 'decimal', 'itertools', 'functools', 'collections',
+    'dataclasses', 'json', 're', 'string', 'bisect', 'heapq',
     '_viewport_native',
     'manifold3d',
     'trimesh',

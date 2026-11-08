@@ -84,7 +84,7 @@ class MenuSetupMixin:
         menu_edit.addAction(act_settings)
 
         # Create / Modify / Inspect: the same commands, names and keys as the ribbon (omacad.ui.commands)
-        from omacad.ui import commands
+        from omacad.ui import commands, script_menus
         self.command_actions = {}
         for title, cids in commands.MENUS:
             menu = menubar.addMenu(title)
@@ -100,6 +100,9 @@ class MenuSetupMixin:
                         add_entries(sub, cid[4])
                         continue
                     c = commands.get(cid)
+                    if cid in script_menus.FAMILIES:     # the tool, its scripts and Modify with AI…
+                        target.addMenu(self.ribbon._family_menu(target, cid))
+                        continue
                     act = QAction(theme.command_icon(cid, c.icon, 24), c.label, target)
                     keys = [k for k in (c.shortcut, *c.extra_shortcuts) if k]
                     if keys:

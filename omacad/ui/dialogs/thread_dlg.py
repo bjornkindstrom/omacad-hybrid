@@ -109,11 +109,9 @@ class ThreadDialog(BaseFeatureDialog):
 
         # 3D Printing & Profile Group
         grp_3d = QGroupBox("Gängprofil & Optimeringar")
-        grp_lay = QVBoxLayout(grp_3d)
+        grp_lay = QFormLayout(grp_3d)      # a form, so the panel rule keeps every choice whole
 
         # Profile type selector
-        prof_row = QHBoxLayout()
-        prof_row.addWidget(QLabel("Profile:"))
         self.cmb_profile = QComboBox()
         for label, key, tip in (("Trapezoid 45°", "trapezoidal_45", "Prints without support"),
                                 ("Round", "round", "A round coil or thread"),
@@ -121,12 +119,9 @@ class ThreadDialog(BaseFeatureDialog):
             self.cmb_profile.addItem(label, key)
             self.cmb_profile.setItemData(self.cmb_profile.count() - 1, tip, Qt.ItemDataRole.ToolTipRole)
         self.cmb_profile.currentIndexChanged.connect(lambda _: self.changed.emit())
-        prof_row.addWidget(self.cmb_profile, 1)
-        grp_lay.addLayout(prof_row)
+        grp_lay.addRow("Profile:", self.cmb_profile)
 
         # Clearance row
-        clr_layout = QHBoxLayout()
-        clr_label = QLabel("Clearance:")
         self.spn_clearance = ExprDoubleSpinBox()
         self.spn_clearance.setRange(0.0, 2.0)
         self.spn_clearance.setSingleStep(0.05)
@@ -134,12 +129,8 @@ class ThreadDialog(BaseFeatureDialog):
         self.spn_clearance.setSuffix(" mm")
         self.spn_clearance.setToolTip("Set a gap between mating threads, for example for 3D printing.")
         self.spn_clearance.valueChanged.connect(lambda _: self.changed.emit())
-        clr_layout.addWidget(clr_label)
-        clr_layout.addWidget(self.spn_clearance)
-        grp_lay.addLayout(clr_layout)
+        grp_lay.addRow("Clearance:", self.spn_clearance)
 
-        lead_row = QHBoxLayout()
-        lead_row.addWidget(QLabel("Lead-in:"))
         self.cmb_taper = QComboBox()
         for label, on, turns in LEAD_INS:
             self.cmb_taper.addItem(label, (on, turns))
@@ -147,8 +138,7 @@ class ThreadDialog(BaseFeatureDialog):
                                   "Short fasar på en tredjedels varv i stället för tre kvarts.")
         self.set_lead_in(True, DEFAULT_LEAD_IN_TURNS)
         self.cmb_taper.currentIndexChanged.connect(lambda _: self.changed.emit())
-        lead_row.addWidget(self.cmb_taper, 1)
-        grp_lay.addLayout(lead_row)
+        grp_lay.addRow("Lead-in:", self.cmb_taper)
 
         form.addRow(grp_3d)
 

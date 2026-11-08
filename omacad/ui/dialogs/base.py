@@ -53,6 +53,108 @@ def studio_layout(dlg) -> None:
 
 
 PAIR_FIELD_WIDTH = 160      # px a field may need to share a row with another in the docked panel
+PANEL_CONTENT_WIDTH = 358 - 2 * 14 - 16   # docked panel width minus margins and a scroll bar
+GROUP_BOX_INSET = 44                       # px a group box's frame and margins take from the width
+PANEL_LABEL_PX = 13        # the docked panels' label size (Studio uses 12)
+PAIR_LABEL_WIDTH = 158      # px a label may need above a half-width field: wider text would be cut, so it keeps its row
+
+
+def _label_width(lab) -> int:
+    if lab is None or not hasattr(lab, "text"):
+        return 0
+    from PySide6.QtGui import QFont, QFontMetrics
+    lab.ensurePolished()
+    text = lab.text().strip()
+    font = QFont(lab.font())
+    font.setPixelSize(PANEL_LABEL_PX)       # a label not yet in its panel lacks the panel's style: measure at both sizes
+    return max(lab.fontMetrics().horizontalAdvance(text), QFontMetrics(font).horizontalAdvance(text)) + 4
+
+
+def _label_too_wide(lab) -> bool:
+    return _label_width(lab) > PAIR_LABEL_WIDTH
+
+
+def _rows_fit_beside_labels(form) -> bool:
+    """Every field gets at least its minimum width to the right of the widest label (else labels go above)."""
+    from PySide6.QtWidgets import QFormLayout
+    rows = []
+    for row in range(form.rowCount()):
+        li, fi = form.itemAt(row, QFormLayout.ItemRole.LabelRole), form.itemAt(row, QFormLayout.ItemRole.FieldRole)
+        if li is not None and fi is not None and li.widget() is not None:
+            rows.append((li.widget(), fi))
+    if not rows:
+        return True
+    from PySide6.QtWidgets import QGroupBox
+    room, w = PANEL_CONTENT_WIDTH, form.parentWidget()
+    while w is not None and not isinstance(w, BaseFeatureDialog):
+        if isinstance(w, QGroupBox):
+            room -= GROUP_BOX_INSET          # a frame inside the panel leaves less width
+        w = w.parentWidget()
+    widest = max(_label_width(lab) for lab, _f in rows)
+    gap = max(form.horizontalSpacing(), 6)
+    return all(widest + gap + f.minimumSize().width() <= room for _l, f in rows)
+
+
+def _unpair_cut_labels(form) -> None:
+    """A pair made before the panel's style applied may turn out to cut a label: its fields get their own rows back."""
+    from PySide6.QtWidgets import QFormLayout
+    for row in reversed(range(form.rowCount())):
+        item = form.itemAt(row, QFormLayout.ItemRole.SpanningRole) or form.itemAt(row, QFormLayout.ItemRole.FieldRole)
+        box = item.widget() if item is not None else None
+        if not getattr(box, "omacad_pair", False) or not any(_label_too_wide(lab) for lab, _f in box._items):
+            continue
+        items = box._items
+        form.takeRow(row)
+        for lab, f in items:
+            f.removeEventFilter(box)
+            getattr(form, "_paired_labels", {}).pop(f, None)
+        box.setParent(None)
+        box.deleteLater()
+        for k, (lab, f) in enumerate(items):
+            form.insertRow(row + k, lab, f)
+            lab.setVisible(not f.isHidden())
+
+
+def auto_pair_rows(dlg) -> None:
+    """The panel rule: neighbouring short value fields (numbers, short choices/texts) share a row two by two, label above
+    each, so a tool takes less room. Never at the cost of text: a field or label too wide for half the panel, a check
+    box or anything else keeps its own row. A dialog opts out with `auto_pair = False`; rows already paired stay."""
+    from PySide6.QtWidgets import QAbstractSpinBox, QComboBox, QFormLayout, QLineEdit
+    if not getattr(dlg, "auto_pair", True) or getattr(dlg, "_auto_paired", False):
+        return
+    dlg._auto_paired = True
+
+    def label_fits(lab) -> bool:
+        return lab is not None and hasattr(lab, "text") and not _label_too_wide(lab)
+
+    def compact(form, row):
+        item = form.itemAt(row, QFormLayout.ItemRole.FieldRole)
+        w = item.widget() if item is not None else None
+        if w is None or not isinstance(w, (QAbstractSpinBox, QComboBox, QLineEdit)):
+            return None
+        w.ensurePolished()
+        if w.sizeHint().width() > PAIR_FIELD_WIDTH or not label_fits(form.labelForField(w)):
+            return None
+        return w, isinstance(w, QAbstractSpinBox)    # numbers get a slider: they pair only with numbers (rows align)
+
+    for form in dlg.findChildren(QFormLayout):
+        _unpair_cut_labels(form)
+        if form.rowWrapPolicy() == QFormLayout.RowWrapPolicy.DontWrapRows:
+            form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)    # a field too wide beside its label goes below it
+        pairs, waiting = [], None
+        for row in range(form.rowCount()):
+            item = compact(form, row)
+            if item is None:
+                waiting = None
+            elif waiting is None or waiting[1] != item[1]:
+                waiting = item
+            else:
+                pairs.append((waiting[0], item[0]))
+                waiting = None
+        if pairs:
+            BaseFeatureDialog.pair_form_rows(form, pairs)
+        if form.rowWrapPolicy() != QFormLayout.RowWrapPolicy.WrapAllRows and not _rows_fit_beside_labels(form):
+            form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)       # labels above: nothing squeezed
 
 class BaseFeatureDialog(QDialog):
     """Base modal dialog with Fusion 360 styling, docked in the right side panel."""
@@ -65,6 +167,7 @@ class BaseFeatureDialog(QDialog):
         from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFormLayout
 
         class _PairBox(QWidget):
+            omacad_pair = True
             def __init__(self, items):
                 super().__init__()
                 self._items = items
@@ -117,6 +220,8 @@ class BaseFeatureDialog(QDialog):
         for fa, fb in pairs:
             # half a panel is too narrow for a long choice or check box: it keeps its own row, and its text its room
             if max(fa.sizeHint().width(), fb.sizeHint().width()) > PAIR_FIELD_WIDTH:
+                continue
+            if any(_label_too_wide(form.labelForField(f)) for f in (fa, fb)):    # its text would be cut above half a row
                 continue
             labs = []
             for f in (fa, fb):

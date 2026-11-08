@@ -10,6 +10,7 @@ come through `run` and wait; the others only set focus or open an editor."""
 
 import threading
 import time
+from contextlib import contextmanager
 from typing import Any, Callable, Dict, Hashable, Optional
 
 STACK_BYTES = 64 * 1024 * 1024     # as deep as the main thread may go: a Windows thread only gets 1 MB by default
@@ -38,6 +39,17 @@ def in_worker() -> bool:
 def defer(key: Hashable, fn: Callable[[], None]) -> None:
     """Calls fn on the main thread when the work is done, once per key."""
     _deferred[key] = fn
+
+
+@contextmanager
+def inline():
+    """Work inside runs as plain calls on this thread (short work on a private document, e.g. a tool's preview)."""
+    global _ui
+    saved, _ui = _ui, None
+    try:
+        yield
+    finally:
+        _ui = saved
 
 
 def run(label: str, fn: Callable[[], Any]) -> Any:

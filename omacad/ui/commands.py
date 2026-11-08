@@ -95,6 +95,13 @@ _ALL = [
        signal="export_media_clicked", arg="copy"),
     _c("turntable", "Rotating Video", "🎬", "A video (MP4, WebM or GIF) of the model turning once around, from the "
        "current view", signal="export_media_clicked", arg="video"),
+    # --- SOLID: SCRIPTS ------------------------------------------------------------------------------------------
+    _c("scripts", "Scripts", "📜", "Run your own scripts from the scripts folder (each asks for its values in a panel)",
+       "Shift+S", "script_command", "run"),
+    _c("new_script_ai", "New Script with AI", "🤖", "Describe a tool you want; an AI writes it as a script, Omacad tests "
+       "it and it appears under Scripts", signal="script_command", arg="ai"),
+    _c("open_scripts_folder", "Open Scripts Folder", "🗂️", "Open the folder your scripts are kept in",
+       signal="script_command", arg="folder"),
     _c("settings", "Settings", "⚙️", "Colors, ribbon layout and app preferences", "Ctrl+,", "settings_clicked",
        modes=("model", "sketch")),
     # --- SKETCH: CREATE ------------------------------------------------------------------------------------------
@@ -164,6 +171,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
     ("MODIFY", ["fillet", "chamfer", "shell", "surface_texture", MODIFY_BODY, "parameters", "delete"]),
     ("INSPECT", [INSPECT]),
     ("EXPORT", [EXPORT]),
+    ("SCRIPTS", ["scripts", "new_script_ai"]),
 ]
 SKETCH_GROUPS: List[Tuple[str, list]] = [
     ("CREATE", ["line", "rect", "circle", "arc", "spline", "control_spline", "polygon", "slot", "text", "import_svg", "offset_sketch", "mirror_sketch", "project",
@@ -181,6 +189,7 @@ MENUS: List[Tuple[str, list]] = [
     ("Modify", ["fillet", "chamfer", "shell", "surface_texture", "offset_face", None, "combine", "split_body", "move", None,
                 "parameters", "delete"]),
     ("Inspect", ["measure", "section", "statistics"]),
+    ("Scripts", ["scripts", "new_script_ai", None, "open_scripts_folder"]),
 ]
 
 
