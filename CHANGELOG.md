@@ -1,3 +1,9 @@
+# Hybrid-experiment — 0.9.9.80.169
+
+### Fixed
+- **Linked copy follows features cut/joined on parent body**:
+  - Operations extruded from a sketch on a face (`parent_body_id`) now include referenced bodies in fallback target selection (`targets = selected or owned or refs`). This ensures the feature targets the original body and is registered under the source object's history. As a result, `Timeline._place_linked_objects` moves linked copies and their branch steps after the operation, updating the linked copy geometry when the original body changes.
+
 # Hybrid-experiment — 0.9.9.80.168
 
 ### Fixed

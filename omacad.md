@@ -1,3 +1,14 @@
+## Linked copy följer skisser på yta (extrude cut/join) — 2026-11-08 (0.9.9.80.169)
+
+När en skiss ritas på en yta av en kropp (`parent_body_id`) och därefter extruderas (cut/join), hämtar `Feature.execute`
+in refererade kroppar via `refs = referenced_bodies(doc, self)`. Men `targets` sattes tidigare enbart till `selected or owned`,
+vilket gjorde att `target_body_ids` förblev `None` om ingen kropp var manuellt vald i trädet. Detta ledde till att extruderingen
+kopplades till fel objekt i `ObjectHistory`, varpå `Timeline._place_linked_objects` inte identifierade steget som tillhörande
+originalobjektet (`src_owner`). Därmed flyttades inte länkad kopia (`BranchFeature`) efter det nya steget och kopian
+uppdaterades inte. Genom att sätta `targets = selected or owned or refs` registreras steget under rätt objekt, länkad kopia
+placeras efter steget i tidslinjen och kopians geometri hålls i synk med originalet.
+Test: `tests/test_linked_copy_follows_sketch_extrude.py`.
+
 ## Extrude förvald yta & skissreferenser — 2026-11-08 (0.9.9.80.168, rapport 20261108-073007)
 
 Extrude kraschade med RecursionError vid förvald yta: `prompt_extrude` anropade `on_extrude_face`, som i sin tur

@@ -188,7 +188,7 @@ class Feature:
                 refs = referenced_bodies(doc, self)
                 if refs and not set(refs) & set(owned):
                     owned = []
-                targets = selected or owned
+                targets = selected or owned or refs
                 if targets:
                     self.target_body_ids = targets
                 elif any(not b.visible for b in doc.bodies.values()):
