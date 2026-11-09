@@ -409,7 +409,8 @@ class RenderGLMixin:
             # Fetch or build GPU VAO/VBO for this body mesh
             draw_verts, draw_normals, edge_lines = mesh.display_arrays(edge_lines)   # smoothed in Fast view
             cache_entry = None
-            mesh_key = (body.body_id, id(mesh), len(draw_verts), len(edge_lines))
+            mesh_token = getattr(mesh, "mesh_id", id(mesh))
+            mesh_key = (body.body_id, mesh_token, len(draw_verts), len(edge_lines))
             if gpu_cache is not None:
                 cache_entry = gpu_cache.get(mesh_key)
                 if cache_entry is None:

@@ -616,8 +616,6 @@ class BodyPromptsMixin:
         else:
             dlg.btn_pick.setChecked(True)
 
-        current_hidden_id = [None]
-
         def update_gizmo():
             bid = dlg.target_body_id()
             if not bid or bid not in self.doc.bodies:
@@ -635,20 +633,12 @@ class BodyPromptsMixin:
         def refresh_preview():
             bid = dlg.target_body_id()
             if not bid or bid not in self.doc.bodies:
-                if current_hidden_id[0] and current_hidden_id[0] in self.doc.bodies:
-                    self.doc.bodies[current_hidden_id[0]].visible = True
-                    current_hidden_id[0] = None
+                self.viewport.set_display_override(None)
                 self.viewport.set_preview(None)
                 self.viewport.clear_joint_gizmo()
                 return
 
-            if current_hidden_id[0] and current_hidden_id[0] != bid and current_hidden_id[0] in self.doc.bodies:
-                self.doc.bodies[current_hidden_id[0]].visible = True
-
             body = self.doc.bodies[bid]
-            body.visible = False
-            current_hidden_id[0] = bid
-
             val = dlg.current_value()
             limits_en, mn, mx = dlg.limits()
             temp_feat = JointFeature("tmp", "tmp", bid, joint_type=dlg.joint_type(),
@@ -656,7 +646,8 @@ class BodyPromptsMixin:
                                      limits_enabled=limits_en, min_limit=mn, max_limit=mx)
             mat = temp_feat.matrix()
             moved = body.manifold.transform(mat[:3, :])
-            self.viewport.set_preview(moved, "new_body")
+            self.viewport.set_display_override({bid: moved})
+            self.viewport.set_preview(None)
             update_gizmo()
 
         def on_gizmo_drag(val: float):
@@ -668,8 +659,9 @@ class BodyPromptsMixin:
                 jtype, orig, axis = infer_joint_from_edge(edge, body)
                 dlg.set_inferred(jtype, orig, axis)
                 dlg.btn_pick.setChecked(False)
-                dlg.btn_pick.setText("✅ Ledaxel vald (klicka för att byta)")
+                dlg.btn_pick.setText(f"✅ Ledaxel vald: [{dlg.axis[0]:.1f}, {dlg.axis[1]:.1f}, {dlg.axis[2]:.1f}]")
                 self.viewport.end_edge_pick()
+                refresh_preview()
                 self.status_label.setText(f"Joint: Axel vald! Dra i 3D-handtaget eller skjutreglaget för att testa rörelsen [{dlg.spn_min.value():.0f}° .. {dlg.spn_max.value():.0f}°].")
 
         def on_pick_requested(on: bool):
@@ -704,14 +696,13 @@ class BodyPromptsMixin:
                 pass
             self.viewport.end_edge_pick()
             self.viewport.clear_joint_gizmo()
+            self.viewport.set_display_override(None)
             self.viewport.set_preview(None)
-            if current_hidden_id[0] and current_hidden_id[0] in self.doc.bodies:
-                self.doc.bodies[current_hidden_id[0]].visible = True
-                current_hidden_id[0] = None
             self.inspector.undock_tool()
 
         def on_finished(result):
             timer.stop()
+            cleanup()
             if result:
                 bid = dlg.target_body_id()
                 limits_en, mn, mx = dlg.limits()
@@ -727,13 +718,11 @@ class BodyPromptsMixin:
                     min_limit=mn,
                     max_limit=mx,
                 )
-                cleanup()
                 if feat:
                     t_name = self.doc.bodies.get(bid).name if bid in self.doc.bodies else bid
                     self.status_label.setText(f"Joint created on {t_name} ({dlg.joint_type()}: {val:g}).")
                     self.viewport.update()
             else:
-                cleanup()
                 self.status_label.setText("Joint cancelled.")
                 self.viewport.update()
 

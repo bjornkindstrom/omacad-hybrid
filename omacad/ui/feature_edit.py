@@ -872,13 +872,21 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             mat = temp.matrix()
             vp = getattr(win, "viewport", None)
             if vp is not None:
-                vp.set_preview(base_m.transform(mat[:3, :]), "new_body")
+                vp.set_display_override({feat.target_body_id: base_m.transform(mat[:3, :])})
                 vp.set_joint_gizmo(dlg.origin, dlg.axis, joint_type=dlg.joint_type(),
                                   value=dlg.current_value(), min_limit=mn, max_limit=mx,
                                   limits_enabled=limits_en)
 
-        if not _exec_with_preview(win, doc, dlg, _preview_joint, [feat.target_body_id]):
+        def _cleanup():
+            vp = getattr(win, "viewport", None)
+            if vp is not None:
+                vp.set_display_override(None)
+                vp.clear_joint_gizmo()
+
+        if not _exec_with_preview(win, doc, dlg, _preview_joint, []):
+            _cleanup()
             return False
+        _cleanup()
         limits_en, mn, mx = dlg.limits()
         return commit(
             target_body_id=dlg.target_body_id(),

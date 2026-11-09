@@ -3,6 +3,7 @@ Omacad - Solid Geometry Kernel
 Wraps Manifold3D and Trimesh for watertight CAD operations and mesh extraction.
 """
 
+import itertools
 import math
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
@@ -50,6 +51,9 @@ def stray_line_mask(segments: np.ndarray, diag: float) -> np.ndarray:
     return total[comp] < limit[comp]
 
 
+_mesh_id_counter = itertools.count(1)
+
+
 @dataclass
 class RenderMesh:
     """Holds tessellated data ready for OpenGL rendering."""
@@ -64,6 +68,7 @@ class RenderMesh:
     _surface_ids: Optional[np.ndarray] = field(default=None, repr=False)
     _display: Optional[dict] = field(default=None, repr=False)
     _patch_display: dict = field(default_factory=dict, repr=False)
+    mesh_id: int = field(default_factory=lambda: next(_mesh_id_counter), repr=False)
 
     def drawn_edges(self, tangent: bool) -> np.ndarray:
         """Edge lines to draw: the sharp lines (+ tangent lines when shown) without the stray bits a boolean or a

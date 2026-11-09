@@ -383,4 +383,47 @@ def test_edge_picked_signal_and_joint_alignment():
     assert np.allclose(axis, [0.0, 1.0, 0.0]) # Y-axis hinge!
 
 
+def test_joint_display_override_and_mesh_id_monotonicity():
+    from PySide6.QtWidgets import QApplication
+    app = QApplication.instance() or QApplication(["-platform", "offscreen"])
+
+    from omacad.ui.main_window import MainWindow
+    from omacad.io.exporter import Exporter
+    from omacad.model.kernel import RenderMesh, CadKernel
+
+    # 1. Verify monotonic unique mesh_id
+    doc = Document()
+    doc.add_box(20.0, 20.0, 10.0)
+    bid = list(doc.bodies.keys())[0]
+    rm1 = doc.bodies[bid].render_mesh
+    assert hasattr(rm1, "mesh_id")
+    id1 = rm1.mesh_id
+
+    doc.bodies[bid].update_render_mesh()
+    rm2 = doc.bodies[bid].render_mesh
+    assert rm2.mesh_id > id1
+
+    # 2. Verify display override during prompt_joint
+    win = MainWindow()
+    win.attach_document(doc)
+    assert doc.bodies[bid].visible is True
+
+    win.prompt_joint(target_body_id=bid)
+    # The body must remain visible in the document and have display_override set
+    assert doc.bodies[bid].visible is True
+    assert win.viewport.display_override is not None
+    assert bid in win.viewport.display_override
+    # preview_mesh should be None because display_override renders the real solid body
+    assert win.viewport.preview_mesh is None
+
+    # Cancel/close dialog
+    for child in win.findChildren(object):
+        if type(child).__name__ == "JointDialog":
+            child.reject()
+            break
+
+    assert win.viewport.display_override is None
+    assert doc.bodies[bid].visible is True
+
+
 

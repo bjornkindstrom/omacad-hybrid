@@ -575,13 +575,6 @@ class ViewportEventsMixin:
             e = self._pick_edge(event.position().x(), event.position().y())
             if e is not None:
                 self.edge_picked.emit(e)
-                if event.modifiers() & Qt.KeyboardModifier.ControlModifier:   # Ctrl+click only removes
-                    chain = tangent_chain(e, self._visible_edges()) if getattr(self, "edge_tangent_chain", True) else [e]
-                    self.selected_edges = [k for k in self.selected_edges if not any(self._same_edge(k, c) for c in chain)]
-                    self.edges_selection_changed.emit()
-                    self.update()
-                else:
-                    self._toggle_edge(e)
                 return
 
             cyl = self._pick_cylinder_surface(event.position().x(), event.position().y())
