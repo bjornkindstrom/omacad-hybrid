@@ -28,6 +28,18 @@ class JointDialog(BaseFeatureDialog):
         self._anim_timer.timeout.connect(self._step_animation)
         self._anim_dir = 1.0
 
+        # Step-by-step guidance banner
+        guide = QLabel(
+            "<b>💡 Snabbguide för leder:</b><br>"
+            "1. <b>Moving Body:</b> Välj delen som ska röra sig.<br>"
+            "2. <b>Ledaxel:</b> Klicka <i>'🎯 Välj kant / cylinder i 3D…'</i> eller välj X/Y/Z.<br>"
+            "3. <b>Gränser:</b> Ställ in Min- och Max-vinkel (eller längd).<br>"
+            "4. <b>Testa:</b> Klicka <b>▶️ Play</b> eller dra i reglaget / 3D-handtaget!"
+        )
+        guide.setWordWrap(True)
+        guide.setStyleSheet("background-color: rgba(30, 140, 210, 0.12); border: 1px solid rgba(30, 140, 210, 0.35); border-radius: 6px; padding: 6px 8px; font-size: 11px;")
+        self.main_layout.addWidget(guide)
+
         form = QFormLayout()
 
         # Moving / Target body
@@ -52,17 +64,17 @@ class JointDialog(BaseFeatureDialog):
 
         # Joint Type
         self.cmb_type = QComboBox()
-        self.cmb_type.addItem("↻ Revolute (Hinge)", "revolute")
-        self.cmb_type.addItem("↔️ Slider (Linear)", "slider")
+        self.cmb_type.addItem("↻ Revolute (Hinge / Gångjärn)", "revolute")
+        self.cmb_type.addItem("↔️ Slider (Linear / Skena)", "slider")
         self.cmb_type.currentIndexChanged.connect(self._on_type_changed)
         form.addRow("Type:", self.cmb_type)
 
         # Axis & Origin picking
-        self.btn_pick = QPushButton("Pick edge or cylinder in 3D…")
+        self.btn_pick = QPushButton("🎯 Välj kant eller cylinder i 3D…")
         self.btn_pick.setCheckable(True)
-        self.btn_pick.setToolTip("Click a straight edge, circular rim, or hole to align the joint axis and pivot.")
+        self.btn_pick.setToolTip("Klicka på en rak kant, en cirkel eller en cylinder i 3D för att sätta ledaxeln.")
         self.btn_pick.toggled.connect(lambda on: self.pick_requested.emit(on))
-        form.addRow("Align:", self.btn_pick)
+        form.addRow("Align / Axel:", self.btn_pick)
 
         # Axis preset
         self.cmb_axis = QComboBox()
@@ -96,9 +108,9 @@ class JointDialog(BaseFeatureDialog):
 
         # Quick limits buttons
         limits_bar = QHBoxLayout()
-        self.btn_set_min = QPushButton("Set current as Min")
+        self.btn_set_min = QPushButton("Sätt nuvarande som Min")
         self.btn_set_min.clicked.connect(lambda: self.spn_min.setValue(self.spn_val.value()))
-        self.btn_set_max = QPushButton("Set current as Max")
+        self.btn_set_max = QPushButton("Sätt nuvarande som Max")
         self.btn_set_max.clicked.connect(lambda: self.spn_max.setValue(self.spn_val.value()))
         limits_bar.addWidget(self.btn_set_min)
         limits_bar.addWidget(self.btn_set_max)
@@ -119,7 +131,7 @@ class JointDialog(BaseFeatureDialog):
         self.slider.setRange(0, 1000)
         self.slider.setValue(0)
         self.slider.valueChanged.connect(self._on_slider_moved)
-        form.addRow("Scrub motion:", self.slider)
+        form.addRow("Scrub / Testa:", self.slider)
 
         # Play / Animate button
         anim_bar = QHBoxLayout()
@@ -189,6 +201,7 @@ class JointDialog(BaseFeatureDialog):
         self.axis = np.asarray(axis, dtype=float) / (norm if norm > 1e-9 else 1.0)
         self.cmb_axis.setCurrentIndex(0)  # custom
         self.btn_pick.setChecked(False)
+        self.btn_pick.setText(f"✅ Axel vald: [{self.axis[0]:.1f}, {self.axis[1]:.1f}, {self.axis[2]:.1f}] (byt)")
         self.changed.emit()
 
     def _update_slider_range(self):

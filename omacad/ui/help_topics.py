@@ -183,7 +183,7 @@ EXTRA = [
           "Extrude; a body: Move, Shell; two bodies: Combine).", "", "ribbon", "context suggestion"),
 ]
 
-_GROUP_ORDER = ["SOLID · CREATE", "SOLID · MODIFY", "SOLID · INSPECT", "SKETCH · CREATE", "SKETCH · MODIFY",
+_GROUP_ORDER = ["SOLID · CREATE", "SOLID · MODIFY", "SOLID · ASSEMBLE", "SOLID · INSPECT", "SKETCH · CREATE", "SKETCH · MODIFY",
                 "SKETCH · CONSTRAINTS", "SKETCH · INSPECT", "FILE", "EDIT & VIEW", "TIMELINE & BROWSER", "HELP",
                 "WORKING TIPS"]
 

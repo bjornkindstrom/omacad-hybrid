@@ -50,6 +50,8 @@ class BrowserTree(QWidget):
     find_in_timeline_requested = Signal(str, str)
     delete_sketch_requested = Signal(str)
     body_color_requested = Signal(str)
+    joint_body_requested = Signal(str)
+    new_joint_requested = Signal()
     joint_selected = Signal(str)
     joint_animate_requested = Signal(str)
 
@@ -855,6 +857,7 @@ class BrowserTree(QWidget):
             add("🎨 Appearance / Färg…", lambda: self.body_color_requested.emit(item_id))
             menu.addSeparator()
             add("✥ Move…", lambda: self.move_body_requested.emit(item_id))
+            add("🔗 Joint…", lambda: self.joint_body_requested.emit(item_id))
             add("🐚 Shell…", lambda: self.shell_body_requested.emit(item_id))
             add("🧵 Surface Texture…", lambda: self.surface_texture_requested.emit(item_id))
             add("🪚 Split Body…", lambda: self.split_body_requested.emit(item_id, ""))
@@ -926,6 +929,9 @@ class BrowserTree(QWidget):
         elif item_type in ("origin", "axis", "group"):
             if item_type == "group" and item_id == "objects":
                 add("📁 New object group…", lambda: self.group_objects_prompt([]))
+                menu.addSeparator()
+            elif item_type == "group" and item_id == "joints":
+                add("➕ New Joint…\tJ", lambda: self.new_joint_requested.emit())
                 menu.addSeparator()
             show_hide()
 

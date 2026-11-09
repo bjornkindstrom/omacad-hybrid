@@ -171,6 +171,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
     ("CREATE", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", PRIMITIVES, "pattern", "offset_plane",
                 INSERT]),
     ("MODIFY", ["fillet", "chamfer", "shell", "surface_texture", MODIFY_BODY, "parameters", "delete"]),
+    ("ASSEMBLE", ["joint"]),
     ("INSPECT", [INSPECT]),
     ("SCRIPTS", ["scripts", "new_script_ai"]),
     ("EXPORT", [EXPORT]),                     # Export stays the last group
@@ -188,8 +189,9 @@ MENUS: List[Tuple[str, list]] = [
     ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", None, PRIMITIVES,       # a tuple is a submenu that opens to the right (saves vertical space)
                 None, "pattern_linear", "pattern_circular", "mirror", "pattern_fill", None,
                 "offset_plane", "canvas"]),
-    ("Modify", ["fillet", "chamfer", "shell", "surface_texture", "offset_face", None, "combine", "split_body", "move", None,
+    ("Modify", ["fillet", "chamfer", "shell", "surface_texture", "offset_face", None, "combine", "split_body", "move", "joint", None,
                 "parameters", "delete"]),
+    ("Assemble", ["joint"]),
     ("Inspect", ["measure", "section", "statistics"]),
     ("Scripts", ["scripts", "new_script_ai", None, "open_scripts_folder"]),
 ]

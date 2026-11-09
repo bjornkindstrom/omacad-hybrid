@@ -330,3 +330,28 @@ def test_joint_browser_and_viewport_interaction():
     assert not vp._joint_anim_timer.isActive()
 
 
+def test_joint_menus_and_ribbon_integration():
+    from omacad.ui import commands
+
+    # 1. ASSEMBLE group in ribbon SOLID_GROUPS
+    solid_groups = dict(commands.SOLID_GROUPS)
+    assert "ASSEMBLE" in solid_groups
+    assert "joint" in solid_groups["ASSEMBLE"]
+
+    # 2. Menus contain Joint in Modify and Assemble
+    menus = dict(commands.MENUS)
+    assert "joint" in menus["Modify"]
+    assert "Assemble" in menus
+    assert "joint" in menus["Assemble"]
+
+    # 3. Viewport signals
+    from omacad.ui.viewport.viewport import Viewport3D
+    assert hasattr(Viewport3D, "joint_body_requested")
+    assert hasattr(Viewport3D, "joint_edge_requested")
+
+    # 4. Browser signals
+    from omacad.ui.browser import BrowserTree
+    assert hasattr(BrowserTree, "joint_body_requested")
+    assert hasattr(BrowserTree, "new_joint_requested")
+
+

@@ -113,6 +113,8 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     face_clicked = Signal(object)  # face or curved surface of clicked 3D body
     face_selected = Signal(object) # face or curved surface added to selection
     move_body_requested = Signal(str)  # right-click on a face moves its owning whole body
+    joint_body_requested = Signal(str)  # right-click on a face/body creates or edits a joint
+    joint_edge_requested = Signal(object)  # right-click on an edge creates a joint aligned to it
     body_color_requested = Signal(str)  # right-click on a face sets its owning whole body color
     plane_clicked = Signal(str)  # an origin plane ("XY") or construction plane id clicked without a tool
     text_place_requested = Signal(object, object)   # Text tool click: (anchor uv or None, path entity id or None)

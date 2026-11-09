@@ -595,7 +595,7 @@ class BodyPromptsMixin:
         dlg.show()
 
     @leaves_sketch
-    def prompt_joint(self, target_body_id: str = ""):
+    def prompt_joint(self, target_body_id: str = "", preselected_edge: Any = None):
         """Joint: Connects bodies with an interactive rotating hinge or sliding joint with min/max limits."""
         if not self.doc.bodies:
             QMessageBox.information(self, "Joint", "There are no bodies to connect with a joint. Create a 3D body first!")
@@ -609,11 +609,16 @@ class BodyPromptsMixin:
         self.dock(dlg)
 
         target_body = self.doc.bodies[selected_id]
-        if target_body.edges:
+        if preselected_edge is not None:
+            jtype, orig, axis = infer_joint_from_edge(preselected_edge, target_body)
+            dlg.set_inferred(jtype, orig, axis)
+            dlg.btn_pick.setText("✅ Ledaxel vald från kant (klicka för att byta)")
+        elif target_body.edges:
             for e in target_body.edges:
                 if getattr(e, "kind", "") in ("line", "circle"):
                     jtype, orig, axis = infer_joint_from_edge(e, target_body)
                     dlg.set_inferred(jtype, orig, axis)
+                    dlg.btn_pick.setText("✅ Ledaxel identifierad (klicka för att byta)")
                     break
 
         current_hidden_id = [None]
@@ -667,15 +672,20 @@ class BodyPromptsMixin:
                 body = self.doc.bodies.get(dlg.target_body_id())
                 jtype, orig, axis = infer_joint_from_edge(edge, body)
                 dlg.set_inferred(jtype, orig, axis)
+                dlg.btn_pick.setChecked(False)
+                dlg.btn_pick.setText("✅ Ledaxel vald (klicka för att byta)")
                 self.viewport.end_edge_pick()
+                self.status_label.setText(f"Joint: Axel vald! Dra i 3D-handtaget eller skjutreglaget för att testa rörelsen [{dlg.spn_min.value():.0f}° .. {dlg.spn_max.value():.0f}°].")
 
         def on_pick_requested(on: bool):
             if on:
                 self.viewport.begin_edge_pick()
-                self.status_label.setText("Joint: Click an edge, cylindrical rim, or hole to align the joint axis and pivot.")
+                dlg.btn_pick.setText("🎯 Klicka på kant / cylinder i 3D…")
+                self.status_label.setText("Joint: Klicka på en kant, cirkulär kant eller cylinderhål i 3D för att sätta ledaxeln.")
             else:
                 self.viewport.end_edge_pick()
-                self.status_label.setText("Joint: Drag the 3D handle or scrub the slider to articulate the joint.")
+                dlg.btn_pick.setText("🎯 Välj kant / cylinder i 3D…")
+                self.status_label.setText("Joint: Dra i 3D-handtaget eller skjutreglaget för att testa leden.")
 
         self.viewport.edge_picked.connect(on_edge_picked)
         self.viewport.joint_gizmo_dragged.connect(on_gizmo_drag)
@@ -735,6 +745,16 @@ class BodyPromptsMixin:
         self.status_label.setText("Joint: Drag the 3D handle or scrub the slider to articulate the joint between min/max limits.")
         refresh_preview()
         dlg.show()
+
+    @leaves_sketch
+    def prompt_joint_on_edge(self, edge: Any):
+        """Opens Joint dialog pre-aligned to a picked 3D edge."""
+        body_id = ""
+        for bid, b in self.doc.bodies.items():
+            if b.edges and any(e is edge for e in b.edges):
+                body_id = bid
+                break
+        self.prompt_joint(target_body_id=body_id, preselected_edge=edge)
 
     def prompt_body_color(self, body_id: str = ""):
         """Prompt to change the color of a body or reset to default uncolored."""

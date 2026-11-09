@@ -554,6 +554,10 @@ class ContextMenuMixin:
             self.body_color_requested.emit(arg)
         elif kind == "move_body":
             self.move_body_requested.emit(arg)
+        elif kind == "joint_body":
+            self.joint_body_requested.emit(arg)
+        elif kind == "joint_edge":
+            self.joint_edge_requested.emit(arg)
         elif kind == "join_bodies":
             self.join_bodies_requested.emit(arg)
         elif kind == "split_plane":
@@ -739,9 +743,11 @@ class ContextMenuMixin:
         acts: dict = {}
         chain = tangent_chain(edge, self._visible_edges())
         self._round_entries(menu, acts, chain, "this edge")
+        acts[theme.action_with_icon(menu, "🔗 Joint on this Edge…")] = ("joint_edge", edge)
         self._add_history_and_view(menu, acts, False)
 
         context_items = [
+            FanItem("joint_edge", "Joint on Edge", theme.named_icon("joint", "🔗", 20), shortcut="J", callback=lambda: self.joint_edge_requested.emit(edge)),
             FanItem("fillet_edge", "Fillet Edge", theme.named_icon("fillet", "🔘", 20), shortcut="F", callback=lambda: self.round_requested.emit("fillet", chain)),
             FanItem("chamfer_edge", "Chamfer Edge", theme.named_icon("chamfer", "◢", 20), callback=lambda: self.round_requested.emit("chamfer", chain)),
         ]
@@ -766,6 +772,7 @@ class ContextMenuMixin:
             menu.addSeparator()
             acts[theme.action_with_icon(menu, "🎨 Appearance / Färg…")] = ("body_color", face.body_id)
             acts[theme.action_with_icon(menu, "✥ Move this Body…")] = ("move_body", face.body_id)
+            acts[theme.action_with_icon(menu, "🔗 Joint (Hinge / Slider)…")] = ("joint_body", face.body_id)
             acts[theme.action_with_icon(menu, "⬇️ Lay this face on the ground (XY)")] = ("lay", "ground")
             acts[theme.action_with_icon(menu, "⬇️ Lay this face on a face or plane…")] = ("lay", "pick")
         menu.addSeparator()
@@ -793,6 +800,7 @@ class ContextMenuMixin:
         ]
         if face.body_id in self.doc.bodies:
             context_items.append(FanItem("move_body", "Move Body", theme.named_icon("move", "✥", 20), shortcut="M", callback=lambda: self.move_body_requested.emit(face.body_id)))
+            context_items.append(FanItem("joint_body", "Joint", theme.named_icon("joint", "🔗", 20), shortcut="J", callback=lambda: self.joint_body_requested.emit(face.body_id)))
             context_items.append(FanItem("color_body", "Appearance", theme.named_icon("appearance", "🎨", 20), callback=lambda: self.body_color_requested.emit(face.body_id)))
             context_items.append(FanItem("lay_ground", "Lay on Ground", theme.named_icon("lay_flat", "⬇️", 20), callback=lambda: self.lay_face_requested.emit(face, "ground")))
 
@@ -824,6 +832,7 @@ class ContextMenuMixin:
         if body_id in self.doc.bodies:
             acts[theme.action_with_icon(menu, "🎨 Appearance / Färg…")] = ("body_color", body_id)
             acts[theme.action_with_icon(menu, "✥ Move this Body…")] = ("move_body", body_id)
+            acts[theme.action_with_icon(menu, "🔗 Joint (Hinge / Slider)…")] = ("joint_body", body_id)
             menu.addSeparator()
         self._add_tool_entries(menu, acts)
         if not self.active_tool_title():
@@ -837,6 +846,7 @@ class ContextMenuMixin:
         ]
         if body_id in self.doc.bodies:
             context_items.append(FanItem("move_body", "Move Body", theme.named_icon("move", "✥", 20), shortcut="M", callback=lambda: self.move_body_requested.emit(body_id)))
+            context_items.append(FanItem("joint_body", "Joint", theme.named_icon("joint", "🔗", 20), shortcut="J", callback=lambda: self.joint_body_requested.emit(body_id)))
             context_items.append(FanItem("color_body", "Appearance", theme.named_icon("appearance", "🎨", 20), callback=lambda: self.body_color_requested.emit(body_id)))
 
         self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label="Round Face")
@@ -851,6 +861,7 @@ class ContextMenuMixin:
         if body_id in self.doc.bodies:
             acts[theme.action_with_icon(menu, "🎨 Appearance / Färg…")] = ("body_color", body_id)
             acts[theme.action_with_icon(menu, "✥ Move this Body…")] = ("move_body", body_id)
+            acts[theme.action_with_icon(menu, "🔗 Joint (Hinge / Slider)…")] = ("joint_body", body_id)
             menu.addSeparator()
         self._add_tool_entries(menu, acts)
         if not self.active_tool_title():
@@ -864,6 +875,7 @@ class ContextMenuMixin:
         ]
         if body_id in self.doc.bodies:
             context_items.append(FanItem("move_body", "Move Body", theme.named_icon("move", "✥", 20), shortcut="M", callback=lambda: self.move_body_requested.emit(body_id)))
+            context_items.append(FanItem("joint_body", "Joint", theme.named_icon("joint", "🔗", 20), shortcut="J", callback=lambda: self.joint_body_requested.emit(body_id)))
             context_items.append(FanItem("color_body", "Appearance", theme.named_icon("appearance", "🎨", 20), callback=lambda: self.body_color_requested.emit(body_id)))
 
         self._open_fan_or_menu(event, menu, acts, context_items=context_items, context_label="Curved Face")
