@@ -97,8 +97,11 @@ def main():
     from omacad.ui import busy_dialog
     busy_dialog.install(window)     # here, not in MainWindow: tests call the model on the main thread
     window.start_autosave()
+    file_to_open = next((arg for arg in sys.argv[1:] if arg.endswith(".omacad") and os.path.exists(arg)), None)
     if session.RESUME_FLAG in sys.argv:
         window.restore_session()
+    elif file_to_open:
+        QTimer.singleShot(0, lambda: window.open_path(file_to_open))
     else:
         QTimer.singleShot(0, window.offer_autosave_resume)   # after a crash: get the unsaved work back
     from PySide6.QtWidgets import QLabel
