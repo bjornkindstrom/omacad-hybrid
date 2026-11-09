@@ -82,6 +82,12 @@ class PointerMixin:
                 self.setCursor(Qt.CursorShape.ClosedHandCursor)
                 self.update()
                 return
+        if event.button() == Qt.MouseButton.LeftButton and getattr(self, "joint_gizmo", None):
+            if self._joint_gizmo_hit(x, y):
+                self.joint_gizmo["dragging"] = True
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
+                self.update()
+                return
         if event.button() == Qt.MouseButton.LeftButton and self.extrude_handle and self._handle_hit(x, y):
             self._handle_drag = True
             quality.set_interactive_mode(True)
@@ -473,6 +479,21 @@ class PointerMixin:
                 if hover_ax != g.get("hover_axis"):
                     g["hover_axis"] = hover_ax
                     self.setCursor(Qt.CursorShape.OpenHandCursor if hover_ax else Qt.CursorShape.ArrowCursor)
+                    self.update()
+
+        if getattr(self, "joint_gizmo", None):
+            jg = self.joint_gizmo
+            if jg.get("dragging"):
+                val = self._joint_gizmo_project_mouse(x, y)
+                jg["value"] = val
+                self.joint_gizmo_dragged.emit(val)
+                self.update()
+                return
+            else:
+                hit = self._joint_gizmo_hit(x, y)
+                if hit != jg.get("hover"):
+                    jg["hover"] = hit
+                    self.setCursor(Qt.CursorShape.OpenHandCursor if hit else Qt.CursorShape.ArrowCursor)
                     self.update()
 
         if self._handle_drag:

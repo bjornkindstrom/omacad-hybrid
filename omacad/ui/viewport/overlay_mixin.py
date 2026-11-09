@@ -504,6 +504,31 @@ class OverlayMixin:
                                else "MIRROR 2/2: click the mirror line / an axis")}[self.sketch_tool]
             self.tool_panel.set_hint(hint.split(": ", 1)[-1])   # in the tool panel, not over the drawing (#76)
 
+        # 5b. Joint Manipulator Badge
+        if getattr(self, "joint_gizmo", None):
+            jg = self.joint_gizmo
+            orig = jg["origin"]
+            val = jg["value"]
+            unit = "°" if jg["joint_type"] == "revolute" else " mm"
+            lim_str = f" [{jg['min_limit']:.0f}{unit} .. {jg['max_limit']:.0f}{unit}]" if jg["limits_enabled"] else ""
+            type_name = "Hinge" if jg["joint_type"] == "revolute" else "Slider"
+            badge_text = f"🔗 {type_name}: {val:.1f}{unit}{lim_str}"
+            so = self.world_to_screen(orig)
+            if so is not None:
+                bx = so[0] + 20
+                by = so[1] - 30
+                font_j = QFont(theme.font_family(), 9, QFont.Weight.Bold)
+                painter.setFont(font_j)
+                fm = painter.fontMetrics()
+                bw = fm.horizontalAdvance(badge_text) + 16
+                bh = 24
+                b_rect = self.place_label(QRectF(bx, by, bw, bh))
+                painter.setPen(QPen(qcolor(30, 200, 160), 1.5))
+                painter.setBrush(QBrush(qcolor(20, 24, 30, 235)))
+                painter.drawRoundedRect(b_rect, 4, 4)
+                painter.setPen(QPen(qcolor(245, 250, 255)))
+                painter.drawText(b_rect, Qt.AlignmentFlag.AlignCenter, badge_text)
+
         # 6. Bottom HUD Navigation Bar
         has_lids = self.doc.has_lids() if hasattr(self.doc, "has_lids") else False
         hud_w = 325 if has_lids else 260

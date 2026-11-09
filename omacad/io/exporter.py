@@ -14,7 +14,7 @@ from omacad.model.document import Document, Parameter, default_origin_vis
 from omacad.model.timeline import (Body, SketchFeature, BoxFeature, CylinderFeature, PrismFeature, SphereFeature,
                                     ExtrudeFeature, EmbossFeature, RevolveFeature, CombineFeature, FilletFeature,
                                     PatternFeature, SplitBodyFeature, ShellFeature, MoveFeature, ImportMeshFeature, HoleFeature, DeleteBodyFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature,
-                                    ConeFeature, SweepFeature, LoftFeature, PipeFeature, WavySlicesFeature, KnurlFeature, JapandiFeature)
+                                    ConeFeature, SweepFeature, LoftFeature, PipeFeature, WavySlicesFeature, KnurlFeature, JapandiFeature, JointFeature)
 from omacad import applog
 from omacad.model.sketch import Sketch
 from omacad.model.timeline import ProfileRefs
@@ -730,6 +730,20 @@ class Exporter:
                     fid, fname, f_data.get("vertices", []), f_data.get("triangles", []),
                     source_file=f_data.get("source_file", ""),
                     created_body_id=f_data.get("created_body_id"),
+                )
+                doc.timeline.add_feature(feat)
+            elif ft == "joint":
+                feat = JointFeature(
+                    fid, fname, f_data["target_body_id"],
+                    ref_body_id=f_data.get("ref_body_id"),
+                    joint_type=f_data.get("joint_type", "revolute"),
+                    origin=f_data.get("origin", (0.0, 0.0, 0.0)),
+                    axis=f_data.get("axis", (0.0, 0.0, 1.0)),
+                    value=f_data.get("value", 0.0),
+                    limits_enabled=f_data.get("limits_enabled", True),
+                    min_limit=f_data.get("min_limit", 0.0),
+                    max_limit=f_data.get("max_limit", 90.0),
+                    smart_ref=f_data.get("smart_ref"),
                 )
                 doc.timeline.add_feature(feat)
             elif ft == "thread":

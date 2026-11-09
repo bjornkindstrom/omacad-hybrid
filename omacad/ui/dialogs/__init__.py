@@ -48,6 +48,7 @@ from omacad.ui.dialogs.jar_dlg import JarDialog
 from omacad.ui.dialogs.transform_dlg import (
     MoveBodyDialog,
 )
+from omacad.ui.dialogs.joint_dlg import JointDialog
 from omacad.ui.dialogs.thread_dlg import (
     ThreadDialog,
 )
@@ -91,6 +92,7 @@ __all__ = [
     "OffsetFaceDialog",
     "JarDialog",
     "MoveBodyDialog",
+    "JointDialog",
     "ThreadDialog",
     "HoleDialog",
 ]

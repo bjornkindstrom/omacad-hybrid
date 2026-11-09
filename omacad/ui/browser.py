@@ -412,6 +412,17 @@ class BrowserTree(QWidget):
                 self._style_eye(it, bool(c.get("visible", True)))
                 it.setToolTip(1, "Click to hide canvas" if c.get("visible", True) else "Click to show canvas")
 
+        # Joints
+        joints = getattr(self.doc, "joints", [])
+        if joints:
+            joints_group = group("🔗 Joints", "joints", True)
+            for j in joints:
+                unit = "°" if j.joint_type == "revolute" else " mm"
+                lim_txt = f" [{j.min_limit:.0f}..{j.max_limit:.0f}{unit}]" if j.limits_enabled else ""
+                it = QTreeWidgetItem(joints_group, [f"🔗 {j.name}: {j.value:.1f}{unit}{lim_txt}", ""])
+                it.setData(0, Qt.ItemDataRole.UserRole, ("joint", j.feature_id))
+                self._style_eye(it, not j.suppressed)
+
     @staticmethod
     def _style_eye(item: QTreeWidgetItem, visible: bool):
         """Eye icon in column 1; hidden items are greyed out."""
@@ -557,6 +568,8 @@ class BrowserTree(QWidget):
             from omacad.ui.object_browser import edit_parameter
             edit_parameter(self, item_type, item_id)
         elif item_type == "feature":
+            self.feature_edit_requested.emit(item_id)
+        elif item_type == "joint":
             self.feature_edit_requested.emit(item_id)
         elif item_type == "feature_link":
             from omacad.ui.object_browser import find_feature
@@ -860,6 +873,14 @@ class BrowserTree(QWidget):
             add("🚫 Turn off" if on else "👁️ Turn on", lambda: self.doc.set_section_active(item_id, not on))
             add("✂️ Change the cut…", lambda: self.edit_section_requested.emit(item_id))
             menu.addSeparator()
+
+        elif item_type == "joint":
+            feat = next((f for f in self.doc.timeline.features if f.feature_id == item_id), None)
+            if feat:
+                add("✏️ Edit Joint…", lambda: self.feature_edit_requested.emit(item_id))
+                add("Unsuppress" if feat.suppressed else "Suppress", lambda: self.doc.toggle_suppress(self.doc.timeline.features.index(feat)))
+                menu.addSeparator()
+                add("🗑️ Delete Joint", lambda: self.feature_delete_requested.emit(item_id))
             rename()
             menu.addSeparator()
             add("🗑️ Delete", lambda: self.doc.delete_section(item_id))

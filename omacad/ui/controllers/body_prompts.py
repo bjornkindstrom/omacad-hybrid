@@ -13,8 +13,9 @@ from omacad.ui.dialogs import (
     RoundEdgesDialog, PatternDialog, OffsetPlaneDialog,
     SketchPlaneDialog, ExtrudeDialog, BoxDialog, CylinderDialog, PrismDialog,
     SphereDialog, CombineDialog, SplitBodyDialog, ShellDialog, MoveBodyDialog,
-    ThreadDialog
+    ThreadDialog, JointDialog
 )
+from omacad.model.features.joint import infer_joint_from_edge, JointFeature
 from omacad.ui.canvas_dialog import CanvasEditorDialog
 from omacad.ui.controllers.prompt_guards import leaves_sketch
 
@@ -590,6 +591,148 @@ class BodyPromptsMixin:
         from omacad.ui.apply_button import add_apply_button, preview_anchor
         add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport) if pending() else None)
 
+        refresh_preview()
+        dlg.show()
+
+    @leaves_sketch
+    def prompt_joint(self, target_body_id: str = ""):
+        """Joint: Connects bodies with an interactive rotating hinge or sliding joint with min/max limits."""
+        if not self.doc.bodies:
+            QMessageBox.information(self, "Joint", "There are no bodies to connect with a joint. Create a 3D body first!")
+            return
+
+        selected_id = target_body_id or (next(iter(self.doc.selected_body_ids)) if self.doc.selected_body_ids else "")
+        if not selected_id or selected_id not in self.doc.bodies:
+            selected_id = next(iter(self.doc.bodies.keys()))
+
+        dlg = JointDialog(self.doc, self, preselected_body_id=selected_id)
+        self.dock(dlg)
+
+        target_body = self.doc.bodies[selected_id]
+        if target_body.edges:
+            for e in target_body.edges:
+                if getattr(e, "kind", "") in ("line", "circle"):
+                    jtype, orig, axis = infer_joint_from_edge(e, target_body)
+                    dlg.set_inferred(jtype, orig, axis)
+                    break
+
+        current_hidden_id = [None]
+
+        def update_gizmo():
+            bid = dlg.target_body_id()
+            if not bid or bid not in self.doc.bodies:
+                self.viewport.clear_joint_gizmo()
+                return
+            limits_en, mn, mx = dlg.limits()
+            self.viewport.set_joint_gizmo(
+                dlg.origin, dlg.axis,
+                joint_type=dlg.joint_type(),
+                value=dlg.current_value(),
+                min_limit=mn, max_limit=mx,
+                limits_enabled=limits_en
+            )
+
+        def refresh_preview():
+            bid = dlg.target_body_id()
+            if not bid or bid not in self.doc.bodies:
+                if current_hidden_id[0] and current_hidden_id[0] in self.doc.bodies:
+                    self.doc.bodies[current_hidden_id[0]].visible = True
+                    current_hidden_id[0] = None
+                self.viewport.set_preview(None)
+                self.viewport.clear_joint_gizmo()
+                return
+
+            if current_hidden_id[0] and current_hidden_id[0] != bid and current_hidden_id[0] in self.doc.bodies:
+                self.doc.bodies[current_hidden_id[0]].visible = True
+
+            body = self.doc.bodies[bid]
+            body.visible = False
+            current_hidden_id[0] = bid
+
+            val = dlg.current_value()
+            limits_en, mn, mx = dlg.limits()
+            temp_feat = JointFeature("tmp", "tmp", bid, joint_type=dlg.joint_type(),
+                                     origin=dlg.origin, axis=dlg.axis, value=val,
+                                     limits_enabled=limits_en, min_limit=mn, max_limit=mx)
+            mat = temp_feat.matrix()
+            moved = body.manifold.transform(mat[:3, :])
+            self.viewport.set_preview(moved, "new_body")
+            update_gizmo()
+
+        def on_gizmo_drag(val: float):
+            dlg.set_current_value(val)
+
+        def on_edge_picked(edge):
+            if edge is not None:
+                body = self.doc.bodies.get(dlg.target_body_id())
+                jtype, orig, axis = infer_joint_from_edge(edge, body)
+                dlg.set_inferred(jtype, orig, axis)
+                self.viewport.end_edge_pick()
+
+        def on_pick_requested(on: bool):
+            if on:
+                self.viewport.begin_edge_pick()
+                self.status_label.setText("Joint: Click an edge, cylindrical rim, or hole to align the joint axis and pivot.")
+            else:
+                self.viewport.end_edge_pick()
+                self.status_label.setText("Joint: Drag the 3D handle or scrub the slider to articulate the joint.")
+
+        self.viewport.edge_picked.connect(on_edge_picked)
+        self.viewport.joint_gizmo_dragged.connect(on_gizmo_drag)
+        dlg.pick_requested.connect(on_pick_requested)
+
+        timer = QTimer(self)
+        timer.setSingleShot(True)
+        timer.setInterval(40)
+        timer.timeout.connect(refresh_preview)
+        dlg.changed.connect(timer.start)
+
+        def cleanup():
+            try:
+                self.viewport.edge_picked.disconnect(on_edge_picked)
+            except Exception:
+                pass
+            try:
+                self.viewport.joint_gizmo_dragged.disconnect(on_gizmo_drag)
+            except Exception:
+                pass
+            self.viewport.end_edge_pick()
+            self.viewport.clear_joint_gizmo()
+            self.viewport.set_preview(None)
+            if current_hidden_id[0] and current_hidden_id[0] in self.doc.bodies:
+                self.doc.bodies[current_hidden_id[0]].visible = True
+                current_hidden_id[0] = None
+            self.inspector.undock_tool()
+
+        def on_finished(result):
+            timer.stop()
+            if result:
+                bid = dlg.target_body_id()
+                limits_en, mn, mx = dlg.limits()
+                val = dlg.current_value()
+                feat = self.doc.add_joint(
+                    bid,
+                    ref_body_id=dlg.ref_body_id(),
+                    joint_type=dlg.joint_type(),
+                    origin=dlg.origin,
+                    axis=dlg.axis,
+                    value=val,
+                    limits_enabled=limits_en,
+                    min_limit=mn,
+                    max_limit=mx,
+                )
+                cleanup()
+                if feat:
+                    t_name = self.doc.bodies.get(bid).name if bid in self.doc.bodies else bid
+                    self.status_label.setText(f"Joint created on {t_name} ({dlg.joint_type()}: {val:g}).")
+                    self.viewport.update()
+            else:
+                cleanup()
+                self.status_label.setText("Joint cancelled.")
+                self.viewport.update()
+
+        dlg.finished.connect(on_finished)
+        self.status_label.setText("Joint: Drag the 3D handle or scrub the slider to articulate the joint between min/max limits.")
         refresh_preview()
         dlg.show()
 

@@ -107,6 +107,8 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     move_gizmo_dragged = Signal(str, float)  # (axis: "X"|"Y"|"Z", delta_mm)
     move_gizmo_finished = Signal()
     move_gizmo_axis_selected = Signal(str)
+    joint_gizmo_dragged = Signal(float)  # current joint value (degrees or mm)
+    joint_gizmo_finished = Signal()
     body_clicked = Signal(str)  # body_id of clicked 3D body
     face_clicked = Signal(object)  # face or curved surface of clicked 3D body
     face_selected = Signal(object) # face or curved surface added to selection
@@ -220,6 +222,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self._handle_drag = False
         self._handle_hover = False
         self.move_gizmo = None  # dict(origin, length, active_axis, hover_axis, dragging, start_proj)
+        self.joint_gizmo = None
 
         # Edge selection for fillet / chamfer
         self.edge_pick_mode: bool = False
@@ -737,6 +740,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self.render_step_edges(mvp)       # on top of the preview: which edges the step being edited rounds
         self.render_extrude_handle(mvp)
         self.render_move_gizmo(mvp)
+        self.render_joint_gizmo(mvp)
         if (self.offset_preview is not None or self.fillet_preview is not None) and self.prog_thick is not None:
             prev_lines = self.fillet_preview if self.fillet_preview is not None else self.offset_preview
             GL.glDisable(GL.GL_DEPTH_TEST)

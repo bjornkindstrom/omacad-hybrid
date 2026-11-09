@@ -50,6 +50,7 @@ from omacad.model.features import (
     SweepFeature,
     LoftFeature,
     PipeFeature,
+    JointFeature,
 )
 
 
@@ -357,4 +358,5 @@ __all__ = [
     "PatternFeature",
     "MoveFeature",
     "ImportMeshFeature",
+    "JointFeature",
 ]

@@ -56,6 +56,7 @@ class FeatureNodeWidget(QFrame):
         "linked_sketch": "📄",
         "star_bracket": "⭐",
         "branch": "🔗",
+        "joint": "🔗",
     }
 
     @classmethod

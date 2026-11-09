@@ -18,7 +18,7 @@ from omacad.model.timeline import (
     PatternFeature, FilletFeature, Body, Timeline, BoxFeature, CylinderFeature, PrismFeature,
     SphereFeature, ExtrudeFeature, EmbossFeature, RevolveFeature, HoleFeature, DeleteBodyFeature, SketchFeature, SplitBodyFeature, ShellFeature, MoveFeature,
     ImportMeshFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature, ConeFeature, SweepFeature, LoftFeature,
-    PipeFeature, WavySlicesFeature, KnurlFeature, JapandiFeature
+    PipeFeature, WavySlicesFeature, KnurlFeature, JapandiFeature, JointFeature
 )
 from omacad.model.features.knurl import apply_knurl
 from omacad.model.features.japandi import apply_japandi
@@ -1762,6 +1762,61 @@ class Document:
         feat.execute(self)
         self.notify_changed()
         return feat
+
+    @undoable("Joint")
+    def add_joint(
+        self,
+        target_body_id: str,
+        ref_body_id: Optional[str] = None,
+        joint_type: str = "revolute",
+        origin: Any = (0.0, 0.0, 0.0),
+        axis: Any = (0.0, 0.0, 1.0),
+        value: float = 0.0,
+        limits_enabled: bool = True,
+        min_limit: float = 0.0,
+        max_limit: float = 90.0,
+        name: str = "",
+        smart_ref: Optional[dict] = None,
+    ) -> Optional[JointFeature]:
+        """Creates a kinematic joint (Revolute or Slider) connecting target_body to ref_body with min/max limits."""
+        if target_body_id not in self.bodies:
+            return None
+        n = len([f for f in self.timeline.features if getattr(f, "feature_type", "") == "joint"]) + 1
+        feat_id = self._feature_id("joint")
+        target_name = self.bodies[target_body_id].name
+        type_label = "Hinge" if joint_type == "revolute" else "Slider"
+        feat_name = name or f"{type_label} {target_name} ({n})"
+        feat = JointFeature(
+            feat_id, feat_name, target_body_id,
+            ref_body_id=ref_body_id,
+            joint_type=joint_type,
+            origin=origin,
+            axis=axis,
+            value=value,
+            limits_enabled=limits_enabled,
+            min_limit=min_limit,
+            max_limit=max_limit,
+            smart_ref=smart_ref,
+        )
+        self.timeline.add_feature(feat)
+        feat.execute(self)
+        self.notify_changed()
+        return feat
+
+    def set_joint_value(self, feat_id: str, val: float, recompute: bool = True) -> bool:
+        """Sets the live value of a joint feature, clamping to its limits."""
+        for feat in self.timeline.features:
+            if feat.feature_id == feat_id and isinstance(feat, JointFeature):
+                feat.set_value(val)
+                if recompute:
+                    self.timeline.recompute(self)
+                    self.notify_changed()
+                return True
+        return False
+
+    @property
+    def joints(self) -> List[JointFeature]:
+        return [f for f in self.timeline.features if getattr(f, "feature_type", "") == "joint"]
 
     def _copy_body_steps(self, body_id: str, upto: Optional[int] = None) -> Optional[str]:
         """Copies every step that built `body_id` (its sketches too; only the first `upto` steps count, else those

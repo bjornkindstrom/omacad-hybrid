@@ -534,3 +534,158 @@ class GizmoMixin:
         GL.glUseProgram(0)
         GL.glEnable(GL.GL_DEPTH_TEST)
 
+    def set_joint_gizmo(self, origin, axis, joint_type="revolute", value=0.0,
+                        min_limit=0.0, max_limit=90.0, limits_enabled=True, radius=None):
+        """Sets the interactive 3D manipulator for a joint."""
+        axis = np.asarray(axis, dtype=float)
+        norm = np.linalg.norm(axis)
+        axis = axis / (norm if norm > 1e-9 else 1.0)
+        u = np.cross(axis, [1.0, 0.0, 0.0])
+        if np.linalg.norm(u) < 1e-3:
+            u = np.cross(axis, [0.0, 1.0, 0.0])
+        u = u / np.linalg.norm(u)
+        v = np.cross(axis, u)
+        if radius is None:
+            radius = max(24.0, min(80.0, self.distance * 0.16))
+        self.joint_gizmo = {
+            "origin": np.asarray(origin, dtype=float),
+            "axis": axis,
+            "u": u,
+            "v": v,
+            "joint_type": joint_type,
+            "value": float(value),
+            "min_limit": float(min_limit),
+            "max_limit": float(max_limit),
+            "limits_enabled": bool(limits_enabled),
+            "radius": float(radius),
+            "dragging": False,
+            "hover": False,
+            "start_val": float(value),
+        }
+        self.update()
+
+    def clear_joint_gizmo(self):
+        self.joint_gizmo = None
+        self.update()
+
+    def _joint_gizmo_hit(self, x: float, y: float) -> bool:
+        if not getattr(self, "joint_gizmo", None):
+            return False
+        g = self.joint_gizmo
+        orig, u, v, r = g["origin"], g["u"], g["v"], g["radius"]
+        val = g["value"]
+        if g["joint_type"] == "revolute":
+            rad = math.radians(val)
+            h_pt = orig + r * (math.cos(rad) * u + math.sin(rad) * v)
+        else:
+            h_pt = orig + g["axis"] * val
+        sh = self.world_to_screen(h_pt)
+        if sh is not None and math.hypot(x - sh[0], y - sh[1]) < 22.0:
+            return True
+        so = self.world_to_screen(orig)
+        if so is not None and math.hypot(x - so[0], y - so[1]) < 22.0:
+            return True
+        return False
+
+    def _joint_gizmo_project_mouse(self, x: float, y: float) -> float:
+        if not getattr(self, "joint_gizmo", None):
+            return 0.0
+        g = self.joint_gizmo
+        orig, axis, u, v = g["origin"], g["axis"], g["u"], g["v"]
+        proj, view, _ = self.get_matrices()
+        r0, rd = ray_from_screen(x, y, self.width(), self.height(), view, proj)
+        r0, rd = np.asarray(r0, dtype=float), np.asarray(rd, dtype=float)
+
+        if g["joint_type"] == "revolute":
+            denom = float(rd @ axis)
+            if abs(denom) > 1e-6:
+                t = float((orig - r0) @ axis) / denom
+                if t > 0:
+                    hit = r0 + rd * t - orig
+                    ang = math.degrees(math.atan2(float(hit @ v), float(hit @ u)))
+                    if g["limits_enabled"]:
+                        ang = float(np.clip(ang, g["min_limit"], g["max_limit"]))
+                    return round(ang, 1)
+            so = self.world_to_screen(orig)
+            if so is not None:
+                ang = math.degrees(math.atan2(y - so[1], x - so[0]))
+                if g["limits_enabled"]:
+                    ang = float(np.clip(ang, g["min_limit"], g["max_limit"]))
+                return round(ang, 1)
+            return g["value"]
+        else:
+            w = orig - r0
+            b, d1, e = float(axis @ rd), float(axis @ w), float(rd @ w)
+            denom = 1.0 - b * b
+            if abs(denom) < 1e-6:
+                return g["value"]
+            dist = (b * e - d1) / denom
+            if g["limits_enabled"]:
+                dist = float(np.clip(dist, g["min_limit"], g["max_limit"]))
+            return round(dist, 1)
+
+    def render_joint_gizmo(self, mvp: np.ndarray):
+        g = getattr(self, "joint_gizmo", None)
+        if not g or self.prog_flat is None or self.prog_thick is None:
+            return
+        orig = g["origin"]
+        axis = g["axis"]
+        u, v = g["u"], g["v"]
+        r = g["radius"]
+        val = g["value"]
+        lit = g.get("hover") or g.get("dragging")
+        GL.glDisable(GL.GL_DEPTH_TEST)
+
+        # 1. Central Axis indicator line
+        ax_len = r * 1.5
+        ax_p0 = orig - axis * ax_len
+        ax_p1 = orig + axis * ax_len
+        self.draw_thick_lines(mvp, [*ax_p0, *ax_p1], (1.0, 0.75, 0.2, 0.6), 2.0, halo=True)
+
+        if g["joint_type"] == "revolute":
+            # 2. Guide Circle (subtle outline)
+            circle_pts = [orig + r * (math.cos(a) * u + math.sin(a) * v) for a in np.linspace(0, 2 * math.pi, 37)]
+            guide_segs = []
+            for p0, p1 in zip(circle_pts[:-1], circle_pts[1:]):
+                guide_segs.extend([*p0, *p1])
+            self.draw_thick_lines(mvp, guide_segs, (0.7, 0.75, 0.8, 0.35), 1.5, halo=False)
+
+            # 3. Limit Range Arc (vibrant emerald green)
+            mn, mx = (g["min_limit"], g["max_limit"]) if g["limits_enabled"] else (-180.0, 180.0)
+            if mx > mn:
+                span = np.linspace(math.radians(mn), math.radians(mx), max(8, int(abs(mx - mn) / 5)))
+                arc_pts = [orig + r * (math.cos(a) * u + math.sin(a) * v) for a in span]
+                arc_segs = []
+                for p0, p1 in zip(arc_pts[:-1], arc_pts[1:]):
+                    arc_segs.extend([*p0, *p1])
+                self.draw_thick_lines(mvp, arc_segs, (0.18, 0.85, 0.45, 0.95 if lit else 0.8), 4.5 if lit else 3.0, halo=True)
+
+            # 4. Handle needle from center to current angle
+            rad = math.radians(val)
+            h_dir = math.cos(rad) * u + math.sin(rad) * v
+            h_pos = orig + r * h_dir
+            self.draw_thick_lines(mvp, [*orig, *h_pos], (0.15, 0.9, 1.0, 0.9), 3.0, halo=True)
+
+            # 5. Handle knob
+            knob_r = r * 0.12
+            knob_pts = [h_pos + knob_r * (math.cos(a) * u + math.sin(a) * v) for a in np.linspace(0, 2 * math.pi, 17)]
+            knob_segs = []
+            for p0, p1 in zip(knob_pts[:-1], knob_pts[1:]):
+                knob_segs.extend([*p0, *p1])
+            self.draw_thick_lines(mvp, knob_segs, (1.0, 1.0, 1.0, 1.0), 3.5, halo=True)
+        else:
+            # Slider guide rail
+            mn, mx = (g["min_limit"], g["max_limit"]) if g["limits_enabled"] else (-r, r)
+            r_p0 = orig + axis * mn
+            r_p1 = orig + axis * mx
+            self.draw_thick_lines(mvp, [*r_p0, *r_p1], (0.18, 0.85, 0.45, 0.85), 4.0, halo=True)
+            # Handle box / stop
+            h_pos = orig + axis * val
+            h_arm0 = h_pos - u * (r * 0.25)
+            h_arm1 = h_pos + u * (r * 0.25)
+            self.draw_thick_lines(mvp, [*h_arm0, *h_arm1], (0.15, 0.9, 1.0, 1.0), 4.5, halo=True)
+
+        GL.glUseProgram(0)
+        GL.glEnable(GL.GL_DEPTH_TEST)
+
+

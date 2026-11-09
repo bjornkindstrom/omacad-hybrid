@@ -227,6 +227,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.offset_face_clicked.connect(lambda: self.prompt_offset_face())
         self.ribbon.project_clicked.connect(lambda: self.viewport.project_edges())
         self.ribbon.move_clicked.connect(self.prompt_move_body)
+        self.ribbon.joint_clicked.connect(self.prompt_joint)
         self.ribbon.canvas_clicked.connect(self.prompt_insert_canvas)
         self.ribbon.import_svg_clicked.connect(self.on_import_svg)
         self.ribbon.import_3mf_clicked.connect(self.on_import_3mf)

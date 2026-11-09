@@ -49,8 +49,11 @@ from omacad.model.features.offset_face import OffsetFaceFeature
 from omacad.model.features.honeycomb import HoneycombFeature
 from omacad.model.features.sweep import SweepFeature, LoftFeature, PipeFeature
 from omacad.model.features.star_bracket import StarBracketFeature
+from omacad.model.features.joint import JointFeature, infer_joint_from_edge
 
 __all__ = [
+    "JointFeature",
+    "infer_joint_from_edge",
     "OffsetFaceFeature",
     "HoneycombFeature",
     "Body",

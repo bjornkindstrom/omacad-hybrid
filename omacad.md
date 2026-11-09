@@ -1,5 +1,13 @@
-## Requests #230, #232 — 2026-11-08 (0.9.9.80.175)
+## Requests #230–#232 — 2026-11-09 (0.9.9.80.175)
 
+#231: Smarta joints för multi-kroppar och mekanismer (gångjärn/slider med min/max-gränser och interaktiv dragning).
+Tidigare krävdes upprepade `MoveFeature`-steg utan begränsningar vilket skräpade ner tidslinjen. `JointFeature`
+i `omacad/model/features/joint.py` stöder revolute och slider med min/max clamping och Rodrigues-rotation runt godtycklig
+3D-axel/pivot. Smart klickinferens (`infer_joint_from_edge`) läser av kanter och cylinderaxlar automatiskt.
+`JointDialog` (`omacad/ui/dialogs/joint_dlg.py`) ger min/max vinkel/längd, rörelseslider och animeringsknapp (▶️).
+I 3D-viewporten (`omacad/ui/viewport/gizmo_mixin.py`) ritas en grön/cyan vinkelbåge eller linjär skena med draghandtag
+och flytande vinkelbricka. Trädet i vänsterpanelen (`omacad/ui/browser.py`) har nu en egen sektion `🔗 Joints` med
+dubbelklicksredigering och kontextmeny.
 #232: Ytskuggning på skalsatta/tunna loft-kroppar gav mörka ränder och inverterade normaler. Manifolds
 `calculate_normals` vänder normaler inåt vid motstående väggar nära varandra (dot < 0 mot facenormalen);
 `CadKernel._shaded_triangles` ersätter nu bakåtriktade vertexnormaler med ytans normal. Dessutom körde

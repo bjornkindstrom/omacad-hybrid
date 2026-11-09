@@ -78,6 +78,8 @@ _ALL = [
     _c("split_body", "Split Body", "🪚", "Split a body in two with a plane", signal="split_body_clicked"),
     _c("move", "Move", "✥", "Move or rotate a body: arrows, numbers, point to point, face to face", "M",
        "move_clicked"),
+    _c("joint", "Joint", "🔗", "Connect bodies with a rotating hinge or slider and set min/max limits", "J",
+       signal="joint_clicked"),
     _c("parameters", "Change Parameters", "🧮", "Named values usable in every number field", "Ctrl+P",
        "parameters_clicked"),
     _c("delete", "Delete", "🗑️", "Delete the selected bodies", "Del", "delete_clicked"),
@@ -158,8 +160,8 @@ COMMANDS: Dict[str, Command] = {c.cid: c for c in _ALL}
 PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Pipe, Thread / Coil, Jar with Lid (each "
               "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"])
 INSERT = ("insert", "Insert", "🖼️", "Canvas (Image), Import SVG and Import 3MF", ["canvas", "import_svg", "import_3mf"])
-MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Split Body, Offset Face, Move",
-               ["combine", "split_body", "offset_face", "move"])
+MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Split Body, Offset Face, Move, Joint",
+               ["combine", "split_body", "offset_face", "move", "joint"])
 INSPECT = ("inspect", "Inspect", "📏", "Measure, Section View, Document Statistics", ["measure", "section", "statistics"])
 EXPORT = ("export", "Export", "📤", "Screenshot, Copy Image, Rotating Video of the model as it is shown",
           ["screenshot", "copy_image", "turntable"])

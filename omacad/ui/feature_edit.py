@@ -23,7 +23,7 @@ OPERATIONS = ["auto", "new_body", "join", "cut", "intersect"]  # same order as t
 def can_edit(feature) -> bool:
     return feature.feature_type in (
         "box", "cylinder", "prism", "sphere", "extrude", "emboss", "revolve", "loft",
-        "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "wavy_slices", "knurl", "japandi", "combine", "split_body"
+        "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "wavy_slices", "knurl", "japandi", "combine", "split_body", "joint"
     )
 
 
@@ -843,6 +843,54 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         frm, to = dlg.get_points()
         return commit(target_body_id=bid, dx=dx, dy=dy, dz=dz, rx=rx, ry=ry, rz=rz, pivot=pivot, exprs=exprs,
                                 from_point=frm, to_point=to, copy_body=dlg.chk_copy_body.isChecked())
+
+    if t == "joint":
+        import numpy as np
+        from omacad.ui.dialogs.joint_dlg import JointDialog
+        dlg = JointDialog(doc, win, preselected_body_id=feat.target_body_id)
+        dlg.setWindowTitle(f"Edit {feat.name}")
+        dlg.cmb_type.setCurrentIndex(max(0, dlg.cmb_type.findData(feat.joint_type)))
+        if feat.ref_body_id:
+            dlg.cmb_ref.setCurrentIndex(max(0, dlg.cmb_ref.findData(feat.ref_body_id)))
+        dlg.origin = np.asarray(feat.origin, dtype=float)
+        dlg.axis = np.asarray(feat.axis, dtype=float)
+        dlg.chk_limits.setChecked(feat.limits_enabled)
+        dlg.spn_min.setValue(feat.min_limit)
+        dlg.spn_max.setValue(feat.max_limit)
+        dlg.spn_val.setValue(feat.value)
+        base_m = state_before.get(feat.target_body_id)
+
+        def _preview_joint():
+            if base_m is None:
+                return
+            from omacad.model.features.joint import JointFeature
+            limits_en, mn, mx = dlg.limits()
+            temp = JointFeature("tmp", "tmp", feat.target_body_id,
+                                joint_type=dlg.joint_type(), origin=dlg.origin,
+                                axis=dlg.axis, value=dlg.current_value(),
+                                limits_enabled=limits_en, min_limit=mn, max_limit=mx)
+            mat = temp.matrix()
+            vp = getattr(win, "viewport", None)
+            if vp is not None:
+                vp.set_preview(base_m.transform(mat[:3, :]), "new_body")
+                vp.set_joint_gizmo(dlg.origin, dlg.axis, joint_type=dlg.joint_type(),
+                                  value=dlg.current_value(), min_limit=mn, max_limit=mx,
+                                  limits_enabled=limits_en)
+
+        if not _exec_with_preview(win, doc, dlg, _preview_joint, [feat.target_body_id]):
+            return False
+        limits_en, mn, mx = dlg.limits()
+        return commit(
+            target_body_id=dlg.target_body_id(),
+            ref_body_id=dlg.ref_body_id(),
+            joint_type=dlg.joint_type(),
+            origin=dlg.origin.tolist(),
+            axis=dlg.axis.tolist(),
+            value=dlg.current_value(),
+            limits_enabled=limits_en,
+            min_limit=mn,
+            max_limit=mx,
+        )
 
     if t == "thread":
         from omacad.model.features.thread import ThreadFeature

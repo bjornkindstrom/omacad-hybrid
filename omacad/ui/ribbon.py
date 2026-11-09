@@ -154,6 +154,7 @@ class Ribbon(QWidget):
     surface_texture_clicked = Signal()
     offset_face_clicked = Signal()
     move_clicked = Signal()
+    joint_clicked = Signal()
     thread_clicked = Signal()
     canvas_clicked = Signal()
     import_svg_clicked = Signal()

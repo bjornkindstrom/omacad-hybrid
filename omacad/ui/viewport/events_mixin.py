@@ -459,6 +459,12 @@ class ViewportEventsMixin:
             self.move_gizmo_finished.emit()
             self.update()
             return
+        if getattr(self, "joint_gizmo", None) and self.joint_gizmo.get("dragging") and event.button() == Qt.MouseButton.LeftButton:
+            self.joint_gizmo["dragging"] = False
+            self.setCursor(Qt.CursorShape.OpenHandCursor if self._joint_gizmo_hit(event.position().x(), event.position().y()) else Qt.CursorShape.ArrowCursor)
+            self.joint_gizmo_finished.emit()
+            self.update()
+            return
         if self._handle_drag and event.button() == Qt.MouseButton.LeftButton:
             self._handle_drag = False
             quality.set_interactive_mode(False)

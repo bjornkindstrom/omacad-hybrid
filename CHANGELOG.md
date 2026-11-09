@@ -1,5 +1,12 @@
 # Hybrid-experiment — 0.9.9.80.175
 
+### Added
+- **Smart Joints (Hinges & Sliders)**: connect bodies with kinematic joints and configurable min/max limits (#231).
+  - Supports **Revolute** (hinges/rotations around any 3D axis) and **Slider** (linear motion along an axis).
+  - Smart alignment: clicking a straight edge or cylinder/hole in 3D automatically infers the joint axis, pivot origin, and joint type.
+  - Interactive manipulation: drag the 3D arc/rail manipulator directly in the viewport, scrub the motion slider in the panel, or use the Play button (▶️) to preview smooth motion between min and max limits.
+  - Dedicated **🔗 Joints** folder in the browser tree with double-click editing, suppression, and deletion.
+
 ### Fixed
 - **Loft shading on shelled bodies**: thin-walled lofts with shell or hollow cavities no longer produce inverted normals or dark facet stripes in the viewport (#232). Vertex normals pointing backwards into the face normal are replaced with the face normal, and strip normal smoothing is restricted to elongated 1D facet strips (fillets/cylinders) to prevent flattening 2D quad loft meshes.
 - **Japandi ribs with twist on curved profiles**: ribs swept or twisted along curved revolved profiles no longer overshoot the body's top or bottom end planes (#230). Rib tools are clamped to the surface boundary planes, eliminating jagged slivers, ragged black lines, and artifacts on flat rim faces.
