@@ -285,6 +285,8 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.browser.export_body_stl.connect(self.export_single_body_stl)
         self.browser.export_body_step.connect(self.export_single_body_step)
         self.browser.move_body_requested.connect(self.prompt_move_body)
+        self.browser.joint_selected.connect(self.viewport.activate_joint)
+        self.browser.joint_animate_requested.connect(self.viewport.animate_joint)
         self.browser.body_color_requested.connect(self.prompt_body_color)
         self.browser.split_body_requested.connect(self.prompt_split_body)
         self.browser.shell_body_requested.connect(self.prompt_shell)

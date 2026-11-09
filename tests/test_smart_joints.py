@@ -247,3 +247,86 @@ def test_joint_gizmo_methods():
     vp.clear_joint_gizmo()
     assert vp.joint_gizmo is None
 
+
+def test_joint_browser_and_viewport_interaction():
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+    app = QApplication.instance() or QApplication([])
+
+    from omacad.ui.browser import BrowserTree
+    from omacad.ui.viewport.gizmo_mixin import GizmoMixin
+
+    class MockViewport(GizmoMixin):
+        def __init__(self, doc):
+            self.doc = doc
+            self.distance = 100.0
+            self.joint_gizmo = None
+            self.active_joint_id = None
+            self.updated = False
+
+        def update(self):
+            self.updated = True
+
+        def world_to_screen(self, pt):
+            return [pt[0] + 200.0, pt[1] + 200.0]
+
+        def get_matrices(self):
+            return np.eye(4), np.eye(4), np.eye(4)
+
+        def width(self):
+            return 800
+
+        def height(self):
+            return 600
+
+    doc = Document()
+    doc.add_box(20.0, 20.0, 20.0)
+    bid = list(doc.bodies.keys())[0]
+    jf = doc.add_joint(
+        bid, joint_type="revolute",
+        origin=(10.0, 10.0, 20.0), axis=(0.0, 1.0, 0.0),
+        value=30.0, min_limit=0.0, max_limit=90.0
+    )
+
+    vp = MockViewport(doc)
+    # Test _find_joint_hit near joint origin (10, 10, 20) -> screen (210, 210)
+    hit_id = vp._find_joint_hit(212, 212)
+    assert hit_id == jf.feature_id
+
+    # Test _find_joint_for_body
+    assert vp._find_joint_for_body(bid) == jf.feature_id
+
+    # Test activating joint
+    vp.activate_joint(jf.feature_id)
+    assert vp.active_joint_id == jf.feature_id
+    assert vp.joint_gizmo is not None
+    assert vp.joint_gizmo["value"] == 30.0
+
+    # Test browser tree joint signals
+    tree = BrowserTree(doc)
+    tree.refresh_tree()
+
+    selected_ids = []
+    tree.joint_selected.connect(lambda jid: selected_ids.append(jid))
+    anim_ids = []
+    tree.joint_animate_requested.connect(lambda jid: anim_ids.append(jid))
+
+    # Trigger click on joint item
+    joint_item = None
+    for item, _ in tree._walk():
+        data = item.data(0, Qt.ItemDataRole.UserRole)
+        if data and data[0] == "joint":
+            joint_item = item
+            break
+    assert joint_item is not None
+    tree.on_item_clicked(joint_item, 0)
+    assert selected_ids == [jf.feature_id]
+
+    # Test animation toggling
+    vp.animate_joint(jf.feature_id)
+    assert hasattr(vp, "_joint_anim_timer")
+    assert vp._joint_anim_timer.isActive()
+    vp.animate_joint(jf.feature_id) # stop
+    assert not vp._joint_anim_timer.isActive()
+
+

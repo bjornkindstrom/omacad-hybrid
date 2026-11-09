@@ -6,8 +6,9 @@ i `omacad/model/features/joint.py` stöder revolute och slider med min/max clamp
 3D-axel/pivot. Smart klickinferens (`infer_joint_from_edge`) läser av kanter och cylinderaxlar automatiskt.
 `JointDialog` (`omacad/ui/dialogs/joint_dlg.py`) ger min/max vinkel/längd, rörelseslider och animeringsknapp (▶️).
 I 3D-viewporten (`omacad/ui/viewport/gizmo_mixin.py`) ritas en grön/cyan vinkelbåge eller linjär skena med draghandtag
-och flytande vinkelbricka. Trädet i vänsterpanelen (`omacad/ui/browser.py`) har nu en egen sektion `🔗 Joints` med
-dubbelklicksredigering och kontextmeny.
+och flytande vinkelbricka samt persistenta 3D-symboler (ringar/axeltappar). Man kan klicka och dra direkt på den ledade
+komponenten eller led-symbolen i 3D-viewporten för att artikulera leden live mellan min/max, eller klicka i trädet
+(`omacad/ui/browser.py`) under `🔗 Joints` för att visa manipulatorn och högerklicka för "▶️ Animate Joint" eller redigering.
 #232: Ytskuggning på skalsatta/tunna loft-kroppar gav mörka ränder och inverterade normaler. Manifolds
 `calculate_normals` vänder normaler inåt vid motstående väggar nära varandra (dot < 0 mot facenormalen);
 `CadKernel._shaded_triangles` ersätter nu bakåtriktade vertexnormaler med ytans normal. Dessutom körde

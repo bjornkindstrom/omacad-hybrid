@@ -566,7 +566,104 @@ class GizmoMixin:
 
     def clear_joint_gizmo(self):
         self.joint_gizmo = None
+        self.active_joint_id = None
+        if hasattr(self, "_joint_anim_timer") and self._joint_anim_timer.isActive():
+            self._joint_anim_timer.stop()
         self.update()
+
+    def activate_joint(self, feat_id: str):
+        """Activates a joint for direct 3D manipulation in the viewport."""
+        if not hasattr(self, "doc") or not hasattr(self.doc, "joints"):
+            return
+        feat = next((f for f in self.doc.joints if f.feature_id == feat_id), None)
+        if not feat:
+            return
+        self.active_joint_id = feat_id
+        self.set_joint_gizmo(
+            feat.origin, feat.axis,
+            joint_type=feat.joint_type,
+            value=feat.value,
+            min_limit=feat.min_limit,
+            max_limit=feat.max_limit,
+            limits_enabled=feat.limits_enabled
+        )
+
+    def _find_joint_hit(self, x: float, y: float) -> Optional[str]:
+        """Finds any joint whose 3D glyph is clicked."""
+        if not hasattr(self, "doc") or not hasattr(self.doc, "joints"):
+            return None
+        for j in self.doc.joints:
+            if j.suppressed:
+                continue
+            orig = np.asarray(j.origin, dtype=float)
+            so = self.world_to_screen(orig)
+            if so is None:
+                continue
+            gr = max(10.0, min(25.0, getattr(self, "distance", 200.0) * 0.05))
+            ju = np.cross(j.axis, [1.0, 0.0, 0.0])
+            if np.linalg.norm(ju) < 1e-3:
+                ju = np.cross(j.axis, [0.0, 1.0, 0.0])
+            ju_norm = np.linalg.norm(ju)
+            ju = ju / (ju_norm if ju_norm > 1e-6 else 1.0)
+            pt_rim = self.world_to_screen(orig + ju * gr)
+            sr = math.hypot(pt_rim[0] - so[0], pt_rim[1] - so[1]) if pt_rim else 20.0
+            hit_r = max(26.0, sr + 10.0)
+            if math.hypot(x - so[0], y - so[1]) <= hit_r:
+                return j.feature_id
+        return None
+
+    def _find_joint_for_body(self, body_id: str) -> Optional[str]:
+        """Finds the joint that articulates body_id."""
+        if not hasattr(self, "doc") or not hasattr(self.doc, "joints"):
+            return None
+        for j in self.doc.joints:
+            if not j.suppressed and j.target_body_id == body_id:
+                return j.feature_id
+        return None
+
+    def animate_joint(self, feat_id: str):
+        """Toggles smooth animation of a joint between min and max limits."""
+        if not hasattr(self, "doc"):
+            return
+        feat = next((f for f in self.doc.joints if f.feature_id == feat_id), None)
+        if not feat:
+            return
+        self.activate_joint(feat_id)
+        if not hasattr(self, "_joint_anim_timer"):
+            from PySide6.QtCore import QTimer, QObject
+            self._joint_anim_timer = QTimer(self if isinstance(self, QObject) else None)
+            self._joint_anim_timer.setInterval(25)
+            self._joint_anim_dir = 1.0
+
+            def _step():
+                jid = getattr(self, "active_joint_id", None)
+                if not jid:
+                    self._joint_anim_timer.stop()
+                    return
+                f = next((x for x in self.doc.joints if x.feature_id == jid), None)
+                if not f or f.max_limit <= f.min_limit:
+                    self._joint_anim_timer.stop()
+                    return
+                step_val = (f.max_limit - f.min_limit) * 0.02 * self._joint_anim_dir
+                new_v = f.value + step_val
+                if new_v >= f.max_limit:
+                    new_v = f.max_limit
+                    self._joint_anim_dir = -1.0
+                elif new_v <= f.min_limit:
+                    new_v = f.min_limit
+                    self._joint_anim_dir = 1.0
+                self.doc.set_joint_value(f.feature_id, new_v, recompute=True)
+                if getattr(self, "joint_gizmo", None):
+                    self.joint_gizmo["value"] = new_v
+                self.update()
+
+            self._joint_anim_timer.timeout.connect(_step)
+
+        if self._joint_anim_timer.isActive():
+            self._joint_anim_timer.stop()
+        else:
+            self._joint_anim_dir = 1.0
+            self._joint_anim_timer.start()
 
     def _joint_gizmo_hit(self, x: float, y: float) -> bool:
         if not getattr(self, "joint_gizmo", None):
@@ -585,6 +682,15 @@ class GizmoMixin:
         so = self.world_to_screen(orig)
         if so is not None and math.hypot(x - so[0], y - so[1]) < 22.0:
             return True
+        if g["joint_type"] == "revolute":
+            a0 = g["min_limit"] if g["limits_enabled"] else 0.0
+            a1 = g["max_limit"] if g["limits_enabled"] else 360.0
+            for a in np.linspace(a0, a1, 13):
+                rad = math.radians(a)
+                arc_pt = orig + r * (math.cos(rad) * u + math.sin(rad) * v)
+                s_arc = self.world_to_screen(arc_pt)
+                if s_arc is not None and math.hypot(x - s_arc[0], y - s_arc[1]) < 18.0:
+                    return True
         return False
 
     def _joint_gizmo_project_mouse(self, x: float, y: float) -> float:
@@ -625,8 +731,40 @@ class GizmoMixin:
             return round(dist, 1)
 
     def render_joint_gizmo(self, mvp: np.ndarray):
+        if self.prog_flat is None or self.prog_thick is None:
+            return
+
+        # 1. Draw persistent glyphs for all document joints
+        if hasattr(self, "doc") and hasattr(self.doc, "joints"):
+            for j in self.doc.joints:
+                if j.suppressed:
+                    continue
+                is_active = (getattr(self, "active_joint_id", None) == j.feature_id)
+                j_orig = np.asarray(j.origin, dtype=float)
+                j_axis = np.asarray(j.axis, dtype=float)
+                norm = np.linalg.norm(j_axis)
+                j_axis = j_axis / (norm if norm > 1e-9 else 1.0)
+                ju = np.cross(j_axis, [1.0, 0.0, 0.0])
+                if np.linalg.norm(ju) < 1e-3:
+                    ju = np.cross(j_axis, [0.0, 1.0, 0.0])
+                ju = ju / np.linalg.norm(ju)
+                jv = np.cross(j_axis, ju)
+                gr = max(10.0, min(25.0, self.distance * 0.05))
+
+                # Ring glyph
+                g_pts = [j_orig + gr * (math.cos(a) * ju + math.sin(a) * jv) for a in np.linspace(0, 2 * math.pi, 25)]
+                g_segs = []
+                for p0, p1 in zip(g_pts[:-1], g_pts[1:]):
+                    g_segs.extend([*p0, *p1])
+                GL.glDisable(GL.GL_DEPTH_TEST)
+                self.draw_thick_lines(mvp, g_segs, (0.2, 0.85, 0.95, 0.9 if is_active else 0.6), 3.0 if is_active else 2.0, halo=True)
+                # Pin
+                pin_len = gr * 1.2
+                self.draw_thick_lines(mvp, [*(j_orig - j_axis * pin_len), *(j_orig + j_axis * pin_len)], (1.0, 0.8, 0.2, 0.8), 2.0, halo=True)
+                GL.glEnable(GL.GL_DEPTH_TEST)
+
         g = getattr(self, "joint_gizmo", None)
-        if not g or self.prog_flat is None or self.prog_thick is None:
+        if not g:
             return
         orig = g["origin"]
         axis = g["axis"]

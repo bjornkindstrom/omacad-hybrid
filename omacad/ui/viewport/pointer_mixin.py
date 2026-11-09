@@ -84,10 +84,30 @@ class PointerMixin:
                 return
         if event.button() == Qt.MouseButton.LeftButton and getattr(self, "joint_gizmo", None):
             if self._joint_gizmo_hit(x, y):
+                self._press_pos = event.position()
                 self.joint_gizmo["dragging"] = True
                 self.setCursor(Qt.CursorShape.ClosedHandCursor)
                 self.update()
                 return
+        if event.button() == Qt.MouseButton.LeftButton and not self.doc.active_sketch and not self.edge_pick_mode and not self.plane_pick_mode:
+            hit_jid = self._find_joint_hit(x, y)
+            if hit_jid:
+                self._press_pos = event.position()
+                self.activate_joint(hit_jid)
+                self.joint_gizmo["dragging"] = True
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
+                self.update()
+                return
+            clicked_bid = self.pick_body(x, y)
+            if clicked_bid is not None:
+                body_jid = self._find_joint_for_body(clicked_bid)
+                if body_jid:
+                    self._press_pos = event.position()
+                    self.activate_joint(body_jid)
+                    self.joint_gizmo["dragging"] = True
+                    self.setCursor(Qt.CursorShape.ClosedHandCursor)
+                    self.update()
+                    return
         if event.button() == Qt.MouseButton.LeftButton and self.extrude_handle and self._handle_hit(x, y):
             self._handle_drag = True
             quality.set_interactive_mode(True)
@@ -486,6 +506,8 @@ class PointerMixin:
             if jg.get("dragging"):
                 val = self._joint_gizmo_project_mouse(x, y)
                 jg["value"] = val
+                if getattr(self, "active_joint_id", None):
+                    self.doc.set_joint_value(self.active_joint_id, val, recompute=True)
                 self.joint_gizmo_dragged.emit(val)
                 self.update()
                 return
@@ -596,6 +618,8 @@ class PointerMixin:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
         elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "TRIM", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
             self.setCursor(Qt.CursorShape.CrossCursor)
+        elif not self.doc.active_sketch and not self.edge_pick_mode and not self.plane_pick_mode and self._find_joint_hit(x, y):
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
         else:
             self.setCursor(Qt.CursorShape.ArrowCursor)
 

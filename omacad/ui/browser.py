@@ -50,6 +50,8 @@ class BrowserTree(QWidget):
     find_in_timeline_requested = Signal(str, str)
     delete_sketch_requested = Signal(str)
     body_color_requested = Signal(str)
+    joint_selected = Signal(str)
+    joint_animate_requested = Signal(str)
 
     def __init__(self, document: Document, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -542,6 +544,14 @@ class BrowserTree(QWidget):
         if item_type == "view":
             self.named_view_requested.emit(item_id)
             return
+        if item_type == "joint":
+            if column == 1:
+                feat = next((f for f in self.doc.timeline.features if f.feature_id == item_id), None)
+                if feat:
+                    self.doc.toggle_suppress(self.doc.timeline.features.index(feat))
+            else:
+                self.joint_selected.emit(item_id)
+            return
         if column == 1 and item_type in ("origin", "axis", "plane", "body", "sketch", "section", "canvas", "cplane", "group"):
             self.toggle_visibility(item_type, item_id)
             return
@@ -873,17 +883,19 @@ class BrowserTree(QWidget):
             add("🚫 Turn off" if on else "👁️ Turn on", lambda: self.doc.set_section_active(item_id, not on))
             add("✂️ Change the cut…", lambda: self.edit_section_requested.emit(item_id))
             menu.addSeparator()
+            rename()
+            menu.addSeparator()
+            add("🗑️ Delete", lambda: self.doc.delete_section(item_id))
 
         elif item_type == "joint":
             feat = next((f for f in self.doc.timeline.features if f.feature_id == item_id), None)
             if feat:
+                add("✥ Manipulate Joint in 3D", lambda: self.joint_selected.emit(item_id))
+                add("▶️ Animate Joint", lambda: self.joint_animate_requested.emit(item_id))
                 add("✏️ Edit Joint…", lambda: self.feature_edit_requested.emit(item_id))
                 add("Unsuppress" if feat.suppressed else "Suppress", lambda: self.doc.toggle_suppress(self.doc.timeline.features.index(feat)))
                 menu.addSeparator()
                 add("🗑️ Delete Joint", lambda: self.feature_delete_requested.emit(item_id))
-            rename()
-            menu.addSeparator()
-            add("🗑️ Delete", lambda: self.doc.delete_section(item_id))
 
         elif item_type == "sketch":
             add("⬆️ Extrude\tE", lambda: self.extrude_sketch_requested.emit(item_id))

@@ -462,7 +462,15 @@ class ViewportEventsMixin:
         if getattr(self, "joint_gizmo", None) and self.joint_gizmo.get("dragging") and event.button() == Qt.MouseButton.LeftButton:
             self.joint_gizmo["dragging"] = False
             self.setCursor(Qt.CursorShape.OpenHandCursor if self._joint_gizmo_hit(event.position().x(), event.position().y()) else Qt.CursorShape.ArrowCursor)
+            if getattr(self, "active_joint_id", None):
+                self.doc.set_joint_value(self.active_joint_id, self.joint_gizmo["value"], recompute=True)
             self.joint_gizmo_finished.emit()
+            if self._press_pos is not None and (event.position() - self._press_pos).manhattanLength() < 4:
+                cb = self.pick_body(event.position().x(), event.position().y())
+                if cb:
+                    self.doc.select_body(cb)
+                    self.body_clicked.emit(cb)
+            self._press_pos = None
             self.update()
             return
         if self._handle_drag and event.button() == Qt.MouseButton.LeftButton:
@@ -689,4 +697,6 @@ class ViewportEventsMixin:
                             self.selected_faces.clear()
                         if doc.selected_body_ids:
                             doc.select_body(None)    # a click in empty space clears the body selection
+                        if getattr(self, "joint_gizmo", None) and not self.joint_gizmo.get("dragging"):
+                            self.clear_joint_gizmo()
                         self.update()

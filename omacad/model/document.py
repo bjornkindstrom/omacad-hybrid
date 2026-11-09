@@ -330,7 +330,7 @@ class Document:
         m = np.eye(4)
         for f in self.timeline.features[index + 1:self.timeline.marker_index]:
             applied = getattr(f, "applied", None)
-            if (f.feature_type == "move" and not f.copy_body and not f.suppressed and not f.error
+            if (f.feature_type in ("move", "joint") and not getattr(f, "copy_body", False) and not f.suppressed and not f.error
                     and applied is not None and history.owners.get(f.feature_id) == owner):
                 m = applied @ m
         return None if np.allclose(m, np.eye(4), atol=1e-9) else m
