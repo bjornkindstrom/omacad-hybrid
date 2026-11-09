@@ -122,6 +122,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
     join_bodies_requested = Signal(object)    # right-click with two or more bodies selected > Join
     split_plane_requested = Signal(str)   # right-click on a plane > Split Body with this plane
     face_extrude_requested = Signal(object)  # a flat face to extrude (pull in = cut, out = build up)
+    edge_picked = Signal(object)  # clicked 3D edge, sketch curve, or cylindrical axis
     edge_pick_cancelled = Signal()
     offset_face_picked = Signal(object, str)   # (face reference dict, body id) while Offset Face is open
     offset_face_requested = Signal(object)     # a flat face chosen from the right-click menu

@@ -612,14 +612,9 @@ class BodyPromptsMixin:
         if preselected_edge is not None:
             jtype, orig, axis = infer_joint_from_edge(preselected_edge, target_body)
             dlg.set_inferred(jtype, orig, axis)
-            dlg.btn_pick.setText("✅ Ledaxel vald från kant (klicka för att byta)")
-        elif target_body.edges:
-            for e in target_body.edges:
-                if getattr(e, "kind", "") in ("line", "circle"):
-                    jtype, orig, axis = infer_joint_from_edge(e, target_body)
-                    dlg.set_inferred(jtype, orig, axis)
-                    dlg.btn_pick.setText("✅ Ledaxel identifierad (klicka för att byta)")
-                    break
+            dlg.btn_pick.setText(f"✅ Ledaxel vald: [{dlg.axis[0]:.1f}, {dlg.axis[1]:.1f}, {dlg.axis[2]:.1f}]")
+        else:
+            dlg.btn_pick.setChecked(True)
 
         current_hidden_id = [None]
 
@@ -698,6 +693,7 @@ class BodyPromptsMixin:
         dlg.changed.connect(timer.start)
 
         def cleanup():
+            self.viewport.end_edge_pick()
             try:
                 self.viewport.edge_picked.disconnect(on_edge_picked)
             except Exception:

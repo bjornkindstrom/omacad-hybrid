@@ -355,3 +355,32 @@ def test_joint_menus_and_ribbon_integration():
     assert hasattr(BrowserTree, "new_joint_requested")
 
 
+def test_edge_picked_signal_and_joint_alignment():
+    from PySide6.QtWidgets import QApplication
+    app = QApplication.instance() or QApplication([])
+
+    from omacad.ui.viewport.viewport import Viewport3D
+
+    doc = Document()
+    doc.add_box(50.0, 50.0, 25.0)
+    vp = Viewport3D(doc)
+    assert hasattr(vp, "edge_picked")
+
+    picked = []
+    vp.edge_picked.connect(lambda e: picked.append(e))
+
+    # Test edge inference on a simulated picked edge
+    class DummyEdge:
+        kind = "line"
+        p0 = [25.0, -25.0, 25.0]
+        p1 = [25.0, 25.0, 25.0]
+
+    vp.edge_picked.emit(DummyEdge())
+    assert len(picked) == 1
+    jtype, orig, axis = infer_joint_from_edge(picked[0])
+    assert jtype == "revolute"
+    assert np.allclose(orig, [25.0, -25.0, 25.0])
+    assert np.allclose(axis, [0.0, 1.0, 0.0]) # Y-axis hinge!
+
+
+
