@@ -1,3 +1,25 @@
+# Hybrid-experiment — 0.9.9.80.176
+
+### Added
+- **Smart Joints UI & Workflow improvements (#231)**:
+  - Added dedicated **ASSEMBLE** group and **Joint** button to the main ribbon, top menus (*Assemble > Joint*, *Modify > Joint (J)*), body context menus (*🔗 Joint (Hinge / Slider)…*), and edge right-click menus.
+  - Interactive 3D edge, line and cylinder picking: clicking in the viewport directly locks the joint axis from model edges, sketch curves, or cylindrical surfaces with guided step-by-step status messages.
+  - Command-line project loading: passing `.omacad` file paths as CLI arguments opens the project automatically on startup.
+- **Wine Charm generators (`wine_charms.py` and `heart_wine_charms.py`)**:
+  - `heart_wine_charms.py`: generates heart-shaped wine glass charms in Honey Script SemiBold with an underline bar and snap-fit heart clip (based on Christian's OpenSCAD design). Includes configurable slit placement (*I klyftan (mitten)*, *Övre bågen*, *Undre bågen*), automatic diacritic lowering (`dot_overlap`) to merge dots/rings on `å`, `ä`, `ö`, `i`, `j` into the letters for 3D printing, and micro-sliver filtering.
+  - `wine_charms.py`: generates circular hoop wine glass charms with customizable text, hoop size, outline border, and grid spacing (based on Paul Oswald's design).
+  - Bundled fonts: automatically installs and registers `Honey Script` (SemiBold and Light) from `~/.config/omacad/scripts/fonts/`.
+
+### Fixed
+- **Joint viewport rendering & live solid preview (#231)**:
+  - Fixed issue where the browser tree miniature was redrawn but the articulated body in the 3D viewport was not updating.
+  - Replaced translucent wireframe preview and body hiding (`body.visible = False`) with live solid display override (`set_display_override`), so articulated bodies keep their solid shading, material colors, and silhouette edges during slider scrubbing and gizmo manipulation.
+  - Added monotonic `mesh_id` to `RenderMesh` ensuring OpenGL VBO/VAO caches in the viewport do not reuse stale GPU buffers when CPython reuses memory addresses of deallocated meshes.
+  - Isolated joint edge picking from fillet edge selections (`selected_edges`) so picking an axis never leaves stray fillet selection highlights.
+- **Cursive font layout & overlapping letters**: text layout with cursive fonts like Honey Script no longer creates cutout holes or drops overlapping characters.
+  - Replaced naive `symmetric_difference` in `text_layout._even_odd` with hierarchical containment trees so overlapping character strokes union seamlessly without punching holes in connections (e.g. *Lina*, *Björn*).
+  - Fixed parent containment criteria to verify true bounding-box and geometric enclosure, preventing subsequent overlapping letters from being misclassified as interior holes and eaten up (e.g. `c` in *Rebecca*, `i` in *Christian*).
+
 # Hybrid-experiment — 0.9.9.80.175
 
 ### Added

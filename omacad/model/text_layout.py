@@ -39,15 +39,45 @@ def _even_odd(path) -> Optional[object]:
             ring = Polygon(pts)
             if not ring.is_valid:
                 ring = ring.buffer(0)
-            if not ring.is_empty:
+            if not ring.is_empty and ring.area > 1e-4:
                 rings.append(ring)
     if not rings:
         return None
+    # Sort largest area first so enclosing parents precede children
     rings.sort(key=lambda r: -r.area)
-    area = rings[0]
-    for r in rings[1:]:
-        area = area.symmetric_difference(r)       # a ring inside a ring is a counter (the hole of an O)
-    return area
+
+    parent_map = {}
+    depth_map = {}
+    for i, r in enumerate(rings):
+        parents = []
+        rx0, ry0, rx1, ry1 = r.bounds
+        for j, other in enumerate(rings):
+            if other.area > r.area:
+                ox0, oy0, ox1, oy1 = other.bounds
+                # A hole must be geometrically inside its parent ring
+                if ox0 <= rx0 + 1e-1 and oy0 <= ry0 + 1e-1 and ox1 >= rx1 - 1e-1 and oy1 >= ry1 - 1e-1:
+                    diff_area = r.difference(other).area
+                    if diff_area < 0.05 * r.area:
+                        parents.append(j)
+        if not parents:
+            parent_map[i] = None
+            depth_map[i] = 0
+        else:
+            direct_parent = min(parents, key=lambda j: rings[j].area)
+            parent_map[i] = direct_parent
+            depth_map[i] = depth_map[direct_parent] + 1
+
+    polygons = []
+    for i, r in enumerate(rings):
+        if depth_map[i] % 2 == 0:
+            child_holes = [rings[j].exterior.coords for j in range(len(rings)) if parent_map[j] == i]
+            poly = Polygon(r.exterior.coords, child_holes)
+            if not poly.is_valid:
+                poly = poly.buffer(0)
+            polygons.append(poly)
+
+    result = unary_union(polygons) if polygons else None
+    return result if (result is not None and not result.is_empty) else None
 
 
 def _glyphs(text: str, font):

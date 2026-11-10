@@ -1,3 +1,25 @@
+## Kursiv textlayout, vinglasmarkörer & led-rendering — 2026-11-10 (0.9.9.80.176)
+
+Smarta joints (#231): Preview och redigering av leder använde tidigare `body.visible = False` och `set_preview()`,
+vilket dolde bodyn och ersatte den med ett svagt blått skal. Samtidigt återanvände CPython deallokerade minnesadresser
+för nya `RenderMesh`-objekt, vilket gjorde att viewportens GPU-cache behöll gamla VBO/VAO-buffertar (miniatyren i trädet
+uppdaterades men inte 3D-vyn).
+Lösning: `prompt_joint` och `feature_edit` använder nu `set_display_override({bid: moved})` så bodyn förblir en fullt
+skuggad solid med material och konturer. `RenderMesh` har nu ett unikt sekventiellt `mesh_id` som garanterar att
+GPU-cachen aldrig kolliderar vid minnesåteranvändning. Kantplockning i 3D isolerades från fasningsurvalet (`selected_edges`).
+Test: `tests/test_smart_joints.py` (13 tester).
+
+Textlayout med kursiva typsnitt (t.ex. Honey Script) fick hål vid överlappande bokstavsövergångar (*Lina*, *Björn*)
+och tappade bort bokstäver (*c* i *Rebecca*, *i* i *Christian*). `_even_odd` i `omacad/model/text_layout.py` kombinerade
+tidigare delkonturer med naiv `symmetric_difference` vilket stansade ut hål i snittytorna mellan sammankopplade bokstäver.
+Därefter misstogs bokstäver för hål om deras referenspunkt råkade ligga i föregående bokstavs överlappande svep.
+Lösning: `_even_odd` använder nu ett inneslutningsträd baserat på geometrisk inneslutning (bounding box samt `diff_area < 0.05 * area`),
+där ytterkonturer på samma nivå slås samman med `unary_union` och endast äkta hålrum dras bort från respektive föräldrakontur.
+Nya användarskript i `~/.config/omacad/scripts/`: `wine_charms.py` (cirkulära ringar) och `heart_wine_charms.py` (hjärtformade markörer
+med understrykningsbalk, valbar slitsposition, automatisk inflyttning av prickar/ringar för å/ä/ö/i/j via `dot_overlap`,
+mikrospaltfiltrering samt medföljande Honey Script-typsnitt).
+Test: `tests/test_wine_charms.py` (8 tester).
+
 ## Requests #230–#232 — 2026-11-09 (0.9.9.80.175)
 
 #231: Smarta joints för multi-kroppar och mekanismer (gångjärn/slider med min/max-gränser och interaktiv dragning).
