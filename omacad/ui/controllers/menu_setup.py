@@ -15,6 +15,7 @@ class MenuSetupMixin:
 
         # File Menu
         menu_file = menubar.addMenu("File")
+        self.menu_file = menu_file
 
         act_new = QAction("New Design", self)
         act_new.setShortcut(QKeySequence.StandardKey.New)
@@ -29,6 +30,7 @@ class MenuSetupMixin:
         self.rebuild_recent_menu()
 
         act_save = QAction("Save Project (.omacad)", self)
+        self.act_save_project = act_save
         act_save.setShortcut(QKeySequence.StandardKey.Save)
         act_save.triggered.connect(self.on_file_save)
         menu_file.addAction(act_save)

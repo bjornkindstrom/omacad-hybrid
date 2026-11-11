@@ -1,3 +1,18 @@
+## Requests #159, #206, #218, #229 — 2026-11-11 (0.9.9.80.177)
+
+#206: Lennarts logg: `rebuild_recent_menu` → `RuntimeError … QMenu already deleted` i `_save_to`, före
+`update_window_title`, så titeln blev kvar "Untitled". Nu titeln först; `shiboken6.isValid` + `_recreate_recent_menu`
+(under `menu_file`, före `act_save_project`). Rotorsaken till att Qt raderar undermenyn är inte hittad (Björns logg
+har samma slags fel för en QAction efter "Theme updated"). #159: Move-panelen `cmb_copy_kind` (aktiv med Activate copy),
+`dlg.copy_linked()` → `move_body(..., linked=True)` → `_linked_copy_in_place` (BranchFeature follow=True,
+beside=False, källa via `copy_sources`) och sedan en vanlig Move på länkens kropp, som `_place_linked_objects` flyttar
+med. #218: `_offset_handle_frame` (pilens start = mitten av första valda kurvan, riktning mot en provoffset på 1 mm)
++ `set_extrude_handle`; `prompt_dimension_value(handle_drag=True)` kopplar `extrude_handle_dragged` till rutan.
+#229: Tab-fältet sparade ett okänt namn som formel utan parameter. `Document.define_parameter` /
+`is_new_parameter_name` / `missing_parameters`; Enter i fältet (`_dyn_new_parameter`) och klick-commit definierar
+namnet med fältets värde, Change Parameters listar saknade namn. Fälla i test: `expr`-variabeltabellen är global,
+nollställ den. Test: `tests/test_requests_159_206_218_229.py` (rapportskissen i `tests/data/dimension_named_parameter_229.omacad`).
+
 ## Kursiv textlayout, vinglasmarkörer & led-rendering — 2026-11-10 (0.9.9.80.176)
 
 Smarta joints (#231): Preview och redigering av leder använde tidigare `body.visible = False` och `set_preview()`,

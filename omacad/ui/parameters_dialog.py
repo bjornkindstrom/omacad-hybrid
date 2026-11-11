@@ -77,6 +77,9 @@ class ParametersDialog(QDialog):
 
         for q in doc.parameters:
             self._append(q.name, q.expr, q.comment)
+        # a name typed into a dimension that was never defined (#229) is listed too; OK makes it a parameter
+        for q in doc.missing_parameters():
+            self._append(q.name, q.expr, "used by a dimension")
         self.table.cellChanged.connect(self.recalculate)
         self.table.cellClicked.connect(self._edit_expression_on_click)
         self.recalculate()

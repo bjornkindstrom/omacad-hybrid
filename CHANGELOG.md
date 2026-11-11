@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.177
+
+### Added
+- **Linked or unlinked copy in Move (#159)**: with *Activate copy* on, the Move panel asks *Unlinked copy (independent)* or *Linked copy (follows the original)*. A linked copy is a `BranchFeature` in place, then moved; later changes to the original show up in it.
+- **Drag arrow for sketch Offset (#218)**: the distance can be dragged with an arrow in the viewport (starts on the first selected curve, points the positive way); typing still works.
+- **New parameter from a dimension field (#229)**: a name typed into a Tab dimension field that is not a parameter yet (e.g. `växel`) becomes a parameter with the current value and is listed in *Change Parameters*. Older files with such names list them in the dialog too (OK adds them).
+
+### Fixed
+- **Title stayed "Untitled" after Save (#206)**: on Windows the *Open Recent* submenu could be deleted by Qt, so rebuilding it raised before the title was updated. The title is now set first, and a deleted submenu is recreated under File.
+
 # Hybrid-experiment — 0.9.9.80.176
 
 ### Added

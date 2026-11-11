@@ -457,9 +457,11 @@ class DimensionOverlayMixin:
 
     def prompt_dimension_value(self, title: str, label: str, value: float, lo: float = 0.1,
                                hi: float = 50000.0, suffix: str = " mm", expr: str = None, on_change=None,
-                               inline: bool = False, checkbox_text: Optional[str] = None, checkbox_checked: bool = True):
+                               inline: bool = False, checkbox_text: Optional[str] = None, checkbox_checked: bool = True,
+                               handle_drag: bool = False):
         """Value dialog with the number pre-selected: type it and press Enter. Returns None on cancel.
-        `inline`: a small box in the 3D view instead of the side panel (used for sketch dimensions)."""
+        `inline`: a small box in the 3D view instead of the side panel (used for sketch dimensions).
+        `handle_drag`: dragging the viewport's arrow handle (set_extrude_handle, set up by the caller) sets the value."""
         if inline and on_change is None:
             return self.prompt_dimension_inline(label, value, lo, hi, suffix, expr)
         dlg = QDialog(self)
@@ -497,7 +499,18 @@ class DimensionOverlayMixin:
         lay.addLayout(row)
         QTimer.singleShot(0, lambda: (spin.setFocus(), spin.selectAll()))
         from omacad.ui.dialogs import run_docked
-        if run_docked(dlg) != QDialog.DialogCode.Accepted:
+        on_drag = (lambda v: spin.setValue(round(v, 2))) if handle_drag else None
+        if on_drag is not None:
+            self.extrude_handle_dragged.connect(on_drag)
+        try:
+            accepted = run_docked(dlg) == QDialog.DialogCode.Accepted
+        finally:
+            if on_drag is not None:
+                try:
+                    self.extrude_handle_dragged.disconnect(on_drag)
+                except (RuntimeError, TypeError):
+                    pass
+        if not accepted:
             return None
         spin.interpretText()  # evaluates a formula that was typed but not yet committed
         if checkbox_text is not None:

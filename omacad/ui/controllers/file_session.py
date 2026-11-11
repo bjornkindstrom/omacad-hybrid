@@ -10,7 +10,7 @@ import numpy as np
 from pathlib import Path
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QMessageBox, QFileDialog
+from PySide6.QtWidgets import QMenu, QMessageBox, QFileDialog
 
 from omacad import busy
 from omacad.io.exporter import Exporter
@@ -186,9 +186,15 @@ class FileSessionMixin:
         self.rebuild_recent_menu()
 
     def rebuild_recent_menu(self) -> None:
+        import shiboken6
         menu = getattr(self, "menu_recent", None)
         if menu is None:
             return
+        if not shiboken6.isValid(menu):
+            # Qt deleted the submenu (seen on Windows, #206): make it again under File, where it was
+            menu = self._recreate_recent_menu()
+            if menu is None:
+                return
         menu.clear()
         files = self.recent_files()
         for path in files:
@@ -201,6 +207,21 @@ class FileSessionMixin:
         clear = menu.addAction("Clear Recent Files")
         clear.setEnabled(bool(files))
         clear.triggered.connect(self.clear_recent_files)
+
+    def _recreate_recent_menu(self):
+        import shiboken6
+        menu_file = getattr(self, "menu_file", None)
+        if menu_file is None or not shiboken6.isValid(menu_file):
+            self.menu_recent = None
+            return None
+        anchor = getattr(self, "act_save_project", None)
+        menu = QMenu("Open Recent", menu_file)
+        if anchor is not None and shiboken6.isValid(anchor):
+            menu_file.insertMenu(anchor, menu)
+        else:
+            menu_file.addMenu(menu)
+        self.menu_recent = menu
+        return menu
 
     def open_recent(self, path: str) -> None:
         if not Path(path).exists():
@@ -271,9 +292,9 @@ class FileSessionMixin:
             return
         self.current_path = filepath
         self.mark_clean()
+        self.update_window_title()   # first: nothing after the save may keep the title at "Untitled" (#206)
         self._forget_autosave()
         self.add_recent_file(filepath)
-        self.update_window_title()
         self.doc.notify_changed()
         self.status_label.setText(f"Saved {filepath}")
 

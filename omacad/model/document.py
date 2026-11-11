@@ -929,6 +929,43 @@ class Document:
         self.notify_changed()
         return []
 
+    def is_new_parameter_name(self, text: str) -> bool:
+        """`text` is a bare name that could become a new parameter (valid, not yet defined)."""
+        name = (text or "").strip()
+        return exprlib.is_valid_name(name) and all(q.name != name for q in self.parameters)
+
+    def define_parameter(self, name: str, value: float) -> bool:
+        """Adds parameter `name` = `value` (request #229: a name typed into a dimension field that does not exist yet
+        becomes a parameter with the value the dimension has, so it shows up in Change Parameters)."""
+        name = (name or "").strip()
+        if not self.is_new_parameter_name(name):
+            return False
+        v = round(float(value), 4)
+        self.parameters.append(Parameter(name, f"{v:g}" if abs(v) < 1e15 else repr(v)))
+        exprlib.set_variables(self.parameter_values())
+        return True
+
+    def missing_parameters(self) -> List[Parameter]:
+        """Dimensions/steps whose formula is just a name nobody defined (older files, #229): that parameter, with
+        the value the dimension/step has now. Nothing is changed."""
+        found: Dict[str, Parameter] = {}
+
+        def add(text, value):
+            name = (text or "").strip()
+            if name not in found and self.is_new_parameter_name(name):
+                v = round(float(value), 4)
+                found[name] = Parameter(name, f"{v:g}")
+        for sk in self.sketches.values():
+            for d in sk.dimensions:
+                if d.expr:
+                    add(d.expr, d.value)
+        for f in self.timeline.features:
+            for key, e in f.exprs.items():
+                val = getattr(f, key, None)
+                if isinstance(val, (int, float)) and not isinstance(val, bool):
+                    add(e, val)
+        return list(found.values())
+
     def unresolved_formulas(self) -> List[str]:
         values = self.parameter_values()
         bad = []
@@ -1743,10 +1780,16 @@ class Document:
         from_point: Optional[dict] = None,
         to_point: Optional[dict] = None,
         copy_body: bool = False,
+        linked: bool = False,
     ) -> Optional[MoveFeature]:
-        """Translates and rotates a 3D solid body parametrically (optionally point to point, see MoveFeature)."""
+        """Translates and rotates a 3D solid body parametrically (optionally point to point, see MoveFeature).
+        `copy_body`: move a copy instead; `linked` makes it a linked copy that follows the original (#159)."""
         if body_id not in self.bodies:
             return None
+        if copy_body and linked:
+            link = self._linked_copy_in_place(body_id)
+            if link is not None:     # the move then places the link; it moves along behind the original's new steps
+                body_id, copy_body = link, False
         if copy_body:
             copied = self._copy_body_steps(body_id)
             if copied is not None:     # a copy with its own steps; else the old copy (a plain body)
@@ -1817,6 +1860,25 @@ class Document:
     @property
     def joints(self) -> List[JointFeature]:
         return [f for f in self.timeline.features if getattr(f, "feature_type", "") == "joint"]
+
+    def _linked_copy_in_place(self, body_id: str) -> Optional[str]:
+        """A linked copy (BranchFeature, follow=True) of `body_id` right where the original is, for Move's linked copy
+        (#159). Returns the copy's body id, or None when the body has no step to link to."""
+        from omacad.model.features.branch import BranchFeature
+        self.timeline.recompute(self)
+        history = self.object_history
+        owner = next((oid for oid, o in history.objects.items() if body_id in o.body_ids), None)
+        source = dict((b, s) for s, b in history.copy_sources(self, owner)).get(body_id) if owner else None
+        if source is None:
+            return None
+        obj = history.objects.get(owner)
+        name = (obj.name if obj is not None else self.bodies[body_id].name) + " Linked copy"
+        fid = self._feature_id("branch")
+        history.insert_after = None
+        self.timeline.marker_index = len(self.timeline.features)
+        self.timeline.add_feature(BranchFeature(fid, name, source, body_id, follow=True, beside=False))
+        self.timeline.recompute(self)
+        return "body_" + fid if "body_" + fid in self.bodies else None
 
     def _copy_body_steps(self, body_id: str, upto: Optional[int] = None) -> Optional[str]:
         """Copies every step that built `body_id` (its sketches too; only the first `upto` steps count, else those

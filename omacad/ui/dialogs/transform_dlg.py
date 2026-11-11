@@ -36,6 +36,16 @@ class MoveBodyDialog(BaseFeatureDialog):
         self.chk_copy_body = QCheckBox("Activate copy")
         self.chk_copy_body.setToolTip("Keep the original body and create a moved copy.")
         form.addRow("Mode:", self.chk_copy_body)
+        # request #159: the copy can be linked (follows every later change of the original) or independent
+        self.cmb_copy_kind = QComboBox()
+        self.cmb_copy_kind.addItem("Unlinked copy (independent)", "unlinked")
+        self.cmb_copy_kind.addItem("Linked copy (follows the original)", "linked")
+        self.cmb_copy_kind.setToolTip("Unlinked: the copy gets its own steps and can be changed on its own.\n"
+                                      "Linked: the copy follows the original; later changes to the original show up "
+                                      "in the copy too.")
+        self.cmb_copy_kind.setEnabled(False)
+        self.chk_copy_body.toggled.connect(self.cmb_copy_kind.setEnabled)
+        form.addRow("Copy:", self.cmb_copy_kind)
 
         # Translation
         self.spn_dx = ExprDoubleSpinBox()
@@ -147,6 +157,10 @@ class MoveBodyDialog(BaseFeatureDialog):
         self.cmb_pivot.currentIndexChanged.connect(lambda *_: self.changed.emit())
         self.cmb_target.currentIndexChanged.connect(lambda *_: self.changed.emit())
         self.chk_copy_body.toggled.connect(lambda *_: self.changed.emit())
+
+    def copy_linked(self) -> bool:
+        """Copy mode is on and the copy should be a linked copy (#159)."""
+        return self.chk_copy_body.isChecked() and self.cmb_copy_kind.currentData() == "linked"
 
     def set_active_axis(self, axis: str):
         self.active_axis = axis

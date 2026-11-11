@@ -379,7 +379,8 @@ class BodyPromptsMixin:
             frm, to = dlg.get_points()
             copy = dlg.chk_copy_body.isChecked()
             feat = self.doc.move_body(bid, dx, dy, dz, rx, ry, rz, pivot=pivot, exprs=exprs,
-                                      from_point=frm, to_point=to, copy_body=copy)
+                                      from_point=frm, to_point=to, copy_body=copy,
+                                      linked=copy and dlg.copy_linked())
             if feat is None:
                 return
             committed.append(feat.feature_id)
@@ -563,7 +564,8 @@ class BodyPromptsMixin:
             if result and bid and bid in self.doc.bodies:
                 copy = dlg.chk_copy_body.isChecked()
                 feat = self.doc.move_body(bid, dx, dy, dz, rx, ry, rz, pivot=pivot, exprs=exprs,
-                                          from_point=frm, to_point=to, copy_body=copy)
+                                          from_point=frm, to_point=to, copy_body=copy,
+                                      linked=copy and dlg.copy_linked())
                 if feat:
                     b_name = self.doc.bodies[bid].name if bid in self.doc.bodies else bid
                     action = "Copied and moved" if copy else "Moved"

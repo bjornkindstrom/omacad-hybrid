@@ -146,8 +146,11 @@ class SketchToolsMixin:
             self.status_message.emit("Offset: select the sketch elements first (click, Ctrl+click, double-click for a whole shape), then press O.")
             return
         ids = set(self.selected_entities)
+        handle = self._offset_handle_frame(sk, ids)   # #218: drag arrow in the view for the distance
 
         def preview(value):
+            if handle is not None:
+                self.set_extrude_handle(handle[0], handle[1], value, show_value=True)
             segs = []
             if abs(value) > 1e-9:
                 from omacad.model.sketch import Sketch
@@ -170,9 +173,12 @@ class SketchToolsMixin:
         try:
             res = self.prompt_dimension_value("Offset", "Distance (negative = inward for a closed shape, positive = outward; for an open curve: positive = left of its direction):",
                                               5.0, lo=-5000.0, hi=5000.0, on_change=preview,
-                                              checkbox_text=chk_label, checkbox_checked=True)
+                                              checkbox_text=chk_label, checkbox_checked=True,
+                                              handle_drag=handle is not None)
         finally:
             self.offset_preview = None
+            if handle is not None:
+                self.clear_extrude_handle()
             self.update()
         if res is None or abs(res[0]) < 1e-9:
             return
@@ -189,6 +195,43 @@ class SketchToolsMixin:
         self.doc.notify_changed()
         self.status_message.emit(f"Offset: {len(new)} element(s) created {res[0]:g} mm away.")
         self.update()
+    def _offset_handle_frame(self, sk, ids):
+        """(origin, axis) in world space for the Offset drag arrow (#218): starts on the first selected curve and
+        points the way a positive distance goes, read from a trial offset of 1 mm. None when that cannot be found."""
+        from omacad.model.sketch import Sketch
+        try:
+            first = next((sk.get_entity(eid) for eid in self.selected_entities if sk.get_entity(eid) is not None), None)
+            lines = first.to_lines() if first is not None else []
+            if not lines:
+                return None
+            (a, b) = lines[len(lines) // 2]
+            anchor = np.array([(a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0])
+            tmp = Sketch.from_dict(sk.to_dict())
+            n0 = len(tmp.entities)
+            tmp.offset_entities(ids, 1.0)
+            best = None
+            for ent in tmp.entities[n0:]:
+                for p, q in ent.to_lines():
+                    p, q = np.asarray(p, dtype=float), np.asarray(q, dtype=float)
+                    d = q - p
+                    t = 0.0 if float(d @ d) < 1e-12 else min(1.0, max(0.0, float((anchor - p) @ d / (d @ d))))
+                    foot = p + t * d
+                    dist = float(np.linalg.norm(foot - anchor))
+                    if best is None or dist < best[0]:
+                        best = (dist, foot)
+            if best is None or best[0] < 1e-6:
+                return None
+            direction = (best[1] - anchor) / best[0]
+            origin = np.asarray(sk.plane.uv_to_world(*anchor), dtype=float)
+            tip = np.asarray(sk.plane.uv_to_world(*(anchor + direction)), dtype=float)
+            axis = tip - origin
+            norm = float(np.linalg.norm(axis))
+            return (origin, axis / norm) if norm > 1e-9 else None
+        except Exception as e:   # the arrow is a convenience: typing the distance still works
+            from omacad import applog
+            applog.log("warn", f"Offset drag arrow unavailable: {e}")
+            return None
+
     def delete_selected_entities(self) -> int:
         sk = self.doc.active_sketch
         if not sk or not self.selected_entities:
@@ -296,6 +339,9 @@ class SketchToolsMixin:
         for d_new in sketch.dimensions[dims_before:]:  # a typed "width/2" stays a formula on its dimension
             if d_new.name in typed_formulas:
                 d_new.expr = typed_formulas[d_new.name]
+                # a new name (#229) becomes a parameter with the dimension's value, listed in Change Parameters
+                if self.doc.define_parameter(d_new.expr, d_new.value):
+                    self.status_message.emit(f"New parameter {d_new.expr.strip()} = {d_new.value:g}.")
         if isinstance(created, list):
             solve_sketch(sketch)  # rectangle: refresh the degrees-of-freedom status
         from omacad.ui.viewport.pointer_mixin import _ctrl_held
@@ -473,6 +519,20 @@ class SketchToolsMixin:
         x, y, w = (int(r.left()), int(r.bottom()) + 4, int(r.width())) if r is not None else (20, 20, 170)
         self._dyn_list.show_at(QPoint(x, y), w, [(n, values[n]) for n in names], hint)
 
+    def _dyn_new_parameter(self, i: int) -> bool:
+        """Field i holds a name that is not a parameter yet (#229): define it with the value the field shows now
+        (the mouse), so Enter locks it and Change Parameters lists it."""
+        if i < 0 or i >= len(self.dyn.names):
+            return False
+        text = self.dyn.texts[i].strip()
+        value = self.dyn_live.get(self.dyn.names[i])
+        if value is None or not self.doc.is_new_parameter_name(text):
+            return False
+        if not self.doc.define_parameter(text, value):
+            return False
+        self.status_message.emit(f"New parameter {text} = {round(float(value), 4):g} (Modify > Change Parameters).")
+        return True
+
     def _dyn_take_suggestion(self):
         from omacad.ui.expr_spin import name_before
         name = self._dyn_list.chosen() if self._dyn_list is not None else None
@@ -553,6 +613,8 @@ class SketchToolsMixin:
         if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self._refresh_dyn()
             i = self.dyn.focus
+            if self.dyn.invalid(i) and self._dyn_new_parameter(i):
+                self._refresh_dyn()
             if self.dyn.invalid(i):
                 self.status_message.emit(f"'{self.dyn.texts[i]}' is not a valid number or formula.")
                 return True
