@@ -7,6 +7,10 @@ from omacad.scripting.runner import check_report, run_script, ScriptRunError
 SCRIPT_PATH = Path.home() / ".config" / "omacad" / "scripts" / "wine_charms.py"
 HEART_SCRIPT_PATH = Path.home() / ".config" / "omacad" / "scripts" / "heart_wine_charms.py"
 
+# personal user scripts (and their Honey Script font), not part of the repo: CI and other machines skip these
+pytestmark = pytest.mark.skipif(not (SCRIPT_PATH.is_file() and HEART_SCRIPT_PATH.is_file()),
+                                reason="wine charm user scripts are not installed in ~/.config/omacad/scripts")
+
 
 def test_wine_charms_check_passes():
     ok, rep = check_report(SCRIPT_PATH)
