@@ -11,7 +11,7 @@ med. #218: `_offset_handle_frame` (pilens start = mitten av första valda kurvan
 #229: Tab-fältet sparade ett okänt namn som formel utan parameter. `Document.define_parameter` /
 `is_new_parameter_name` / `missing_parameters`; Enter i fältet (`_dyn_new_parameter`) och klick-commit definierar
 namnet med fältets värde, Change Parameters listar saknade namn. Fälla i test: `expr`-variabeltabellen är global,
-nollställ den. Test: `tests/test_requests_159_206_218_229.py` (rapportskissen i `tests/data/dimension_named_parameter_229.omacad`).
+nollställ den. Samma version: joint-arbetet (#231) hade gjort kantvalet till bara `edge_picked.emit` + return, så Fillet/Chamfer markerade inga kanter (`test_wrapped_fillet` röd i CI); nu `joint_axis_pick` (sätts av `begin_edge_pick(joint_axis=True)`) → `_joint_axis_click`, annars originalvägen. Joint fick egen ikon (`joint.svg`), saknade importer (`Any`, `np`) fällde CI på Python 3.12 men inte lokalt (3.14 utvärderar inte annoteringar). Test: `tests/test_requests_159_206_218_229.py` (rapportskissen i `tests/data/dimension_named_parameter_229.omacad`).
 
 ## Kursiv textlayout, vinglasmarkörer & led-rendering — 2026-11-10 (0.9.9.80.176)
 

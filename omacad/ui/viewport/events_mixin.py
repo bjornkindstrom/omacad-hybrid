@@ -546,70 +546,46 @@ class ViewportEventsMixin:
             self._press_pos = None
             self.is_orbiting = False
             self.is_panning = False
-            # Check sketch curve (line, arc, circle)
-            curve = self.pick_sketch_curve(event.position().x(), event.position().y())
-            if curve is not None:
-                if getattr(self, "path_pick_mode", False):    # a Sweep / Pipe path: sketch curves count as well as edges
+            if getattr(self, "joint_axis_pick", False):
+                self._joint_axis_click(event)      # Joint: one click sets the axis (edge, sketch curve, cylinder)
+                return
+            if getattr(self, "path_pick_mode", False):    # a Sweep / Pipe path: sketch curves count as well as edges
+                curve = self.pick_sketch_curve(event.position().x(), event.position().y())
+                if curve is not None:
                     self.sketch_curve_picked.emit(*curve)
                     return
-                s_id, ent_id = curve
-                sk = self.doc.sketches.get(s_id)
-                ent = sk.get_entity(ent_id) if sk else None
-                if ent is not None:
-                    from omacad.model.sketch_entities import SketchLine, SketchCircle, SketchArc
-                    class _SketchEdge:
-                        pass
-                    se = _SketchEdge()
-                    if isinstance(ent, SketchLine):
-                        se.kind = "line"
-                        se.p0 = sk.plane.uv_to_world(*ent.p1)
-                        se.p1 = sk.plane.uv_to_world(*ent.p2)
-                    elif isinstance(ent, (SketchCircle, SketchArc)):
-                        se.kind = "circle"
-                        se.center = sk.plane.uv_to_world(*ent.center)
-                        se.axis = np.asarray(sk.plane.normal, dtype=float)
-                    else:
-                        se.kind = "other"
-                    self.edge_picked.emit(se)
-                    return
-
             e = self._pick_edge(event.position().x(), event.position().y())
             if e is not None:
-                self.edge_picked.emit(e)
-                return
-
-            cyl = self._pick_cylinder_surface(event.position().x(), event.position().y())
-            if cyl is not None:
-                class _CylEdge:
-                    kind = "circle"
-                    def __init__(self, c):
-                        self.center = c["origin"]
-                        self.axis = c["axis"]
-                self.edge_picked.emit(_CylEdge(cyl))
-                return
-
-            hit = self._pick_face(event.position().x(), event.position().y())
-            if hit is not None:
-                body, face = hit
-                face_edges = self._edges_of_face(face, body)
-                if face_edges:
-                    best_fe = face_edges[0]
-                    self.edge_picked.emit(best_fe)
-                    if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
-                        self.selected_edges = [k for k in self.selected_edges if not any(self._same_edge(k, fe) for fe in face_edges)]
-                    else:
-                        all_selected = all(any(self._same_edge(k, fe) for k in self.selected_edges) for fe in face_edges)
-                        if all_selected:
-                            self.selected_edges = [k for k in self.selected_edges if not any(self._same_edge(k, fe) for fe in face_edges)]
-                        else:
-                            for fe in face_edges:
-                                if not any(self._same_edge(k, fe) for k in self.selected_edges):
-                                    self.selected_edges.append(fe)
+                if event.modifiers() & Qt.KeyboardModifier.ControlModifier:   # Ctrl+click only removes
+                    chain = tangent_chain(e, self._visible_edges()) if getattr(self, "edge_tangent_chain", True) else [e]
+                    self.selected_edges = [k for k in self.selected_edges if not any(self._same_edge(k, c) for c in chain)]
                     self.edges_selection_changed.emit()
                     self.update()
-            if self._hidden_edge_at(event.position().x(), event.position().y()) is not None:   # said last: stays shown
-                self.status_message.emit("An edge hidden behind the model is here (inside a jar, under a shoulder...): "
-                                         "press X or hold Alt to pick through the model (Ctrl+Backspace clears the selection).")
+                else:
+                    self._toggle_edge(e)
+            else:
+                hit = self._pick_face(event.position().x(), event.position().y())
+                if hit is not None:
+                    body, face = hit
+                    face_edges = self._edges_of_face(face, body)
+                    if face_edges:
+                        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+                            # Ctrl+click removes all edges of this face
+                            self.selected_edges = [k for k in self.selected_edges if not any(self._same_edge(k, fe) for fe in face_edges)]
+                        else:
+                            # If all edges of this face are already selected, toggle them off; otherwise select all
+                            all_selected = all(any(self._same_edge(k, fe) for k in self.selected_edges) for fe in face_edges)
+                            if all_selected:
+                                self.selected_edges = [k for k in self.selected_edges if not any(self._same_edge(k, fe) for fe in face_edges)]
+                            else:
+                                for fe in face_edges:
+                                    if not any(self._same_edge(k, fe) for k in self.selected_edges):
+                                        self.selected_edges.append(fe)
+                        self.edges_selection_changed.emit()
+                        self.update()
+                if self._hidden_edge_at(event.position().x(), event.position().y()) is not None:   # said last: stays shown
+                    self.status_message.emit("An edge hidden behind the model is here (inside a jar, under a shoulder...): "
+                                             "press X or hold Alt to pick through the model (Ctrl+Backspace clears the selection).")
             return
         if was_click and self.plane_pick_mode:
             self._press_pos = None
@@ -728,3 +704,38 @@ class ViewportEventsMixin:
                         if getattr(self, "joint_gizmo", None) and not self.joint_gizmo.get("dragging"):
                             self.clear_joint_gizmo()
                         self.update()
+
+    def _joint_axis_click(self, event):
+        """Joint axis pick (#231): a sketch curve, a model edge, a cylinder or a face's first edge -> edge_picked."""
+        x, y = event.position().x(), event.position().y()
+        curve = self.pick_sketch_curve(x, y)
+        if curve is not None:
+            s_id, ent_id = curve
+            sk = self.doc.sketches.get(s_id)
+            ent = sk.get_entity(ent_id) if sk else None
+            if ent is not None:
+                from types import SimpleNamespace
+                from omacad.model.sketch_entities import SketchLine, SketchCircle, SketchArc
+                if isinstance(ent, SketchLine):
+                    se = SimpleNamespace(kind="line", p0=sk.plane.uv_to_world(*ent.p1), p1=sk.plane.uv_to_world(*ent.p2))
+                elif isinstance(ent, (SketchCircle, SketchArc)):
+                    se = SimpleNamespace(kind="circle", center=sk.plane.uv_to_world(*ent.center),
+                                         axis=np.asarray(sk.plane.normal, dtype=float))
+                else:
+                    se = SimpleNamespace(kind="other")
+                self.edge_picked.emit(se)
+                return
+        e = self._pick_edge(x, y)
+        if e is not None:
+            self.edge_picked.emit(e)
+            return
+        cyl = self._pick_cylinder_surface(x, y)
+        if cyl is not None:
+            from types import SimpleNamespace
+            self.edge_picked.emit(SimpleNamespace(kind="circle", center=cyl["origin"], axis=cyl["axis"]))
+            return
+        hit = self._pick_face(x, y)
+        if hit is not None:
+            face_edges = self._edges_of_face(hit[1], hit[0])
+            if face_edges:
+                self.edge_picked.emit(face_edges[0])

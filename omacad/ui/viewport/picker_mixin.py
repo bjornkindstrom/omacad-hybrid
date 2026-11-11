@@ -112,8 +112,11 @@ class PickerMixin:
         return best_id
 
     # ---- Edge selection (fillet / chamfer) ------------------------------------------
-    def begin_edge_pick(self):
+    def begin_edge_pick(self, joint_axis: bool = False):
+        """`joint_axis`: Joint's axis pick (one click = edge_picked, sketch curves and cylinders count); otherwise
+        the Fillet/Chamfer selection that toggles edges in `selected_edges`."""
         self.edge_pick_mode = True
+        self.joint_axis_pick = bool(joint_axis)
         self.edge_xray = False
         self.hover_edge = None
         self.hover_face = self.hover_surface = None
@@ -124,6 +127,7 @@ class PickerMixin:
 
     def end_edge_pick(self, cancelled: bool = False):
         self.edge_pick_mode = False
+        self.joint_axis_pick = False
         self.hover_edge = None
         self.hover_face = self.hover_surface = None
         self.selected_edges = []

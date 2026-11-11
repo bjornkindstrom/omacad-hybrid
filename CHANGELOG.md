@@ -6,6 +6,8 @@
 - **New parameter from a dimension field (#229)**: a name typed into a Tab dimension field that is not a parameter yet (e.g. `växel`) becomes a parameter with the current value and is listed in *Change Parameters*. Older files with such names list them in the dialog too (OK adds them).
 
 ### Fixed
+- **Fillet/Chamfer edge selection was broken by the joint work (0.9.9.80.176)**: in edge pick mode a click only sent the edge to the Joint tool and selected nothing. Joint's axis pick is now its own mode (`begin_edge_pick(joint_axis=True)`); Fillet/Chamfer select edges as before.
+- **Joint has its own icon** in all four icon sets (it borrowed Combine's), and the CI build no longer fails on missing imports (`Any`, `numpy`) from the joint work.
 - **Title stayed "Untitled" after Save (#206)**: on Windows the *Open Recent* submenu could be deleted by Qt, so rebuilding it raised before the title was updated. The title is now set first, and a deleted submenu is recreated under File.
 
 # Hybrid-experiment — 0.9.9.80.176

@@ -668,7 +668,7 @@ class BodyPromptsMixin:
 
         def on_pick_requested(on: bool):
             if on:
-                self.viewport.begin_edge_pick()
+                self.viewport.begin_edge_pick(joint_axis=True)
                 dlg.btn_pick.setText("🎯 Klicka på kant / cylinder i 3D…")
                 self.status_label.setText("Joint: Klicka på en kant, cirkulär kant eller cylinderhål i 3D för att sätta ledaxeln.")
             else:
