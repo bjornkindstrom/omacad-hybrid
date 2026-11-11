@@ -1,7 +1,7 @@
 """Grouped MainWindow tool prompt workflows."""
 
 import os
-from typing import Optional
+from typing import Any, Optional
 import numpy as np
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
