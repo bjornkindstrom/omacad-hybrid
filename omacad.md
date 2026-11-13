@@ -1,3 +1,22 @@
+## Skript delas till omacad-requests — 2026-11-13 (0.9.9.80.178)
+
+Björn: användarnas nya script ska laddas upp automatiskt till omacad-requests (samma token som requests).
+`omacad/script_share.py`: `shareable_files` (egna `.py` + `<stem>.png`; inte `is_bundled`, `_`/`.`-filer,
+`.check.txt`), `pending` jämför git-blob-SHA mot `DATA_DIR/script_uploads.json`, `upload` PUT:ar till
+`scripts/<rfc_name-slug>-<install_id>/` (GET först för befintlig sha, state sparas efter varje fil).
+`install_id.txt` (6 hex) skiljer användare med samma/tomt namn. `MainWindow.share_scripts` kollar
+inställningen `share_scripts` + token + `pending` på GUI-tråden och kör bara `run_async` när något är nytt;
+anropas från `app.py` (5 s efter start + femminuterstimern, inte i tester). Repo-mappen har `scripts/README.md`.
+Test: `tests/test_script_share.py`.
+**Get Scripts… (0.9.9.80.179, Björn: knapp i stället för automatisk hämtning – andras kod ska väljas):**
+`list_remote` = ett anrop `git/trees/main?recursive=1`, egna installationens mapp (`-<install_id>`) bort,
+`.py`/`.png` hämtas via `git/blobs/<sha>` och cachas i `DATA_DIR/shared_scripts_cache/<sha>` (NAME/DESCRIPTION
+läses med `read_info` på cachen). `download` skriver till mappen, `_free_name` ger `<stem>_<author>.py` vid
+krock, state `downloaded` {fil: remote, sha, picture_sha}; `is_downloaded_unchanged` hindrar att de delas
+tillbaka. Status new/have/update. UI: `ui/shared_scripts_dialog.GetScriptsDialog` (laddar i tråd, signal
+`loaded` köad till GUI-tråden; `list_fn`/`download_fn` injiceras i test), knappen `btn_get` i `ScriptsDialog`.
+Fälla: `test_script_manage::test_render_script_images_for_own_scripts` kräver GL och faller offscreen.
+
 ## Requests #159, #206, #218, #229 — 2026-11-11 (0.9.9.80.177)
 
 #206: Lennarts logg: `rebuild_recent_menu` → `RuntimeError … QMenu already deleted` i `_save_to`, före

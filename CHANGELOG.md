@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.179
+
+### Added
+- **Get Scripts…** in the Scripts window (Shift+S): lists the scripts other Omacad users shared (name, description, picture, who made it, and *New* / *Update* / *✓ Have*). Only the ticked ones are fetched into the scripts folder; a name clash gets `<name>_<author>.py`, never overwriting the user's own file. An update replaces a fetched script only if the user has not changed it (otherwise it is saved beside it). Fetched scripts are not shared back unless the user changes them. Omacad still asks before a new script runs the first time.
+
+# Hybrid-experiment — 0.9.9.80.178
+
+### Added
+- **Scripts are shared automatically**: new or changed scripts in the local scripts folder (and their `<script>.png` picture) are uploaded to the requests repository, folder `scripts/<name>-<install id>/`, with the same token as *Request a change*. Runs 5 s after start and every 5 minutes, in the background, only for files whose content changed (`script_uploads.json`). Omacad's bundled examples, hidden files and test reports are never sent. Off with *Settings > General > Share my new scripts with Omacad*.
+
 # Hybrid-experiment — 0.9.9.80.177
 
 ### Added

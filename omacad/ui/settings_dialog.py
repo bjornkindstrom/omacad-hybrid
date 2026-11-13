@@ -560,6 +560,12 @@ class SettingsDialog(QDialog):
         tok_row.addWidget(self.edt_rfc_token)
         lay_general.addLayout(tok_row)
 
+        self.chk_share_scripts = QCheckBox("Share my new scripts with Omacad (uploaded with the requests token)")
+        self.chk_share_scripts.setChecked(bool(self.settings.get("share_scripts", True)))
+        self.chk_share_scripts.setToolTip("New or changed scripts in your scripts folder are uploaded to the Omacad "
+                                          "requests repository, folder scripts/. Omacad's own examples are not sent.")
+        lay_general.addWidget(self.chk_share_scripts)
+
         # AI Agent for fixing errors / reporting problems
         from omacad import feedback
         agent_row = QHBoxLayout()
@@ -813,6 +819,7 @@ class SettingsDialog(QDialog):
         if idx_ai >= 0:
             self.cmb_ai_agent.setCurrentIndex(idx_ai)
         self.edt_scripts_folder.clear()
+        self.chk_share_scripts.setChecked(True)
 
     def _width_row(self, layout, label: str, key: str, default: float, tip: str) -> QDoubleSpinBox:
         """A labelled px-thickness field for `key`, added to `layout`."""
@@ -876,6 +883,7 @@ class SettingsDialog(QDialog):
             "autosave_minutes": self.spn_autosave.value(),
             "rfc_name": self.edt_rfc_name.text().strip(),
             "rfc_token": self.edt_rfc_token.text().strip(),
+            "share_scripts": self.chk_share_scripts.isChecked(),
             "icon_theme": self.cmb_icon_theme.currentData(),
         }
 

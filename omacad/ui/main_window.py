@@ -979,6 +979,36 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.run_async(upload, on_success=finished, on_error=failed,
                        status_msg="Sending your request…" if folder is not None else "")
 
+    def share_scripts(self):
+        """Uploads the user's new or changed scripts to the requests repository (setting `share_scripts`)."""
+        from omacad import applog, rfc, script_share
+        from omacad.ui.settings import get_settings
+        if getattr(self, "_script_share_active", False) or not get_settings().get("share_scripts", True):
+            return
+        tok = rfc.token()  # settings belong to the GUI thread
+        if not tok:
+            return
+        try:
+            folder = self.scripts_folder()
+            if not script_share.pending(folder):
+                return
+        except Exception as e:
+            applog.log("scripts", f"script share skipped: {e}")
+            return
+        name = str(get_settings().get("rfc_name") or "")
+        self._script_share_active = True
+
+        def finished(result):
+            self._script_share_active = False
+            if result and result[0]:
+                self.status_label.setText(result[1])
+
+        def failed(error):
+            self._script_share_active = False
+            applog.log("scripts", f"script share failed: {error}")
+
+        self.run_async(lambda: script_share.upload(folder, name, tok=tok), on_success=finished, on_error=failed)
+
     @staticmethod
     def _png(image) -> bytes:
         from PySide6.QtCore import QBuffer, QByteArray, QIODevice

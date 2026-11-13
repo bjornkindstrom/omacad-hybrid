@@ -111,7 +111,9 @@ def main():
     request_retry_timer = QTimer(window)
     request_retry_timer.setInterval(5 * 60 * 1000)
     request_retry_timer.timeout.connect(window.retry_requests)
+    request_retry_timer.timeout.connect(window.share_scripts)
     request_retry_timer.start()
+    QTimer.singleShot(5000, window.share_scripts)  # new or changed own scripts go to the requests repo
 
     sys.exit(app.exec())
 

@@ -218,7 +218,11 @@ class ScriptsDialog(QDialog):
         self.btn_ai.clicked.connect(self._ai)
         self.btn_folder = QPushButton("Open Folder")
         self.btn_folder.clicked.connect(window.open_scripts_folder)
+        self.btn_get = QPushButton("Get Scripts…")
+        self.btn_get.setToolTip("Scripts other Omacad users shared: pick the ones you want")
+        self.btn_get.clicked.connect(self._get_scripts)
         row.addWidget(self.btn_ai)
+        row.addWidget(self.btn_get)
         row.addWidget(self.btn_folder)
         row.addStretch()
         self.btn_modify = QPushButton("Modify with AI…")
@@ -391,6 +395,19 @@ class ScriptsDialog(QDialog):
             self._modify()
         elif chosen is delete:
             self._delete()
+
+    def _get_scripts(self) -> None:
+        from omacad.ui.shared_scripts_dialog import GetScriptsDialog
+        dlg = GetScriptsDialog(self, self.watcher.folder)
+        dlg.exec()
+        dlg.deleteLater()
+        self.refresh()
+        if dlg.fetched:
+            names = {str(p) for p in dlg.fetched}
+            for i in range(self.list.count()):
+                if self.list.item(i).data(Qt.ItemDataRole.UserRole) in names:
+                    self.list.setCurrentRow(i)
+                    break
 
     def _create_picture(self) -> None:
         info = self._info()
