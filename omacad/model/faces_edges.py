@@ -40,8 +40,11 @@ def tangent_chain(edge, edges) -> list:
 LOOP_WALL_LEAN = 0.7   # |cos| between a wall and the face it rounds with: walls up to ~45° off square
 
 def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar) -> list:
-    """Outlines of flat faces made of straight pieces and arcs with square or leaning walls (see LoopEdge)."""
+    """Outlines of flat faces made of straight pieces, arcs and free-form curves with square or leaning walls
+    (see LoopEdge)."""
     by_face: dict = {}
+    diag = float(np.linalg.norm(np.ptp(v, axis=0))) or 1.0
+    tri_area = 0.5 * np.linalg.norm(np.cross(v[f[:, 1]] - v[f[:, 0]], v[f[:, 2]] - v[f[:, 0]]), axis=1)
     for (a_idx, b_idx), (e0, e1), ang in zip(adj, adj_edges, angles):
         ra, rb = find(int(a_idx)), find(int(b_idx))
         if ra == rb or ang < np.radians(1.0):
@@ -52,6 +55,11 @@ def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar) -> list:
             n_pl = normals[pl_tri]
             third_nb = v[[i for i in f[nb_tri] if i not in (e0, e1)][0]]
             third_pl = v[[i for i in f[pl_tri] if i not in (e0, e1)][0]]
+            if tri_area[nb_tri] < 1e-9 * diag * diag:
+                # a needle in the face's plane (the spike of a wing tip in a traced logo) has no normal worth
+                # reading: it is a piece of the outline whose wall is whatever its neighbours' walls are (#240)
+                by_face.setdefault(pr, []).append((int(e0), int(e1), None, None, third_pl, n_pl, None, None))
+                continue
             lean = abs(float(normals[nb_tri] @ n_pl))
             side = float(n_pl @ (third_nb - v[e0]))
             # +1: the wall falls away below the face (an outer rim), -1: the wall rises from the face (the foot of a block)
@@ -75,12 +83,11 @@ def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar) -> list:
         for seg in segs:
             parts.setdefault(vfind(seg[0]), []).append(seg)
         for part in parts.values():
-            kinds = {sg[2] for sg in part}
-            if len(kinds) != 1 or 0 in kinds or all(sg[3] for sg in part):
+            kinds = {sg[2] for sg in part if sg[2] is not None}
+            flat = [sg[3] for sg in part if sg[3] is not None]
+            if len(kinds) != 1 or 0 in kinds or not flat or all(flat):
                 continue   # all walls steep enough and on one side; only flat walls = straight edges of their own
-            leaning = any(sg[7] >= 0.1 for sg in part)
-            if not any(sg[3] for sg in part) and not leaning:
-                continue   # only square curved walls: a circle (_circular_edges)
+            leaning = any(sg[7] >= 0.1 for sg in part if sg[7] is not None)
             nbrs: dict = {}
             for e0, e1, *_ in part:
                 nbrs.setdefault(e0, []).append(e1)
@@ -106,12 +113,19 @@ def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar) -> list:
             if float((ref_seg[4] - pts[0]) @ left) < 0:
                 order = order[::-1]
                 pts = pts[::-1].copy()
+            if not any(flat) and _concyclic(pts):
+                continue   # square or leaning curved walls on one circle: a cylinder or a cone (_circular_edges)
             walls = None
             if leaning:   # the normal of the wall along each piece, piece k from point k to point k + 1
                 wall_of = {frozenset(sg[:2]): sg[6] for sg in part}
-                walls = np.array([wall_of[frozenset((order[k], order[(k + 1) % len(order)]))] for k in range(len(order))])
-            if walls is not None and not any(sg[3] for sg in part) and _concyclic(pts):
-                continue   # a cone: _circular_edges has it
+                ws = [wall_of[frozenset((order[k], order[(k + 1) % len(order)]))] for k in range(len(order))]
+                known = [k for k, w in enumerate(ws) if w is not None]
+                if not known:
+                    continue
+                for k in range(len(ws)):            # a needle's piece leans like the piece before it
+                    if ws[k] is None:
+                        ws[k] = ws[max([j for j in known if j < k], default=known[-1])]
+                walls = np.array(ws)
             out.append(LoopEdge(pts.copy(), n_pl.copy(), kinds == {1}, walls))
     return out
 
@@ -153,13 +167,21 @@ def _circles_for_round_loops(loops, circles) -> list:
     from dataclasses import replace
     out_loops, circles = [], list(circles)
     for lp in loops:
-        if lp.walls is None and _concyclic(lp.pts):
+        if lp.walls is None:
             c = lp.pts.mean(axis=0)
-            r = float(np.linalg.norm(lp.pts - c, axis=1).mean())
-            k = next((i for i, ce in enumerate(circles) if abs(ce.radius - r) < 1e-3 * max(1.0, r)
-                      and np.linalg.norm(ce.center - c) < 1e-3 * max(1.0, r) and abs(float(ce.axis @ lp.n)) > 0.999), None)
-            if k is not None:
-                circles[k] = replace(circles[k], a0=0.0, sweep=2 * np.pi)
+            rad = np.linalg.norm(lp.pts - c, axis=1)
+            r = float(rad.mean())
+            if _concyclic(lp.pts):
+                k = next((i for i, ce in enumerate(circles) if abs(ce.radius - r) < 1e-3 * max(1.0, r)
+                          and np.linalg.norm(ce.center - c) < 1e-3 * max(1.0, r) and abs(float(ce.axis @ lp.n)) > 0.999), None)
+                if k is not None:
+                    circles[k] = replace(circles[k], a0=0.0, sweep=2 * np.pi)
+                    continue
+            elif float(np.abs(rad - r).max()) < 0.02 * r and any(
+                    abs(ce.radius - r) < 0.02 * r and np.linalg.norm(ce.center - c) < 0.02 * r
+                    and abs(float(ce.axis @ lp.n)) > 0.999 for ce in circles):
+                # the ragged real boundary where a cut's circle and the wall's own polygon interleave (a zigzag
+                # a few tenths of a millimetre around the circle): the fitted circle is the edge, not the zigzag
                 continue
         out_loops.append(lp)
     return out_loops + circles

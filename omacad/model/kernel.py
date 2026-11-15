@@ -341,6 +341,83 @@ class CadKernel:
             return pts + move[[index[tuple(q)] for q in pts]]
         return solid.warp_batch(push)
 
+    WELD_EPS = 2e-3   # mm: a tool vertex this close to a target vertex or edge is meant to lie on it (a projected
+    #                   circle rebuilt at another curve smoothness misses the wall's vertices by about 1 um)
+
+    @staticmethod
+    def weld_to(tool: m3d.Manifold, target: m3d.Manifold, eps: float = WELD_EPS) -> m3d.Manifold:
+        """`tool` with every vertex within `eps` of a vertex or an edge of `target` moved exactly onto it.
+
+        A profile projected from a body face is re-tessellated by the sketch, so its extrusion coincides with
+        the wall it came from only to within some tens of nanometres. The boolean then keeps a skin that thin
+        (strips on the wall, a down-facing hair of a face), which shows as fuzz, breaks the face into pieces
+        and leaves needles for later edge picks (Björn #237, #238). Welded onto the body's own vertices and
+        edges, the faces coincide exactly and the kernel treats them as one surface."""
+        tm, mm = target.to_mesh64(), tool.to_mesh64()
+        tv = np.asarray(tm.vert_properties[:, :3], dtype=float)
+        tf = np.asarray(tm.tri_verts, dtype=np.int64)
+        mv = np.array(mm.vert_properties[:, :3], dtype=float)
+        mf = np.asarray(mm.tri_verts, dtype=np.int64)
+        if len(tf) == 0 or len(mf) == 0:
+            return tool
+        lo, hi = tv.min(axis=0) - eps, tv.max(axis=0) + eps
+        cand = np.flatnonzero(np.all((mv >= lo) & (mv <= hi), axis=1))
+        if len(cand) == 0:
+            return tool
+        edges = np.unique(np.sort(np.concatenate([tf[:, [0, 1]], tf[:, [1, 2]], tf[:, [2, 0]]]), axis=1), axis=0)
+        a = tv[edges[:, 0]]
+        seg = tv[edges[:, 1]] - a
+        seg_len = np.linalg.norm(seg, axis=1)
+        # a uniform grid: every edge is sampled finely enough that a vertex within eps of it has a sample in
+        # its own cell or one of the 26 around it
+        h = max(float(np.ptp(tv, axis=0).max()) / 128.0, 4.0 * eps)
+        n_samp = np.maximum(2, np.ceil(seg_len / (h / 2.0)).astype(int) + 1)
+        rep = np.repeat(np.arange(len(edges)), n_samp)
+        t = np.concatenate([np.linspace(0.0, 1.0, k) for k in n_samp])
+        samples = a[rep] + t[:, None] * seg[rep]
+        M = 2097152
+
+        def keys_of(cells):
+            return (cells[:, 0] * M + cells[:, 1]) * M + cells[:, 2]
+
+        pairs = np.unique(np.stack([keys_of(np.floor((samples - lo) / h).astype(np.int64)), rep], axis=1), axis=0)
+        skeys, sedges = pairs[:, 0], pairs[:, 1]
+        p = mv[cand]
+        c0 = np.floor((p - lo) / h).astype(np.int64)
+        vidx, eidx = [], []
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    k = keys_of(c0 + np.array([dx, dy, dz]))
+                    i0, i1 = np.searchsorted(skeys, k, "left"), np.searchsorted(skeys, k, "right")
+                    cnt = i1 - i0
+                    if not cnt.any():
+                        continue
+                    offs = np.arange(int(cnt.sum())) - np.repeat(np.cumsum(cnt) - cnt, cnt)
+                    vidx.append(np.repeat(np.arange(len(cand)), cnt))
+                    eidx.append(sedges[np.repeat(i0, cnt) + offs])
+        if not vidx:
+            return tool
+        pairs = np.unique(np.stack([np.concatenate(vidx), np.concatenate(eidx)], axis=1), axis=0)
+        vidx, eidx = pairs[:, 0], pairs[:, 1]
+        q, A, S = p[vidx], a[eidx], seg[eidx]
+        L = np.maximum(seg_len[eidx], 1e-30)
+        u = np.clip(np.einsum("ij,ij->i", q - A, S) / (L * L), 0.0, 1.0)
+        # an end point within reach wins over the edge's interior: shared corners weld to the corner itself
+        u = np.where(u * L <= eps, 0.0, np.where((1.0 - u) * L <= eps, 1.0, u))
+        foot = A + u[:, None] * S
+        d = np.linalg.norm(q - foot, axis=1)
+        order = np.lexsort((d, vidx))                      # nearest edge first, per vertex
+        vs, ds, fs = vidx[order], d[order], foot[order]
+        first = np.r_[True, vs[1:] != vs[:-1]]
+        vs, ds, fs = vs[first], ds[first], fs[first]
+        keep = ds <= eps
+        if not keep.any():
+            return tool
+        mv[cand[vs[keep]]] = fs[keep]
+        out = m3d.Manifold(m3d.Mesh64(vert_properties=mv, tri_verts=np.ascontiguousarray(mf, dtype=np.uint64)))
+        return tool if out.is_empty() else out
+
     @staticmethod
     def has_needles(solid: m3d.Manifold, thin: float = 1e-3) -> bool:
         """True when a triangle is thinner than `thin` mm (its height over the longest edge): a strip a boolean

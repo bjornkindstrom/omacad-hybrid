@@ -654,7 +654,7 @@ class ViewportEventsMixin:
                 self.sketch_curve_picked.emit(*curve)
                 return
         if was_click:
-            picked = self.pick_profile(event.position().x(), event.position().y())
+            picked = self.click_profile(event.position().x(), event.position().y())
             doc = self.doc
             if picked is not None and (event.modifiers() & Qt.KeyboardModifier.ShiftModifier
                                        or getattr(self, "profile_chain_mode", False)):

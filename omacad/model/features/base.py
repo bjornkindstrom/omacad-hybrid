@@ -101,6 +101,33 @@ def referenced_bodies(doc, feature):
     return [bid for bid in dict.fromkeys(refs) if bid in doc.bodies]
 
 
+def clean_cut(target: m3d.Manifold, tool: m3d.Manifold) -> m3d.Manifold:
+    """`target` minus `tool`, without the leftovers a cutter that almost coincides with a wall leaves behind."""
+    # A cutter built from the target's own edges (a projected profile) misses the wall by nanometres: welded
+    # onto the target's vertices and edges it coincides exactly and the kernel treats the two as one surface.
+    tool = CadKernel.weld_to(tool, target)
+    # A cutter coinciding with a faceted wall to within the kernel tolerance leaves
+    # narrow strips; a nanometre larger cutter resolves them (fewer triangles). On
+    # other cuts the grown cutter only adds nanometre steps (extra edges that break
+    # later edge picks), so the exact cut is kept.
+    result = target - tool
+    nudged = target - CadKernel.grown(tool, 1e-6)
+    if _triangle_count(nudged) < _triangle_count(result) or CadKernel.has_sheets(result):
+        result = nudged
+    # A profile drawn on the wall is cut into its own flat pieces, so its sides wander up
+    # to a facet's sagitta (0.5 um at 360 segments) around the wall. The leftovers are either
+    # zero-thickness sheets or a skin a few 1e-5 mm thick that stands above the floor (a
+    # moved body rounds its corners differently from the sketch). Only when a micron of
+    # clearance removes the needles (fewer triangles) is it used; exact volumes otherwise.
+    if CadKernel.has_sheets(result):
+        result = target - CadKernel.grown(tool, CUT_CLEARANCE)
+    elif CadKernel.has_needles(result):
+        clear = target - CadKernel.grown(tool, CUT_CLEARANCE)
+        if _triangle_count(clear) < _triangle_count(result):
+            result = clear
+    return result
+
+
 def combine_with_bodies(doc: Any, feature_id: str, name: str, operation: str, tool: m3d.Manifold) -> None:
     """Shared by Extrude and Revolve: add `tool` as a new body, or join/cut/intersect it with every body it touches."""
     def new_body():
@@ -128,33 +155,15 @@ def combine_with_bodies(doc: Any, feature_id: str, name: str, operation: str, to
         for other in targets[1:]:
             merged = merged + other.manifold
             doc.bodies.pop(other.body_id, None)
-        targets[0].manifold = merged + tool
+        targets[0].manifold = merged + CadKernel.weld_to(tool, merged)
         targets[0].update_render_mesh()
         return
 
     for body in targets:
         if operation == "cut":
-            # A cutter coinciding with a faceted wall to within the kernel tolerance leaves
-            # narrow strips; a nanometre larger cutter resolves them (fewer triangles). On
-            # other cuts the grown cutter only adds nanometre steps (extra edges that break
-            # later edge picks), so the exact cut is kept.
-            result = body.manifold - tool
-            nudged = body.manifold - CadKernel.grown(tool, 1e-6)
-            if _triangle_count(nudged) < _triangle_count(result) or CadKernel.has_sheets(result):
-                result = nudged
-            # A profile drawn on the wall is cut into its own flat pieces, so its sides wander up
-            # to a facet's sagitta (0.5 um at 360 segments) around the wall. The leftovers are either
-            # zero-thickness sheets or a skin a few 1e-5 mm thick that stands above the floor (a
-            # moved body rounds its corners differently from the sketch). Only when a micron of
-            # clearance removes the needles (fewer triangles) is it used; exact volumes otherwise.
-            if CadKernel.has_sheets(result):
-                result = body.manifold - CadKernel.grown(tool, CUT_CLEARANCE)
-            elif CadKernel.has_needles(result):
-                clear = body.manifold - CadKernel.grown(tool, CUT_CLEARANCE)
-                if _triangle_count(clear) < _triangle_count(result):
-                    result = clear
+            result = clean_cut(body.manifold, tool)
         elif operation == "intersect":
-            result = body.manifold ^ tool
+            result = body.manifold ^ CadKernel.weld_to(tool, body.manifold)
         else:
             continue
         if result.is_empty():

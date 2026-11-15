@@ -48,7 +48,8 @@ def test_annular_cut_keeps_and_picks_its_outer_circular_edge():
     point = np.array([10 * np.cos(np.radians(330)), 10 * np.sin(np.radians(330)), 30.0])
     sx, sy = vp.world_to_screen(point)
     hit = vp._pick_plane_target(sx, sy)
-    assert hit is not None and hit[0] == "face" and hit[1].index == 0
+    # the annular face itself (its index in body.faces follows the mesh order, which a cleaner cut changes)
+    assert hit is not None and hit[0] == "face" and abs(hit[1].origin[2] - 30.0) < 1e-2 and hit[1].normal[2] > 0.99
     sketch, profile_index = doc.face_to_sketch(hit[1])
     assert profile_index is not None
     assert abs(sketch.profiles[profile_index].area - hit[1].area) < 1.0

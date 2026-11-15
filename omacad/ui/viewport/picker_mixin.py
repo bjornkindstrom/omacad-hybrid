@@ -95,7 +95,8 @@ class PickerMixin:
         origin, ray_dir = ray_from_screen(x, y, self.width(), self.height(), view, proj)
         best_t, best_id = float("inf"), None
         for bid, body in self.doc.bodies.items():
-            if body.construction or not self._ray_hits_body_aabb(body, origin, ray_dir, best_t):
+            # a hidden body is not there: a click must not select it instead of what is seen behind it (#239)
+            if not body.pickable or not self._ray_hits_body_aabb(body, origin, ray_dir, best_t):
                 continue
             mesh = body.render_mesh
             if mesh is not None and len(mesh.vertices) > 0:

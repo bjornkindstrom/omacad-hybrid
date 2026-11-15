@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.181
+
+### Fixed
+- **Fuzz left on the wall after Combine (cut) (#237)**: a lip extruded from a projected rim misses the wall it came from by nanometres (the projected circle is re-tessellated), so the cut kept a skin that thin: strips on the inner wall and a hair of a face. Tools are now welded onto the target's vertices and edges (`CadKernel.weld_to`, within 2 µm) before Extrude/Revolve join and cut and before Combine, and Combine (cut) uses the same leftover cleaning as Extrude (cut).
+- **Only part of the face lit up (#238)**: the inner wall was broken into pieces by that skin; it is one surface again.
+- **A face could not be selected (#239)**: the visible sketch's projected disc (a bare copy of the cut-off face) caught the click meant for the floor seen through it, and the hidden upper half got selected instead. A profile whose whole outline is projected geometry no longer hides a body face behind it (a tool that asks for a profile, e.g. Extrude, still gets it), and hidden bodies can no longer be clicked.
+- **The outline around a traced logo could not be picked for Fillet/Chamfer (#240)**: free-form outlines (splines, SVG curves) of a flat face with square walls are now loop edges like rounded-rectangle outlines, both at the rim and at the foot; a needle at a sharp spike of the outline no longer spoils it. Fillet and Chamfer sweep them as one piece.
+
 # Hybrid-experiment — 0.9.9.80.180
 
 ### Fixed

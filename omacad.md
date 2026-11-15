@@ -1,3 +1,25 @@
+## Requests #237–#240 — 2026-11-15 (0.9.9.80.181)
+
+Samma modell i alla fyra: skalad cylinder delad vid z=10, läpp (ring 1 mm) extruderad från underdelens
+projicerade kant, Combine (cut) av överdelen. #237 "fnas": den projicerade cirkeln tessellerades om i skissen,
+så läppens innervägg låg 25 nm (72 segment) resp. 0,9 µm (96) från väggen den kom ifrån; kerneln behöll ett
+skinn så tunt (remsor på innerväggen, en 0,17 mm² nedåtvänd hårsyta vid z=10 redan efter joinen).
+`CadKernel.weld_to(tool, target, eps=2e-3)` flyttar verktygets hörn som ligger inom 2 µm från målets hörn/kanter
+exakt dit (rutnät + kantsampling, bara numpy); används i `combine_with_bodies` (join/cut/intersect) och
+`CombineFeature.execute`; `clean_cut` i `features/base.py` är nu den gemensamma cut-vägen (svetsning + de gamla
+grown/needle-heuristikerna). Resultat vid 72 segment: 4 ytor/6 kanter i stället för 44/66. `grown` ensam räckte
+inte: verktygets eget skräp vid z=10 gav nya flisor. #238 följde av #237 (innerväggen var splittrad).
+#239: `pick_face` fungerade – men den synliga skissens projicerade skiva (bar kopia av snittytan vid z=10) tog
+klicket före golvet, och `pick_body` hoppade inte över dolda kroppar, så den dolda överdelen markerades.
+`ProfileMixin.bare_face_profile` (hela konturen på projicerade entiteter) + `click_profile` (används av
+klickvägen; släpper igenom till ytan bara när inget verktyg är öppet); `pick_body` kräver `pickable`.
+#240: `_loop_edges` avfärdade "bara krökta, raka väggar" som cirkel; nu bara om punkterna är koncykliska
+(`_concyclic` efter ordningen). Degenererade granntrianglar (nål vid logotypens vingspets, i ytans plan) ger
+`None` i kind/planhet/vägg och tar grannens vägg i lutande konturer. Ellipsen blir LoopEdge vid z=21 (rim, convex)
+och z=20 (fot); `loop_round_tool` sveper 184-punkterskonturen (fillet 0,5: ΔV −8,57, chamfer −19,8).
+Fälla: `tests/test_annular_cut_edge_pick.py` kollade ytindex 0 – index följer nätordningen; kollar nu z.
+Test: `tests/test_requests_237_240.py` (fixturer `lip_cut_fnas_237.omacad`, `logo_outline_fillet_240.omacad`).
+
 ## Offset Face på inre cylinderyta & tunna väggar — 2026-11-15 (0.9.9.80.180, rapport 20261115-082920)
 
 Offset Face på inre cylinderyta (t.ex. urholkad burk/cylinder) för att göra väggen tjockare inåt:

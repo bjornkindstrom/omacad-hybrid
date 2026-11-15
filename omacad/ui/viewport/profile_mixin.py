@@ -90,6 +90,35 @@ class ProfileMixin:
                 if best is None or t < best_t - 1e-3 or (abs(t - best_t) <= 1e-3 and prof.area < best_area):
                     best, best_area, best_t = (s_id, idx), prof.area, t
         return best
+    def bare_face_profile(self, picked) -> bool:
+        """True when the profile only copies a body face: its whole outline (holes too) lies on projected entities.
+        Such a profile floats where the face was (the open top of a cut-off cup) and must not catch the click
+        meant for the floor seen through it (Björn #239)."""
+        sid, idx = picked
+        sketch = self.doc.sketches.get(sid)
+        if sketch is None or idx >= len(sketch.profiles):
+            return False
+        projected = [ent for ent in sketch.entities if getattr(ent, "projected", False) and not ent.is_construction]
+        if not projected:
+            return False
+        from shapely.geometry import MultiLineString, Point
+        try:
+            lines = MultiLineString([tuple(map(tuple, seg)) for ent in projected for seg in ent.to_lines()])
+        except Exception:
+            return False
+        prof = sketch.profiles[idx]
+        pts = list(prof.exterior_pts) + [q for hole in prof.interior_holes for q in hole]
+        return bool(pts) and all(lines.distance(Point(q[0], q[1])) < 1e-3 for q in pts)
+
+    def click_profile(self, x: float, y: float):
+        """The profile a plain click (no tool open) selects: none when it only copies a face outline and a body
+        face or surface is seen through it, so that face is what gets selected (Björn #239)."""
+        picked = self.pick_profile(x, y)
+        if picked is not None and not self.active_tool_title() and self.bare_face_profile(picked) and (
+                self._pick_face(x, y) is not None or self._pick_curved_surface(x, y) is not None):
+            return None
+        return picked
+
     def _sketches_share_plane(self, a: str, b: str) -> bool:
         from omacad.model.timeline import _planes_coincide
         sa, sb = self.doc.sketches.get(a), self.doc.sketches.get(b)

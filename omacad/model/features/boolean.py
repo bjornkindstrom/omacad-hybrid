@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional, List
 import numpy as np
 import manifold3d as m3d
 from omacad.model.kernel import CadKernel
-from omacad.model.features.base import Feature, Body
+from omacad.model.features.base import Feature, Body, clean_cut
 
 
 class DeleteBodyFeature(Feature):
@@ -43,7 +43,13 @@ class CombineFeature(Feature):
         if not target or not tool:
             return
 
-        target.manifold = CadKernel.boolean_op(target.manifold, tool.manifold, self.operation)
+        if self.operation == "cut":
+            target.manifold = clean_cut(target.manifold, tool.manifold)
+        else:
+            # a body built on this one's edges (a lip extruded from a projected face outline) sits nanometres
+            # off its walls: welded on, the join/intersect is exact instead of leaving hair-thin faces (#237)
+            target.manifold = CadKernel.boolean_op(target.manifold, CadKernel.weld_to(tool.manifold, target.manifold),
+                                                   self.operation)
         target.update_render_mesh()
         # Remove tool body after combine unless keep_tool is True
         if not self.keep_tool:
