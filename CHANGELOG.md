@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.180
+
+### Fixed
+- **Offset Face on inner cylindrical faces and thin walls (report 20261115-082920)**: Pre-selecting a curved or cylindrical surface in the viewport crashed with `AttributeError` on opening Offset Face; `face_to_ref` now resolves curved triangle patches and cylinders properly. When offsetting inner cylinder walls (e.g. hollow cups/tubes), `_cylinder_loop` previously picked the outer wall on thin-walled cylinders due to loose tolerance, and `margin = 0.05 * r` punched through thin walls causing the outer wall to balloon outward; `_cylinder_loop` now selects the closest matching circular loop and `margin` is clamped to `min(0.02, 0.5 * abs(d))` mm, so offsetting a cylindrical face inward thickens the wall cleanly without affecting outer walls.
+
 # Hybrid-experiment — 0.9.9.80.179
 
 ### Added

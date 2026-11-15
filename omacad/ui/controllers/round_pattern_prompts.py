@@ -233,11 +233,18 @@ class RoundPatternPromptsMixin:
     @leaves_sketch
     def prompt_offset_face(self, face=None):
         """Offset Face: move flat faces, or change the radius of holes and pins (tolerances for threads and fits)."""
-        from omacad.model.features.offset_face import OffsetFaceFeature, plane_face_ref
+        from omacad.model.features.offset_face import OffsetFaceFeature, face_to_ref, plane_face_ref
         from omacad.ui.dialogs import OffsetFaceDialog
-        if face is None and getattr(self.viewport, "selected_faces", None):
-            item = self.viewport.selected_faces[0]
-            face = item[1] if isinstance(item, tuple) else item
+        preselected = []
+        if face is not None:
+            preselected.append(("", face))
+        elif getattr(self.viewport, "selected_faces", None):
+            for item in self.viewport.selected_faces:
+                b_id = item[0] if isinstance(item, tuple) else getattr(item, "body_id", "")
+                f_item = item[1] if isinstance(item, tuple) else item
+                preselected.append((b_id, f_item))
+            if getattr(self.viewport, "clear_face_selection", None):
+                self.viewport.clear_face_selection()
         if not self.doc.bodies:
             QMessageBox.information(self, "Offset Face", "Create a 3D body first.")
             return
@@ -333,11 +340,14 @@ class RoundPatternPromptsMixin:
         from omacad.ui.apply_button import add_apply_button, face_ref_anchor, arrow_anchor
         add_apply_button(vp, dlg, lambda: arrow_anchor(vp) or face_ref_anchor(vp, lambda: dlg.faces),
                          fields=[("Distance:", dlg.spn_dist)])
-        if face is not None:
-            if isinstance(face, dict):
-                dlg.toggle({k: v for k, v in face.items() if k != "body_id"}, face.get("body_id", ""))
-            else:
-                dlg.toggle(plane_face_ref(face), face.body_id)
+        for b_id, f in preselected:
+            target_body_id = b_id or (getattr(f, "body_id", "") if not isinstance(f, dict) else f.get("body_id", ""))
+            if not target_body_id and len(self.doc.bodies) == 1:
+                target_body_id = next(iter(self.doc.bodies))
+            body = self.doc.bodies.get(target_body_id) if target_body_id else None
+            ref = face_to_ref(f, body)
+            if ref is not None:
+                dlg.toggle(ref, target_body_id)
         dlg.show()
 
     @leaves_sketch

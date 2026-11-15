@@ -1,3 +1,15 @@
+## Offset Face på inre cylinderyta & tunna väggar — 2026-11-15 (0.9.9.80.180, rapport 20261115-082920)
+
+Offset Face på inre cylinderyta (t.ex. urholkad burk/cylinder) för att göra väggen tjockare inåt:
+Förval av krökt yta i 3D-vyn kraschade med `AttributeError: 'numpy.ndarray' object has no attribute 'normal'`;
+`face_to_ref` i `omacad/model/features/offset_face.py` identifierar nu cylinder- och ytreferenser från
+triangellappar på kroppen och `prompt_offset_face` konsumerar förvalda ytor rent utan krasch.
+Vidare valde `_cylinder_loop` fel kontur (ytterväggen i stället för innerväggen) vid tunna väggar eftersom toleransen
+`0.03 * r` var större än väggtjockleken; `_cylinder_loop` väljer nu den cirkelkontur vars medelradie ligger närmast `r`.
+Dessutom hade `offset_cylinder` en hårdkodad `margin = 0.05 * r` som stack rakt igenom tunna väggar och fick hela
+kroppen att svälla utåt i stället för att förtjocka innerväggen; `margin` begränsas nu till `min(0.02, 0.5 * abs(d))`.
+Test: `tests/test_offset_face_inward.py`.
+
 ## Skript delas till omacad-requests — 2026-11-13 (0.9.9.80.178)
 
 Björn: användarnas nya script ska laddas upp automatiskt till omacad-requests (samma token som requests).
@@ -488,6 +500,7 @@ Kontroll: `tests/test_panel_rule.py` (ingen synlig etikett/combo/kryssruta smala
 
 ## Senaste lösningar
 
+- **Offset Face på inre cylinderyta & tunna väggar (0.9.9.80.180, rapport 20261115-082920)**: `prompt_offset_face` kraschade med `AttributeError: 'numpy.ndarray' object has no attribute 'normal'` vid förval av krökt yta/cylinder; `face_to_ref` i `omacad/model/features/offset_face.py` identifierar nu cylinder- och ytreferenser från triangellappar på kroppen och konsumerar förvalet utan fel. Vidare valde `_cylinder_loop` fel kontur (ytterväggen i stället för innerväggen) vid tunna väggar eftersom toleransen `0.03 * r` var större än väggtjockleken; `_cylinder_loop` väljer nu den cirkelkontur vars medelradie ligger närmast `r`. Dessutom hade `offset_cylinder` en hårdkodad `margin = 0.05 * r` som stack rakt igenom tunna väggar och fick hela kroppen att svälla utåt i stället för att förtjocka innerväggen; `margin` begränsas nu till `min(0.02, 0.5 * abs(d))`. Test: `tests/test_offset_face_inward.py`.
 - **Snabb vy, exakt export (0.9.9.80.153, Björn)**: `quality.set_fast_view(on, view_segments)`; `circle_segments()` ger `_view_segments` (72) när `fast_view_active()`, `quality.exact()` (räknare) tvingar full `_segments`. `RenderMesh.display_arrays(edge_lines)` → `model/display_smooth.smooth_arrays`: Phong-tessellering (`SHAPE` 0,5 = kordans mittpunkt hamnar på cirkeln; 0,75 buktar ut) i 2 nivåer, mittpunkten hör till kanten (snitt av de kurviga trianglarnas förslag) så locket följer väggen utan spricka, kantlinjerna delas med samma punkter; bara ritningen i `render_mixin`, plockning/mätning använder modellen. `Exporter.exact_document(doc)` = `document_to_dict` + `apply_dict` på en ny `Document` inne i `exact()` (sparar vyns segment så profilnummer löses rätt), synlighet kopieras; STL/STEP via `busy.run`, `media_export.exact_view` lägger exakta render-meshar i `display_override` och ritar inom `exact()`. Inställningen pushas bara vid start eller när `fast_view`/`view_segments` ändras; `conftest` slår av den (exakta volymer). Fälla: 48 bitar gav fel i 7 av 88 testdokument (Emboss på jarburk lade till material, Japandi, gängor); samma fel finns redan med Curve smoothness Light/Normal. 72 gav inga verkliga avvikelser (`fillet_surface_follow` byter genus även mellan 96 och 128). Test: `test_fast_view_exact_export.py`.
 - **Shell saknade tjockleksfält (0.9.9.80.147, rapport 20261107-084755)**: `NumericSlider.attach` flyttar fältet till en ny förälder, vilket tillfälligt döljer det. `_PairBox` såg då två dolda fält och dolde hela raden; även etiketter kunde bli kvar dolda i Both. Återställ fältets avsedda synlighet efter flytten, innan omslaget visas, så synkas både rad och etiketter. Test med rapportens lilla boxdokument: `test_shell_panel.py` (alla tre riktningar vid dockning och växling).
 - **Japandi: bågformad ribbhöjd (0.9.9.80.146, request #187)**: Björn menade inte bara ribbans bana (0.9.9.80.145, behålls): den röda linjen i skärmbilden är ribbans ytterprofil från sidan. `height_profile` (`even`/`arch`) och `end_height` (% av mitthöjden, minst 1 så att ribban inte möter väggen i en nollhöjd). `height_share` är en äkta cirkelbåge i mm genom ändhöjden och mitthöjden, inte en sinus. `_arch_pieces` håller bågen inom `PROFILE_SAG`. Bredden är oförändrad, så halvrunda ribbor blir halvellipser. I `surface_japandi_tool` skalas bara ribbsidan av `t_in`, baksidan står kvar. Test: `test_japandi.py`.

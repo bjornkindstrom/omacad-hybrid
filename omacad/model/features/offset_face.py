@@ -130,11 +130,20 @@ def offset_plane(manifold, ref, d: float) -> Optional[m3d.Manifold]:
 
 def _cylinder_loop(local, r, length):
     """The cross-section polygon of the wall of radius r about the local z axis, cut half way along it."""
+    best_poly = None
+    best_err = 1e9
     for poly in local.slice(length / 2.0).to_polygons():
+        if len(poly) < 8:
+            continue
         rad = np.hypot(poly[:, 0], poly[:, 1])
-        if len(poly) >= 8 and np.all(np.abs(rad - r) < 0.03 * r + TOL):
-            area2 = float(np.sum(poly[:, 0] * np.roll(poly[:, 1], -1) - np.roll(poly[:, 0], -1) * poly[:, 1]))
-            return poly if area2 > 0 else poly[::-1]   # a hole's loop runs clockwise; cross-sections want counter-clockwise
+        err = float(np.abs(np.mean(rad) - r))
+        max_dev = float(np.max(np.abs(rad - r)))
+        if max_dev < 0.05 * r + 0.5 and err < best_err:
+            best_err = err
+            best_poly = poly
+    if best_poly is not None:
+        area2 = float(np.sum(best_poly[:, 0] * np.roll(best_poly[:, 1], -1) - np.roll(best_poly[:, 0], -1) * best_poly[:, 1]))
+        return best_poly if area2 > 0 else best_poly[::-1]   # a hole's loop runs clockwise; cross-sections want counter-clockwise
     return None
 
 
@@ -149,7 +158,7 @@ def offset_cylinder(manifold, ref, d: float) -> Optional[m3d.Manifold]:
         return None
     # The ring reaches a little into the material (when adding) or the air (when removing) on the side of the old
     # wall: a boundary that only nearly coincides with the wall would leave hair-thin slivers behind.
-    margin = 0.05 * r + 1e-2
+    margin = min(0.02, 0.5 * abs(d))
     r_in, r_out = sorted((r, r2))
     if r > r2:          # the old wall is the outer edge of the ring
         r_out += margin
@@ -164,6 +173,32 @@ def offset_cylinder(manifold, ref, d: float) -> Optional[m3d.Manifold]:
 
 def surface_face_ref(pick: Dict[str, Any]) -> Dict[str, Any]:
     return {"kind": "surface", "point": [float(x) for x in pick["point"]], "normal": [float(x) for x in pick["normal"]]}
+
+
+def face_to_ref(face, body=None) -> Optional[Dict[str, Any]]:
+    """Convert a picked face item (dict, PlanarFace, or curved triangle patch) to a face ref dict."""
+    if isinstance(face, dict):
+        return {k: v for k, v in face.items() if k != "body_id"}
+    if hasattr(face, "normal") and hasattr(face, "origin"):
+        return plane_face_ref(face)
+    if isinstance(face, np.ndarray) and len(face) and body is not None:
+        mesh = getattr(body, "render_mesh", None)
+        if mesh is not None and len(mesh.vertices):
+            from omacad.model.faces_hit_tests import detect_cylinder_surface
+            mesh_tris = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3, 3)
+            dists = np.max(np.abs(mesh_tris - face[0]), axis=(1, 2))
+            tri_idx = int(np.argmin(dists))
+            cyl = detect_cylinder_surface(mesh, tri_idx)
+            if cyl is not None:
+                return cylinder_face_ref(cyl)
+        p = face.mean(axis=(0, 1))
+        cross = np.cross(face[:, 1] - face[:, 0], face[:, 2] - face[:, 0])
+        ln = np.linalg.norm(cross, axis=1)
+        valid = ln > 1e-12
+        n = cross[valid].sum(axis=0) if valid.any() else np.array([0., 0., 1.])
+        n_len = np.linalg.norm(n)
+        return surface_face_ref({"point": p, "normal": n / n_len if n_len > 1e-12 else [0., 0., 1.]})
+    return None
 
 
 def _surface_patch(verts, tris, tri_normals, seed: int, max_angle_deg: float = 35.0) -> np.ndarray:
