@@ -48,3 +48,25 @@ def test_one_line_relation_has_one_box(view):
     view.doc.add_constraints(sk.sketch_id, [("HORIZONTAL", [a.entity_id], [])])
     view.sketch_palette.chk_show_constraints.setChecked(True)
     assert len(_badges(view)) == 1
+
+
+def test_place_label_moves_a_box_off_an_earlier_one():
+    from PySide6.QtCore import QRectF
+    from PySide6.QtWidgets import QApplication
+    from omacad.ui.main_window import MainWindow
+
+    app = QApplication.instance() or QApplication([])
+    win = MainWindow()
+    v = win.viewport
+    v._label_rects = []
+    badge = v.place_label(QRectF(100, 100, 18, 18), movable=False)
+    assert badge == QRectF(100, 100, 18, 18)
+    box = v.place_label(QRectF(90, 95, 64, 24))
+    assert not box.intersects(badge)
+    third = v.place_label(QRectF(92, 97, 64, 24))
+    assert not third.intersects(badge) and not third.intersects(box)
+    v._label_rects = []
+    assert v.place_label(QRectF(90, 95, 64, 24)) == QRectF(90, 95, 64, 24)
+    win.close()
+    win.deleteLater()
+

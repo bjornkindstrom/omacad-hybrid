@@ -4,10 +4,35 @@ import numpy as np
 import pytest
 
 from omacad.model.document import Document
-from omacad.model.sketch import Sketch, SketchPlane, SketchLine, SketchCircle, rotate_entity
+from omacad.model.sketch import Sketch, SketchPlane, SketchLine, SketchCircle, rotate_entity, rotate_point
 from omacad.model.sketch_rotate import selection_pivots, face_centroid, rotate_axis_constraints, sketch_face_pivot
 from omacad.model.sketch_solver import solve_sketch
 from omacad.io.exporter import Exporter
+
+
+def test_rotate_point():
+    p = (10.0, 0.0)
+    p_rot = rotate_point(p, 90.0, (0.0, 0.0))
+    assert abs(p_rot[0] - 0.0) < 1e-6
+    assert abs(p_rot[1] - 10.0) < 1e-6
+
+    p_rot180 = rotate_point(p, 180.0, (5.0, 0.0))
+    assert abs(p_rot180[0] - 0.0) < 1e-6
+    assert abs(p_rot180[1] - 0.0) < 1e-6
+
+
+def test_rotate_sketch_entities():
+    line = SketchLine("l1", (0.0, 0.0), (10.0, 0.0))
+    rotate_entity(line, 90.0, (0.0, 0.0))
+    assert abs(line.p1[0]) < 1e-6 and abs(line.p1[1]) < 1e-6
+    assert abs(line.p2[0]) < 1e-6 and abs(line.p2[1] - 10.0) < 1e-6
+
+    circle = SketchCircle("c1", (10.0, 0.0), 5.0)
+    rotate_entity(circle, 90.0, (0.0, 0.0))
+    assert abs(circle.center[0]) < 1e-6
+    assert abs(circle.center[1] - 10.0) < 1e-6
+    assert circle.radius == 5.0
+
 
 
 def _loop(points, prefix="edge"):

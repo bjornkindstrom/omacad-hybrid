@@ -12,7 +12,9 @@ from omacad.ui.main_window import MainWindow
 def win():
     QApplication.instance() or QApplication([])
     w = MainWindow()
-    return w
+    yield w
+    w.close()
+    w.deleteLater()
 
 
 class _Ev:
@@ -121,13 +123,15 @@ def test_fan_menu_context_face(win):
     overlay.dismiss()
 
 
-def test_fan_menu_rendering_and_mouse_events(win):
+def test_fan_menu_rendering_and_mouse_events(win, monkeypatch):
     from PySide6.QtCore import Qt
     from PySide6.QtGui import QImage, QPainter
 
+    vp = win.viewport
+    monkeypatch.setattr(vp, "paintGL", lambda: None)
+    monkeypatch.setattr(vp, "initializeGL", lambda: None)
     win.resize(900, 700)
     win.show()
-    vp = win.viewport
     vp.resize(800, 600)
     overlay = vp._ensure_fan_menu()
     cats = vp._build_workspace_fan_categories(sketch=False)
@@ -282,6 +286,113 @@ def test_fan_menu_sketch_text_and_tools(win):
     line_item.callback()
     assert vp.sketch_tool == "LINE"
     assert win.ribbon.btn_line.isChecked()
+
+
+# =========================================================================
+# Fan menu label layouts & icon scaling settings
+# =========================================================================
+
+def test_fan_menu_label_choice_saves_and_resets(tmp_path, monkeypatch):
+    from omacad.ui import settings as settings_module, theme
+    from omacad.ui.settings import SettingsManager
+    from omacad.ui.settings_dialog import SettingsDialog
+
+    path = tmp_path / "settings.json"
+    monkeypatch.setattr(settings_module, "_instance", SettingsManager(path))
+    monkeypatch.setattr(theme, "set_fixed_theme", lambda *_: None)
+
+    dlg = SettingsDialog()
+    assert dlg.cmb_fan_labels.currentData() == "curved"
+    dlg.cmb_fan_labels.setCurrentIndex(dlg.cmb_fan_labels.findData("readable_curved"))
+    dlg.save_and_close()
+    assert SettingsManager(path).get("fan_menu_label_style") == "readable_curved"
+
+    dlg = SettingsDialog()
+    assert dlg.cmb_fan_labels.currentData() == "readable_curved"
+    dlg.cmb_fan_labels.setCurrentIndex(dlg.cmb_fan_labels.findData("horizontal"))
+    dlg.reset_all()
+    assert dlg.cmb_fan_labels.currentData() == "curved"
+    dlg.close()
+
+
+def test_all_three_label_styles_render_differently(tmp_path, monkeypatch):
+    import hashlib
+    from PySide6.QtGui import QColor, QImage, QPainter
+    from PySide6.QtWidgets import QWidget
+    from omacad.ui import settings as settings_module
+    from omacad.ui.fan_menu import FanItem, FanMenu
+    from omacad.ui.settings import SettingsManager
+
+    manager = SettingsManager(tmp_path / "settings.json")
+    monkeypatch.setattr(settings_module, "_instance", manager)
+    viewport = QWidget()
+    viewport.resize(800, 700)
+    menu = FanMenu(viewport)
+    categories = [FanItem(f"cat_{i}", name, children=[FanItem("tool", "Extrude")])
+                  for i, name in enumerate(("Create", "Modify", "Inspect", "View", "History"))]
+    menu.popup(QPoint(400, 350), categories)
+    rendered = {}
+    for style in ("curved", "readable_curved", "horizontal"):
+        manager.set("fan_menu_label_style", style)
+        image = QImage(800, 700, QImage.Format.Format_RGB32)
+        image.fill(QColor("#17202a"))
+        painter = QPainter(image)
+        menu.draw(painter, image.width(), image.height())
+        painter.end()
+        rendered[style] = hashlib.sha256(image.constBits().tobytes()).hexdigest()
+    assert len(set(rendered.values())) == 3
+
+
+def test_icon_scale_is_saved_and_reset(tmp_path, monkeypatch):
+    from omacad.ui import settings as settings_module, theme
+    from omacad.ui.settings import SettingsManager
+    from omacad.ui.settings_dialog import SettingsDialog
+
+    path = tmp_path / "settings.json"
+    monkeypatch.setattr(settings_module, "_instance", SettingsManager(path))
+    monkeypatch.setattr(theme, "set_fixed_theme", lambda *_: None)
+
+    dialog = SettingsDialog()
+    assert dialog.spn_fan_icon_scale.value() == 100
+    dialog.spn_fan_icon_scale.setValue(150)
+    dialog.save_and_close()
+    assert SettingsManager(path).get("fan_menu_icon_scale") == 1.5
+
+    dialog = SettingsDialog()
+    assert dialog.spn_fan_icon_scale.value() == 150
+    dialog.reset_all()
+    assert dialog.spn_fan_icon_scale.value() == 100
+    dialog.close()
+
+
+def test_icon_scale_changes_the_actual_fan_menu_icon(tmp_path, monkeypatch):
+    from PySide6.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPixmap
+    from PySide6.QtWidgets import QWidget
+    from omacad.ui import settings as settings_module
+    from omacad.ui.fan_menu import FanItem, FanMenu, SectorGeom
+    from omacad.ui.settings import SettingsManager
+
+    manager = SettingsManager(tmp_path / "settings.json")
+    monkeypatch.setattr(settings_module, "_instance", manager)
+    viewport = QWidget()
+    menu = FanMenu(viewport)
+    menu.center_pos = QPointF(200, 200)
+    pixmap = QPixmap(64, 64)
+    pixmap.fill(QColor("#ff0000"))
+    sector = SectorGeom(FanItem("tool", "", icon=QIcon(pixmap)), 45, 70, 100, 200, QPainterPath())
+
+    counts = []
+    for scale in (0.5, 1.5):
+        manager.set("fan_menu_icon_scale", scale)
+        image = QImage(400, 400, QImage.Format.Format_RGB32)
+        image.fill(QColor("#000000"))
+        painter = QPainter(image)
+        menu._draw_sector_content(painter, sector, QColor("#ffffff"), QColor("#ffffff"))
+        painter.end()
+        counts.append(sum(image.pixelColor(x, y) == QColor("#ff0000")
+                          for x in range(image.width()) for y in range(image.height())))
+    assert counts[1] > counts[0] * 3
+
 
 
 

@@ -467,3 +467,156 @@ def test_panel_shows_end_height_only_for_an_arch():
     page.cmb_height.setCurrentText("Even")
     assert not page.spins["end_height"].isVisibleTo(page) and dlg.params()["height_profile"] == "even"
     dlg.deleteLater()
+
+
+# =========================================================================
+# Inner rim & smooth rim joins (reports 20261107-110203 & 20261107-093936)
+# =========================================================================
+
+def _outline_poly(body, z):
+    return Polygon(max(body.slice(z).to_polygons(), key=lambda p: Polygon(p).area))
+
+
+def test_report_inner_lip_has_no_crosswise_creases():
+    from pathlib import Path
+    from shapely import contains_xy
+
+    doc = Exporter.load_project(str(Path(__file__).parent / "data" / "japandi_inner_rim.omacad"))
+    body = next(iter(doc.bodies.values()))
+    solid = body.manifold
+    assert solid.status().name == "NoError"
+    assert len(solid.decompose()) == 1
+    bore = min((Polygon(p) for p in solid.slice(20.0).to_polygons()), key=lambda p: p.area)
+    segments = body.render_mesh.sharp_lines.reshape(-1, 2, 3)
+    mid = segments.mean(axis=1)
+    inside_lip = ((mid[:, 2] > 22.01) & (mid[:, 2] < 24.99)
+                  & contains_xy(bore.buffer(0.01), mid[:, 0], mid[:, 1]))
+    assert not np.any(inside_lip & (np.abs(segments[:, 1, 2] - segments[:, 0, 2]) > 0.01))
+
+
+@pytest.mark.parametrize("rim", ["chamfer", "round"])
+@pytest.mark.parametrize("shape", ["rectangular", "half-round"])
+@pytest.mark.parametrize("twist", [0.0, 35.0])
+@pytest.mark.parametrize("height_profile", ["even", "arch"])
+def test_report_smooth_rim_meets_rib_crests(rim, shape, twist, height_profile):
+    from pathlib import Path
+
+    report_path = str(Path(__file__).parent / "data" / "japandi_rim_join.omacad")
+    doc = Exporter.load_project(report_path)
+    feature = doc.timeline.features[-1]
+    old = doc.bodies[feature.target_body_id].manifold
+    assert _outline_poly(old, 2.999).hausdorff_distance(_outline_poly(old, 3.001)) > 0.8
+    doc.timeline.marker_index = 1
+    doc.timeline.recompute(doc)
+    base = doc.bodies[feature.target_body_id].manifold
+    result, ribs, notes = apply_japandi(base, feature.faces,
+        {**feature.params(), "rim_follow": True, "rim": rim, "shape": shape, "twist": twist, "height_profile": height_profile})
+    assert ribs > 0 and not notes
+    assert result.status() == m3d.Error.NoError and len(result.decompose()) == 1
+    for edge, sign in ((3.0, -1.0), (37.0, 1.0)):
+        band = np.asarray(_outline_poly(result, edge + sign * 0.001).exterior.coords)
+        rib = np.asarray(_outline_poly(result, edge - sign * 0.001).exterior.coords)
+        band_r, rib_r = np.linalg.norm(band, axis=1), np.linalg.norm(rib, axis=1)
+        assert np.ptp(band_r) < 0.03
+        assert band_r.max() == pytest.approx(rib_r.max(), abs=0.03)
+    ordinary, _, _ = apply_japandi(base, feature.faces,
+        {**feature.params(), "rim": rim, "shape": shape, "twist": twist, "height_profile": height_profile})
+    assert result.slice(20.0).area() == pytest.approx(ordinary.slice(20.0).area(), abs=1e-5)
+
+
+def test_follow_setting_history_file_and_panel(tmp_path):
+    from pathlib import Path
+    from omacad.ui.dialogs.surface_texture_dlg import _JapandiPage
+
+    report_path = str(Path(__file__).parent / "data" / "japandi_rim_join.omacad")
+    doc = Exporter.load_project(report_path)
+    feature = doc.timeline.features[-1]
+    assert feature.rim_follow is False
+    page = _JapandiPage()
+    page.load(feature)
+    page.chk_rim_follow.setChecked(True)
+    assert page.params()["rim_follow"] is True
+    assert doc.edit_feature(1, rim_follow=True)
+    assert doc.timeline.features[-1].rim_follow
+    doc.undo()
+    assert not doc.timeline.features[-1].rim_follow
+    doc.redo()
+    assert doc.timeline.features[-1].rim_follow
+    path = tmp_path / "follow.omacad"
+    Exporter.save_project(doc, str(path))
+    loaded = Exporter.load_project(str(path))
+    assert loaded.timeline.features[-1].rim_follow is True
+    page.load(loaded.timeline.features[-1])
+    assert page.chk_rim_follow.isChecked()
+    page.close()
+
+
+@pytest.mark.parametrize("rim", ["chamfer", "round"])
+def test_follow_rim_on_closed_curved_wall(rim):
+    from pathlib import Path
+    from shapely.geometry import box
+    from omacad.model.features.base import region_cross_section
+
+    report_path = str(Path(__file__).parent / "data" / "japandi_rim_join.omacad")
+    outline_shape = box(-10.0, -5.0, 10.0, 5.0).buffer(4.0, quad_segs=24)
+    solid = m3d.Manifold.extrude(region_cross_section(outline_shape), 20.0)
+    ref = {"kind": "surface", "point": [14.0, 0.0, 10.0], "normal": [1.0, 0.0, 0.0]}
+    doc = Exporter.load_project(report_path)
+    params = {**doc.timeline.features[-1].params(), "rim": rim, "rim_follow": True,
+              "path": "straight", "height_profile": "even", "depth": 1.0, "twist": 0.0}
+    result, ribs, notes = apply_japandi(solid, [ref], params)
+    assert ribs > 0 and not notes
+    assert result.status() == m3d.Error.NoError and len(result.decompose()) == 1
+    straight, _, _ = apply_japandi(solid, [ref], {**params, "twist": 45.0})
+    for z in (1.5, 18.5):
+        assert _outline_poly(result, z).hausdorff_distance(_outline_poly(straight, z)) < 1e-6
+
+
+@pytest.mark.parametrize("rim", ["chamfer", "round"])
+def test_094826_no_flutes_in_end_band(rim):
+    from pathlib import Path
+
+    doc = Exporter.load_project(str(Path(__file__).parent / "data" / "japandi_smooth_rim.omacad"))
+    feature = doc.timeline.features[-1]
+    assert feature.rim_follow
+    doc.timeline.marker_index = 1
+    doc.timeline.recompute(doc)
+    base = doc.bodies[feature.target_body_id].manifold
+    result, ribs, notes = apply_japandi(base, feature.faces, {**feature.params(), "rim": rim})
+    assert ribs == 103 and not notes
+    assert result.status() == m3d.Error.NoError and len(result.decompose()) == 1
+    for z in (0.75, 1.5, 2.999, 37.001, 38.5, 39.25):
+        points = np.asarray(_outline_poly(result, z).exterior.coords)
+        assert np.ptp(np.linalg.norm(points, axis=1)) < 0.03
+    for z in (2.999, 37.001):
+        points = np.asarray(_outline_poly(result, z).exterior.coords)
+        assert np.linalg.norm(points, axis=1).max() == pytest.approx(50.5, abs=0.03)
+
+
+def test_230_japandi_twist_does_not_protrude_past_rim():
+    from pathlib import Path
+
+    doc = Exporter.load_project(str(Path(__file__).parent / "data" / "request_230_japandi_twist.omacad"))
+    body = list(doc.bodies.values())[0]
+    rm = body.render_mesh
+
+    v = rm.vertices.reshape(-1, 3)
+    z_max = v[:, 2].max()
+    assert z_max <= 101.5865 + 1e-3, f"Ribs overshoot rim: z_max={z_max}"
+
+    lines = rm.sharp_lines.reshape(-1, 2, 3)
+    assert lines[:, :, 2].max() <= 101.5865 + 1e-3, "Sharp lines overshoot the rim"
+
+    on_rim = (np.abs(lines[:, :, 2] - z_max) < 1e-3).all(axis=1)
+    assert on_rim.any(), "No lines found on top rim"
+    top_lines = lines[on_rim]
+
+    r0 = np.hypot(top_lines[:, 0, 0], top_lines[:, 0, 1])
+    r1 = np.hypot(top_lines[:, 1, 0], top_lines[:, 1, 1])
+    crossing = ((r0 < 19.0) & (r1 > 20.0)) | ((r0 > 20.0) & (r1 < 19.0))
+    assert not crossing.any(), "Lines cross diagonally across top rim face"
+
+    r_mid = np.hypot(top_lines.mean(axis=1)[:, 0], top_lines.mean(axis=1)[:, 1])
+    in_between = (r_mid > 18.5) & (r_mid < 21.5)
+    assert not in_between.any(), f"Found {in_between.sum()} ragged line segments on top rim face"
+

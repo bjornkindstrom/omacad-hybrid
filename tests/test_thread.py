@@ -240,4 +240,141 @@ def test_thread_panel_length_is_at_least_one_turn():
     dlg = ThreadDialog(Document())
     dlg.spn_pitch.setValue(3.0)
     dlg.spn_length.setValue(1.0)
-    assert dlg.spn_length.value() == pytest.approx(3.0)       # shown, not stretched silently by the kernel
+    assert dlg.spn_length.value() == pytest.approx(3.0)
+
+
+# ==============================================================================
+# Thread Anchor & Gap Tests
+# ==============================================================================
+
+def _cylinder_thread(anchor, gap=0.0, length=10.0):
+    doc = Document()
+    doc.add_cylinder(10.0, 40.0)
+    cyl = next(iter(doc.bodies.values()))
+    doc.add_thread(diameter=20.0, pitch=2.5, length=length, target_body_id=cyl.body_id, operation="join",
+                   plane_origin=[0, 0, 0], plane_normal=[0, 0, 1], plane_u=[1, 0, 0], plane_v=[0, 1, 0],
+                   anchor=anchor, anchor_gap=gap, host_length=40.0)
+    return doc, doc.timeline.features[-1]
+
+
+def _thread_z_range(doc, feat):
+    solid = feat.build_solid()
+    box = solid.bounding_box()
+    return box[2], box[5]
+
+
+@pytest.mark.parametrize("anchor,gap,length,lo", [("bottom", 0.0, 10.0, 0.0), ("bottom", 5.0, 10.0, 5.0),
+                                                  ("top", 0.0, 10.0, 30.0), ("top", 4.0, 10.0, 26.0)])
+def test_start_offset(anchor, gap, length, lo):
+    doc, feat = _cylinder_thread(anchor, gap, length)
+    assert feat.start_offset() == pytest.approx(lo)
+    z0, z1 = _thread_z_range(doc, feat)
+    assert z0 >= lo - 1e-3 and z1 <= lo + length + 0.5
+    assert z0 == pytest.approx(lo, abs=1.5) and z1 > lo + length - 1.5
+
+
+def test_top_thread_longer_than_cylinder_falls_back_to_bottom():
+    doc, feat = _cylinder_thread("top", 0.0, 60.0)
+    assert feat.start_offset() == 0.0
+
+
+def test_without_a_cylinder_nothing_moves():
+    doc = Document()
+    doc.add_thread(diameter=10.0, pitch=2.0, length=10.0)
+    feat = doc.timeline.features[-1]
+    assert feat.host_length is None and feat.start_offset() == 0.0
+
+
+def test_saved_and_reloaded_keeps_the_anchor():
+    doc, feat = _cylinder_thread("top", 3.0)
+    d2 = Document()
+    Exporter.apply_dict(d2, Exporter.document_to_dict(doc))
+    f2 = d2.timeline.features[-1]
+    assert (f2.anchor, f2.anchor_gap, f2.host_length) == ("top", 3.0, 40.0)
+    assert f2.start_offset() == pytest.approx(feat.start_offset())
+
+
+def test_edit_moves_the_thread():
+    doc, feat = _cylinder_thread("bottom")
+    idx = len(doc.timeline.features) - 1
+    assert doc.edit_feature(idx, anchor="top")
+    assert doc.timeline.features[idx].start_offset() == pytest.approx(30.0)
+
+
+# ==============================================================================
+# Thread Follows Cylinder Diameter (Request #37)
+# ==============================================================================
+
+def _neck_doc(follow=True):
+    doc = Document()
+    doc.add_cylinder(20.0, 10.0)
+    cyl = next(iter(doc.bodies))
+    ref = {"kind": "cylinder", "origin": [0.0, 0.0, 0.0], "axis": [0.0, 0.0, 1.0], "radius": 20.0, "length": 10.0,
+           "internal": False}
+    doc.add_offset_face(cyl, [ref], -2.0)
+    doc.add_thread(diameter=35.99, pitch=3.0, length=8.0, target_body_id=cyl, operation="join", profile="round",
+                   plane_origin=[0, 0, 0], plane_normal=[0, 0, 1], plane_u=[1, 0, 0], plane_v=[0, 1, 0],
+                   host_length=10.0, follow_host=follow, host_offset=-0.01)
+    return doc, cyl
+
+
+def _max_radius(doc, bid):
+    v = np.asarray(doc.bodies[bid].manifold.to_mesh().vert_properties)[:, :3]
+    return float(np.hypot(v[:, 0], v[:, 1]).max())
+
+
+def test_measure_host_male_and_female():
+    doc = Document()
+    doc.add_cylinder(12.0, 20.0)
+    cyl = next(iter(doc.bodies))
+    doc.add_thread(diameter=24.0, pitch=2.5, length=10.0, target_body_id=cyl, operation="join",
+                   plane_origin=[0, 0, 0], plane_normal=[0, 0, 1], host_length=20.0)
+    doc.timeline.recompute(doc)
+    th = doc.timeline.features[-1]
+    assert th.measure_host(doc.step_states[1][cyl]) == pytest.approx(24.0, abs=0.01)
+
+    hole = Document()
+    hole.add_box(60, 60, 20, center="bottom_center")
+    box = next(iter(hole.bodies))
+    hole.add_cylinder(8.0, 20.0, name="Pin")
+    pin = [k for k in hole.bodies if k != box][0]
+    hole.combine_bodies(box, pin, "cut")
+    hole.add_thread(diameter=16.0, pitch=2.0, length=10.0, is_female=True, target_body_id=box, operation="cut",
+                    plane_origin=[0, 0, 0], plane_normal=[0, 0, 1], host_length=20.0)
+    hole.timeline.recompute(hole)
+    th = hole.timeline.features[-1]
+    assert th.measure_host(hole.step_states[len(hole.timeline.features) - 1][box]) == pytest.approx(16.0, abs=0.01)
+
+
+def test_thread_follows_when_the_offset_face_is_edited():
+    doc, cyl = _neck_doc(follow=True)
+    th = doc.timeline.features[-1]
+    assert th.used_diameter == pytest.approx(35.99, abs=0.02)
+    r_before = _max_radius(doc, cyl)
+    doc.edit_feature(1, distance=-5.0)
+    assert th.used_diameter == pytest.approx(29.99, abs=0.02)
+    assert _max_radius(doc, cyl) == pytest.approx(r_before - 3.0, abs=0.05)
+
+
+def test_a_thread_that_does_not_follow_stays_put():
+    doc, cyl = _neck_doc(follow=False)
+    th = doc.timeline.features[-1]
+    doc.edit_feature(1, distance=-5.0)
+    assert th.used_diameter == 35.99
+    assert th.follow_host is False
+
+
+def test_the_request_document_gets_its_thread_back_when_following_is_switched_on():
+    from pathlib import Path
+    doc_path = str(Path(__file__).parent / "data" / "thread_follows_cylinder.omacad")
+    doc = Exporter.load_project(doc_path)
+    jar = "body_split_2"
+    th = [f for f in doc.timeline.features if f.feature_type == "thread"][0]
+    assert th.follow_host is False and th.used_diameter == 29.99
+    v0 = doc.bodies[jar].manifold.volume()
+    idx = doc.timeline.features.index(th)
+    host = th.measure_host(doc.step_states[idx]["body_cylinder_1"])
+    doc.edit_feature(idx, follow_host=True, host_offset=-0.01)
+    assert th.used_diameter == pytest.approx(host - 0.01, abs=1e-6)
+    assert doc.bodies[jar].manifold.volume() < v0 - 50
+       # shown, not stretched silently by the kernel

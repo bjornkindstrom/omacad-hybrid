@@ -1,8 +1,10 @@
-"""Surface Texture's cells end to end: ribbon button, pick a flat face and a cylinder, preview, OK -> one undoable step."""
+"""Surface Texture's cells end to end: ribbon button, pick flat face/cylinder, preview, OK undo, and dialog controls."""
 import pytest
 from PySide6.QtWidgets import QApplication
 
 from omacad.model.features.offset_face import plane_face_ref
+from omacad.model.features.honeycomb import SHAPES
+from omacad.ui.dialogs import SurfaceTextureDialog
 from omacad.ui.main_window import MainWindow
 
 
@@ -11,7 +13,9 @@ def win():
     QApplication.instance() or QApplication([])
     w = MainWindow()
     w.doc.add_box(40, 30, 20, wall_thickness=2)
-    return w
+    yield w
+    w.close()
+    w.deleteLater()
 
 
 def test_honeycomb_tool_adds_one_undoable_step(win):
@@ -39,3 +43,17 @@ def test_cancel_leaves_the_model_alone(win):
     win.inspector.current_tool_dlg.reject()
     assert not [f for f in win.doc.timeline.features if f.feature_type == "honeycomb"]
     assert next(iter(win.doc.bodies.values())).visible
+
+
+def test_panel_shows_randomness_and_seed_only_for_voronoi(win):
+    dlg = SurfaceTextureDialog(win.doc)
+    dlg.show()
+    page = dlg.pages["honeycomb"]
+    assert not page.spins["randomness"].isVisible() and not page.spins["seed"].isVisible()
+    page.cmb_shape.setCurrentIndex(SHAPES.index("voronoi"))
+    assert page.spins["randomness"].isVisible() and page.spins["seed"].isVisible()
+    page.spins["seed"].setValue(5)
+    params = dlg.params()
+    assert (params["shape"], params["seed"], params["randomness"]) == ("voronoi", 5.0, 100.0)
+    dlg.close()
+    dlg.deleteLater()

@@ -113,3 +113,29 @@ def test_inside_chamfer_at_the_bottom_and_under_the_shoulder():
     _, capped, _ = _jar(lid_beside=False, tolerance=0.0, inside_chamfer=9.0)
     assert capped.volume() == pytest.approx(jar.volume(), rel=1e-9)
     assert not big.problems() and JarSpec(inside_chamfer=19.0).problems()
+
+
+@pytest.mark.parametrize("diameter,neck_height,pitch", [(40.0, 10.0, 2.5), (20.0, 5.0, 4.0)])
+def test_jar_shoulder_has_clean_circle(diameter, neck_height, pitch):
+    import numpy as np
+    spec = JarSpec(
+        diameter=diameter,
+        height=30.0,
+        neck_diameter=15.0,
+        neck_height=neck_height,
+        pitch=pitch,
+        wall=2.0,
+    )
+    doc = Document()
+    ids = doc.add_jar(spec)
+    body = doc.bodies[ids["jar"]]
+
+    shoulder_edges = [
+        e for e in body.edges
+        if getattr(e, "kind", "") == "circle"
+        and abs(e.center[2] - 30.0) < 1e-3
+        and abs(e.radius - 7.5) < 1e-2
+    ]
+    assert len(shoulder_edges) >= 1
+    full_circle = any(abs(e.sweep - 2 * np.pi) < 1e-3 for e in shoulder_edges)
+    assert full_circle, "Shoulder circle at neck base should be a full 360-degree circle with no flap disruption"

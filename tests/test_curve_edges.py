@@ -13,7 +13,7 @@ from omacad.ui.math3d import camera_matrices
 from omacad.ui.viewport.viewport import Viewport3D
 
 sys.path.insert(0, os.path.dirname(__file__))
-from test_loft_twist import _square_loft            # noqa: E402
+from test_loft import _square_loft            # noqa: E402
 
 TWISTED = os.path.join(os.path.dirname(__file__), "data", "twisted_extrude_on_box.omacad")
 
