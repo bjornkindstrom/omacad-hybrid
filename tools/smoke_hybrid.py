@@ -20,7 +20,7 @@ from omacad.model import faces_hit_tests
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument("--output",type=Path,required=True);parser.add_argument("--keep-open",action="store_true");args=parser.parse_args()
-    fmt=QSurfaceFormat();fmt.setSamples(4);fmt.setDepthBufferSize(24);fmt.setStencilBufferSize(8);fmt.setVersion(3,3);fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile);QSurfaceFormat.setDefaultFormat(fmt)
+    fmt=QSurfaceFormat();fmt.setSamples(4);fmt.setDepthBufferSize(24);fmt.setStencilBufferSize(8);fmt.setVersion(3,3);fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile);QSurfaceFormat.setDefaultFormat(fmt)
     app=QApplication([]);app.setApplicationName("Omacad Hybrid");app.setOrganizationName("Omacad Hybrid")
     app.setStyle(theme.BigIconStyle("Fusion"));theme.apply_saved_choice()
     window=MainWindow();window.resize(1500,960)

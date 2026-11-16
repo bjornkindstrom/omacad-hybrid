@@ -52,13 +52,24 @@ def camera_matrices(target, distance: float, azimuth: float, elevation: float, a
 
 
 def orbit_view(target, distance: float, azimuth: float, elevation: float) -> np.ndarray:
-    """View matrix of the orbit camera. Z stays up at every elevation (the orbit is clamped just short of
-    straight up/down), so the view turns smoothly when you pass over the top - no jump in roll."""
+    """View matrix of the orbit camera. Uses a continuous spherical up-vector so orbiting
+    straight over the top (+90°) or bottom (-90°) never locks or flips roll."""
     az, el = math.radians(azimuth), math.radians(elevation)
     eye = np.array([target[0] + distance * math.cos(el) * math.sin(az),
                     target[1] - distance * math.cos(el) * math.cos(az),
                     target[2] + distance * math.sin(el)], dtype=np.float64)
-    return look_at(eye, np.asarray(target, dtype=np.float64), np.array([0.0, 0.0, 1.0]))
+    up = np.array([-math.sin(el) * math.sin(az),
+                   math.sin(el) * math.cos(az),
+                   math.cos(el)], dtype=np.float64)
+    return look_at(eye, np.asarray(target, dtype=np.float64), up)
+
+
+def orbit_step(azimuth: float, elevation: float, dx: float, dy: float) -> Tuple[float, float]:
+    """Update (azimuth, elevation) for a mouse drag (dx, dy) without clamping at the poles."""
+    sign = 1.0 if math.cos(math.radians(elevation)) >= 0.0 else -1.0
+    az = (azimuth - sign * dx * 0.5) % 360.0
+    el = ((elevation + dy * 0.5 + 180.0) % 360.0) - 180.0
+    return az, el
 
 
 def look_at(eye: np.ndarray, target: np.ndarray, up: np.ndarray) -> np.ndarray:

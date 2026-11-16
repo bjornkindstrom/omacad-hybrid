@@ -696,8 +696,8 @@ class PointerMixin:
         self.last_mouse_pos = event.position().toPoint()
 
         if self.is_orbiting:
-            self.azimuth = (self.azimuth - dx * 0.5) % 360.0
-            self.elevation = max(-89.9, min(89.9, self.elevation + dy * 0.5))
+            from omacad.ui.math3d import orbit_step
+            self.azimuth, self.elevation = orbit_step(self.azimuth, self.elevation, dx, dy)
             self.update()
         elif self.is_panning:
             # Move target along camera's right and up vectors

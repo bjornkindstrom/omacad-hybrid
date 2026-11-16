@@ -35,6 +35,7 @@ from omacad.model.features.boolean import (
     CombineFeature,
     SplitBodyFeature,
 )
+from omacad.model.features.lip_joint import LipJointFeature
 from omacad.model.features.shell import ShellFeature
 from omacad.model.features.wavy_slices import WavySlicesFeature
 from omacad.model.features.knurl import KnurlFeature
@@ -87,6 +88,7 @@ __all__ = [
     "DeleteBodyFeature",
     "CombineFeature",
     "SplitBodyFeature",
+    "LipJointFeature",
     "ShellFeature",
     "WavySlicesFeature",
     "KnurlFeature",

@@ -1,3 +1,27 @@
+## Requests #234 & #241 — 2026-11-16 (0.9.9.80.183)
+
+- **Fri vertikal kameraorbit**: `orbit_view` och `orbit_step` (`ui/math3d.py`) samt `ViewCube.draw` (`ui/viewcube.py`) använder kontinuerlig sfärisk `up`-vektor (`(-sin(el)sin(az), sin(el)cos(az), cos(el))`) och wrappar elevation i `(-180, 180]` i `pointer_mixin.py`/`overlay_mixin.py` så kameran inte låser sig vid ±89.9° på ovansidan/undersidan.
+- **#234 (Rotate handles X/Y)**: `omacad/ui/viewport/rotate_handles.py` väljer dragläge en gång vid `press` (`_pick_rotate_mode` från `denom = rd_c · axis` genom kroppens skärmcentrum: `|denom| >= 0.5` → `plane`, `0.15 <= |denom| < 0.5` → `screen` med `atan2(-(y-cy), x-cx)` och tecken `−1 om denom > 0 annars +1`, annars `linear`) och unwrappar vinkeln kontinuerligt (`d["raw"]`, `d["last"]`) före 15°-snäpp så hela varv går i ett drag runt alla axlar.
+- **#241 (Split Body med läpp/spår & snäpplås)**: ny modul `omacad/model/features/lip_joint.py` (`lip_geometry`, `build_snap_tabs`, `build_lip_solid`, `build_pocket_solid`, `LipJointFeature` med `style` `"inner"` / `"outer"` / `"groove"` och `snap_fit`), kopplad via `Document.split_body(..., lip=...)`, `Exporter`, `Timeline._output_key`, `timeline_bar.py`, `settings.py`/`settings_dialog.py` (`split_lip_*`) och `SplitBodyDialog` (`ui/dialogs/boolean_dlg.py`) med live-preview i `prompt_split_body` (`ui/controllers/body_prompts.py`).
+- Test: `tests/test_requests_234_241.py`.
+
+## Tom 3D-vy på Windows med Intel-grafik: Core Profile — 2026-11-16 (0.9.9.80.182)
+
+Lennart/Björn på Windows: Omacad startade men 3D-vyn ritade inget; loggen visade `GL_INVALID_OPERATION (1282)`
+varje bild. `app.py` begärde en OpenGL 3.3 **Compatibility**-kontext, som Intels Windows-drivrutin svarar med
+1282 på i det här flödet (VAO + GLSL 1.20 `attribute`/`varying`). Med en 3.3 **Core**-kontext ritas rutnät, axlar
+och kroppar (verifierat lokalt av Windows-agenten). För att Core ska fungera överallt är shadrarna i
+`ui/viewport/shaders.py` nu `#version 330 core` (`in`/`out`, `out vec4 frag_color`, `texture()`): Mesa (Linux, och
+Windows-reserven `opengl32sw`) vägrar `#version 120` i en Core-kontext, medan 330 core godtas i både Core- och
+Compatibility-kontexter på alla drivrutiner. Övrig GL-kod var redan ren modern GL (VAO/VBO överallt, inga
+klientarrayer, `GL_QUADS`, `GL_LUMINANCE` eller matrisstack), `glLineWidth` klämms redan till 1 (`set_line_width`).
+`tools/*.py` begär samma Core-format; testerna sätter bara djup (standardkontext = compat på Mesa, 330 funkar).
+Fälla: `QPainter`-overlayn i `paintGL` kräver inget extra i Core (Qt6:s GL-paintengine klarar Core).
+Verifiera headless: `xvfb-run -a env -u WAYLAND_DISPLAY QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 .venv/bin/python
+tools/smoke_hybrid.py --output /tmp/x.png` (inga "Error compiling CAD shaders" i utskriften, bilden visar kroppar).
+Kvar (#224, öppen): PyInstaller-varningen "Failed to remove temporary directory …\_MEI…" vid Windows-start är en
+annan sak (onefile-bootloadern kunde inte städa en tidigare körnings mapp); ofarlig, men Lennart ser den.
+
 ## Requests #237–#240 — 2026-11-15 (0.9.9.80.181)
 
 Samma modell i alla fyra: skalad cylinder delad vid z=10, läpp (ring 1 mm) extruderad från underdelens

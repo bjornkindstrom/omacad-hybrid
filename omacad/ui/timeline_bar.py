@@ -51,6 +51,7 @@ class FeatureNodeWidget(QFrame):
         "knurl": "🧶",
         "japandi": "🎋",
         "split_body": "🪚",
+        "lip_joint": "🪚",
         "move": "✥",
         "import_mesh": "📥",
         "linked_sketch": "📄",
@@ -186,6 +187,9 @@ class FeatureNodeWidget(QFrame):
             return f"{f.name}\nØ{f.diameter:g} × {f.pitch:g} mm, L={f.length:g} mm"
         if t == "split_body":
             return f"{f.name}\nPlane {f.plane_id}"
+        if t == "lip_joint":
+            w = "auto" if f.width <= 0 else f"{f.width:g} mm"
+            return f"{f.name}\n{f.role} ({getattr(f, 'style', 'inner')}), h={f.height:g} mm, w={w}, clearance={f.clearance:g} mm"
         if t == "move":
             return f"{f.name}\nΔ({f.dx:g}, {f.dy:g}, {f.dz:g}) mm, ∠({f.rx:g}°, {f.ry:g}°, {f.rz:g}°)"
         return f.name + ("  (suppressed)" if f.suppressed else "")

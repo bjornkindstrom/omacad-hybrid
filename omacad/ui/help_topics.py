@@ -102,7 +102,7 @@ MORE = {
                     "thread it changes only the thread, for a looser or tighter fit.", "tolerance fit clearance hole pin"),
     "combine": ("Join, cut or intersect a target body with a tool body; keep the tool if you want it again.",
                 "boolean union subtract intersect join cut merge"),
-    "split_body": ("Cut a body in two with a plane.", "cut divide plane"),
+    "split_body": ("Cut a body in two with a plane, optionally adding a mating lip joint for lids and two-part prints.", "cut divide plane lip joint lid"),
     "move": ("Drag the arrows or rings, type numbers, or use Point to point, Face to face or Lay face flat. Each "
              "drag is applied at once, so you can move in several goes; OK closes. Activate copy keeps the original. "
              "Circles give five points (centre and four quarter points) for point to point.",

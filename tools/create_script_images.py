@@ -28,7 +28,7 @@ def main(argv=None):
     fmt.setDepthBufferSize(24)
     fmt.setStencilBufferSize(8)
     fmt.setVersion(3, 3)
-    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile)
     QSurfaceFormat.setDefaultFormat(fmt)
 
     app = QApplication.instance() or QApplication(sys.argv)

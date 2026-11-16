@@ -11,6 +11,7 @@ from typing import Optional, List, Tuple
 import numpy as np
 import trimesh
 from omacad.model.document import Document, Parameter, default_origin_vis
+from omacad.model.features.lip_joint import LipJointFeature
 from omacad.model.timeline import (Body, SketchFeature, BoxFeature, CylinderFeature, PrismFeature, SphereFeature,
                                     ExtrudeFeature, EmbossFeature, RevolveFeature, CombineFeature, FilletFeature,
                                     PatternFeature, SplitBodyFeature, ShellFeature, MoveFeature, ImportMeshFeature, HoleFeature, DeleteBodyFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature,
@@ -687,6 +688,19 @@ class Exporter:
                     frozen_source=f_data.get("frozen_source"),
                     keep=f_data.get("keep", "both"),
                     other_body_id=f_data.get("other_body_id"),
+                )
+                doc.timeline.add_feature(feat)
+            elif ft == "lip_joint":
+                feat = LipJointFeature(
+                    fid, fname, f_data["target_body_id"], f_data.get("role", "lip"),
+                    f_data["plane_id"],
+                    plane_origin=f_data.get("plane_origin"),
+                    plane_normal=f_data.get("plane_normal"),
+                    height=f_data.get("height", 5.0),
+                    width=f_data.get("width", 0.0),
+                    clearance=f_data.get("clearance", 0.2),
+                    style=f_data.get("style", "inner"),
+                    snap_fit=f_data.get("snap_fit", False),
                 )
                 doc.timeline.add_feature(feat)
             elif ft == "shell":

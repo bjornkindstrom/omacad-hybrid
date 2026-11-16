@@ -566,6 +566,21 @@ class SettingsDialog(QDialog):
                                           "requests repository, folder scripts/. Omacad's own examples are not sent.")
         lay_general.addWidget(self.chk_share_scripts)
 
+        lip_row = QHBoxLayout()
+        self.chk_split_lip = QCheckBox("Default to Lip joint in Split Body:")
+        self.chk_split_lip.setChecked(bool(self.settings.get("split_lip_enabled", False)))
+        self.cmb_split_lip_style = QComboBox()
+        self.cmb_split_lip_style.addItem("Inner lip (step inside)", "inner")
+        self.cmb_split_lip_style.addItem("Outer lip (step outside)", "outer")
+        self.cmb_split_lip_style.addItem("Groove & tongue (centered)", "groove")
+        idx_lip = self.cmb_split_lip_style.findData(self.settings.get("split_lip_style", "inner"))
+        if idx_lip >= 0:
+            self.cmb_split_lip_style.setCurrentIndex(idx_lip)
+        lip_row.addWidget(self.chk_split_lip)
+        lip_row.addWidget(self.cmb_split_lip_style)
+        lip_row.addStretch(1)
+        lay_general.addLayout(lip_row)
+
         # AI Agent for fixing errors / reporting problems
         from omacad import feedback
         agent_row = QHBoxLayout()
@@ -820,6 +835,8 @@ class SettingsDialog(QDialog):
             self.cmb_ai_agent.setCurrentIndex(idx_ai)
         self.edt_scripts_folder.clear()
         self.chk_share_scripts.setChecked(True)
+        self.chk_split_lip.setChecked(False)
+        self.cmb_split_lip_style.setCurrentIndex(0)
 
     def _width_row(self, layout, label: str, key: str, default: float, tip: str) -> QDoubleSpinBox:
         """A labelled px-thickness field for `key`, added to `layout`."""
@@ -884,6 +901,8 @@ class SettingsDialog(QDialog):
             "rfc_name": self.edt_rfc_name.text().strip(),
             "rfc_token": self.edt_rfc_token.text().strip(),
             "share_scripts": self.chk_share_scripts.isChecked(),
+            "split_lip_enabled": self.chk_split_lip.isChecked(),
+            "split_lip_style": self.cmb_split_lip_style.currentData(),
             "icon_theme": self.cmb_icon_theme.currentData(),
         }
 

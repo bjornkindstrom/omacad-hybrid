@@ -739,7 +739,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         dlg.setWindowTitle(f"Edit {feat.name}")
 
         def _preview_split():
-            b_id, p_id = dlg.get_values()
+            b_id, p_id, _lip = dlg.get_values()
             m = state_before.get(b_id) if state_before else (doc.bodies[b_id].manifold if b_id in doc.bodies else None)
             if m is None or not p_id:
                 vp.set_preview(None)
@@ -765,7 +765,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         hide_ids = [feat.target_body_id, f"body_{feat.feature_id}"]
         if not _exec_with_preview(win, doc, dlg, _preview_split, hide_ids):
             return False
-        b_id, p_id = dlg.get_values()
+        b_id, p_id, _lip = dlg.get_values()
         if not b_id or not p_id:
             return False
         po, pn = feat.plane_origin, feat.plane_normal

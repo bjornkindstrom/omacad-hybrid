@@ -30,3 +30,14 @@ def test_default_top_view_is_unchanged():
     """Plane alignment uses az 0, el 89.9: x to the right, y up on screen, as before."""
     view = orbit_view(np.zeros(3), 140.0, 0.0, 89.9)
     assert np.allclose(view[0, :3], [1, 0, 0], atol=1e-3) and np.allclose(view[1, :3], [0, 1, 0], atol=2e-3)
+
+
+@pytest.mark.parametrize("az", [0.0, 45.0, 137.0])
+@pytest.mark.parametrize("pole", [90.0, -90.0])
+def test_continuous_orbit_across_poles(az, pole):
+    """Orbiting straight over the top (+90°) or bottom (-90°) must not jump or flip."""
+    before = orbit_view(np.zeros(3), 140.0, az, pole - 0.5)
+    after = orbit_view(np.zeros(3), 140.0, az, pole + 0.5)
+    assert np.dot(before[0, :3], after[0, :3]) > 0.999
+    assert np.dot(before[1, :3], after[1, :3]) > 0.999
+    assert np.dot(before[2, :3], after[2, :3]) > 0.999

@@ -86,10 +86,10 @@ def test_drag_captures_outside_cube_and_does_not_snap(cube):
     assert not cube.handle_mouse_release()
 
 
-def test_drag_matches_viewport_orbit_and_clamps_poles():
+def test_drag_matches_viewport_orbit_across_poles():
     view = SimpleNamespace(azimuth=5., elevation=80., update=lambda: None)
     OverlayMixin._orbit_viewcube(view, 20, 40)
     assert view.azimuth == 355.
-    assert view.elevation == 89.9
+    assert view.elevation == 100.0
     OverlayMixin._orbit_viewcube(view, 0, -400)
-    assert view.elevation == -89.9
+    assert view.elevation == -100.0

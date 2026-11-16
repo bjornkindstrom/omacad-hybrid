@@ -73,7 +73,7 @@ from PySide6.QtGui import QSurfaceFormat
 from PySide6.QtWidgets import QApplication
 from OpenGL import GL
 from omacad.ui.viewport import Viewport3D
-fmt=QSurfaceFormat();fmt.setSamples(8);fmt.setDepthBufferSize(24);fmt.setStencilBufferSize(8);fmt.setVersion(3,3);fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile);QSurfaceFormat.setDefaultFormat(fmt)
+fmt=QSurfaceFormat();fmt.setSamples(8);fmt.setDepthBufferSize(24);fmt.setStencilBufferSize(8);fmt.setVersion(3,3);fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile);QSurfaceFormat.setDefaultFormat(fmt)
 app=QApplication([]);theme.apply_saved_choice()
 vp=Viewport3D(doc)
 dpr=app.primaryScreen().devicePixelRatio();vp.setFixedSize(round(2560/dpr),round(1440/dpr))

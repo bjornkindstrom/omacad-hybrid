@@ -122,12 +122,16 @@ class ViewCube:
             math.sin(rad_el)
         ], dtype=float)
 
-        # Up and right vectors
-        up = np.array([0.0, 0.0, 1.0], dtype=float)
+        # Up and right vectors (continuous spherical up so poles never flip or lock)
+        up = np.array([
+            -math.sin(rad_el) * math.sin(rad_az),
+            math.sin(rad_el) * math.cos(rad_az),
+            math.cos(rad_el),
+        ], dtype=float)
         right = np.cross(-eye, up)
         norm_r = np.linalg.norm(right)
         if norm_r < 1e-4:
-            right = np.array([1.0, 0.0, 0.0], dtype=float)
+            right = np.array([math.cos(rad_az), math.sin(rad_az), 0.0], dtype=float)
         else:
             right /= norm_r
         cam_up = np.cross(eye, right)

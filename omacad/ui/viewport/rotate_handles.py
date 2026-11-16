@@ -161,6 +161,29 @@ class RotateHandles:
             return None
         return (b * e - d1) / denom
 
+    @staticmethod
+    def _screen_angle(x, y, centre_s, sign) -> float:
+        return math.degrees(math.atan2(-(y - centre_s[1]), x - centre_s[0])) * sign
+
+    def _pick_rotate_mode(self, x, y, axis, centre):
+        """Choose rotation drag mode once at press: plane, screen, or linear."""
+        c_screen, ok = self.vp.project_points(np.array([centre]))
+        if ok[0]:
+            proj, view, _ = self.vp.get_matrices()
+            _, rd_c = ray_from_screen(c_screen[0][0], c_screen[0][1], self.vp.width(), self.vp.height(), view, proj)
+            rd_c = np.asarray(rd_c, float)
+            n = float(np.linalg.norm(rd_c))
+            if n > 1e-9:
+                denom = float((rd_c / n) @ axis)
+                if abs(denom) >= 0.5:
+                    ang = self._plane_angle(x, y, axis, centre)
+                    if ang is not None:
+                        return "plane", ang, c_screen[0], 1.0
+                if abs(denom) >= 0.15:
+                    sign = -1.0 if denom > 0 else 1.0
+                    return "screen", self._screen_angle(x, y, c_screen[0], sign), c_screen[0], sign
+        return "linear", None, None, 1.0
+
     def press(self, x: float, y: float) -> bool:
         name = self.hit(x, y)
         if name is None:
@@ -174,19 +197,23 @@ class RotateHandles:
         if name in MOVES:
             self.drag["start_along"] = self._along(x, y, AXES[MOVES[name]], centre)
         else:
-            self.drag["start_angle"] = self._plane_angle(x, y, AXES[name], centre)
+            mode, last, centre_s, sign = self._pick_rotate_mode(x, y, AXES[name], centre)
+            self.drag.update({"mode": mode, "last": last, "raw": 0.0, "centre_s": centre_s, "sign": sign})
         self.vp.setCursor(Qt.CursorShape.ClosedHandCursor)
         return True
 
     def angle_at(self, x: float, y: float) -> float:
         d = self.drag
-        a = None
-        if d["start_angle"] is not None:
-            now = self._plane_angle(x, y, AXES[d["axis"]], d["centre"])
-            if now is not None:
-                a = (now - d["start_angle"] + 180.0) % 360.0 - 180.0
-        if a is None:     # plane seen edge-on: along the arrow, 2 px a degree
+        mode = d["mode"]
+        if mode == "linear":
             a = float(np.dot(np.array([x, y]) - d["start"], d["tangent"])) / 2.0
+        else:
+            now = (self._plane_angle(x, y, AXES[d["axis"]], d["centre"]) if mode == "plane"
+                   else self._screen_angle(x, y, d["centre_s"], d["sign"]))
+            if now is not None:
+                d["raw"] += (now - d["last"] + 180.0) % 360.0 - 180.0
+                d["last"] = now
+            a = d["raw"]
         if not QApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier:
             a = round(a / SNAP_DEG) * SNAP_DEG
         return a

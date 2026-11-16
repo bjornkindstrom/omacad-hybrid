@@ -1,4 +1,16 @@
-# Hybrid-experiment — 0.9.9.80.181
+# Hybrid-experiment — 0.9.9.80.183
+
+### Added
+- **Split Body with Lip Joint (#241)**: *Split Body* now includes a *Lip joint (lid / two-part print)* option (*Add lip*, *Type*: *Inner lip (step inside)* / *Outer lip (step outside)* / *Groove & tongue (centered)*, *Height*, *Width* with *Auto*, *Clearance*, *Lip on*: *Half below / above the plane*, and *Snap-fit latch (detent bump)* for snap-on lids) with live 3D preview. Your choice and dimensions are remembered across sessions and can also be set as default in *Settings*. Creates matching `LipJointFeature` steps on the two halves, editable in the timeline and saved in `.omacad` files.
+
+### Fixed
+- **Continuous 360° camera orbit over top and bottom**: Orbiting vertically past ±90° no longer locks at the poles (`±89.9°`); `orbit_view`, `orbit_step`, and `ViewCube` now use a continuous spherical up-vector so you can rotate freely over the top and under the bottom without stopping or flipping.
+- **Rotate handles around X/Y no longer stick or wrap (#234)**: `RotateHandles` now picks its drag mode (`plane`, `screen`, or `linear`) once on mouse press from the view angle at the body's centre instead of switching mid-drag, and unwraps the angle continuously so full 360°+ turns work smoothly on all axes.
+
+# Hybrid-experiment — 0.9.9.80.182
+
+### Fixed
+- **Empty or broken 3D view on Windows with Intel graphics**: the viewport asked for an OpenGL 3.3 *Compatibility* context, and Intel's Windows driver answered every frame with `GL_INVALID_OPERATION` (1282), so the grid, axes and bodies never appeared. Omacad now asks for a 3.3 *Core* context (`app.py`), and the shaders are GLSL 3.30 core (`in`/`out`, `frag_color`, `texture()`) instead of GLSL 1.20, which Mesa refuses in a Core context. The viewport was already modern GL only (VAO/VBO), so nothing else changes; the Windows software fallback (`opengl32sw`) and NVIDIA/AMD/Mesa drivers all accept this combination.
 
 ### Fixed
 - **Fuzz left on the wall after Combine (cut) (#237)**: a lip extruded from a projected rim misses the wall it came from by nanometres (the projected circle is re-tessellated), so the cut kept a skin that thin: strips on the inner wall and a hair of a face. Tools are now welded onto the target's vertices and edges (`CadKernel.weld_to`, within 2 µm) before Extrude/Revolve join and cut and before Combine, and Combine (cut) uses the same leftover cleaning as Extrude (cut).

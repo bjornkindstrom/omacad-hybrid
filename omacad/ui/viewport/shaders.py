@@ -1,12 +1,17 @@
-"""OpenGL Shaders for Omacad 3D Viewport."""
+"""OpenGL Shaders for Omacad 3D Viewport.
+
+GLSL 3.30 core: compiles in an OpenGL 3.3 Core *and* Compatibility context on every driver
+(Mesa, NVIDIA, AMD, Intel Windows). The old `#version 120` shaders were refused by Mesa in a
+Core Profile context, and Intel's Windows driver gave GL_INVALID_OPERATION in Compatibility.
+"""
 
 # Shaders
 VERTEX_SHADER_SOLID = """
-#version 120
-attribute vec3 in_pos;
-attribute vec3 in_normal;
+#version 330 core
+in vec3 in_pos;
+in vec3 in_normal;
 uniform mat4 u_mvp;
-varying vec3 v_normal;
+out vec3 v_normal;
 void main() {
     v_normal = in_normal;
     gl_Position = u_mvp * vec4(in_pos, 1.0);
@@ -14,10 +19,11 @@ void main() {
 """
 
 FRAGMENT_SHADER_SOLID = """
-#version 120
-varying vec3 v_normal;
+#version 330 core
+in vec3 v_normal;
 uniform vec4 u_color;
 uniform vec3 u_eye_dir;
+out vec4 frag_color;
 void main() {
     vec3 n = normalize(v_normal);
     vec3 v = length(u_eye_dir) > 0.01 ? normalize(u_eye_dir) : normalize(vec3(0.5, 0.7, 1.0));
@@ -34,13 +40,13 @@ void main() {
     // Ambient / sky gradient: upward-facing surfaces get subtle sky reflection
     float sky = dot(n, vec3(0.0, 0.0, 1.0)) * 0.12 + 0.36;
     float k = clamp(sky + 0.40 * diff + 0.22 * fill, 0.0, 1.0);
-    gl_FragColor = vec4(min(u_color.rgb * k + vec3(spec), vec3(1.0)), u_color.a);
+    frag_color = vec4(min(u_color.rgb * k + vec3(spec), vec3(1.0)), u_color.a);
 }
 """
 
 VERTEX_SHADER_FLAT = """
-#version 120
-attribute vec3 in_pos;
+#version 330 core
+in vec3 in_pos;
 uniform mat4 u_mvp;
 void main() {
     gl_Position = u_mvp * vec4(in_pos, 1.0);
@@ -48,19 +54,20 @@ void main() {
 """
 
 FRAGMENT_SHADER_FLAT = """
-#version 120
+#version 330 core
 uniform vec4 u_color;
+out vec4 frag_color;
 void main() {
-    gl_FragColor = u_color;
+    frag_color = u_color;
 }
 """
 
 VERTEX_SHADER_TEXTURE = """
-#version 120
-attribute vec3 in_pos;
-attribute vec2 in_uv;
+#version 330 core
+in vec3 in_pos;
+in vec2 in_uv;
 uniform mat4 u_mvp;
-varying vec2 v_uv;
+out vec2 v_uv;
 void main() {
     v_uv = in_uv;
     gl_Position = u_mvp * vec4(in_pos, 1.0);
@@ -68,22 +75,23 @@ void main() {
 """
 
 FRAGMENT_SHADER_TEXTURE = """
-#version 120
-varying vec2 v_uv;
+#version 330 core
+in vec2 v_uv;
 uniform sampler2D u_tex;
 uniform float u_opacity;
+out vec4 frag_color;
 void main() {
-    vec4 col = texture2D(u_tex, v_uv);
-    gl_FragColor = vec4(col.rgb, col.a * u_opacity);
+    vec4 col = texture(u_tex, v_uv);
+    frag_color = vec4(col.rgb, col.a * u_opacity);
 }
 """
 
 # Screen-space thick lines (glLineWidth > 1 is invalid in this context)
 VERTEX_SHADER_THICK = """
-#version 120
-attribute vec3 in_pos;
-attribute vec3 in_other;
-attribute float in_side;
+#version 330 core
+in vec3 in_pos;
+in vec3 in_other;
+in float in_side;
 uniform mat4 u_mvp;
 uniform vec2 u_viewport;
 uniform float u_width;

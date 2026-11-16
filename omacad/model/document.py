@@ -14,6 +14,7 @@ import uuid
 import numpy as np
 import manifold3d as m3d
 from omacad import busy
+from omacad.model.features.lip_joint import LipJointFeature
 from omacad.model.timeline import (
     PatternFeature, FilletFeature, Body, Timeline, BoxFeature, CylinderFeature, PrismFeature,
     SphereFeature, ExtrudeFeature, EmbossFeature, RevolveFeature, HoleFeature, DeleteBodyFeature, SketchFeature, SplitBodyFeature, ShellFeature, MoveFeature,
@@ -1355,6 +1356,7 @@ class Document:
         "pattern": ("source_ids", "kind", "axis1", "count1", "spacing1", "axis2", "count2", "spacing2",
                     "mirror_mode", "about", "angle", "rotation_axis", "axis_origin", "axis_direction"),
         "split_body": ("target_body_id", "plane_id", "plane_origin", "plane_normal"),
+        "lip_joint": ("style", "height", "width", "clearance", "snap_fit"),
         "shell": ("thickness", "direction", "thickness2", "open_faces"),
         "wavy_slices": WavySlicesFeature.PARAMS,
         "knurl": KnurlFeature.PARAMS,
@@ -1575,7 +1577,8 @@ class Document:
         return self.bodies.get(target)
 
     @undoable("Split Body")
-    def split_body(self, body_id: str, plane_id: str, new_body_name: Optional[str] = None) -> Optional[SplitBodyFeature]:
+    def split_body(self, body_id: str, plane_id: str, new_body_name: Optional[str] = None,
+                   lip: Optional[Dict[str, Any]] = None) -> Optional[SplitBodyFeature]:
         """Splits an existing body using an offset (construction) plane or origin plane into two separate bodies."""
         if body_id not in self.bodies:
             return None
@@ -1609,6 +1612,8 @@ class Document:
             if copy_object:
                 history.owners[other.feature_id] = copy_object
                 history.names[copy_object] = new_body_name or f"{source_name} (Split)"
+            if lip:
+                self._add_lip_features(n, body_id, copy_id, plane_id, plane_origin, plane_normal, lip, history, copy_object)
             self.timeline.recompute(self)
             self.notify_changed()
             return feat
@@ -1625,8 +1630,38 @@ class Document:
         )
         self.timeline.add_feature(feat)
         feat.execute(self)
+        if lip:
+            self._add_lip_features(n, body_id, feat.result_body_id, plane_id, plane_origin, plane_normal, lip)
+            self.timeline.recompute(self)
         self.notify_changed()
         return feat
+
+    def _add_lip_features(self, n: int, front_id: str, back_id: str, plane_id: str,
+                          plane_origin, plane_normal, lip: Dict[str, Any],
+                          history=None, copy_object=None) -> None:
+        lip_on = lip.get("lip_on", "back")
+        style = lip.get("style", "inner")
+        snap_fit = bool(lip.get("snap_fit", False))
+        height = float(lip.get("height", 5.0))
+        width = float(lip.get("width", 0.0))
+        clearance = float(lip.get("clearance", 0.2))
+        exprs = lip.get("exprs")
+        lip_bid = front_id if lip_on == "front" else back_id
+        pocket_bid = back_id if lip_on == "front" else front_id
+        lip_feat = LipJointFeature(
+            self._feature_id("lip"), f"Lip {n}", lip_bid, "lip", plane_id,
+            plane_origin=plane_origin, plane_normal=plane_normal,
+            height=height, width=width, clearance=clearance, style=style, snap_fit=snap_fit, exprs=exprs,
+        )
+        self.timeline.add_feature(lip_feat)
+        pocket_feat = LipJointFeature(
+            self._feature_id("lip"), f"Lip Pocket {n}", pocket_bid, "pocket", plane_id,
+            plane_origin=plane_origin, plane_normal=plane_normal,
+            height=height, width=width, clearance=clearance, style=style, snap_fit=snap_fit, exprs=exprs,
+        )
+        self.timeline.add_feature(pocket_feat)
+        if history is not None and copy_object:
+            history.owners[lip_feat.feature_id if lip_bid == back_id else pocket_feat.feature_id] = copy_object
 
     @undoable("Shell")
     def add_shell(self, body_id: str, thickness: float, open_faces=None, exprs=None, direction: str = "inside", thickness2: float = 2.0) -> Optional[ShellFeature]:

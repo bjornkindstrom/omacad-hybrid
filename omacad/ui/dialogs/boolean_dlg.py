@@ -3,7 +3,7 @@
 from typing import Optional
 import numpy as np
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QFormLayout, QComboBox, QLabel
+from PySide6.QtWidgets import QFormLayout, QComboBox, QLabel, QGroupBox, QCheckBox, QDoubleSpinBox
 from omacad.model.document import Document
 from omacad.ui.dialogs.base import BaseFeatureDialog
 from omacad.ui.theme import style
@@ -169,11 +169,87 @@ class SplitBodyDialog(BaseFeatureDialog):
         form.addRow(self.lbl_status)
 
         self.main_layout.addLayout(form)
+
+        # Lip joint group (#241)
+        from omacad.ui.settings import get_settings
+        cfg = get_settings()
+        self.grp_lip = QGroupBox("Lip joint (lid / two-part print)")
+        lip_form = QFormLayout(self.grp_lip)
+        self.chk_lip = QCheckBox("Add lip")
+        self.chk_lip.setChecked(bool(cfg.get("split_lip_enabled", False)))
+        lip_form.addRow(self.chk_lip)
+
+        self.cmb_lip_style = QComboBox()
+        self.cmb_lip_style.addItem("Inner lip (step inside)", "inner")
+        self.cmb_lip_style.addItem("Outer lip (step outside)", "outer")
+        self.cmb_lip_style.addItem("Groove & tongue (centered)", "groove")
+        idx_style = self.cmb_lip_style.findData(cfg.get("split_lip_style", "inner"))
+        if idx_style >= 0:
+            self.cmb_lip_style.setCurrentIndex(idx_style)
+        lip_form.addRow("Type:", self.cmb_lip_style)
+
+        self.spin_lip_height = QDoubleSpinBox()
+        self.spin_lip_height.setRange(0.5, 100.0)
+        self.spin_lip_height.setSingleStep(0.5)
+        self.spin_lip_height.setValue(float(cfg.get("split_lip_height", 5.0)))
+        self.spin_lip_height.setSuffix(" mm")
+        lip_form.addRow("Height:", self.spin_lip_height)
+
+        self.spin_lip_width = QDoubleSpinBox()
+        self.spin_lip_width.setRange(0.0, 50.0)
+        self.spin_lip_width.setSingleStep(0.5)
+        self.spin_lip_width.setValue(float(cfg.get("split_lip_width", 0.0)))
+        self.spin_lip_width.setSpecialValueText("Auto")
+        self.spin_lip_width.setSuffix(" mm")
+        lip_form.addRow("Width:", self.spin_lip_width)
+
+        self.spin_lip_clearance = QDoubleSpinBox()
+        self.spin_lip_clearance.setRange(0.0, 5.0)
+        self.spin_lip_clearance.setSingleStep(0.05)
+        self.spin_lip_clearance.setDecimals(2)
+        self.spin_lip_clearance.setValue(float(cfg.get("split_lip_clearance", 0.2)))
+        self.spin_lip_clearance.setSuffix(" mm")
+        lip_form.addRow("Clearance:", self.spin_lip_clearance)
+
+        self.cmb_lip_on = QComboBox()
+        self.cmb_lip_on.addItems(["Half below the plane", "Half above the plane"])
+        lip_form.addRow("Lip on:", self.cmb_lip_on)
+
+        self.chk_lip_snap = QCheckBox("Snap-fit latch (detent bump)")
+        self.chk_lip_snap.setChecked(bool(cfg.get("split_lip_snap", False)))
+        lip_form.addRow(self.chk_lip_snap)
+        self.main_layout.addWidget(self.grp_lip)
+
+        self._sync_lip_enabled()
         self.add_buttons()
 
         self.cmb_target.currentIndexChanged.connect(self._update_status)
         self.cmb_plane.currentIndexChanged.connect(self._update_status)
+        self.chk_lip.toggled.connect(self._on_lip_toggled)
+        self.cmb_lip_style.currentIndexChanged.connect(lambda _: self.changed.emit())
+        self.spin_lip_height.valueChanged.connect(lambda _: self.changed.emit())
+        self.spin_lip_width.valueChanged.connect(lambda _: self.changed.emit())
+        self.spin_lip_clearance.valueChanged.connect(lambda _: self.changed.emit())
+        self.cmb_lip_on.currentIndexChanged.connect(lambda _: self.changed.emit())
+        self.chk_lip_snap.toggled.connect(lambda _: self.changed.emit())
         self._update_status()
+
+    def _sync_lip_enabled(self):
+        on = self.chk_lip.isChecked()
+        for w in (self.cmb_lip_style, self.spin_lip_height, self.spin_lip_width,
+                  self.spin_lip_clearance, self.cmb_lip_on, self.chk_lip_snap):
+            w.setEnabled(on)
+
+    def _on_lip_toggled(self, _checked: bool):
+        self._sync_lip_enabled()
+        self.changed.emit()
+
+    def _plane_normal_z(self, plane_id: str) -> float:
+        if plane_id in self.doc.construction_planes:
+            return float(self.doc.construction_planes[plane_id]["normal"][2])
+        if plane_id in self.doc.origin_planes:
+            return float(self.doc.origin_planes[plane_id].normal[2])
+        return 1.0
 
     def select_plane(self, plane_id: str) -> None:
         """The splitting plane clicked in the view (origin plane name or construction plane id)."""
@@ -182,7 +258,7 @@ class SplitBodyDialog(BaseFeatureDialog):
 
     def _update_status(self):
         self.changed.emit()
-        body_id, plane_id = self.get_values()
+        body_id, plane_id, _lip = self.get_values()
         if not body_id or not plane_id:
             self.lbl_status.setText("Select a body and a plane to split.")
             if hasattr(self, "btn_ok"):
@@ -250,5 +326,19 @@ class SplitBodyDialog(BaseFeatureDialog):
         b_idx = self.cmb_target.currentIndex()
         p_idx = self.cmb_plane.currentIndex()
         if b_idx < 0 or b_idx >= len(self.body_ids) or p_idx < 0 or p_idx >= len(self.plane_keys):
-            return None, None
-        return self.body_ids[b_idx], self.plane_keys[p_idx]
+            return None, None, None
+        plane_id = self.plane_keys[p_idx]
+        lip = None
+        if self.chk_lip.isChecked():
+            above = self.cmb_lip_on.currentIndex() == 1
+            nz = self._plane_normal_z(plane_id)
+            lip_on = ("front" if above else "back") if nz >= 0.0 else ("back" if above else "front")
+            lip = {
+                "style": self.cmb_lip_style.currentData(),
+                "height": float(self.spin_lip_height.value()),
+                "width": float(self.spin_lip_width.value()),
+                "clearance": float(self.spin_lip_clearance.value()),
+                "lip_on": lip_on,
+                "snap_fit": self.chk_lip_snap.isChecked(),
+            }
+        return self.body_ids[b_idx], plane_id, lip

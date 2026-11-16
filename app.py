@@ -66,13 +66,15 @@ def main():
     if "--create-script-images" in sys.argv:
         from tools.create_script_images import main as create_images_main
         sys.exit(create_images_main([arg for arg in sys.argv[1:] if arg != "--create-script-images"]))
-    # Set default OpenGL surface format with 4x MSAA anti-aliasing
+    # Set default OpenGL surface format with 4x MSAA anti-aliasing.
+    # OpenGL 3.3 *Core* Profile: the viewport is modern GL only (VAO/VBO + GLSL 330), and Intel's
+    # Windows driver gave GL_INVALID_OPERATION on every frame in the Compatibility Profile.
     fmt = QSurfaceFormat()
     fmt.setSamples(4)
     fmt.setDepthBufferSize(24)
     fmt.setStencilBufferSize(8)
     fmt.setVersion(3, 3)
-    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile)
     QSurfaceFormat.setDefaultFormat(fmt)
 
     from omacad import applog

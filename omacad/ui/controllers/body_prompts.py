@@ -104,17 +104,56 @@ class BodyPromptsMixin:
         def on_body_clicked(bid: str):
             dlg.select_body(bid)
 
+        def update_preview():
+            b_id, p_id, lip = dlg.get_values()
+            if not lip or not b_id or not p_id or b_id not in self.doc.bodies:
+                self.viewport.set_display_override(None)
+                return
+            from omacad.model.features.lip_joint import _resolve_plane, plane_frame, build_lip_solid
+            origin, normal = _resolve_plane(self.doc, p_id, None, None)
+            if origin is None or normal is None:
+                self.viewport.set_display_override(None)
+                return
+            m = self.doc.bodies[b_id].manifold
+            side = 1.0 if lip["lip_on"] == "front" else -1.0
+            d = float(np.dot(normal, origin))
+            carrier = m.trim_by_plane(side * normal, side * d)
+            if carrier.is_empty():
+                self.viewport.set_display_override(None)
+                return
+            _, mat_w2l, mat_l2w = plane_frame(origin, normal)
+            lip_solid, _ = build_lip_solid(m.transform(mat_w2l), side, -side, lip["height"], lip["width"],
+                                           style=lip.get("style", "inner"), snap_fit=lip.get("snap_fit", False))
+            if lip_solid is None:
+                self.viewport.set_display_override(None)
+                return
+            self.viewport.set_display_override({b_id: carrier + lip_solid.transform(mat_l2w)})
+
+        dlg.changed.connect(update_preview)
         self.viewport.body_clicked.connect(on_body_clicked)
         self.viewport.plane_clicked.connect(dlg.select_plane)     # click a plane in the view to split with it
 
         def on_finished(result):
+            self.viewport.set_display_override(None)
             self.viewport.body_clicked.disconnect(on_body_clicked)
             self.viewport.plane_clicked.disconnect(dlg.select_plane)
             self.inspector.undock_tool()
             if result:
-                b_id, p_id = dlg.get_values()
+                b_id, p_id, lip = dlg.get_values()
+                from omacad.ui.settings import get_settings
+                if lip:
+                    get_settings().update({
+                        "split_lip_enabled": True,
+                        "split_lip_style": lip.get("style", "inner"),
+                        "split_lip_height": lip["height"],
+                        "split_lip_width": lip["width"],
+                        "split_lip_clearance": lip["clearance"],
+                        "split_lip_snap": bool(lip.get("snap_fit", False)),
+                    })
+                else:
+                    get_settings().set("split_lip_enabled", False)
                 if b_id and p_id:
-                    feat = self.doc.split_body(b_id, p_id)
+                    feat = self.doc.split_body(b_id, p_id, lip=lip)
                     if feat:
                         target = self.doc.bodies.get(b_id)
                         new_body = self.doc.bodies.get(feat.result_body_id)
@@ -128,7 +167,7 @@ class BodyPromptsMixin:
         add_apply_button(
             self.viewport, dlg,
             lambda: mesh_anchor(self.viewport, self.doc.bodies[dlg.get_values()[0]].render_mesh)
-            if all(dlg.get_values()) and dlg.get_values()[0] in self.doc.bodies else None
+            if dlg.get_values()[0] and dlg.get_values()[1] and dlg.get_values()[0] in self.doc.bodies else None
         )
         dlg.show()
 

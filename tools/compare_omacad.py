@@ -34,7 +34,7 @@ def worker(args):
     settings._instance.set('theme_mode','fixed');settings._instance.set('theme_name','studio')
     from omacad.ui import theme
     theme.CUSTOM_DIR=state/'themes';theme._ARROW_DIR=state/'arrows'
-    fmt=QSurfaceFormat();fmt.setSamples(4);fmt.setDepthBufferSize(24);fmt.setStencilBufferSize(8);fmt.setVersion(3,3);fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile);QSurfaceFormat.setDefaultFormat(fmt)
+    fmt=QSurfaceFormat();fmt.setSamples(4);fmt.setDepthBufferSize(24);fmt.setStencilBufferSize(8);fmt.setVersion(3,3);fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile);QSurfaceFormat.setDefaultFormat(fmt)
     app=QApplication([]);theme.apply_saved_choice()
     from omacad.model.document import Document
     from omacad.model.features.base import Body

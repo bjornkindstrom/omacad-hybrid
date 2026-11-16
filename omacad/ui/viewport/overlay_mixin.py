@@ -633,8 +633,8 @@ class OverlayMixin:
     # ------------------ Mouse & Navigation ------------------
 
     def _orbit_viewcube(self, dx, dy):
-        self.azimuth = (self.azimuth - dx * 0.5) % 360.0
-        self.elevation = max(-89.9, min(89.9, self.elevation + dy * 0.5))
+        from omacad.ui.math3d import orbit_step
+        self.azimuth, self.elevation = orbit_step(self.azimuth, self.elevation, dx, dy)
         self.update()
 
     def set_view(self, view_name: str):

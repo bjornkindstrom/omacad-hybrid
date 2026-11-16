@@ -66,6 +66,12 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "scripts_folder": "",               # user scripts (Scripts, Shift+S); "" = ~/.config/omacad/scripts or %APPDATA%\Omacad\scripts
     "trusted_scripts": {},              # script path -> sha256 of the content the user allowed to run
     "script_values": {},                # script path -> {parameter: value} last used in its panel
+    "split_lip_enabled": False,         # default "Add lip" state in Split Body
+    "split_lip_style": "inner",         # "inner", "outer", or "groove"
+    "split_lip_height": 5.0,            # mm
+    "split_lip_width": 0.0,             # mm (0 = Auto)
+    "split_lip_clearance": 0.2,         # mm
+    "split_lip_snap": False,            # add snap-fit latch bump on the lip
 }
 
 
