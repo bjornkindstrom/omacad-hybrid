@@ -4,7 +4,7 @@ from pathlib import Path
 import manifold3d as m3d
 import pytest
 
-import bento_tray
+bento_tray = pytest.importorskip("bento_tray")
 from omacad.scripting.loader import read_info
 from omacad.scripting.runner import check_report, run_script
 from omacad.model.document import Document

@@ -86,6 +86,7 @@ def test_cancel_leaves_the_model_alone(win):
     assert next(iter(doc.bodies.values())).visible
 
 
+@pytest.mark.skipif(not REPORT_PROJECT.exists(), reason="local feedback fixture not in repo")
 def test_preselected_curved_patch_in_prompt_offset_face(win):
     doc = Exporter.load_project(str(REPORT_PROJECT))
     win.attach_document(doc)

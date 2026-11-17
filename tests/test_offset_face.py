@@ -107,6 +107,7 @@ def test_cylinder_offset_leaves_one_clean_body():
     assert abs(top.volume() - area * 10.0) / (area * 10.0) < 1e-3
 
 
+@pytest.mark.skipif(not REPORT_PROJECT.exists(), reason="local feedback fixture not in repo")
 def test_inward_cylinder_offset_thickens_thin_wall():
     """Inward offset face on thin-walled cup thickens wall cleanly without ballooning outer diameter."""
     doc = Exporter.load_project(str(REPORT_PROJECT))
@@ -133,6 +134,7 @@ def test_inward_cylinder_offset_thickens_thin_wall():
     assert any(abs(r - 33.5) < 0.05 for r in radii)
 
 
+@pytest.mark.skipif(not REPORT_PROJECT.exists(), reason="local feedback fixture not in repo")
 def test_outward_cylinder_offset_thins_wall():
     """Outward offset face on thin-walled cup thins wall without deleting/obliterating it."""
     doc = Exporter.load_project(str(REPORT_PROJECT))
