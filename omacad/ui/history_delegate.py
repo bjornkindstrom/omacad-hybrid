@@ -3,7 +3,7 @@
 The editor starts after the row's label ("Height: "), so the name of the value stays in sight while it is typed,
 and it suggests parameter names and shows what a formula evaluates to (ExprLineEdit)."""
 from PySide6.QtCore import Qt, QTimer, QEvent, QSize
-from PySide6.QtWidgets import QLineEdit, QStyledItemDelegate
+from PySide6.QtWidgets import QComboBox, QLineEdit, QStyledItemDelegate
 from omacad.model import expr
 from omacad.ui.expr_spin import ExprLineEdit
 
@@ -89,7 +89,13 @@ class HistoryDelegate(QStyledItemDelegate):
                 doc = self.browser.doc
                 if hasattr(doc, 'is_script_group') and doc.is_script_group(gid):
                     spec = doc.script_group_param_spec(gid, key)
-                    if spec is not None and spec.type in ('str', 'choice'):
+                    if spec is not None and spec.type == 'choice':
+                        combo = QComboBox(parent)
+                        for c in spec.choices:
+                            combo.addItem(str(c), c)
+                        combo.activated.connect(lambda _idx, ed=combo: (self.commitData.emit(ed), self.closeEditor.emit(ed)))
+                        return combo
+                    if spec is not None and spec.type == 'str':
                         editor = QLineEdit(parent)
                         editor.setFrame(False)
                         return editor
@@ -182,6 +188,17 @@ class HistoryDelegate(QStyledItemDelegate):
                 if dim is None:
                     return
                 value = dim.expr or str(dim.value)
+            if isinstance(editor, QComboBox):
+                idx = editor.findText(value)
+                if idx >= 0:
+                    editor.setCurrentIndex(idx)
+                editor.currentTextChanged.connect(lambda text: self.browser.grow_for_editor(label_prefix(index.data() or '') + text, index))
+                def schedule(text):
+                    self.preview_value = (kind, ids, text)
+                    self.preview_timer.start()
+                editor.currentTextChanged.connect(schedule)
+                QTimer.singleShot(0, editor.showPopup)
+                return
             editor.setText(value)
             editor.selectAll()
             editor.textChanged.connect(lambda text: self.browser.grow_for_editor(label_prefix(index.data() or '') + text, index))
@@ -197,7 +214,7 @@ class HistoryDelegate(QStyledItemDelegate):
         if not ref:
             return super().setModelData(editor, model, index)
         kind, ids = ref
-        text = editor.text()
+        text = editor.currentText() if isinstance(editor, QComboBox) else editor.text()
         # Qt must finish closing its editor before a document notification rebuilds the tree.
         QTimer.singleShot(0, lambda: self.apply_value(kind, ids, text))
 

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QLineEdit
+from PySide6.QtWidgets import QApplication, QComboBox, QLineEdit
 
 from omacad.io.exporter import Exporter
 from omacad.model.document import Document
@@ -162,8 +162,11 @@ def test_delegate_editor_types_for_script_params(tmp_path, app):
         idx = win.browser.tree.indexFromItem(row, 0)
         editor = delegate.createEditor(win.browser.tree, None, idx)
         _, (_, key) = row.data(0, Qt.ItemDataRole.UserRole)
-        if key in ("tag", "mode"):
+        if key == "tag":
             assert type(editor) is QLineEdit
+        elif key == "mode":
+            assert isinstance(editor, QComboBox)
+            assert [editor.itemText(i) for i in range(editor.count())] == ["single", "double"]
         else:
             assert isinstance(editor, ExprLineEdit)
 
