@@ -5,7 +5,8 @@ and the runner wraps the whole run in one undo step.
 Units are millimetres and degrees. World axes: X right, Y back, Z up. Sketch coordinates are (u, v) on the sketch's
 plane: XY -> (x, y), XZ -> (x, z), YZ -> (y, z)."""
 import math
-from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, Union
+from pathlib import Path
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -264,7 +265,16 @@ class ScriptContext:
 
     units = "mm"
 
-    def __init__(self, doc, log: Optional[Callable[[str], None]] = None, checking: bool = False, name: str = "Script"):
+    def __init__(
+        self,
+        doc,
+        log: Optional[Callable[[str], None]] = None,
+        checking: bool = False,
+        name: str = "Script",
+        script_path: Optional[Path] = None,
+        params: Optional[Dict[str, Any]] = None,
+        group_id: Optional[str] = None,
+    ):
         self._doc = doc
         self._log_fn = log
         self.messages: List[str] = []
@@ -272,6 +282,10 @@ class ScriptContext:
         self.name = str(name).strip() or "Script"   # what the user called the things this run makes (the Name field)
         self._named: set = set()      # body ids the script named itself
         self._objects_before = set(self._object_ids())
+        self._script_path = str(Path(script_path).resolve()) if script_path is not None else None
+        self._params = dict(params) if params is not None else None
+        self._group_id = group_id
+        self._grouped = False
 
     # ---- quality ------------------------------------------------------------------------------------------------
     @property
@@ -622,7 +636,17 @@ class ScriptContext:
             if oid and oid not in oids:
                 oids.append(oid)
         if oids:
-            self._doc.create_object_group(str(name), oids)
+            gid = self._doc.create_object_group(
+                str(name),
+                oids,
+                kind="script" if self._script_path else None,
+                params=self._params if self._script_path else None,
+                script_path=self._script_path,
+                script_name=self.name if self._script_path else None,
+                group_id=self._group_id,
+            )
+            self._group_id = gid
+            self._grouped = True
 
     # ---- names --------------------------------------------------------------------------------------------------
     def _object_ids(self):
@@ -671,6 +695,23 @@ class ScriptContext:
         """Called by the runner after run(): ends a sketch left open and names what the script did not name."""
         self._finish_open_sketch()
         self._name_new_objects()
+        if self._script_path and not self._grouped:
+            hist = getattr(self._doc, "object_history", None)
+            if hist is not None:
+                hist.sync(self._doc)
+                new_oids = [oid for oid in hist.objects if oid not in self._objects_before]
+                if new_oids:
+                    gid = self._doc.create_object_group(
+                        self.name,
+                        new_oids,
+                        kind="script",
+                        params=self._params,
+                        script_path=self._script_path,
+                        script_name=self.name,
+                        group_id=self._group_id,
+                    )
+                    self._group_id = gid
+                    self._grouped = True
 
     # ---- helpers ------------------------------------------------------------------------------------------------
     @staticmethod

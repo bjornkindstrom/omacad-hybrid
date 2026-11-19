@@ -76,6 +76,54 @@ STAR_BRACKET_PARAMS_CONFIG = [
 ]
 
 
+def _add_script_group_settings(grow, doc, gid):
+    from pathlib import Path
+    from omacad.scripting.loader import read_info
+
+    og = next((g for g in getattr(doc, "object_groups", []) if g["id"] == gid), None)
+    if not og:
+        return
+    script_path = og.get("script_path")
+    params = doc.script_group_params(gid)
+    if not script_path or not params:
+        return
+    p_file = Path(script_path)
+    if not p_file.is_file():
+        return
+    info = read_info(p_file)
+    if info.error or not info.params:
+        return
+    if info.easy_params is None:
+        display_params = list(info.params)
+    elif len(info.easy_params) == 0:
+        return
+    else:
+        param_map = {p.name: p for p in info.params}
+        display_params = [param_map[k] for k in info.easy_params if k in param_map]
+    if not display_params:
+        return
+
+    settings_node = QTreeWidgetItem(grow, ["⚙️ Settings", ""])
+    settings_node.setData(0, ROLE, ("group_settings", gid))
+    settings_node.setExpanded(True)
+
+    for p in display_params:
+        val = params.get(p.name, p.default)
+        if p.type == "bool":
+            val_str = str(int(bool(val)))
+        elif p.type == "float" or isinstance(val, float):
+            val_str = f"{float(val):g}"
+        else:
+            val_str = f"{val}"
+        suffix = f" {p.unit}" if p.unit else ""
+        row = QTreeWidgetItem(settings_node, [f"{p.title}: {val_str}{suffix}", ""])
+        row.setData(0, ROLE, ("group_param", (gid, p.name)))
+        row.setFlags(row.flags() | Qt.ItemFlag.ItemIsEditable)
+        tip = f"{p.help} — double-click or click the pencil to edit" if p.help else "Double-click or click the pencil to edit"
+        row.setToolTip(0, tip)
+        _pencil(row)
+
+
 def _add_star_bracket_group_settings(grow, doc, gid):
     params = doc.star_bracket_group_params(gid)
     if not params:
@@ -168,6 +216,8 @@ def add_histories(browser, root):
             _add_box_row_group_settings(grow, doc, gid)
         elif hasattr(doc, "is_star_bracket_group") and doc.is_star_bracket_group(gid):
             _add_star_bracket_group_settings(grow, doc, gid)
+        elif hasattr(doc, "is_script_group") and doc.is_script_group(gid):
+            _add_script_group_settings(grow, doc, gid)
         for oid in shown:
             _add_object(browser, grow, oid, features, excluded)
 

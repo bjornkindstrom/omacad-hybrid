@@ -2317,12 +2317,28 @@ class Document:
         box_features: Optional[List[str]] = None,
         lid_features: Optional[List[str]] = None,
         star_bracket_features: Optional[List[str]] = None,
+        script_path: Optional[str] = None,
+        script_name: Optional[str] = None,
+        group_id: Optional[str] = None,
     ) -> str:
         name = name.strip() or "Group"
-        gid = f"group_{uuid.uuid4().hex[:8]}"
         if object_ids:
             for oid in object_ids:
                 self._remove_from_group_silent(oid)
+        existing = next((g for g in self.object_groups if group_id and g["id"] == group_id), None)
+        if existing is not None:
+            existing["objects"] = list(object_ids or [])
+            if kind is not None:
+                existing["kind"] = kind
+            if params is not None:
+                existing["params"] = dict(params)
+            if script_path is not None:
+                existing["script_path"] = script_path
+            if script_name is not None:
+                existing["script_name"] = script_name
+            self.notify_changed()
+            return existing["id"]
+        gid = group_id or f"group_{uuid.uuid4().hex[:8]}"
         entry = {
             "id": gid,
             "name": name,
@@ -2339,6 +2355,10 @@ class Document:
             entry["lid_features"] = list(lid_features)
         if star_bracket_features is not None:
             entry["star_bracket_features"] = list(star_bracket_features)
+        if script_path is not None:
+            entry["script_path"] = script_path
+        if script_name is not None:
+            entry["script_name"] = script_name
         self.object_groups.append(entry)
         self.notify_changed()
         return gid
@@ -2477,6 +2497,130 @@ class Document:
         if not og:
             return False
         return og.get("kind") == "star_brackets" or og.get("name", "").startswith("Star brackets") or og.get("name", "").startswith("Julstjärna fästen")
+
+    def is_script_group(self, group_id: str) -> bool:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        return bool(og and og.get("kind") == "script" and og.get("script_path"))
+
+    def script_group_params(self, group_id: str) -> dict:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og or og.get("kind") != "script":
+            return {}
+        return dict(og.get("params") or {})
+
+    def script_group_param_spec(self, group_id: str, key: str):
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        script_path = og.get("script_path") if og else None
+        if not script_path:
+            return None
+        from pathlib import Path
+        from omacad.scripting.loader import read_info
+        p = Path(script_path)
+        if not p.is_file():
+            return None
+        info = read_info(p)
+        if info.error:
+            return None
+        return next((param for param in info.params if param.name == key), None)
+
+    @undoable("Edit Script Parameter")
+    def edit_script_group_param(self, group_id: str, key: str, value_text: str) -> bool:
+        og = next((g for g in self.object_groups if g["id"] == group_id), None)
+        if not og or og.get("kind") != "script":
+            return False
+        from pathlib import Path
+        from omacad.model import expr as exprlib
+        from omacad.scripting.loader import read_info
+        from omacad.scripting.runner import ScriptRunError, run_script
+
+        script_path = og.get("script_path")
+        if not script_path or not Path(script_path).is_file():
+            raise ValueError(f"Script file not found: {script_path or '(none)'}")
+        info = read_info(Path(script_path))
+        if info.error:
+            raise ValueError(info.error)
+        param = next((p for p in info.params if p.name == key), None)
+        if param is None:
+            raise ValueError(f"Unknown script parameter: {key}")
+
+        text = str(value_text)
+        if param.type in ("float", "int"):
+            val = exprlib.evaluate(text, self.parameter_values())
+            if not math.isfinite(val):
+                raise ValueError("Enter a finite value")
+            new_val = int(round(float(val))) if param.type == "int" else float(val)
+            if param.min is not None and new_val < param.min:
+                raise ValueError(f"{param.title} must be >= {param.min:g}")
+            if param.max is not None and new_val > param.max:
+                raise ValueError(f"{param.title} must be <= {param.max:g}")
+        elif param.type == "bool":
+            low = text.strip().lower()
+            if low in ("1", "true", "yes", "on"):
+                new_val = True
+            elif low in ("0", "false", "no", "off"):
+                new_val = False
+            else:
+                val = exprlib.evaluate(text, self.parameter_values())
+                if not math.isfinite(val):
+                    raise ValueError("Enter 1/0 or true/false")
+                new_val = bool(round(float(val)))
+        elif param.type == "choice":
+            stripped = text.strip()
+            matched = next((c for c in param.choices if c == stripped or str(c) == stripped), None)
+            if matched is None:
+                raise ValueError(f"Must be one of: {', '.join(str(c) for c in param.choices)}")
+            new_val = matched
+        else:
+            new_val = text
+
+        params = dict(og.get("params") or {})
+        params[key] = new_val
+        og["params"] = params
+
+        old_oids = list(og.get("objects", []))
+        self.object_history.sync(self)
+        doomed_oids = list(old_oids)
+        seen_oids = set(doomed_oids)
+        added = True
+        while added:
+            added = False
+            for oid, obj in self.object_history.objects.items():
+                if oid not in seen_oids and obj.parent_id in seen_oids:
+                    seen_oids.add(oid)
+                    doomed_oids.append(oid)
+                    added = True
+        old_bids = set()
+        for oid in doomed_oids:
+            obj = self.object_history.objects.get(oid)
+            if obj:
+                old_bids.update(obj.body_ids)
+        for oid in doomed_oids:
+            self.delete_object(oid)
+        for bid in old_bids:
+            self.bodies.pop(bid, None)
+            self.body_colors.pop(bid, None)
+            self.lids.discard(bid)
+            self.construction_bodies.discard(bid)
+        for oid in doomed_oids:
+            self.object_history.objects.pop(oid, None)
+            self.object_history.names.pop(oid, None)
+        og["objects"] = []
+        self.selected_body_ids = []
+
+        try:
+            result = run_script(
+                self,
+                Path(script_path),
+                values=params,
+                name=og.get("script_name") or og.get("name"),
+                group_id=group_id,
+            )
+        except ScriptRunError as e:
+            raise ValueError(e.result.error or "Script execution failed") from e
+
+        og["params"] = dict(result.values)
+        self.notify_changed()
+        return True
 
     def star_bracket_features(self, group_id: str) -> List[Any]:
         og = next((g for g in self.object_groups if g["id"] == group_id), None)
