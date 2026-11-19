@@ -1,7 +1,11 @@
-# Hybrid-experiment — 0.9.9.80.183
+# Hybrid-experiment — 0.9.9.80.188
 
 ### Added
 - **Script Easy Mode Settings in Object Browser (#242)**: Scripts run in Omacad now create/tag a `kind="script"` object group in the left Object Browser with a `⚙️ Settings` section showing `EASY_PARAMS` in order (or all `PARAMS` when `EASY_PARAMS` is omitted, and hidden when `EASY_PARAMS = []`). Editing any `float`, `int`, `bool`, `choice`, or `str` setting updates the parameter and re-runs the script in place as a single undoable step, with full undo/redo, `.omacad` save/load round-trip, and clean rollback on errors.
+
+# Hybrid-experiment — 0.9.9.80.183
+
+### Added
 - **Split Body with Lip Joint (#241)**: *Split Body* now includes a *Lip joint (lid / two-part print)* option (*Add lip*, *Type*: *Inner lip (step inside)* / *Outer lip (step outside)* / *Groove & tongue (centered)*, *Height*, *Width* with *Auto*, *Clearance*, *Lip on*: *Half below / above the plane*, and *Snap-fit latch (detent bump)* for snap-on lids) with live 3D preview. Your choice and dimensions are remembered across sessions and can also be set as default in *Settings*. Creates matching `LipJointFeature` steps on the two halves, editable in the timeline and saved in `.omacad` files.
 
 ### Fixed
