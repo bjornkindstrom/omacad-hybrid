@@ -1,6 +1,49 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import glob
+import importlib.util
+import os
+
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+
+
+def _opencascade_binaries():
+    """OpenCascade (cadquery-ocp, B-rep bodies) on Windows: every DLL its extension loads, from cadquery_ocp.libs
+    and vtk.libs only as far as needed (46 of VTK's files, ~130 MB; the rest of VTK, ~185 MB, and its Python modules
+    stay out). OCP/__init__.py puts both folders next to the package on the DLL search path, so they keep their names
+    and places. Elsewhere (Linux wheels) PyInstaller finds the shared libraries itself."""
+    spec = importlib.util.find_spec("OCP")
+    if spec is None or not spec.submodule_search_locations:
+        return []
+    package = list(spec.submodule_search_locations)[0]
+    site = os.path.dirname(package)
+    folders = ("cadquery_ocp.libs", "vtk.libs")
+    if not os.path.isdir(os.path.join(site, folders[0])):
+        return []
+    import pefile
+    index = {}
+    for folder in folders:
+        for path in glob.glob(os.path.join(site, folder, "*")):
+            index[os.path.basename(path).lower()] = (path, folder)
+    todo = glob.glob(os.path.join(package, "OCP*.pyd"))
+    seen, out = set(todo), []
+    while todo:
+        pe = pefile.PE(todo.pop(), fast_load=True)
+        pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"],
+                                               pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT"]])
+        names = [e.dll.decode().lower() for e in getattr(pe, "DIRECTORY_ENTRY_IMPORT", [])]
+        names += [e.dll.decode().lower() for e in getattr(pe, "DIRECTORY_ENTRY_DELAY_IMPORT", [])]
+        pe.close()
+        for name in names:
+            if name in index and index[name][0] not in seen:
+                path, folder = index[name]
+                seen.add(path)
+                todo.append(path)
+                out.append((path, folder))
+    for folder in folders:                    # OCP/__init__ adds both folders; a missing one stops the import
+        if not any(dest == folder for _, dest in out):
+            raise SystemExit(f"OpenCascade bundle: nothing collected from {folder}")
+    return out
 
 datas = [
     ('assets', 'assets'),
@@ -29,7 +72,7 @@ hiddenimports = [
     'omacad.rfc',
     'omacad._rfc_secret',
     'tomllib',
-]
+] + (collect_submodules('OCP') if importlib.util.find_spec('OCP') else [])    # B-rep bodies (OpenCascade)
 
 excludes = [
     'tkinter',
@@ -47,12 +90,14 @@ excludes = [
     'jedi',
     'docutils',
     'setuptools',
+    'vtk',                  # OpenCascade needs VTK's DLLs (collected above), not its Python modules
+    'vtkmodules',
 ]
 
 a = Analysis(
     ['app.py'],
     pathex=[],
-    binaries=[],
+    binaries=_opencascade_binaries(),
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

@@ -27,7 +27,7 @@ jobs:
           CFLAGS: -std=gnu17
         run: |
           python -m pip install --upgrade pip
-          pip install PySide6 numpy manifold3d trimesh PyOpenGL Pillow shapely python-solvespace maturin pytest pytest-xdist
+          pip install PySide6 numpy manifold3d trimesh PyOpenGL Pillow shapely python-solvespace maturin pytest pytest-xdist cadquery-ocp==8.0.1.1.0
       - name: Build native Rust acceleration extension
         run: |
           pip install ./native --no-build-isolation
@@ -63,7 +63,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PySide6 numpy manifold3d trimesh PyOpenGL Pillow shapely python-solvespace maturin pyinstaller
+          pip install PySide6 numpy manifold3d trimesh PyOpenGL Pillow shapely python-solvespace maturin pyinstaller pefile cadquery-ocp==8.0.1.1.0
 
       - name: Build native Rust extension for Windows
         run: |
@@ -84,7 +84,8 @@ jobs:
         shell: pwsh
         run: |
           $out = Join-Path $env:RUNNER_TEMP "selftest.txt"
-          $p = Start-Process -FilePath "dist\Omacad.exe" -ArgumentList "--selftest", $out -Wait -PassThru
+          $t = Measure-Command { $script:p = Start-Process -FilePath "dist\Omacad.exe" -ArgumentList "--selftest", $out -Wait -PassThru }
+          Write-Host ("exe size: {0:N0} MB, selftest incl. unpacking: {1:N1} s" -f ((Get-Item dist\Omacad.exe).Length / 1MB), $t.TotalSeconds)
           if (Test-Path $out) { Get-Content $out }
           if ($p.ExitCode -ne 0 -or -not (Test-Path $out) -or -not ((Get-Content $out -Raw) -match "selftest ok")) { throw "exe self test failed" }
 

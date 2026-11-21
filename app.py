@@ -52,6 +52,35 @@ def _selftest_checks(importlib, pathlib) -> None:
     from omacad.hybrid_paths import STATE_DIR
     unpacked = getattr(sys, "_MEIPASS", None)
     assert not unpacked or pathlib.Path(unpacked) not in STATE_DIR.parents, "settings would be lost when the app closes"
+    _selftest_brep()
+
+
+def _selftest_brep() -> None:
+    """B-rep bodies (OpenCascade) work in this build: a filleted box with the exact volume, meshed and exported."""
+    import math
+    import pathlib
+    import tempfile
+    from omacad.model import brep
+    assert brep.available(), "OpenCascade is missing: " + brep.why_unavailable()
+    was = brep.active()
+    brep.set_enabled(True)
+    try:
+        from omacad.model.document import Document
+        from omacad.io.exporter import Exporter
+        doc = Document()
+        doc.add_box(40, 30, 20)
+        (body,) = doc.bodies.values()
+        doc.add_fillet([e.ref() for e in body.edges], 3.0, "fillet")
+        (body,) = doc.bodies.values()
+        x, y, z, r = 34, 24, 14, 3.0
+        exact = x * y * z + 2 * r * (x * y + y * z + x * z) + math.pi * r * r * (x + y + z) + 4 / 3 * math.pi * r ** 3
+        assert body.is_brep and abs(brep.volume(body.brep) - exact) < 1e-6, "B-rep fillet gave the wrong volume"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "selftest.step"
+            assert Exporter.export_all_to_step(doc, str(path)) and "CYLINDRICAL_SURFACE" in path.read_text(), \
+                "exact STEP export failed"
+    finally:
+        brep.set_enabled(was)
 
 
 def main():

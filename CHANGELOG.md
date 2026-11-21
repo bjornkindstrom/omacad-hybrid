@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.196 (branch brep-hybrid)
+
+### Build
+- **OpenCascade in the Windows exe**: `omacad.spec` bundles cadquery-ocp with exactly the DLLs it loads (all of `cadquery_ocp.libs`, 46 of VTK's files in `vtk.libs`; the rest of VTK and its Python modules are left out). CI installs cadquery-ocp for the tests and the build, `--selftest` now checks a B-rep fillet (exact volume) and an exact STEP export, and the build log prints the exe size and how long the self test takes including unpacking.
+
 # Hybrid-experiment — 0.9.9.80.195 (branch brep-hybrid)
 
 ### Added
