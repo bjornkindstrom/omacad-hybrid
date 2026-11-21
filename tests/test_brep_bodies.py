@@ -91,16 +91,17 @@ def test_writing_a_mesh_drops_the_shape(brep_on):
 
 
 def test_mesh_features_after_a_brep_body_still_work(brep_on):
-    """Shell is still a mesh tool: the B-rep box becomes a mesh body with the right hollow volume."""
-    from omacad.scripting.api import ScriptContext
+    """A wall both ways is still a mesh shell: the B-rep box becomes a mesh body, hollow and bigger outside."""
     doc = Document()
-    ctx = ScriptContext(doc)
-    b = ctx.box(30, 20, 10)
-    assert doc.bodies[b.id].is_brep
-    ctx.shell(b, 2.0, open_top=True)
-    body = doc.bodies[b.id]
+    doc.add_box(30, 20, 10)
+    bid = next(iter(doc.bodies))
+    assert doc.bodies[bid].is_brep
+    doc.add_shell(bid, 2.0, direction="both", thickness2=1.0)
+    body = doc.bodies[bid]
     assert body.brep is None
-    assert body.manifold.volume() == pytest.approx(30 * 20 * 10 - 26 * 16 * 8, rel=1e-6)
+    lo, hi = bbox(body)
+    np.testing.assert_allclose(hi - lo, (32, 22, 12), atol=1e-6)
+    assert body.manifold.volume() < 32 * 22 * 12
 
 
 def test_switching_off_and_rebuilding_goes_back_to_mesh(brep_on):
@@ -473,3 +474,103 @@ def test_freecad_reads_the_exact_step(brep_on, tmp_path):
     out = subprocess.run(["freecadcmd", str(script), str(path)], capture_output=True, text=True, timeout=120).stdout
     line = next(l for l in out.splitlines() if l.startswith("RESULT"))
     assert line == f"RESULT 1 True {round(rounded_box_volume(40, 30, 20, 3), 6)} ['Cylinder', 'Plane', 'Sphere']"
+
+
+# ---- step 5: shell / hole / pattern on B-rep bodies -----------------------------------------------------------------
+@pytest.mark.parametrize("open_top, expected", [(True, 30 * 20 * 10 - 26 * 16 * 8), (False, 30 * 20 * 10 - 26 * 16 * 6)])
+def test_shell_of_a_brep_box_is_exact(brep_on, open_top, expected):
+    from omacad.scripting.api import ScriptContext
+    doc = Document()
+    ctx = ScriptContext(doc)
+    b = ctx.box(30, 20, 10)
+    ctx.shell(b, 2.0, open_top=open_top)
+    body = doc.bodies[b.id]
+    assert body.is_brep and brep.volume(body.brep) == pytest.approx(expected, rel=1e-9)
+
+
+def test_fillet_then_shell_stays_brep_and_matches_the_reference(brep_on):
+    """Fillet before shell (Fusion's advice): the inner wall is the exact offset of the rounded outside."""
+    from omacad.scripting.api import ScriptContext
+    doc = Document()
+    ctx = ScriptContext(doc)
+    b = ctx.box(40, 30, 20)
+    ctx.fillet(b, 5, "vertical")
+    ctx.fillet(b, 3, lambda e: e.zmax < 1e-4)
+    ctx.shell(b, 2.0, open_top=True)
+    body = doc.bodies[b.id]
+    assert body.is_brep
+    assert brep.volume(body.brep) == pytest.approx(6641.37558, rel=1e-6)    # OpenCascade reference (kernel eval c7)
+
+
+@pytest.mark.parametrize("kind, params, removed", [
+    ("simple", dict(through=True), 2 * math.pi * 6.25 * 10),
+    ("counterbore", dict(through=True, cb_diameter=10, cb_depth=3), 2 * (math.pi * 25 * 3 + math.pi * 6.25 * 7)),
+])
+def test_holes_in_a_brep_body_are_exact(brep_on, kind, params, removed):
+    doc = Document()
+    doc.add_box(30, 30, 10)
+    doc.add_hole([{"origin": [15, 15, 10], "normal": [0, 0, 1]}, {"origin": [7, 7, 10], "normal": [0, 0, 1]}],
+                 hole_type=kind, diameter=5, **params)
+    body = only_body(doc)
+    assert body.is_brep and brep.volume(body.brep) == pytest.approx(9000 - removed, rel=1e-9)
+
+
+def test_countersink_hole_has_a_true_cone(brep_on):
+    from OCP.BRepAdaptor import BRepAdaptor_Surface
+    from omacad.model.brep import rounding
+    doc = Document()
+    doc.add_box(30, 30, 10)
+    doc.add_hole([{"origin": [15, 15, 10], "normal": [0, 0, 1]}], hole_type="countersink", diameter=5,
+                 through=True, cs_diameter=10, cs_angle=90)
+    body = only_body(doc)
+    kinds = {str(BRepAdaptor_Surface(f).GetType()).split(".")[-1] for f in rounding.faces(body.brep)}
+    assert body.is_brep and "GeomAbs_Cone" in kinds
+
+
+def _drilled_part(ctx, round_body=False, boss=False):
+    if round_body:
+        ctx.cylinder(20, 8)
+        sk = ctx.sketch("XY", offset=8)
+        sk.circle((12, 0), 3)
+        return ctx.extrude(sk, 4 if boss else -10, operation="join" if boss else "cut")
+    ctx.box(60, 40, 10)
+    sk = ctx.sketch("XY", offset=10)
+    sk.circle((8, 8), 3)
+    return ctx.extrude(sk, -12, operation="cut")
+
+
+@pytest.mark.parametrize("case, expected", [
+    ("linear", 60 * 40 * 10 - 3 * math.pi * 9 * 10),
+    ("circular_holes", math.pi * 400 * 8 - 6 * math.pi * 9 * 8),
+    ("circular_bosses", math.pi * 400 * 8 + 6 * math.pi * 9 * 4),
+    ("mirror", 60 * 40 * 10 - 4 * math.pi * 9 * 10),
+])
+def test_patterns_of_brep_steps_are_exact(brep_on, case, expected):
+    from omacad.scripting.api import ScriptContext
+    doc = Document()
+    ctx = ScriptContext(doc)
+    step = _drilled_part(ctx, round_body=case.startswith("circular"), boss=case == "circular_bosses")
+    if case == "linear":
+        ctx.pattern([step], kind="linear", count=3, spacing=10, axis="x")
+    elif case == "mirror":
+        doc.add_pattern([step.step], kind="mirror", mirror_mode="auto")
+    else:
+        ctx.pattern([step], kind="circular", count=6, axis="z")
+    body = only_body(doc)
+    assert body.is_brep                       # sketch circles come from 4-decimal points: ~1e-6 off
+    assert brep.volume(body.brep) == pytest.approx(expected, rel=5e-6)
+
+
+def test_matrix_probe_reads_the_moves_patterns_use():
+    from omacad.model.brep import MatrixProbe, matrix_of
+    import manifold3d as m3d
+    c = (5.0, 2.0, 0.0)
+    moves = [lambda m: m.translate((3, 4, 5)),
+             lambda m: m.translate(tuple(-np.array(c))).mirror((1.0, 0.0, 0.0)).translate(c),
+             lambda m: m.translate(tuple(-np.array(c))).rotate((0.0, 0.0, 60.0)).translate(c),
+             lambda m: m.transform(np.array([[0.0, -1, 0, 1], [1, 0, 0, 2], [0, 0, 1, 3]]))]
+    cube = m3d.Manifold.cube((1, 2, 3))
+    for move in moves:
+        expected = move(cube).bounding_box()
+        got = cube.transform(matrix_of(move)).bounding_box()
+        np.testing.assert_allclose(got, expected, atol=1e-9)

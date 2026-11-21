@@ -15,6 +15,16 @@ def hole_tool(kind: str, diameter: float, depth: float, cb_diameter: float = 0.0
               margin: float = 0.5, segments: int = 64, chamfer: float = 0.0,
               chamfer_angle: float = 45.0, chamfer_depth: float = 0.0) -> m3d.Manifold:
     """The drill: top face at z = 0, going down to z = -depth. kind: simple, counterbore, countersink."""
+    pts = hole_profile(kind, diameter, depth, cb_diameter, cb_depth, cs_diameter, cs_angle, tip, tip_angle, margin,
+                       chamfer, chamfer_angle, chamfer_depth)
+    return m3d.Manifold.revolve(m3d.CrossSection([[list(map(float, q)) for q in pts]]), segments)
+
+
+def hole_profile(kind: str, diameter: float, depth: float, cb_diameter: float = 0.0, cb_depth: float = 0.0,
+                 cs_diameter: float = 0.0, cs_angle: float = 90.0, tip: str = "flat", tip_angle: float = 118.0,
+                 margin: float = 0.5, chamfer: float = 0.0, chamfer_angle: float = 45.0,
+                 chamfer_depth: float = 0.0):
+    """The drill's half cross-section (x = radius, y = height), counter-clockwise; revolved about y it is the drill."""
     r = diameter / 2.0
     top = margin
     pts = [(0.0, top)]
@@ -58,7 +68,7 @@ def hole_tool(kind: str, diameter: float, depth: float, cb_diameter: float = 0.0
     area = sum(pts[i][0] * pts[(i + 1) % len(pts)][1] - pts[(i + 1) % len(pts)][0] * pts[i][1] for i in range(len(pts)))
     if area < 0:   # a cross-section must run counter-clockwise
         pts.reverse()
-    return m3d.Manifold.revolve(m3d.CrossSection([[list(map(float, q)) for q in pts]]), segments)
+    return pts
 
 
 class HoleFeature(Feature):
@@ -87,18 +97,9 @@ class HoleFeature(Feature):
         self.chamfer, self.chamfer_angle = max(0.0, float(chamfer)), float(chamfer_angle)
         self.chamfer_depth = max(0.0, float(chamfer_depth))
 
-    def tools(self, doc: Any):
-        """One drill per placed point, in world space."""
+    def _placements(self):
+        """3x4 matrix per placed point: the drill's z axis along the point's normal, top at the point."""
         out = []
-        reach = 1.0
-        for b in doc.bodies.values():
-            bb = np.array(b.manifold.bounding_box())
-            reach = max(reach, float(np.linalg.norm(bb[3:] - bb[:3])))
-        depth = reach + 1.0 if self.through else max(self.depth, 0.01)
-        tool = hole_tool(self.hole_type, self.diameter, depth, self.cb_diameter, self.cb_depth, self.cs_diameter,
-                         self.cs_angle, "flat" if self.through else self.tip, self.tip_angle,
-                         chamfer=self.chamfer, chamfer_angle=self.chamfer_angle,
-                         chamfer_depth=self.chamfer_depth)
         for pt in self.points:
             n = np.array(pt["normal"], dtype=float)
             n = n / max(float(np.linalg.norm(n)), 1e-12)
@@ -107,8 +108,33 @@ class HoleFeature(Feature):
                 u = np.cross(n, [0.0, 1.0, 0.0])
             u = u / np.linalg.norm(u)
             v = np.cross(n, u)
-            out.append(tool.transform(np.column_stack([u, v, n, np.array(pt["origin"], dtype=float)]).astype(float)))
+            out.append(np.column_stack([u, v, n, np.array(pt["origin"], dtype=float)]).astype(float))
         return out
+
+    def _depth(self, doc: Any) -> float:
+        reach = 1.0
+        for b in doc.bodies.values():
+            bb = np.array(b.manifold.bounding_box())
+            reach = max(reach, float(np.linalg.norm(bb[3:] - bb[:3])))
+        return reach + 1.0 if self.through else max(self.depth, 0.01)
+
+    def brep_tool(self, doc: Any):
+        """All drills as one exact OpenCascade shape (B-rep bodies): cylinders, cones and flat faces."""
+        from shapely.geometry import Polygon
+        from omacad.model.brep import sketch_solids
+        pts = hole_profile(self.hole_type, self.diameter, self._depth(doc), self.cb_diameter, self.cb_depth,
+                           self.cs_diameter, self.cs_angle, "flat" if self.through else self.tip, self.tip_angle,
+                           chamfer=self.chamfer, chamfer_angle=self.chamfer_angle, chamfer_depth=self.chamfer_depth)
+        drills = [sketch_solids.revolve(Polygon(pts), 360.0, 0.0, m) for m in self._placements()]
+        return sketch_solids._compound(drills)
+
+    def tools(self, doc: Any):
+        """One drill per placed point, in world space."""
+        tool = hole_tool(self.hole_type, self.diameter, self._depth(doc), self.cb_diameter, self.cb_depth,
+                         self.cs_diameter, self.cs_angle, "flat" if self.through else self.tip, self.tip_angle,
+                         chamfer=self.chamfer, chamfer_angle=self.chamfer_angle,
+                         chamfer_depth=self.chamfer_depth)
+        return [tool.transform(m) for m in self._placements()]
 
     def execute(self, doc: Any) -> None:
         tools = self.tools(doc)
@@ -116,14 +142,35 @@ class HoleFeature(Feature):
             return
         cutter = m3d.Manifold.batch_boolean(tools, m3d.OpType.Add) if len(tools) > 1 else tools[0]
         from omacad.model.features.base import feature_bodies
+        exact = []
         for body in feature_bodies(doc, self):
             if not _bbox_overlap(body.manifold, cutter):
+                continue
+            if self._cut_brep(doc, body, exact):
                 continue
             result = body.manifold - cutter
             if result.is_empty():
                 continue
             body.manifold = CadKernel.drop_slivers(result)
             body.update_render_mesh()
+
+    def _cut_brep(self, doc: Any, body, cache: list) -> bool:
+        """A B-rep body (experimental setting) is drilled exactly; False = use the mesh drill."""
+        from omacad.model import brep
+        if not (brep.active() and body.brep is not None):
+            return False
+        try:
+            if not cache:
+                cache.append(self.brep_tool(doc))
+            shape = brep.boolean(body.brep, cache[0], "cut")
+        except Exception as exc:
+            from omacad import applog
+            applog.log("INFO", f"{self.name}: B-rep hole in {body.name} not possible ({exc}); using the mesh drill")
+            return False
+        if not brep.attach(body, shape):
+            return False
+        body.update_render_mesh()
+        return True
 
     def to_dict(self) -> Dict[str, Any]:
         return {"feature_id": self.feature_id, "feature_type": self.feature_type, "name": self.name, "suppressed": self.suppressed,

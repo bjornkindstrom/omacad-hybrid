@@ -267,6 +267,8 @@ class ShellFeature(Feature):
         target = doc.bodies.get(self.target_body_id)
         if not target:
             return
+        if self._execute_brep(target):
+            return
         feats = doc.timeline.features
         upto = feats.index(self) if self in feats else doc.timeline.marker_index
         shelled = self.shell_body(doc, self.target_body_id, upto, target.manifold, self.thickness, self.direction, self.thickness2,
@@ -274,6 +276,24 @@ class ShellFeature(Feature):
         if shelled is not None:
             target.manifold = shelled
             target.update_render_mesh()
+
+    def _execute_brep(self, target) -> bool:
+        """A B-rep body (experimental setting) is hollowed by OpenCascade; False = use the mesh shell."""
+        from omacad.model import brep
+        if not (brep.active() and target.brep is not None):
+            return False
+        inward, outward = self.wall_sizes()
+        faces = [(f.get("normal", [0, 0, 1]), f.get("origin", [0, 0, 0])) for f in self.open_faces]
+        try:
+            shape = brep.shell(target.brep, faces, inward, outward)
+        except Exception as exc:
+            from omacad import applog
+            applog.log("INFO", f"{self.name}: B-rep shell not possible ({exc}); using the mesh shell")
+            return False
+        if not brep.attach(target, shape):
+            return False
+        target.update_render_mesh()
+        return True
 
     def to_dict(self) -> Dict[str, Any]:
         return {

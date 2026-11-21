@@ -725,6 +725,7 @@ class PatternFeature(Feature):
         if not funcs:
             self.copies = 0
             return None
+        self._funcs, self._pos, self._whole_body = funcs, pos, whole_body
         self._keep = None
         if self.kind == "circular" and not whole_body and pos == list(range(min(pos), idx)):
             c, axis = self._circular_axis(centre)
@@ -778,6 +779,8 @@ class PatternFeature(Feature):
             if res is None:
                 continue
             rem, add = res
+            if self._execute_brep(doc, bid, body):
+                continue
             result = body.manifold
             if self._keep is not None:
                 result = result ^ self._keep
@@ -788,6 +791,60 @@ class PatternFeature(Feature):
             if not result.is_empty():
                 body.manifold = CadKernel.drop_slivers(result)
                 body.update_render_mesh()
+
+    def _execute_brep(self, doc: Any, body_id: str, body) -> bool:
+        """A B-rep body (experimental setting): the same copies made exactly from the B-rep before/after the source
+        steps. Linear, circular and mirror of a contiguous run of steps; anything else (fill, threads) returns False
+        and uses the mesh copies."""
+        from omacad.model import brep
+        if not (brep.active() and body.brep is not None and self.kind in ("linear", "circular", "mirror")):
+            return False
+        # (the round-body trim in compute(), self._keep, only hides facet skins of the mesh copies; exact copies
+        # don't need it)
+        pos = self._pos
+        if pos != list(range(min(pos), max(pos) + 1)):
+            return False
+        from omacad.model.features.thread import ThreadFeature
+        if any(isinstance(doc.timeline.features[i], ThreadFeature) for i in pos):
+            return False
+        breps = getattr(doc, "step_breps", {})
+        before = breps.get(min(pos), {}).get(body_id)
+        after = breps.get(max(pos) + 1, {}).get(body_id)
+        try:
+            if after is None:
+                return False
+            if self._whole_body:
+                if self.kind != "linear":
+                    return False
+                removed, added = None, after
+            else:
+                if before is None:
+                    return False
+                removed, added = self._exact_difference(before, after), self._exact_difference(after, before)
+            from omacad.model.brep import sketch_solids
+            mats = [brep.matrix_of(f) for f in self._funcs]
+            shape = body.brep
+            if removed is not None:
+                shape = brep.boolean(shape, sketch_solids._compound([brep.transform(removed, m) for m in mats]), "cut")
+            if added is not None:
+                shape = brep.boolean(shape, sketch_solids._compound([brep.transform(added, m) for m in mats]), "join")
+        except Exception as exc:
+            from omacad import applog
+            applog.log("INFO", f"{self.name}: B-rep copies not possible ({exc!r}); using the mesh copies")
+            return False
+        if not brep.attach(body, shape):
+            return False
+        body.update_render_mesh()
+        return True
+
+    @staticmethod
+    def _exact_difference(a, b):
+        """a minus b as a B-rep, None when nothing is left."""
+        from omacad.model import brep
+        try:
+            return brep.boolean(a, b, "cut")
+        except ValueError:
+            return None
 
     def to_dict(self) -> Dict[str, Any]:
         return {

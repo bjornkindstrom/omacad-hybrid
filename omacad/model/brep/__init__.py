@@ -72,7 +72,7 @@ def transform(shape, matrix):
     m = np.asarray(matrix, dtype=float)[:3, :4]
     lin = m[:, :3]
     trsf = gp_Trsf()
-    if np.allclose(lin @ lin.T, np.eye(3), atol=1e-9) and np.linalg.det(lin) > 0:
+    if np.allclose(lin @ lin.T, np.eye(3), atol=1e-9):     # rotation, translation and mirroring stay exact
         trsf.SetValues(*m[0], *m[1], *m[2])
         return BRepBuilderAPI_Transform(shape, trsf, True).Shape()
     gt = gp_GTrsf()                                   # scaling/shear: general transform (turns faces into B-splines)
@@ -194,3 +194,129 @@ def boolean(a, b, operation: str):
     if volume(out) <= 1e-12:
         raise ValueError(f"{operation} left nothing")
     return out
+
+
+def planar_face_at(shape, normal, origin, tol: float = 1e-3):
+    """The flat face of `shape` facing `normal` that contains (is nearest to) the point `origin`, or None."""
+    from OCP.BRepAdaptor import BRepAdaptor_Surface
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeVertex
+    from OCP.BRepExtrema import BRepExtrema_DistShapeShape
+    from OCP.GeomAbs import GeomAbs_Plane
+    from OCP.TopAbs import TopAbs_REVERSED
+    from OCP.gp import gp_Pnt
+    n = np.asarray(normal, dtype=float)
+    n = n / max(float(np.linalg.norm(n)), 1e-300)
+    point = BRepBuilderAPI_MakeVertex(gp_Pnt(*map(float, origin))).Vertex()
+    best = None
+    for face in _faces(shape):
+        surf = BRepAdaptor_Surface(face)
+        if surf.GetType() != GeomAbs_Plane:
+            continue
+        fn = np.array(surf.Plane().Axis().Direction().Coord())
+        if face.Orientation() == TopAbs_REVERSED:
+            fn = -fn
+        if float(fn @ n) < 0.999:
+            continue
+        dist = BRepExtrema_DistShapeShape(point, face)
+        if not dist.IsDone():
+            continue
+        d = dist.Value()
+        if d <= tol and (best is None or d < best[0]):
+            best = (d, face)
+    return best[1] if best else None
+
+
+def shell(shape, open_faces, inward: float, outward: float):
+    """Hollow `shape` with walls `inward` (into the material) or `outward`; `open_faces` = [(normal, point)] flat
+    faces left open. One side only: a wall both ways is left to the mesh tools."""
+    from OCP.BRepOffsetAPI import BRepOffsetAPI_MakeThickSolid
+    from OCP.collections import List_TopoDS_Shape
+    if inward > 1e-9 and outward > 1e-9:
+        raise ValueError("a wall both ways is not supported as B-rep")
+    removed = List_TopoDS_Shape()
+    for normal, origin in open_faces:
+        face = planar_face_at(shape, normal, origin)
+        if face is None:
+            raise ValueError("open face not found on the B-rep shape")
+        removed.Append(face)
+    offset = -inward if inward > 1e-9 else outward
+    if removed.Size() == 0:
+        # closed hollow body: MakeThickSolid without an opening returns only the offset skin, so cut it instead
+        from OCP.BRepOffsetAPI import BRepOffsetAPI_MakeOffsetShape
+        off = BRepOffsetAPI_MakeOffsetShape()
+        off.PerformByJoin(shape, float(offset), 1e-4)
+        off.Build()
+        if not off.IsDone():
+            raise RuntimeError("OpenCascade could not offset the body")
+        from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
+        from OCP.TopoDS import TopoDS
+        from OCP.TopAbs import TopAbs_SHELL
+        from OCP.TopExp import TopExp_Explorer
+        skin = off.Shape()
+        exp = TopExp_Explorer(skin, TopAbs_SHELL)
+        if not exp.More():
+            raise RuntimeError("offset gave no shell")
+        other = BRepBuilderAPI_MakeSolid(TopoDS.Shell(exp.Current())).Solid()
+        if volume(other) < 0:
+            other.Reverse()
+        out = boolean(shape, other, "cut") if inward > 1e-9 else boolean(other, shape, "cut")
+        return out
+    mk = BRepOffsetAPI_MakeThickSolid()
+    mk.MakeThickSolidByJoin(shape, removed, float(offset), 1e-4)
+    mk.Build()
+    if not mk.IsDone():
+        raise RuntimeError("OpenCascade could not build the shell")
+    out = mk.Shape()
+    if not is_valid(out):
+        raise RuntimeError("OpenCascade made an invalid shell")
+    v0, v1 = volume(shape), volume(out)
+    if not (0 < v1 < v0) and inward > 0 or outward > 0 and not v1 > 0:
+        raise RuntimeError("the B-rep shell has an unexpected volume")
+    return out
+
+
+class MatrixProbe:
+    """Stands in for a Manifold in a function that moves one (m.translate(...).mirror(...) ...), and records the
+    4x4 matrix it applies, so the same move can be given to a B-rep shape."""
+
+    def __init__(self, matrix=None):
+        self.matrix = np.eye(4) if matrix is None else matrix
+
+    def _then(self, m):
+        return MatrixProbe(m @ self.matrix)
+
+    def translate(self, offset):
+        m = np.eye(4)
+        m[:3, 3] = np.asarray(offset, dtype=float)
+        return self._then(m)
+
+    def transform(self, matrix):
+        m = np.eye(4)
+        m[:3, :4] = np.asarray(matrix, dtype=float)[:3, :4]
+        return self._then(m)
+
+    def mirror(self, normal):
+        n = np.asarray(normal, dtype=float)
+        n = n / max(float(np.linalg.norm(n)), 1e-300)
+        m = np.eye(4)
+        m[:3, :3] = np.eye(3) - 2.0 * np.outer(n, n)
+        return self._then(m)
+
+    def rotate(self, degrees):
+        """Manifold.rotate: about X, then Y, then Z (degrees)."""
+        rx, ry, rz = (np.radians(float(a)) for a in degrees)
+        cx, sx, cy, sy, cz, sz = np.cos(rx), np.sin(rx), np.cos(ry), np.sin(ry), np.cos(rz), np.sin(rz)
+        mx = np.array([[1, 0, 0], [0, cx, -sx], [0, sx, cx]])
+        my = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
+        mz = np.array([[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]])
+        m = np.eye(4)
+        m[:3, :3] = mz @ my @ mx
+        return self._then(m)
+
+
+def matrix_of(move) -> np.ndarray:
+    """The 3x4 matrix of a function that moves a Manifold (see MatrixProbe)."""
+    out = move(MatrixProbe())
+    if not isinstance(out, MatrixProbe):
+        raise TypeError("the move is not a plain transform")
+    return out.matrix[:3, :4]

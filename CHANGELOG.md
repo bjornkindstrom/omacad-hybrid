@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.197 (branch brep-hybrid)
+
+### Added
+- **B-rep bodies: Shell, Hole and Pattern (experimental)**: on a B-rep body (💎) Shell is an exact offset (open faces, closed hollow, inside or outside; a wall both ways stays a mesh shell), Hole drills exact cylinders, counterbores, countersink cones and drill tips, and Linear / Circular / Mirror patterns copy what the source steps changed exactly (the B-rep before and after the steps is kept like the mesh states). Fill patterns and threads still use the mesh copies.
+
 # Hybrid-experiment — 0.9.9.80.196 (branch brep-hybrid)
 
 ### Build

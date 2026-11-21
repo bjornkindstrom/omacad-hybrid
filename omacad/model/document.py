@@ -176,6 +176,7 @@ class Document:
         # Undo / redo of sketch edits: entries are (sketch_id, snapshot_dict)
         self.parameters: List[Parameter] = []
         self.step_states: dict = {}
+        self.step_breps: dict = {}           # B-rep bodies' shapes before each step (Pattern copies them exactly)
         self.last_message: str = ""  # feedback from the last constraint/dimension operation
         self.last_conflicts = None  # (sketch id, clashing element ids, time) after a constraint was refused
         # Undo / redo: ("sketch", sketch_id, snapshot) for edits inside a sketch, ("doc", label, snapshot) for everything else

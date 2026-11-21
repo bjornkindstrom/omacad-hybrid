@@ -176,15 +176,18 @@ class Timeline:
                 if f.feature_type == "sketch" and not f.suppressed and f.sketch.sketch_id in doc.sketches:
                     doc.sketches[f.sketch.sketch_id] = f.sketch
             doc.step_states = dict(cp["step_states"])
+            doc.step_breps = dict(cp.get("step_breps", {}))
         else:
             doc.bodies.clear()
             doc.sketches.clear()
             doc.step_states = {}
+            doc.step_breps = {}
             start_step = 0
 
         # Execute only the changed / downstream features from start_step to limit
         for i in range(start_step, limit):
             doc.step_states[i] = {bid: b.manifold for bid, b in doc.bodies.items()}
+            doc.step_breps[i] = {bid: b.brep for bid, b in doc.bodies.items() if b.brep is not None}
             feat = self.features[i]
             feat.error = ""
             if feat.feature_id in excluded:
@@ -220,9 +223,11 @@ class Timeline:
                 "bodies": {bid: copy.copy(b) for bid, b in doc.bodies.items()},
                 "sketches": {sid: copy.deepcopy(s) for sid, s in doc.sketches.items()},
                 "step_states": dict(doc.step_states),
+                "step_breps": dict(getattr(doc, "step_breps", {})),
             }
 
         doc.step_states[limit] = {bid: b.manifold for bid, b in doc.bodies.items()}
+        doc.step_breps[limit] = {bid: b.brep for bid, b in doc.bodies.items() if b.brep is not None}
         self._step_feature_ids = [f.feature_id for f in self.features[:limit]]
         if history is not None:
             history.sync(doc)
