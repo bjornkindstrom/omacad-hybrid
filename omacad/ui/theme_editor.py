@@ -56,6 +56,8 @@ class ThemeEditorTab(QWidget):
         top.addWidget(QLabel("Start from:"))
         self.cmb_base = QComboBox()
         self.cmb_base.addItem("Current look", "@current")
+        self.cmb_base.addItem("Studio Soft (light, no frames)", "studio_soft")
+        self.cmb_base.addItem("Studio Glass (see-through cards)", "studio_glass")
         self.cmb_base.addItem("Studio (light, blue)", "studio")
         self.cmb_base.addItem("Graphite (dark, amber)", "graphite")
         self.cmb_base.addItem("Atelier (warm, green)", "atelier")

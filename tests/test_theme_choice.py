@@ -62,7 +62,7 @@ def test_saved_choice_is_read_at_start(tmp_path, monkeypatch):
                                         ("fixed", "fuskion420"), ("fixed", "gruvbox")])
 def test_older_saved_themes_open_as_studio(mode, name):
     """Only Studio, Graphite, Atelier, Follow Omarchy and the user's own themes are offered now."""
-    assert theme.chosen_theme(mode, name) == "studio"
+    assert theme.chosen_theme(mode, name) == "studio_soft"
     assert theme.chosen_theme("fixed", "user:mine") == "user:mine"
     assert theme.chosen_theme("omarchy", name) is None
 
@@ -74,7 +74,7 @@ def test_settings_offer_the_three_proposal_themes_and_follow_omarchy(tmp_path, m
     from omacad.ui.settings_dialog import SettingsDialog
     dlg = SettingsDialog()
     keys = [dlg.cmb_theme_mode.itemData(i) for i in range(dlg.cmb_theme_mode.count())]
-    assert keys == ["studio", "graphite", "atelier", "omarchy"]
+    assert keys == ["studio_soft", "studio_glass", "studio", "graphite", "atelier", "omarchy"]
     dlg.reset_all()
     assert dlg.cmb_theme_mode.currentData() == "omarchy"
     dlg.close()

@@ -41,7 +41,7 @@ def test_saved_choices_are_there_after_a_restart_and_no_temporary_file_is_left(t
 
 def test_windows_starts_in_studio_with_its_icons_and_linux_defaults_stay():
     windows = default_settings("win32")
-    assert (windows["theme_mode"], windows["theme_name"], windows["icon_theme"]) == ("fixed", "studio", "studio")
+    assert (windows["theme_mode"], windows["theme_name"], windows["icon_theme"]) == ("fixed", "studio_soft", "studio")
     assert default_settings("linux") == DEFAULT_SETTINGS
 
 

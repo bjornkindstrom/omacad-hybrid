@@ -180,7 +180,9 @@ class SettingsDialog(QDialog):
 
         idx = self.cmb_theme_mode.findData(select_key)
         self.cmb_theme_mode.setCurrentIndex(max(0, idx))
-        self.cmb_theme_mode.setToolTip("Studio: light and calm, white panels and a blue accent.\n"
+        self.cmb_theme_mode.setToolTip("Studio Soft: Studio without hard frames, rounder corners and pill buttons.\n"
+                                       "Studio Glass: Studio Soft with see-through panels floating over the 3D view.\n"
+                                       "Studio: light and calm, white panels and a blue accent.\n"
                                        "Graphite: dark and compact, amber for the active choice.\n"
                                        "Atelier: warm grey, forest green accent, soft corners.\n"
                                        "Follow Omarchy: syncs live with the Omarchy theme.")
@@ -290,6 +292,27 @@ class SettingsDialog(QDialog):
         self.chk_labels = QCheckBox("Show button names under toolbar icons (otherwise only on hover)")
         self.chk_labels.setChecked(bool(self.settings.get("show_button_labels", False)))
         lay_ui.addWidget(self.chk_labels)
+
+        fan_style_row = QHBoxLayout()
+        fan_style_title = QLabel("Fan menu look:")
+        fan_style_title.setMinimumWidth(200)
+        self.cmb_fan_style = QComboBox()
+        self.cmb_fan_style.addItem("Auto (follows the theme)", "auto")
+        self.cmb_fan_style.addItem("Soft Ring", "soft")
+        self.cmb_fan_style.addItem("Glass Donut", "glass")
+        self.cmb_fan_style.addItem("Tiles", "tiles")
+        self.cmb_fan_style.addItem("Classic (original)", "classic")
+        self.cmb_fan_style.setCurrentIndex(max(0, self.cmb_fan_style.findData(self.settings.get("fan_menu_style", "auto"))))
+        self.cmb_fan_style.setToolTip("How the right-click fan menu is drawn. Auto: Glass Donut with Studio Glass, Soft Ring "
+                                      "otherwise.\nThe text setting below applies to Classic; the other looks show the "
+                                      "name under each icon.")
+        fan_style_row.addWidget(fan_style_title)
+        fan_style_row.addWidget(self.cmb_fan_style)
+        fan_style_row.addStretch()
+        lay_ui.addLayout(fan_style_row)
+        self.chk_fan_anim = QCheckBox("Animate the fan menu when it opens")
+        self.chk_fan_anim.setChecked(bool(self.settings.get("fan_menu_animation", True)))
+        lay_ui.addWidget(self.chk_fan_anim)
 
         fan_labels_row = QHBoxLayout()
         fan_labels_title = QLabel("Fan menu text:")
@@ -764,6 +787,8 @@ class SettingsDialog(QDialog):
 
     def _fill_theme_choices(self):
         self.cmb_theme_mode.clear()
+        self.cmb_theme_mode.addItem("Studio Soft (light, soft, no frames)", "studio_soft")
+        self.cmb_theme_mode.addItem("Studio Glass (see-through cards over the view)", "studio_glass")
         self.cmb_theme_mode.addItem("Studio (light, blue accent)", "studio")
         self.cmb_theme_mode.addItem("Graphite (dark, amber accent)", "graphite")
         self.cmb_theme_mode.addItem("Atelier (warm, green accent)", "atelier")
@@ -825,6 +850,8 @@ class SettingsDialog(QDialog):
         self.cmb_btn_size.setCurrentIndex(max(0, self.cmb_btn_size.findData(1.0)))
         self.chk_labels.setChecked(False)
         self.cmb_fan_labels.setCurrentIndex(self.cmb_fan_labels.findData("curved"))
+        self.cmb_fan_style.setCurrentIndex(self.cmb_fan_style.findData("auto"))
+        self.chk_fan_anim.setChecked(True)
         self.spn_fan_icon_scale.setValue(100)
         self.chk_group_primitives.setChecked(True)
         self.chk_group_modify.setChecked(False)
@@ -884,6 +911,8 @@ class SettingsDialog(QDialog):
             "arrow_gap": self.spn_arrow_gap.value(),
             "button_scale": float(self.cmb_btn_size.currentData() or 1.0),
             "show_button_labels": self.chk_labels.isChecked(),
+            "fan_menu_style": self.cmb_fan_style.currentData(),
+            "fan_menu_animation": self.chk_fan_anim.isChecked(),
             "fan_menu_label_style": self.cmb_fan_labels.currentData(),
             "fan_menu_icon_scale": self.spn_fan_icon_scale.value() / 100.0,
             "group_primitives": self.chk_group_primitives.isChecked(),

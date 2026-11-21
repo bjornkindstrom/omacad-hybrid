@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omacad solfjädermeny</title>
+<style>
+  :root { --page:#ECEEF2; --text:#1F2937; --muted:#6B7280;
+          --surface:#FFFFFF; --field:#F3F5F9; --border:#E4E9F0; --ink:#233044; --mute2:#6A778B;
+          --accent:#2F6BE0; --accent-h:#255AC4; --sel:#EAF1FF; --canvas:#EEF1F5; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--page); color:var(--text); font:14px/1.45 "Noto Sans","Inter",system-ui,sans-serif; }
+  header, section { max-width:1180px; margin:0 auto; padding:0 20px; }
+  header { padding-top:24px; }
+  h1 { margin:0 0 4px; font-size:22px; font-weight:650; letter-spacing:-.01em; }
+  header p { margin:0 0 16px; color:var(--muted); }
+  nav { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  nav button { font:inherit; border:0; cursor:pointer; padding:8px 14px; border-radius:999px; background:#fff; color:var(--text);
+               box-shadow:0 1px 2px rgba(0,0,0,.08); transition:background .15s,color .15s; }
+  nav button:hover { background:#E3E8F0; }
+  nav button[aria-selected="true"] { background:#1F2937; color:#fff; }
+  nav button b { opacity:.55; margin-right:6px; font-weight:650; }
+  .stage { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:20px; align-items:start; }
+  .view { position:relative; background:var(--canvas); border-radius:16px; overflow:hidden; aspect-ratio:1/1; max-height:680px;
+          box-shadow:inset 0 0 0 1px #E1E6EE; }
+  .view svg.scene, .view svg.menu, .view img { position:absolute; inset:0; width:100%; height:100%; }
+  .view img { object-fit:cover; }
+  .replay { position:absolute; right:12px; top:12px; z-index:3; font:inherit; font-size:12px; border:0; padding:6px 12px; border-radius:999px;
+            background:rgba(255,255,255,.85); color:var(--text); cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  .replay:hover { background:#fff; }
+  aside h2 { margin:0 0 6px; font-size:18px; font-weight:650; }
+  aside h3 { margin:16px 0 4px; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  aside p { margin:0; }
+  .meter { display:inline-flex; gap:3px; margin-left:6px; vertical-align:middle; }
+  .meter i { width:10px; height:6px; border-radius:3px; background:#CBD2DC; } .meter i.f { background:#1F2937; }
+  .hint { margin-top:18px; font-size:12.5px; color:var(--muted); }
+  footer { max-width:1180px; margin:24px auto 40px; padding:0 20px; color:var(--muted); font-size:13px; }
+  @media (max-width:860px) { .stage { grid-template-columns:1fr; } }
+
+  /* scene behind the menu */
+  .grid { stroke:#DCE2EA; stroke-width:1; } .grid.m { stroke:#CBD3DE; }
+  .ax-x { stroke:#E0524A; stroke-width:1.5; } .ax-y { stroke:#3FA36B; stroke-width:1.5; } .ax-z { stroke:#3D7BE0; stroke-width:1.5; }
+  .bt { fill:#B5BFCC; } .bl { fill:#8F9AA9; } .br { fill:#7A8595; } .be { fill:none; stroke:#4B5566; stroke-width:1; stroke-linejoin:round; }
+
+  /* the menu: shared */
+  .menu text { font-family:"Noto Sans",system-ui,sans-serif; user-select:none; }
+  .menu .hit { cursor:pointer; }
+  .menu .seg, .menu .tile, .menu .pill, .menu .dot { transition: fill .12s, stroke .12s, opacity .12s; }
+  .menu .ico { fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition: stroke .12s; }
+  .pop { animation: pop .2s cubic-bezier(.2,.9,.3,1.2) both; transform-origin: 330px 330px; }
+  .pop .outer { animation: fan .24s .04s cubic-bezier(.2,.9,.3,1) both; transform-origin: 330px 330px; }
+  @keyframes pop { from { opacity:0; transform:scale(.88); } to { opacity:1; transform:scale(1); } }
+  @keyframes fan { from { opacity:0; transform:scale(.94); } to { opacity:1; transform:scale(1); } }
+  .tip rect { transition: opacity .12s; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Omacad: mjukare solfjädermeny</h1>
+  <p>Fyra förslag i samma stil som Studio Soft / Glass. Hovra över verktygen, klicka på kategorierna i mitten och tryck på <em>Spela upp</em> för att se hur menyn öppnas.</p>
+  <nav id="pick"></nav>
+</header>
+<section>
+  <div class="stage">
+    <div class="view" id="view">
+      <svg class="scene" viewBox="0 0 660 660" preserveAspectRatio="xMidYMid slice" id="scene"></svg>
+      <img id="nowimg" src="now.png" alt="Dagens solfjädermeny" hidden>
+      <svg class="menu" viewBox="0 0 660 660" id="menu"></svg>
+      <button class="replay" id="replay">↻ Spela upp</button>
+    </div>
+    <aside id="info"></aside>
+  </div>
+</section>
+<footer>Allt i menyn ritas med QPainter i vyn (inte med Qt-stilmallar), så alla fyra går att bygga fullt ut: rundade hörn, skuggor, genomskinlighet och animation.</footer>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#1E293B" flood-opacity=".16"/></filter>
+  <filter id="softsm" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#1E293B" flood-opacity=".14"/></filter>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#2F6BE0" flood-opacity=".35"/></filter>
+</defs></svg>
+
+<script>
+const C = 330;
+const ICONS = {
+  sketch:'<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 7l3 3"/>',
+  extrude:'<path d="M4 15l8 4 8-4-8-4z"/><path d="M12 11V3M9 6l3-3 3 3"/>',
+  hole:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/>',
+  revolve:'<path d="M12 3v18"/><path d="M16 7a6 3 0 1 1-8 0"/>',
+  sweep:'<path d="M4 18c3-8 6 2 9-4s5-6 7-8"/><circle cx="4" cy="18" r="1.6"/>',
+  loft:'<ellipse cx="12" cy="5" rx="5" ry="2"/><ellipse cx="12" cy="19" rx="8" ry="2.5"/><path d="M7 5l-3 14M17 5l3 14"/>',
+  emboss:'<path d="M7 5h10M12 5v10"/><path d="M3 15l9 4 9-4"/>',
+  box:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+  cyl:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/>',
+  sphere:'<circle cx="12" cy="12" r="8"/><ellipse cx="12" cy="12" rx="8" ry="3"/>',
+  pattern:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  plane:'<path d="M3 15l6-6h12l-6 6z"/><path d="M12 12V4M9 6l3-3 3 3"/>',
+  fillet:'<path d="M5 4v8a8 8 0 0 0 8 8h7"/>',
+  chamfer:'<path d="M5 4v9l7 7h8"/>',
+  shell:'<path d="M4 7h16v12H4z"/><path d="M7 7v9h10V7"/>',
+  combine:'<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>',
+  move:'<path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>',
+  measure:'<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>',
+  section:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M3 13l18-4" stroke-dasharray="3 2"/>',
+  camera:'<rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/>',
+  fit:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><rect x="8" y="8" width="8" height="8" rx="1.5"/>',
+  home:'<path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/>',
+  ortho:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/>',
+  undo:'<path d="M9 7L4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 0 10h-2"/>',
+  redo:'<path d="M15 7l5 5-5 5"/><path d="M20 12H9a5 5 0 0 0 0 10h2"/>',
+  x:'<path d="M8 8l8 8M16 8l-8 8"/>',
+};
+const CATS = [
+  { name:'Create', icon:'extrude', tools:[['Sketch','sketch','S'],['Extrude','extrude','E'],['Hole','hole','H'],['Revolve','revolve',''],['Sweep','sweep',''],['Loft','loft',''],['Emboss','emboss','']] },
+  { name:'Primitives', icon:'box', tools:[['Box','box',''],['Cylinder','cyl',''],['Sphere','sphere',''],['Pattern','pattern',''],['Offset Plane','plane','']] },
+  { name:'Modify', icon:'fillet', tools:[['Fillet','fillet','F'],['Chamfer','chamfer',''],['Shell','shell',''],['Combine','combine',''],['Move','move','M']] },
+  { name:'Inspect', icon:'measure', tools:[['Measure','measure','I'],['Section','section','']] },
+  { name:'View', icon:'camera', tools:[['Fit','fit','F6'],['Home','home',''],['Ortho','ortho','']] },
+  { name:'History', icon:'undo', tools:[['Undo','undo','Ctrl+Z'],['Redo','redo','Ctrl+Y']] },
+];
+const TIPS = { Extrude:'Pull closed sketch profiles or faces into bodies', Sketch:'Start a sketch on a plane or face', Hole:'Drill holes on a face',
+  Fillet:'Round the selected edges', Measure:'Measure between edges, faces and points', Box:'Add a box primitive' };
+
+const P = (r, a) => [C + r * Math.cos(a * Math.PI / 180), C - r * Math.sin(a * Math.PI / 180)];
+const f = n => n.toFixed(2);
+function ann(r1, r2, a0, a1) {          // annular sector, angles in degrees (0 = right, counter-clockwise)
+  const L = (a1 - a0) > 180 ? 1 : 0;
+  const [x0, y0] = P(r2, a0), [x1, y1] = P(r2, a1), [x2, y2] = P(r1, a1), [x3, y3] = P(r1, a0);
+  return `M${f(x0)} ${f(y0)}A${r2} ${r2} 0 ${L} 0 ${f(x1)} ${f(y1)}L${f(x2)} ${f(y2)}A${r1} ${r1} 0 ${L} 1 ${f(x3)} ${f(y3)}Z`;
+}
+function softAnn(r1, r2, a0, a1, g) {   // the same sector shrunk by g; drawn with a round-join stroke of 2g it gets round corners
+  const rm = (r1 + r2) / 2, da = (g / rm) * 180 / Math.PI;
+  return ann(r1 + g, r2 - g, a0 + da, a1 - da);
+}
+const icon = (name, x, y, s, col) => `<g transform="translate(${f(x - s / 2)} ${f(y - s / 2)}) scale(${s / 24})"><g class="ico" stroke="${col}">${ICONS[name]}</g></g>`;
+const esc = s => s.replace(/&/g, '&amp;');
+const catSpan = 360 / CATS.length;
+const catMid = i => 90 - i * catSpan;
+function toolAngles(i, n) {
+  const span = Math.min(40, Math.max(18, 180 / n)), total = span * n, start = catMid(i) + total / 2;
+  return Array.from({ length: n }, (_, j) => ({ a1: start - j * span, a0: start - (j + 1) * span, mid: start - (j + .5) * span }));
+}
+
+/* ---------- the four proposals ---------- */
+const STYLES = [
+  { key:'soft', name:'Soft Ring', qt:1,
+    what:'Samma två ringar som idag, men utan ramar och den grå skuggskivan. Segmenten har små mellanrum och rundade hörn, menyn har en mjuk skugga. Aktiv kategori blir ljusblå med blå ikon i stället för helfylld; bara verktyget under pekaren blir helt blått. Texten står vågrätt under ikonen.',
+    feel:'Bekant och lugn: samma muskelminne, men lättare och renare. Passar Studio Soft direkt.',
+    qt_text:'Lätt. Rundade hörn: segmentet krymps och ritas med rund penna (round join) i samma färg. Skuggan: en förritad suddig cirkel bakom.' },
+  { key:'pills', name:'Pill Orbit', qt:2,
+    what:'Inga ringar alls. Kategorierna är runda ikonknappar runt mitten, och den aktiva kategorins namn står i navet. Verktygen ligger som piller (ikon + namn) i en båge utanför, och en tunn linje visar vägen.',
+    feel:'Luftigast och mest läsbar: hela namn, ingen böjd text, mycket av modellen syns. Lite mindre "träffyta" per verktyg.',
+    qt_text:'Mellan. Pillerbredd efter textens bredd, en ny träffyta per piller. Geometrin i _rebuild_geometry byts mot cirklar och rundade rektanglar.' },
+  { key:'glass', name:'Glass Donut', qt:2,
+    what:'Ringarna är halvgenomskinliga (som Studio Glass) med hårfina skiljelinjer. En blå båge på insidan visar aktiv kategori, och verktyget under pekaren får en ljusblå ton med blå ikon och en blå båge längs ytterkanten.',
+    feel:'Elegant och diskret, modellen syns igenom. Det aktiva valet markeras med färg på ikon och båge i stället för en stor blå yta.',
+    qt_text:'Mellan. Genomskinlig fyllning är enkelt i QPainter; markeringsbågarna är tjocka penndrag med runda ändar. Ingen oskärpa bakom, som i Glass.' },
+  { key:'tiles', name:'Tiles', qt:2,
+    what:'Kategorierna bildar en mjuk inre ring. Verktygen är fristående rundade brickor på en båge, med stor ikon och kort namn under. Brickan under pekaren lyfts upp: blå och lite större, med en blå skugga.',
+    feel:'Taktilt och tydligt, som appikoner. Lätt att träffa, och hovringen ger en tydlig respons.',
+    qt_text:'Mellan. Brickor = rundade rektanglar centrerade på bågen; hovringens skala och skugga animeras med QVariantAnimation.' },
+];
+
+const state = { style: 0, cat: 0, hover: 1, now: false };
+const menu = document.getElementById('menu');
+
+function tip(name, y, styleKey) {
+  const key = (CATS[state.cat].tools.find(t => t[0] === name) || [])[2] || '';
+  const text = `${name}${key ? '  ' + key : ''} · ${TIPS[name] || 'Run ' + name}`;
+  const w = Math.min(600, 40 + text.length * 6.6), x = C - w / 2;
+  const glass = styleKey === 'glass';
+  return `<g class="tip" filter="url(#softsm)"><rect x="${f(x)}" y="${y}" width="${f(w)}" height="30" rx="15" fill="${glass ? 'rgba(255,255,255,.78)' : '#fff'}" ${glass ? 'stroke="rgba(255,255,255,.9)"' : ''}/>
+    <text x="${C}" y="${y + 19.5}" text-anchor="middle" font-size="12.5" fill="#233044"><tspan font-weight="650">${esc(name)}</tspan>${key ? `<tspan fill="#6A778B">  ${key}</tspan>` : ''}<tspan fill="#6A778B"> · ${esc(TIPS[name] || 'Run ' + name)}</tspan></text></g>`;
+}
+
+function render(animate) {
+  const st = STYLES[state.style].key, cat = CATS[state.cat], tools = cat.tools, ang = toolAngles(state.cat, tools.length);
+  const hoverName = state.hover != null ? tools[state.hover]?.[0] : null;
+  let s = '', outer = '';
+
+  if (st === 'soft') {
+    s += `<circle cx="${C}" cy="${C}" r="112" fill="#fff" filter="url(#soft)"/>`;
+    CATS.forEach((c, i) => {
+      const a0 = catMid(i) - catSpan / 2, a1 = catMid(i) + catSpan / 2, on = i === state.cat, col = on ? '#EAF1FF' : '#F3F5F9';
+      const [ix, iy] = P(76, catMid(i));
+      s += `<g class="hit" data-cat="${i}"><path class="seg" d="${softAnn(40, 110, a0, a1, 3.5)}" fill="${col}" stroke="${col}" stroke-width="7" stroke-linejoin="round"/>
+        ${icon(c.icon, ix, iy - 7, 20, on ? '#2F6BE0' : '#45536A')}<text x="${f(ix)}" y="${f(iy + 15)}" text-anchor="middle" font-size="10.5" font-weight="${on ? 650 : 500}" fill="${on ? '#2F6BE0' : '#6A778B'}">${c.name}</text></g>`;
+    });
+    const tA0 = ang[ang.length - 1].a0, tA1 = ang[0].a1;
+    outer += `<path d="${ann(118, 214, tA0, tA1)}" fill="#fff" filter="url(#soft)" opacity=".001"/>`;
+    ang.forEach((g, j) => {
+      const on = j === state.hover, col = on ? '#2F6BE0' : '#FFFFFF', [ix, iy] = P(166, g.mid);
+      outer += `<g class="hit" data-tool="${j}"><path class="seg" d="${softAnn(118, 214, g.a0, g.a1, 3)}" fill="${col}" stroke="${col}" stroke-width="6" stroke-linejoin="round" filter="url(#softsm)"/>
+        ${icon(tools[j][1], ix, iy - 8, 22, on ? '#fff' : '#3B4A60')}<text x="${f(ix)}" y="${f(iy + 16)}" text-anchor="middle" font-size="10.5" font-weight="${on ? 650 : 500}" fill="${on ? '#fff' : '#233044'}">${tools[j][0]}</text></g>`;
+    });
+    s += `<g class="outer">${outer}</g>`;
+    s += `<circle cx="${C}" cy="${C}" r="30" fill="#fff" filter="url(#softsm)"/>${icon('x', C, C, 18, '#6A778B')}`;
+  }
+
+  if (st === 'pills') {
+    s += `<circle cx="${C}" cy="${C}" r="168" fill="none" stroke="rgba(47,107,224,.18)" stroke-width="1.5" stroke-dasharray="2 5"/>`;
+    s += `<circle cx="${C}" cy="${C}" r="74" fill="none" stroke="rgba(35,48,68,.08)" stroke-width="1"/>`;
+    CATS.forEach((c, i) => {
+      const [x, y] = P(74, catMid(i)), on = i === state.cat;
+      s += `<g class="hit" data-cat="${i}"><circle class="dot" cx="${f(x)}" cy="${f(y)}" r="21" fill="${on ? '#2F6BE0' : '#fff'}" filter="url(#${on ? 'glow' : 'softsm'})"/>${icon(c.icon, x, y, 19, on ? '#fff' : '#45536A')}</g>`;
+    });
+    s += `<circle cx="${C}" cy="${C}" r="40" fill="#fff" filter="url(#softsm)"/><text x="${C}" y="${C + 4}" text-anchor="middle" font-size="12" font-weight="650" fill="#233044">${cat.name}</text>`;
+    const [lx, ly] = P(95, catMid(state.cat)), [lx2, ly2] = P(150, catMid(state.cat));
+    outer += `<line x1="${f(lx)}" y1="${f(ly)}" x2="${f(lx2)}" y2="${f(ly2)}" stroke="rgba(47,107,224,.35)" stroke-width="2" stroke-linecap="round"/>`;
+    ang.forEach((g, j) => {
+      const [x, y] = P(170, g.mid), on = j === state.hover, w = 46 + tools[j][0].length * 7.2;
+      outer += `<g class="hit" data-tool="${j}"><rect class="pill" x="${f(x - w / 2)}" y="${f(y - 17)}" width="${f(w)}" height="34" rx="17" fill="${on ? '#2F6BE0' : '#fff'}" filter="url(#${on ? 'glow' : 'softsm'})"/>
+        ${icon(tools[j][1], x - w / 2 + 19, y, 18, on ? '#fff' : '#3B4A60')}<text x="${f(x - w / 2 + 34)}" y="${f(y + 4.5)}" font-size="12.5" font-weight="${on ? 650 : 500}" fill="${on ? '#fff' : '#233044'}">${tools[j][0]}</text></g>`;
+    });
+    s += `<g class="outer">${outer}</g>`;
+  }
+
+  if (st === 'glass') {
+    const glassFill = 'rgba(255,255,255,.62)', edge = 'rgba(255,255,255,.95)';
+    s += `<circle cx="${C}" cy="${C}" r="110" fill="${glassFill}" stroke="${edge}" stroke-width="1" filter="url(#soft)"/>`;
+    s += `<circle cx="${C}" cy="${C}" r="40" fill="rgba(255,255,255,.85)" stroke="${edge}"/>`;
+    CATS.forEach((c, i) => {
+      const a0 = catMid(i) - catSpan / 2, a1 = catMid(i) + catSpan / 2, on = i === state.cat, [ix, iy] = P(76, catMid(i));
+      const [sx0, sy0] = P(42, a0), [sx1, sy1] = P(108, a0);
+      s += `<line x1="${f(sx0)}" y1="${f(sy0)}" x2="${f(sx1)}" y2="${f(sy1)}" stroke="rgba(35,48,68,.08)"/>`;
+      s += `<g class="hit" data-cat="${i}"><path class="seg" d="${ann(40, 110, a0, a1)}" fill="${on ? 'rgba(234,241,255,.75)' : 'transparent'}"/>
+        ${icon(c.icon, ix, iy - 7, 20, on ? '#2F6BE0' : '#45536A')}<text x="${f(ix)}" y="${f(iy + 15)}" text-anchor="middle" font-size="10.5" font-weight="${on ? 650 : 500}" fill="${on ? '#2F6BE0' : '#5F6D82'}">${c.name}</text></g>`;
+      if (on) { const [b0x, b0y] = P(45, a0 + 8), [b1x, b1y] = P(45, a1 - 8);
+        s += `<path d="M${f(b0x)} ${f(b0y)}A45 45 0 0 0 ${f(b1x)} ${f(b1y)}" fill="none" stroke="#2F6BE0" stroke-width="4" stroke-linecap="round"/>`; }
+    });
+    const tA0 = ang[ang.length - 1].a0, tA1 = ang[0].a1;
+    outer += `<path d="${ann(118, 214, tA0, tA1)}" fill="${glassFill}" stroke="${edge}" filter="url(#soft)"/>`;
+    ang.forEach((g, j) => {
+      const on = j === state.hover, [ix, iy] = P(166, g.mid);
+      if (j > 0) { const [x0, y0] = P(122, g.a1), [x1, y1] = P(210, g.a1); outer += `<line x1="${f(x0)}" y1="${f(y0)}" x2="${f(x1)}" y2="${f(y1)}" stroke="rgba(35,48,68,.08)"/>`; }
+      outer += `<g class="hit" data-tool="${j}"><path class="seg" d="${ann(118, 214, g.a0, g.a1)}" fill="${on ? 'rgba(234,241,255,.85)' : 'transparent'}"/>
+        ${icon(tools[j][1], ix, iy - 8, 22, on ? '#2F6BE0' : '#34445B')}<text x="${f(ix)}" y="${f(iy + 16)}" text-anchor="middle" font-size="10.5" font-weight="${on ? 650 : 500}" fill="${on ? '#2F6BE0' : '#1E2A3B'}">${tools[j][0]}</text></g>`;
+      if (on) { const [b0x, b0y] = P(209, g.a0 + 5), [b1x, b1y] = P(209, g.a1 - 5);
+        outer += `<path d="M${f(b0x)} ${f(b0y)}A209 209 0 0 0 ${f(b1x)} ${f(b1y)}" fill="none" stroke="#2F6BE0" stroke-width="4" stroke-linecap="round"/>`; }
+    });
+    s += `<g class="outer">${outer}</g>`;
+    s += icon('x', C, C, 18, '#5F6D82');
+  }
+
+  if (st === 'tiles') {
+    s += `<circle cx="${C}" cy="${C}" r="104" fill="#fff" filter="url(#soft)"/>`;
+    CATS.forEach((c, i) => {
+      const a0 = catMid(i) - catSpan / 2, a1 = catMid(i) + catSpan / 2, on = i === state.cat, col = on ? '#EAF1FF' : '#FFFFFF';
+      const [ix, iy] = P(72, catMid(i));
+      s += `<g class="hit" data-cat="${i}"><path class="seg" d="${softAnn(40, 104, a0, a1, 4)}" fill="${col}" stroke="${col}" stroke-width="8" stroke-linejoin="round"/>
+        ${icon(c.icon, ix, iy - 7, 19, on ? '#2F6BE0' : '#45536A')}<text x="${f(ix)}" y="${f(iy + 14)}" text-anchor="middle" font-size="10" font-weight="${on ? 650 : 500}" fill="${on ? '#2F6BE0' : '#6A778B'}">${c.name}</text></g>`;
+    });
+    ang.forEach((g, j) => {
+      const on = j === state.hover, [x, y] = P(on ? 168 : 164, g.mid), sz = on ? 66 : 58;
+      outer += `<g class="hit" data-tool="${j}"><rect class="tile" x="${f(x - sz / 2)}" y="${f(y - sz / 2)}" width="${sz}" height="${sz}" rx="16" fill="${on ? '#2F6BE0' : '#fff'}" filter="url(#${on ? 'glow' : 'softsm'})"/>
+        ${icon(tools[j][1], x, y - 7, on ? 26 : 23, on ? '#fff' : '#3B4A60')}<text x="${f(x)}" y="${f(y + (on ? 21 : 18))}" text-anchor="middle" font-size="${on ? 10.5 : 9.5}" font-weight="${on ? 650 : 500}" fill="${on ? '#fff' : '#233044'}">${tools[j][0].split(' ')[0]}</text></g>`;
+    });
+    s += `<g class="outer">${outer}</g>`;
+    s += `<circle cx="${C}" cy="${C}" r="30" fill="#F3F5F9"/>${icon('x', C, C, 18, '#6A778B')}`;
+  }
+
+  if (hoverName) s += tip(hoverName, 566, st);
+  menu.innerHTML = `<g class="${animate ? 'pop' : ''}">${s}</g>`;
+}
+
+/* scene: grid + a box, so the see-through styles show something behind them */
+(function scene() {
+  const g = [], cx = 330, cy = 430, u = [34, 17], v = [-34, 17];
+  for (let i = -12; i <= 12; i++) {
+    const c = i % 3 ? 'grid' : 'grid m';
+    g.push(`<line class="${c}" x1="${cx + i * u[0] - 12 * v[0]}" y1="${cy + i * u[1] - 12 * v[1]}" x2="${cx + i * u[0] + 12 * v[0]}" y2="${cy + i * u[1] + 12 * v[1]}"/>`);
+    g.push(`<line class="${c}" x1="${cx + i * v[0] - 12 * u[0]}" y1="${cy + i * v[1] - 12 * u[1]}" x2="${cx + i * v[0] + 12 * u[0]}" y2="${cy + i * v[1] + 12 * u[1]}"/>`);
+  }
+  g.push(`<line class="ax-x" x1="${cx}" y1="${cy}" x2="${cx + 12 * u[0]}" y2="${cy + 12 * u[1]}"/><line class="ax-y" x1="${cx}" y1="${cy}" x2="${cx + 12 * v[0]}" y2="${cy + 12 * v[1]}"/><line class="ax-z" x1="${cx}" y1="${cy}" x2="${cx}" y2="40"/>`);
+  g.push(`<polygon class="bl" points="250,300 330,340 330,420 250,380"/><polygon class="br" points="330,340 470,270 470,350 330,420"/><polygon class="bt" points="250,300 390,230 470,270 330,340"/>
+          <polygon class="be" points="250,300 390,230 470,270 470,350 330,420 250,380"/><polyline class="be" points="250,300 330,340 470,270"/><line class="be" x1="330" y1="340" x2="330" y2="420"/>`);
+  document.getElementById('scene').innerHTML = g.join('');
+})();
+
+/* interaction */
+menu.addEventListener('mouseover', e => {
+  const t = e.target.closest('[data-tool]');
+  if (t && +t.dataset.tool !== state.hover) { state.hover = +t.dataset.tool; render(false); }
+});
+menu.addEventListener('click', e => {
+  const c = e.target.closest('[data-cat]');
+  if (c) { state.cat = +c.dataset.cat; state.hover = 0; render(false); }
+});
+document.getElementById('replay').onclick = () => render(true);
+
+const pick = document.getElementById('pick'), info = document.getElementById('info');
+const meter = n => `<span class="meter">${[1, 2, 3].map(k => `<i class="${k <= n ? 'f' : ''}"></i>`).join('')}</span>`;
+function show(i) {
+  state.now = i < 0;
+  document.getElementById('nowimg').hidden = !state.now;
+  document.getElementById('scene').style.display = state.now ? 'none' : '';
+  menu.style.display = state.now ? 'none' : '';
+  document.getElementById('replay').hidden = state.now;
+  [...pick.children].forEach((b, k) => b.setAttribute('aria-selected', k === i + 1));
+  if (state.now) {
+    info.innerHTML = `<h2>Idag</h2><p>Skärmbild av nuvarande meny i Studio Soft: grå skuggskiva, segment med ramar, böjd text och helt blå fyllning på både aktiv kategori och hovrat verktyg.</p>`;
+  } else {
+    state.style = i; const p = STYLES[i];
+    info.innerHTML = `<h2>${i + 1}. ${p.name}</h2><h3>Vad som ändras</h3><p>${p.what}</p><h3>Känsla</h3><p>${p.feel}</p>
+      <h3>I Qt · insats ${meter(p.qt)}</h3><p>${p.qt_text}</p>
+      <p class="hint">Gemensamt för alla: menyn öppnas med en kort skalning + toning (≈ 0,2 s, går att stänga av), och färgerna följer temat (Studio Soft/Glass, Graphite …).</p>`;
+    render(true);
+  }
+  try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
+}
+const nb = document.createElement('button'); nb.innerHTML = '<b>0</b>Idag'; nb.onclick = () => show(-1); pick.appendChild(nb);
+STYLES.forEach((p, i) => { const b = document.createElement('button'); b.innerHTML = `<b>${i + 1}</b>${p.name}`; b.onclick = () => show(i); pick.appendChild(b); });
+const h = parseInt(location.hash.slice(1), 10);
+show(h >= 1 && h <= STYLES.length ? h - 1 : (h === 0 ? -1 : 0));
+</script>
+</body>
+</html>

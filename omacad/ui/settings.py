@@ -52,14 +52,16 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "button_scale": 1.0,                # size of the ribbon buttons (0.75 = compact, 1.0 = standard, 1.25 = large)
     "recent_files": [],                 # most recently opened/saved .omacad files, newest first (File > Open Recent)
     "show_button_labels": False,        # show the name under each ribbon button (off = icon only, name on hover)
-    "fan_menu_label_style": "curved",   # curved, readable_curved, horizontal
+    "fan_menu_style": "auto",           # auto (Glass in a see-through theme, else Soft), soft, glass, tiles, classic
+    "fan_menu_animation": True,         # the soft fan menu looks fade and grow in when opened
+    "fan_menu_label_style": "curved",   # curved, readable_curved, horizontal (the classic look)
     "fan_menu_icon_scale": 1.0,       # 0.5..2.0 of the original 22 px fan menu icon size
     "group_primitives": True,           # group Box/Cylinder/Sphere/Thread into Primitives dropdown
     "group_modify": False,              # group Combine/Split/Shell/Move into Modify dropdown
     "group_inspect": True,              # group Measure/Section/Params into Inspect dropdown
     "group_constraints": True,          # constraints as one dropdown menu or separate buttons
     "theme_mode": "omarchy",            # "omarchy" = follow the Omarchy theme live, "fixed" = theme_name
-    "theme_name": "studio",             # "studio", "graphite", "atelier" or "user:<name>" when theme_mode is "fixed"
+    "theme_name": "studio_soft",        # "studio_soft", "studio", "graphite", "atelier" or "user:<name>" when theme_mode is "fixed"
     "icon_theme": "solid",              # "solid", "blueprint", "semantic"
     "autosave_minutes": 2,              # write unsaved work to a recovery file this often; 0 = off
     "auto_restart": False,               # restart the app (work saved and restored) when a new version is committed
@@ -79,7 +81,7 @@ def default_settings(platform: Optional[str] = None) -> Dict[str, Any]:
     """The defaults for this machine. Windows has no Omarchy theme to follow, so it starts in Studio with its icons."""
     defaults = dict(DEFAULT_SETTINGS)
     if (platform or sys.platform) == "win32":
-        defaults.update(theme_mode="fixed", theme_name="studio", icon_theme="studio")
+        defaults.update(theme_mode="fixed", theme_name="studio_soft", icon_theme="studio")
     return defaults
 
 

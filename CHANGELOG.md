@@ -1,3 +1,47 @@
+# Hybrid-experiment — 0.9.9.80.191
+
+### Changed
+- **Tree Brackets: choose the leg support**: *Leg support* is now a choice of five looks to compare: *pyramid* (the wide foot, default), *fins* (two knee braces along the inside top edges of the base sockets, beside their screw holes), *collar* (a thicker sleeve round the socket's lower part), *block* (the corner filled solid up the socket) and *none*. All stay inside the bracket and clear of every socket and screw hole. Comparison picture: `design/tree-bracket-variants/leg_support_variants.png`.
+
+# Hybrid-experiment — 0.9.9.80.190
+
+### Changed
+- **Tree Brackets: stronger leg joint**: new **Leg support** option (on) gives the corner bracket's leg socket a flared foot: a wide square on top of the corner, inside the base tubes' outer faces and clear of their screw holes, tapering up into the socket to just below the leg's screw hole. The leg no longer stands on a thin neck.
+
+# Hybrid-experiment — 0.9.9.80.189
+
+### Changed
+- **Zoom out to see big models**: the mouse wheel stopped at a camera distance of 2000 mm and the far clipping plane sat a fixed 5000 mm behind the target, so a model over a metre (a tube Christmas tree) could not be seen whole. The zoom now reaches 100 m (`math3d.MAX_DISTANCE`, shared by the wheel, zoom fit and face framing) and the far plane follows the zoom.
+- **Tree Brackets script**: the top bracket has no post any more and is about half as big: each socket's stop is now the shortest that keeps a full wall between the sockets (found geometrically, and the legs are turned 45° about their axis when that packs them closer). New **Corner web** option (on, with a size) adds a solid triangular web in the inside corner between the two base tubes for a much stiffer base frame.
+
+# Hybrid-experiment — 0.9.9.80.188
+
+### Added
+- **Tree Brackets script**: a new bundled script (in the Star Brackets submenu) for a square-pyramid Christmas tree of square aluminium tubes: four base tubes in a square, four legs leaning in to the top. You give the cut lengths of the base and leg tubes; the script works out the height and angles and makes a corner bracket (two base sockets + the leaning leg socket, flat bottom) and a top bracket (four leg sockets, optional post that takes a tube up to the star's connecting post), with screw holes, laid out for printing, or the whole tree assembled.
+
+# Hybrid-experiment — 0.9.9.80.187
+
+### Added
+- **Script Easy Mode Settings in Object Browser (#242)**: Scripts run in Omacad now create/tag a `kind="script"` object group in the left Object Browser with a `⚙️ Settings` section showing `EASY_PARAMS` in order (or all `PARAMS` when `EASY_PARAMS` is omitted, and hidden when `EASY_PARAMS = []`). Editing any `float`, `int`, `bool`, `choice`, or `str` setting updates the parameter and re-runs the script in place as a single undoable step, with full undo/redo, `.omacad` save/load round-trip, and clean rollback on errors.
+
+### Fixed
+- **Fan menu: sliding past Primitives no longer sticks**: a tool with its own sub ring (Primitives) kept the hover over most of the ring while the pointer stayed within the sub ring's angle, so moving on to Pattern and beyond stalled. The safe corridor to the sub ring now holds only while the pointer heads outward (within about 70°) or is at the ring's rim; sliding along the ring moves on as usual, and a diagonal path still reaches the sub items.
+
+# Hybrid-experiment — 0.9.9.80.186
+
+### Added
+- **Soft fan menu looks**: the right-click fan menu can be drawn as *Soft Ring* (the two rings without frames, round corners, a soft shadow; only the hovered tool is filled with the accent), *Glass Donut* (see-through rings, hairline dividers, accent arcs mark the active category and the hovered tool) or *Tiles* (a soft inner ring with the tools as separate rounded tiles that lift when hovered); proposals 1, 3 and 4 in `design/fan-menu-proposals/index.html`. *Settings › Interface › Fan menu look*: Auto (Glass Donut with Studio Glass, Soft Ring otherwise; the default), one of the three, or Classic (the original). Names stand under the icons and shrink a little before they are cut; tiles show only the icon when the name does not fit (the tooltip shows it). The soft looks fade and grow in when opened (can be turned off).
+
+# Hybrid-experiment — 0.9.9.80.185
+
+### Added
+- **Studio Glass theme**: proposal 2 in `design/ui-soft-proposals/index.html`, built on Studio Soft. The Browser, the Inspector (with its docked tool panels) and the ribbon become see-through cards with 16–18 px corners floating over the 3D view; the window shares the view's colour so they read as floating. Pick it in *Settings › Appearance*. (Qt style sheets cannot blur what lies behind, so it is see-through without frosting.)
+
+# Hybrid-experiment — 0.9.9.80.184
+
+### Added
+- **Studio Soft theme**: a softer, smoother Studio (proposal 1 in `design/ui-soft-proposals/index.html`). No hard frames: fields, buttons and cards are told apart by their fill; 12 px corners, pill buttons, rounded tabs and frameless browser/inspector cards. Pick it in *Settings › Appearance*; it is the default for new Windows installs and for older saved themes. Studio, Graphite and Atelier are unchanged.
+
 # Hybrid-experiment — 0.9.9.80.183
 
 ### Added

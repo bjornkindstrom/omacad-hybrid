@@ -193,6 +193,7 @@ class InspectorPanel(QWidget):
 
     def _make_card(self, title: str, layout) -> QFrame:
         card = QFrame()
+        card.setObjectName("InspectorCard")          # Studio Glass makes the cards see-through (_GLASS_CSS)
         style(card, "QFrame { background-color: rgba(30, 33, 38, 0.88); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; }",
               "QFrame { background-color: @surface; border: none; border-radius: 0; }")
         card_layout = QVBoxLayout(card)

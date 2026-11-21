@@ -130,7 +130,8 @@ def test_new_examples_reach_a_folder_from_the_first_version(tmp_path):
     (folder / sfolder.EXAMPLES_MARKER).write_text("The Omacad examples were copied here once; delete this file to "
                                                   "get them back.\n", encoding="utf-8")
     sfolder.install_examples(folder)
-    assert sorted(p.name for p in folder.glob("*.py")) == ["box_in_a_row.py", "jar_with_lid.py", "star_brackets.py"]
+    assert sorted(p.name for p in folder.glob("*.py")) == ["box_in_a_row.py", "jar_with_lid.py", "star_brackets.py",
+                                                            "tree_brackets.py"]
 
 
 def test_preview_never_touches_the_model():

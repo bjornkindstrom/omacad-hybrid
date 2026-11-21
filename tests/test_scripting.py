@@ -292,7 +292,7 @@ def test_default_folder_per_platform(tmp_path):
 def test_examples_are_copied_once_and_trust_follows_the_content(tmp_path):
     folder = sfolder.resolve_folder(str(tmp_path / "scripts"))
     assert sorted(p.name for p in folder.glob("*.py")) == ["box_in_a_row.py", "gear_generator.py", "jar_with_lid.py",
-                                                            "star_brackets.py"]
+                                                            "star_brackets.py", "tree_brackets.py"]
     (folder / "gear_generator.py").unlink()
     sfolder.resolve_folder(str(folder))
     assert not (folder / "gear_generator.py").exists()            # a deleted example stays deleted

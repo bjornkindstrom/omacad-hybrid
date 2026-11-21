@@ -100,7 +100,8 @@ class ViewportEventsMixin:
         if get_settings().get("invert_zoom", False):
             delta = -delta
         factor = 0.9 if delta > 0 else 1.1
-        self.distance = max(5.0, min(2000.0, self.distance * factor))
+        from omacad.ui.math3d import clamp_distance
+        self.distance = clamp_distance(self.distance * factor)
         if self.point_pick:   # other points come within reach (or behind the body) at the new zoom
             self._point_pick_hover(event.position().x(), event.position().y())
         self.update()

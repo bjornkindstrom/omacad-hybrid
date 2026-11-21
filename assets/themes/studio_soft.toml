@@ -1,0 +1,44 @@
+mode = "light"
+
+# Omacad Studio Soft: Studio without hard frames (design/ui-soft-proposals, proposal 1).
+# Surfaces are told apart by lightness, corners are rounder, buttons are pills.
+font = "Noto Sans"
+soft = true
+radius = 12
+accent = "#2F6BE0"
+selection = "#EAF1FF"
+muted = "#6A778B"
+
+# surfaces by role (see theme.Palette._studio_neutral)
+window = "#EEF1F5"
+surface = "#FFFFFF"
+field = "#F3F5F9"
+border = "#E4E9F0"
+
+background = "#FFFFFF"
+dark_background = "#F3F5F9"
+darker_background = "#EEF1F5"
+lighter_background = "#E4E9F0"
+
+canvas = "#F4F6F9"
+grid = "#C3CCD9"
+highlight = "#1D4ED8"
+
+foreground = "#233044"
+dark_foreground = "#6A778B"
+light_foreground = "#233044"
+bright_foreground = "#101828"
+
+red = "#C62828"
+yellow = "#B45309"
+green = "#2E7D4F"
+cyan = "#0E7490"
+blue = "#2F6BE0"
+magenta = "#7E22CE"
+
+bright_red = "#DC2626"
+bright_yellow = "#D97706"
+bright_green = "#16A34A"
+bright_cyan = "#0891B2"
+bright_blue = "#3B82F6"
+bright_magenta = "#9333EA"

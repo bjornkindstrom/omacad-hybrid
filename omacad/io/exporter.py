@@ -394,7 +394,14 @@ class Exporter:
             "construction_bodies": sorted(getattr(doc, "construction_bodies", ())),
             "canvases": getattr(doc, "canvases", {}),
             "favorites": getattr(doc, "favorites", []),
-            "object_groups": getattr(doc, "object_groups", []),
+            "object_groups": [
+                {
+                    **g,
+                    "objects": list(g.get("objects", [])),
+                    **({"params": dict(g["params"])} if isinstance(g.get("params"), dict) else {}),
+                }
+                for g in getattr(doc, "object_groups", [])
+            ],
             "lids": sorted(getattr(doc, "lids", ())),
             "curve_segments": quality.circle_segments(),   # how finely circles were cut when profiles were numbered
         }
@@ -486,7 +493,14 @@ class Exporter:
         doc.favorites = [{"name": g["name"], "items": [list(r) for r in g.get("items", [])]}
                          for g in data.get("favorites", []) if g.get("name")]
         doc.object_groups = [
-            {**g, "id": g["id"], "name": g["name"], "objects": list(g.get("objects", [])), "visible": g.get("visible", True)}
+            {
+                **g,
+                "id": g["id"],
+                "name": g["name"],
+                "objects": list(g.get("objects", [])),
+                "visible": g.get("visible", True),
+                **({"params": dict(g["params"])} if isinstance(g.get("params"), dict) else {}),
+            }
             for g in data.get("object_groups", []) if g.get("id") and g.get("name")
         ]
         doc.lids = set(data.get("lids", []))

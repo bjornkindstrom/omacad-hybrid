@@ -477,3 +477,40 @@ QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::su
 QStatusBar { background-color: @surface; color: @muted; border-top: 1px solid @border; }
 QToolTip { background-color: @text; color: @surface; border: none; border-radius: 6px; padding: 6px 10px; }
 """
+
+# Studio Soft (themes with `soft = true`): added after the role rules of every styled widget. No hard frames: fields,
+# buttons and cards are told apart by their fill; pill buttons, rounder tabs and cards. Radii here are not 8/6 px on
+# purpose, so `studio_sheet` does not rescale them.
+_SOFT_CSS = """
+QMenuBar { border-bottom: none; }
+QStatusBar { background-color: @window; border-top: none; }
+QMenu { border-radius: 12px; }
+QToolTip { border-radius: 10px; }
+QToolButton:hover { border-color: transparent; }
+QTabBar::tab { border-radius: 10px; margin: 2px 1px; }
+QTabBar::tab:selected { border-bottom: none; background-color: @selection; }
+QGroupBox { background-color: @field; border: none; border-radius: 12px; }
+QGroupBox QLineEdit, QGroupBox QDoubleSpinBox, QGroupBox QSpinBox, QGroupBox QComboBox { background-color: @surface; }
+QPushButton { border-color: transparent; border-radius: 14px; padding: 6px 16px; }
+QPushButton:hover { border-color: transparent; }
+QPushButton:disabled { border: 1px solid transparent; }
+QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox { border-color: transparent; }
+QLineEdit:disabled, QDoubleSpinBox:disabled, QSpinBox:disabled, QComboBox:disabled { border: 1px solid transparent; }
+QSpinBox::up-button, QDoubleSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::down-button { border-left: none; }
+QSlider::groove:horizontal { border-radius: 2px; }
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal { border-radius: 4px; }
+QWidget#BrowserWidget, QWidget#InspectorPanel { border: none; border-radius: 14px; }
+"""
+
+# Studio Glass (soft themes with `glass = <alpha>`): added after _SOFT_CSS. The Browser, the Inspector (and the tool
+# panels docked in it) and the ribbon become see-through cards; the window has the view's colour, so they float.
+# @glass / @glass_edge are the surface / border at the theme's alpha (QSS cannot blur what lies behind).
+_GLASS_CSS = """
+QMenuBar { background-color: @window; }
+QWidget#Ribbon { background-color: @window; border-bottom: none; }
+QWidget#Ribbon QTabWidget::pane { background-color: @glass; border: 1px solid @glass_edge; border-radius: 18px; margin: 2px 10px 4px 10px; }
+QWidget#BrowserWidget, QWidget#InspectorPanel { background-color: @glass; border: 1px solid @glass_edge; border-radius: 18px; }
+QWidget#InspectorPanel QDialog, QFrame#InspectorCard { background-color: transparent; }
+QWidget#InspectorPanel QGroupBox { background-color: @glass_field; }
+QToolButton { border-radius: 10px; }
+"""

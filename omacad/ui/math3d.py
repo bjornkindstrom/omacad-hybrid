@@ -34,6 +34,17 @@ def ortho(left: float, right: float, bottom: float, top: float, near: float, far
 
 
 REF_FOVY = 45.0   # field of view that `distance` is calibrated against (visible height at the target)
+MIN_DISTANCE = 5.0          # closest zoom (mm)
+MAX_DISTANCE = 100000.0     # farthest zoom (mm): a 100 m view, room for any printable or furniture-size model
+
+
+def clamp_distance(distance: float) -> float:
+    return max(MIN_DISTANCE, min(MAX_DISTANCE, float(distance)))
+
+
+def far_reach(distance: float) -> float:
+    """How far behind the target the far clipping plane lies: enough for the whole scene at any zoom."""
+    return max(5000.0, 4.0 * distance)
 
 
 def camera_matrices(target, distance: float, azimuth: float, elevation: float, aspect: float,
@@ -43,11 +54,11 @@ def camera_matrices(target, distance: float, azimuth: float, elevation: float, a
     to orthographic changes only the perspective distortion, never the zoom."""
     half_h = distance * math.tan(math.radians(REF_FOVY) / 2.0)
     if ortho_view:
-        far = distance + 5000.0
+        far = distance + far_reach(distance)
         proj = ortho(-half_h * aspect, half_h * aspect, -half_h, half_h, -far, far)
         return proj, orbit_view(target, distance, azimuth, elevation)
     eye_d = half_h / math.tan(math.radians(fov_deg) / 2.0)
-    proj = perspective(fov_deg, aspect, max(0.5, eye_d * 0.01), eye_d + 5000.0)
+    proj = perspective(fov_deg, aspect, max(0.5, eye_d * 0.01), eye_d + far_reach(distance))
     return proj, orbit_view(target, eye_d, azimuth, elevation)
 
 

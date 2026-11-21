@@ -36,8 +36,8 @@ CUSTOM_DIR = HYBRID_CONFIG_DIR / "themes"   # themes made in the Settings theme 
 CUSTOM_PREFIX = "user:"      # FIXED_THEME / theme_name of a custom theme: "user:<name>"
 PREVIEW: Optional[dict] = None   # unsaved colours from the theme editor, shown live
 FIXED_THEME: Optional[str] = None
-ROLE_THEMES = ("studio", "graphite", "atelier")   # the themes offered in Settings, next to Follow Omarchy
-DEFAULT_ROLE_THEME = "studio"   # None = follow the Omarchy theme live; otherwise the name of a bundled theme (or BUILTIN)
+ROLE_THEMES = ("studio_soft", "studio_glass", "studio", "graphite", "atelier")   # the themes offered in Settings, next to Follow Omarchy
+DEFAULT_ROLE_THEME = "studio_soft"   # None = follow the Omarchy theme live; otherwise the name of a bundled theme (or BUILTIN)
 
 RGB = Tuple[float, float, float]
 
@@ -112,6 +112,9 @@ class Palette:
         self.on_accent = _rgb(d["on_accent"]) if "on_accent" in d else None
         self.ok = col("green", "#2E7D32")         # "done / fully defined" text in the role themes
         self.radius = float(d.get("radius", 8))
+        self.soft = self.studio and bool(d.get("soft", False))   # Studio Soft: no hard frames, pills (_SOFT_CSS)
+        # Studio Glass: alpha of the see-through cards over the view (_GLASS_CSS); 0 = solid
+        self.glass = max(0.0, min(1.0, float(d.get("glass", 0.0)))) if self.soft else 0.0
 
     # -- mapping -----------------------------------------------------------
     def _neutral(self, c: RGB) -> RGB:
@@ -401,6 +404,8 @@ def _sheet(css: str, studio_css: str) -> str:
     declarations (no selector) cannot be followed by rules, so there the Studio rules replace it."""
     if not (studio_css and _palette.studio):
         return themeify(css)
+    if _palette.soft and "{" in studio_css:
+        studio_css += _SOFT_CSS + (_GLASS_CSS if _palette.glass else "")
     return (themeify(css) if "{" in css else "") + studio_sheet(studio_css)
 
 
@@ -416,6 +421,11 @@ def studio_sheet(css: str) -> str:
                  on_accent=p.on_accent or ((255, 255, 255) if _lum(p.accent) < 0.55 else (20, 24, 30)),
                  accent_hover=_mix(p.accent, shade, 0.12), accent_pressed=_mix(p.accent, shade, 0.25),
                  border_strong=_mix(p.surfaces["border"], p.foreground, 0.22), ok=p.ok)
+    if "@glass" in css:     # Studio Glass: surfaces at the theme's alpha (longest names first)
+        a = p.glass or 1.0
+        rgba = lambda c, k=1.0: "rgba({}, {}, {}, {:.2f})".format(*(round(v) for v in c), min(1.0, a * k))
+        css = (css.replace("@glass_field", rgba(p.surfaces["field"], 0.9))
+               .replace("@glass_edge", rgba(p.surfaces["surface"], 0.9)).replace("@glass", rgba(p.surfaces["surface"])))
     for name in sorted(roles, key=len, reverse=True):
         css = css.replace(f"@{name}", _hex(roles[name]))
     if p.radius != 8:
@@ -543,7 +553,7 @@ def base_stylesheet() -> str:
 
 
 # Icon helpers remain re-exported here for existing UI imports.
-from omacad.ui.theme_styles import _MENU_CSS, _BASE_CSS, _STUDIO_CSS
+from omacad.ui.theme_styles import _MENU_CSS, _BASE_CSS, _STUDIO_CSS, _SOFT_CSS, _GLASS_CSS
 from omacad.ui.theme_icons import (
     ICONS_DIR, EMOJI_TO_TOOL, STUDIO_ICONS, COMMAND_ICONS, named_icon, command_icon, studio_symbol, set_button_text, clear_icon_cache, tool_icon, emoji_icon, split_emoji,
     BigIconStyle, ensure_big_icon_style

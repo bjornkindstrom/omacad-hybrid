@@ -43,7 +43,7 @@ def _describe(exc: BaseException, path: Path) -> (str, str, Optional[int]):
 
 
 def run_script(doc, path, values: Optional[Dict[str, Any]] = None, log: Optional[Callable[[str], None]] = None,
-               checking: bool = False, name: Optional[str] = None) -> RunResult:
+               checking: bool = False, name: Optional[str] = None, group_id: Optional[str] = None) -> RunResult:
     """Runs the script's run(ctx, params) on `doc` as one undo step "Script: <NAME>". Any error puts the document back
     exactly as it was and raises ScriptRunError (its .result says what and where)."""
     from omacad.model.document import undoable
@@ -56,7 +56,15 @@ def run_script(doc, path, values: Optional[Dict[str, Any]] = None, log: Optional
         raise ScriptRunError(result)
     params = resolve_values(info.params, values)
     result.values = dict(params)
-    ctx = ScriptContext(doc, log=log, checking=checking, name=(name or "").strip() or info.default_name)
+    ctx = ScriptContext(
+        doc,
+        log=log,
+        checking=checking,
+        name=(name or "").strip() or info.default_name,
+        script_path=path,
+        params=params,
+        group_id=group_id,
+    )
     start = time.monotonic()
 
     def body(_doc):

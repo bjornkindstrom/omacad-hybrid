@@ -679,7 +679,8 @@ class OverlayMixin:
             return
         b_min, b_max = pts.min(axis=0), pts.max(axis=0)
         self.target = ((b_min + b_max) * 0.5).astype(np.float32)
-        self.distance = max(40.0, float(np.linalg.norm(b_max - b_min)) * 1.8)
+        from omacad.ui.math3d import clamp_distance
+        self.distance = clamp_distance(max(40.0, float(np.linalg.norm(b_max - b_min)) * 1.8))
         self.update()
 
     def frame_face(self, plane, tris, fill: float = 0.8) -> None:
@@ -694,7 +695,8 @@ class OverlayMixin:
         lo, hi = pts.min(axis=0), pts.max(axis=0)
         self.target = ((lo + hi) * 0.5).astype(np.float32)
         aspect = min(1.0, self.width() / max(1, self.height()))
-        self.distance = max(5.0, min(2000.0, size / (fill * aspect * 2.0 * math.tan(math.radians(self.fovy) / 2.0))))
+        from omacad.ui.math3d import clamp_distance
+        self.distance = clamp_distance(size / (fill * aspect * 2.0 * math.tan(math.radians(self.fovy) / 2.0)))
         self.update()
 
     def frame_picked_plane(self, plane) -> None:
@@ -740,7 +742,8 @@ class OverlayMixin:
             b_max = pts.max(axis=0)
             self.target = (b_min + b_max) * 0.5
             diag = float(np.linalg.norm(b_max - b_min))
-            self.distance = max(40.0, diag * 1.8)
+            from omacad.ui.math3d import clamp_distance
+            self.distance = clamp_distance(max(40.0, diag * 1.8))
         else:
             self.target = np.array([0.0, 0.0, 0.0], dtype=np.float32)
             self.distance = 140.0

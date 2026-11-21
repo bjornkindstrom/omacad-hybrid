@@ -252,7 +252,51 @@ def test_each_rectangle_kind_has_its_own_icon_and_the_button_shows_the_default(i
     assert ribbon.btn_rect.icon().pixmap(30, 30).toImage() == images["CENTER_ROUNDED_RECT"]
 
 
-@pytest.mark.parametrize("name", ["studio", "graphite", "atelier"])
+def test_studio_soft_drops_hard_frames_only_in_its_own_theme():
+    """Studio Soft (design/ui-soft-proposals, proposal 1): the soft rules come last in every role sheet, with its
+    colours and 12 px corners; Studio itself keeps its frames."""
+    from omacad.ui.settings_dialog import ROLE_THEMES
+    assert "studio_soft" in theme.ROLE_THEMES and "studio_soft" in ROLE_THEMES
+    theme.set_fixed_theme("studio_soft")
+    p = theme.palette()
+    assert p.studio and p.soft and p.radius == 12
+    assert (p.map_hex("#1E2022"), p.map_hex("#25282C"), p.map_hex("#E26D28")) == ("#EEF1F5", "#FFFFFF", "#2F6BE0")
+    sheet = theme._sheet("", theme._STUDIO_CSS)
+    assert sheet.rstrip().endswith("border-radius: 14px; }")                 # the soft rules win: they come last
+    assert "QPushButton { border-color: transparent; border-radius: 14px;" in sheet
+    assert "QGroupBox { background-color: #F3F5F9; border: none; border-radius: 12px; }" in sheet
+    assert "border-radius: 12px; padding: 6px 0px" in sheet                   # Studio's 8 px menu scaled to 12
+    assert theme._sheet("color: #E0E3E7;", "") == theme.themeify("color: #E0E3E7;")   # no role rules: nothing added
+    w = QWidget()
+    theme.style(w, "QWidget { color: #E0E3E7; }", "QLabel { color: @text; }")
+    assert "QPushButton { border-color: transparent" in w.styleSheet()
+
+    theme.set_fixed_theme("studio")
+    assert not theme.palette().soft
+    assert "border-color: transparent; border-radius: 14px" not in theme._sheet("", theme._STUDIO_CSS)
+    theme.refresh()
+    assert "QPushButton { border-color: transparent" not in w.styleSheet()   # switching theme takes them away again
+
+
+def test_studio_glass_makes_the_floating_panels_see_through():
+    """Studio Glass (design/ui-soft-proposals, proposal 2): Studio Soft plus see-through Browser, Inspector, docked tool
+    panels and ribbon card; the window has the view's colour. Studio Soft itself stays solid."""
+    from omacad.ui import side_panel  # noqa: F401  (the cards get the InspectorCard name there)
+    assert "studio_glass" in theme.ROLE_THEMES
+    theme.set_fixed_theme("studio_glass")
+    p = theme.palette()
+    assert p.soft and p.glass == pytest.approx(0.74) and p.radius == 16
+    assert p.surfaces["window"] == tuple(round(v * 255) for v in p.canvas_rgb01())   # one backdrop
+    sheet = theme._sheet("", theme._STUDIO_CSS)
+    assert "QWidget#BrowserWidget, QWidget#InspectorPanel { background-color: rgba(255, 255, 255, 0.74);" in sheet
+    assert "QWidget#InspectorPanel QDialog, QFrame#InspectorCard { background-color: transparent; }" in sheet
+    assert sheet.index("rgba(255, 255, 255, 0.74)") > sheet.index("QPushButton { border-color: transparent")  # after Soft
+    assert "@glass" not in sheet
+    theme.set_fixed_theme("studio_soft")
+    assert theme.palette().glass == 0 and "rgba(" not in theme._sheet("", theme._STUDIO_CSS)
+
+
+@pytest.mark.parametrize("name", ["studio_soft", "studio_glass", "studio", "graphite", "atelier"])
 def test_coloured_status_text_reads_on_the_panels(name):
     """Björn #89: text in panels must be readable. Status colours come from the theme and keep a contrast of at
     least 3:1 to the panels (WCAG for bold text); a fixed light green/yellow on white did not."""

@@ -11,7 +11,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
-from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QObject, Signal
+from PySide6.QtCore import Qt, QElapsedTimer, QPoint, QPointF, QRectF, QObject, Signal
 from PySide6.QtGui import (
     QColor, QFont, QFontMetrics, QIcon, QPainter, QPainterPath, QPen, QBrush
 )
@@ -123,6 +123,7 @@ class FanMenu(QObject):
         self.center_pos = QPointF(cx, cy)
         self.open_cursor_pos = QPointF(raw_x, raw_y)
         self.cursor_pos = QPointF(raw_x, raw_y)
+        self._prev_cursor_pos = None
 
         self.active_category_idx = min(max(0, default_category_idx), max(0, len(self.categories) - 1))
         self.expanded_group_item = None
@@ -132,9 +133,19 @@ class FanMenu(QObject):
 
         self._rebuild_geometry()
         self.is_open = True
+        self._open_timer = QElapsedTimer()      # the soft looks fade and grow in (fan_menu_soft.open_progress)
+        if get_settings().get("fan_menu_animation", True) and self.visual_style() != "classic":
+            self._open_timer.start()
         self.viewport.update()
 
+    @staticmethod
+    def visual_style() -> str:
+        """"classic" (the original painting) or one of the soft looks in fan_menu_soft."""
+        from omacad.ui.fan_menu_soft import resolve_style
+        return resolve_style()
+
     def update_cursor_pos(self, pt: QPointF):
+        self._prev_cursor_pos = self.cursor_pos
         self.cursor_pos = pt
         self._update_hover()
         self.viewport.update()
@@ -156,6 +167,7 @@ class FanMenu(QObject):
         """Process mouse movement while fan menu is active. Returns True if handled."""
         if not self.is_open:
             return False
+        self._prev_cursor_pos = self.cursor_pos
         self.cursor_pos = QPointF(x, y)
         self._update_hover()
         self.viewport.update()
@@ -165,6 +177,7 @@ class FanMenu(QObject):
         """Process mouse release. Returns True if handled."""
         if not self.is_open:
             return False
+        self._prev_cursor_pos = self.cursor_pos
         self.cursor_pos = QPointF(x, y)
         self._update_hover()
 
@@ -323,9 +336,10 @@ class FanMenu(QObject):
                 self.hovered_sub_idx = k
                 return
 
-        # Safe-corridor: when sub_sectors is open and cursor is in the outer part of the 2nd ring
-        # within the angular span of sub_sectors, keep sub_sectors open so diagonal movement reaches them!
-        if self.sub_sectors and self.OUTER_R1 + 26.0 <= r <= self.SUB_R1:
+        # Safe corridor: with sub_sectors open, a pointer heading outward towards them (or already at the rim of the
+        # 2nd ring) within their angular span keeps them open, so a diagonal path reaches them. Moving sideways along
+        # the ring is not heading for them: then the neighbouring tools take the hover as usual.
+        if self.sub_sectors and self.OUTER_R1 + 26.0 <= r <= self.SUB_R1 and self._heading_outward(r):
             if any(self._angle_in_span(ang, s.start_angle, s.span_angle) for s in self.sub_sectors):
                 return
 
@@ -354,6 +368,21 @@ class FanMenu(QObject):
         if r > self.OUTER_R2 and not self.sub_sectors:
             self.hovered_outer_idx = None
 
+
+    RIM_CORRIDOR = 16.0     # px inside OUTER_R2 where the corridor holds whatever the direction
+
+    def _heading_outward(self, r: float) -> bool:
+        """Whether the last pointer move went mainly away from the centre (or the pointer is at the ring's rim)."""
+        if r >= self.OUTER_R2 - self.RIM_CORRIDOR:
+            return True
+        prev = getattr(self, "_prev_cursor_pos", None)
+        if prev is None:
+            return False
+        c = self.center_pos
+        r0 = math.hypot(prev.x() - c.x(), prev.y() - c.y())
+        moved = math.hypot(self.cursor_pos.x() - prev.x(), self.cursor_pos.y() - prev.y())
+        dr = r - r0
+        return moved > 0 and dr > 0 and dr >= 0.35 * math.sqrt(max(0.0, moved * moved - dr * dr))   # within ~70°
 
     @staticmethod
     def _angle_in_span(ang: float, start: float, span: float) -> bool:
@@ -406,6 +435,15 @@ class FanMenu(QObject):
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+
+        style = self.visual_style()
+        if style != "classic":
+            from omacad.ui.fan_menu_soft import draw_soft
+            try:
+                draw_soft(self, painter, width, height, style)
+            finally:
+                painter.restore()
+            return
 
         pal = theme.palette()
 
