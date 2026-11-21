@@ -648,6 +648,38 @@ class FilletFeature(Feature):
                 out.append(hit)
         return out
 
+    def _execute_brep(self, picked) -> set:
+        """Rounds/bevels the picked edges of B-rep bodies with OpenCascade. Returns the ids of the bodies done; a body
+        is left untouched (for the mesh tools) when an edge has no B-rep counterpart or OpenCascade fails."""
+        from omacad import applog
+        from omacad.model import brep
+        from omacad.model.brep import rounding
+        done = set()
+        by_body = {}
+        for body, edge in picked:
+            if body.brep is not None:
+                by_body.setdefault(body.body_id, (body, []))[1].append(edge)
+        for bid, (body, picked_edges) in by_body.items():
+            if self.size < 0 and self.kind == "fillet":
+                continue                        # a cove (negative fillet) is a mesh tool only
+            try:
+                matched = rounding.match_edges(body.brep, [e.polyline() for e in picked_edges])
+                occ_edges = [oe for group in matched for oe in group]
+                size = abs(self.size)
+                if self.kind == "chamfer":
+                    second = self.second_distance()
+                    shape = rounding.chamfer(body.brep, occ_edges, size, None if abs(second - size) < 1e-9 else second,
+                                             flip=self.flip)
+                else:
+                    shape = rounding.fillet(body.brep, occ_edges, size)
+            except Exception as exc:
+                applog.log("INFO", f"{self.name}: B-rep {self.kind} on {body.name} not possible ({exc}); using the mesh tools")
+                continue
+            if brep.attach(body, shape):
+                body.update_render_mesh()
+                done.add(bid)
+        return done
+
     def execute(self, doc: Any) -> None:
         """All edges are matched against the body as it is *before* this step and the tools are applied
         together; rounding them one after another would hide the neighbouring edges (the first
@@ -657,9 +689,11 @@ class FilletFeature(Feature):
             return
         cut, add = {}, {}
         seen = []
+        curved = []                     # free-form creases: only a B-rep body can round them
 
         def take(body, edge):
-            if edge.kind == "curve":    # free-form creases can be picked (measure, paths) but not rounded yet
+            if edge.kind == "curve":    # free-form creases can be picked (measure, paths) but the mesh tools can't round them
+                curved.append((body, edge))
                 self.skipped += 1
                 return
             if any(body is b and edge.same_as(e) for b, e in seen):
@@ -693,6 +727,16 @@ class FilletFeature(Feature):
                 self.skipped += 1
             else:
                 take(*best)
+
+        # B-rep bodies (experimental setting): OpenCascade rounds the exact shape; a body it can't do keeps the mesh path.
+        from omacad.model import brep
+        if brep.active() and any(b.brep is not None for b, _ in seen + curved):
+            done = self._execute_brep(seen + curved)
+            if done:
+                self.skipped -= sum(1 for b, _ in curved if b.body_id in done)
+                seen = [(b, e) for b, e in seen if b.body_id not in done]
+                if not seen:
+                    return
 
         # If all pieces of a closed outline loop were selected (e.g. through tangent chaining
         # or picking every segment of an extruded slot or rounded plate), promote them to the loop

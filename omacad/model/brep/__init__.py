@@ -174,3 +174,23 @@ def attach(body, shape) -> bool:
         return False
     body.set_brep(shape, man)
     return True
+
+
+def boolean(a, b, operation: str):
+    """join / cut / intersect of two shapes. Raises when OpenCascade fails or the result is invalid or empty."""
+    from OCP.BRepAlgoAPI import BRepAlgoAPI_Common, BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse
+    op = {"join": BRepAlgoAPI_Fuse, "cut": BRepAlgoAPI_Cut, "intersect": BRepAlgoAPI_Common}[operation](a, b)
+    op.Build()
+    if not op.IsDone():
+        raise RuntimeError(f"OpenCascade {operation} failed")
+    out = op.Shape()
+    if operation == "join":
+        from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
+        unify = ShapeUpgrade_UnifySameDomain(out, True, True, True)   # merge the faces the fuse split in two
+        unify.Build()
+        out = unify.Shape()
+    if not is_valid(out):
+        raise RuntimeError(f"OpenCascade {operation} made an invalid shape")
+    if volume(out) <= 1e-12:
+        raise ValueError(f"{operation} left nothing")
+    return out

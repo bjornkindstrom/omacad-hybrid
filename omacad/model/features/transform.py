@@ -130,12 +130,26 @@ class MoveFeature(Feature):
         # where this step put the body, as a 4x4 matrix: what was drawn on it before (its sketches, the edges a
         # Fillet rounds) is shown moved along (Document.placement_after)
         self.applied = self.matrix(d, r, pivot, from_xyz, to_xyz)
+        shape = None
+        if target.brep is not None:             # a B-rep body moves its exact shape along (rigid: same tessellation)
+            from omacad.model import brep
+            if brep.active():
+                try:
+                    shape = brep.transform(target.brep, self.applied)
+                except Exception as exc:
+                    from omacad import applog
+                    applog.log("INFO", f"{self.name}: B-rep move failed ({exc!r}); the body becomes a mesh body")
         if self.copy_body:
             body = Body(f"body_{self.feature_id}", f"{target.name} Copy", moved)
+            if shape is not None:
+                body.set_brep(shape, moved)
             body.update_render_mesh()
             doc.bodies[body.body_id] = body
         else:
-            target.manifold = moved
+            if shape is not None:
+                target.set_brep(shape, moved)
+            else:
+                target.manifold = moved
             target.update_render_mesh()
 
     def to_dict(self) -> Dict[str, Any]:

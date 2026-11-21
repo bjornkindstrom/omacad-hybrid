@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.193 (branch brep-hybrid)
+
+### Added
+- **B-rep bodies, step 2 (experimental)**: Fillet and Chamfer on a B-rep body (💎) are done by OpenCascade (rolling-ball fillet, equal / two-distance / angle chamfer with the same first-face rule and Flip). The picked edges are matched to the exact edges they run along, so curved edges work too: the saddle where two pipes meet can now be rounded. Combine (join/cut/intersect) of two B-rep bodies is an exact boolean, and Move / Move copy keep the exact shape. A negative (cove) fillet, a radius OpenCascade can't build or an edge it can't find falls back to the mesh tools for that body. Like Fusion's tangent chain, OpenCascade rounds the whole tangent-continuous chain of a picked edge.
+
 # Hybrid-experiment — 0.9.9.80.192 (branch brep-hybrid)
 
 ### Added

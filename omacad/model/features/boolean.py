@@ -5,6 +5,7 @@ Omacad - Boolean, Split and Delete Body Features
 from typing import Dict, Any, Optional, List
 import numpy as np
 import manifold3d as m3d
+from omacad import applog
 from omacad.model.kernel import CadKernel
 from omacad.model.features.base import Feature, Body, clean_cut
 
@@ -43,7 +44,9 @@ class CombineFeature(Feature):
         if not target or not tool:
             return
 
-        if self.operation == "cut":
+        if self._execute_brep(target, tool):
+            pass
+        elif self.operation == "cut":
             target.manifold = clean_cut(target.manifold, tool.manifold)
         else:
             # a body built on this one's edges (a lip extruded from a projected face outline) sits nanometres
@@ -54,6 +57,18 @@ class CombineFeature(Feature):
         # Remove tool body after combine unless keep_tool is True
         if not self.keep_tool:
             doc.bodies.pop(self.tool_body_id, None)
+
+    def _execute_brep(self, target, tool) -> bool:
+        """Two B-rep bodies (experimental setting): an exact OpenCascade boolean. False = use the mesh path."""
+        from omacad.model import brep
+        if not (brep.active() and target.brep is not None and tool.brep is not None):
+            return False
+        try:
+            shape = brep.boolean(target.brep, tool.brep, self.operation)
+        except Exception as exc:
+            applog.log("INFO", f"{self.name}: B-rep {self.operation} not possible ({exc}); using the mesh boolean")
+            return False
+        return brep.attach(target, shape)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
