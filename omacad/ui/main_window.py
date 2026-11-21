@@ -318,7 +318,8 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
     def on_open_settings(self):
         from omacad.ui.settings_dialog import SettingsDialog
         from omacad.ui.settings import get_settings
-        before_curves = (get_settings().get("curve_segments"), get_settings().get("fast_view"))
+        before_curves = (get_settings().get("curve_segments"), get_settings().get("fast_view"),
+                         get_settings().get("brep_bodies"))
         before_scale = get_settings().get("button_scale")
         before_labels = get_settings().get("show_button_labels")
         before_group_prim = get_settings().get("group_primitives")
@@ -341,7 +342,8 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
 
         if grouping_changed or scale_changed:
             self.ribbon.rebuild_ribbon()
-        if (get_settings().get("curve_segments"), get_settings().get("fast_view")) != before_curves:
+        if (get_settings().get("curve_segments"), get_settings().get("fast_view"),
+                get_settings().get("brep_bodies")) != before_curves:
             self.rebuild_for_curve_quality()
 
     def rebuild_for_curve_quality(self):

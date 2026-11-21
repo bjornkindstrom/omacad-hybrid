@@ -369,8 +369,11 @@ def _add_object(browser, group, oid, features, excluded):
         body = doc.bodies.get(bid)
         if body is None:
             continue
-        item = QTreeWidgetItem(parent, ['🧊 ' + _body_label(body, label, len(obj.body_ids), obj.body_ids.index(bid) + 1), ''])
+        icon = '💎 ' if getattr(body, 'brep', None) is not None else '🧊 '     # 💎 = exact B-rep body (experimental)
+        item = QTreeWidgetItem(parent, [icon + _body_label(body, label, len(obj.body_ids), obj.body_ids.index(bid) + 1), ''])
         item.setData(0, ROLE, ('body', bid))
+        if icon.startswith('💎'):
+            item.setToolTip(0, 'B-rep body: exact OpenCascade shape (Settings > B-rep bodies)')
         if linked:
             _italic(item)
         item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)

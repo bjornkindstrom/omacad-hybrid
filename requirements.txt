@@ -4,6 +4,7 @@ PyOpenGL==3.1.10
 Pillow==13.0.0
 numpy==2.5.4
 manifold3d==3.5.4
+cadquery-ocp==8.0.1.1.0   # experimental B-rep bodies (pulls in vtk); optional at runtime
 trimesh==5.1.1
 shapely==2.2.0
 python-solvespace==3.0.8

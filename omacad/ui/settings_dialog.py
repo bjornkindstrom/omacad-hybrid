@@ -524,6 +524,18 @@ class SettingsDialog(QDialog):
                                       "smoothness above.")
         lay_sketch.addWidget(self.chk_fast_view)
 
+        # Experimental: exact B-rep bodies (OpenCascade) next to the mesh bodies
+        from omacad.model import brep
+        self.chk_brep = QCheckBox("B-rep bodies (experimental): plain boxes and cylinders as exact OpenCascade shapes")
+        self.chk_brep.setChecked(bool(self.settings.get("brep_bodies", False)))
+        tip = ("Bodies are built as exact B-rep shapes where Omacad supports it (shown with 💎 in the tree); "
+               "everything else stays a mesh body. Switch off to go back: the model is rebuilt from its history.")
+        if not brep.available():
+            self.chk_brep.setEnabled(False)
+            tip = "OpenCascade (cadquery-ocp) is not installed: " + brep.why_unavailable()
+        self.chk_brep.setToolTip(tip)
+        lay_sketch.addWidget(self.chk_brep)
+
         # Camera: projection type and perspective field of view
         proj_row = QHBoxLayout()
         lbl_proj = QLabel("Camera type (3D view):")
@@ -923,6 +935,7 @@ class SettingsDialog(QDialog):
             "scripts_folder": self.edt_scripts_folder.text().strip(),
             "curve_segments": self.cmb_curves.currentData(),
             "fast_view": self.chk_fast_view.isChecked(),
+            "brep_bodies": self.chk_brep.isChecked(),
             "view_projection": self.cmb_projection.currentData(),
             "view_fov": self.spn_fov.value(),
             "auto_restart": self.chk_auto_restart.isChecked(),

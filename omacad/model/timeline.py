@@ -7,7 +7,7 @@ All feature classes are modularized in `omacad.model.features.*` and re-exported
 import copy
 import json
 from typing import List, Any
-from omacad.model import quality
+from omacad.model import brep, quality
 from omacad.model.features import (
     Body,
     Feature,
@@ -88,7 +88,8 @@ class Timeline:
         try:
             # the curve smoothness is part of every round shape: a new setting must rebuild, not reuse
             d = dict(feat.to_dict(), exprs=dict(getattr(feat, "exprs", {})), suppressed=feat.suppressed,
-                     segments=quality.circle_segments(), targets=getattr(feat, "target_body_ids", None))
+                     segments=quality.circle_segments(), targets=getattr(feat, "target_body_ids", None),
+                     brep=brep.active())          # switching B-rep bodies on/off must rebuild, not reuse
             return json.dumps(d, sort_keys=True, default=str)
         except Exception:
             return repr(feat)

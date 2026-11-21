@@ -34,6 +34,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "curve_segments": 96,               # flat pieces around a full circle: lower = lighter and faster, higher = smoother
     "fast_view": True,                  # build the view coarser (view_segments) and draw it smoothed; exports use curve_segments
     "view_segments": 72,                # pieces per circle in the view while fast_view is on
+    "brep_bodies": False,               # experimental: plain primitives/fillets as exact OpenCascade B-rep bodies
     "arrow_size": 1.0,                  # scale of the extrude/move arrow in the 3D view
     "primitive_drag_decimals": 0,       # decimal places when resizing primitives with handles
     "guide_line_gap": 6.0,             # screen pixels between construction-line dashes
@@ -161,6 +162,9 @@ class SettingsManager(QObject):
         self._push_quality_value(self._data.get("curve_segments", DEFAULT_SETTINGS["curve_segments"]))
         if keys is None or any(k in self.FAST_VIEW_KEYS for k in keys):
             quality.set_fast_view(bool(self.get("fast_view")), int(self.get("view_segments")))
+        if keys is None or "brep_bodies" in keys:
+            from omacad.model import brep
+            brep.set_enabled(bool(self.get("brep_bodies")))
 
     def load(self):
         if self.config_file.exists():

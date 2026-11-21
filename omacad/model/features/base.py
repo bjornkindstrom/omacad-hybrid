@@ -32,6 +32,27 @@ class Body:
     is_lid: bool = False         # a slide-over or screw lid (toggleable via viewport HUD)
     faces: List[PlanarFace] = field(default_factory=list)
     edges: List[PlanarEdge] = field(default_factory=list)
+    # Exact OpenCascade shape (experimental "brep_bodies" setting). When set, `manifold` is its tessellation.
+    brep: Any = field(default=None, repr=False, compare=False)
+
+    def __setattr__(self, name, value):
+        # Writing a new mesh makes this a plain mesh body: the old shape would no longer match it.
+        if name == "manifold" and self.__dict__.get("brep") is not None and not self.__dict__.get("_setting_brep"):
+            object.__setattr__(self, "brep", None)
+        object.__setattr__(self, name, value)
+
+    def set_brep(self, shape, manifold: m3d.Manifold) -> None:
+        """The exact shape together with its tessellation (omacad.model.brep.attach builds the pair)."""
+        object.__setattr__(self, "_setting_brep", True)
+        try:
+            self.manifold = manifold
+            self.brep = shape
+        finally:
+            object.__setattr__(self, "_setting_brep", False)
+
+    @property
+    def is_brep(self) -> bool:
+        return self.brep is not None
 
     @property
     def pickable(self) -> bool:

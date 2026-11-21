@@ -197,6 +197,47 @@ def _lid_xy_mask_poly(x_min, x_max, y_half, r_back, r_front, kind_back="fillet",
 
 
 
+
+def _placement_matrices(feature):
+    """The 3x4 matrices build_solid applies after building round the origin: onto the picked plane, then the
+    translation (same maths as BoxFeature.build_solid / CylinderFeature._place)."""
+    mats = []
+    if feature.plane_origin is not None and feature.plane_normal is not None:
+        n = np.array(feature.plane_normal, dtype=float)
+        n_len = float(np.linalg.norm(n))
+        if n_len > 1e-12:
+            n = n / n_len
+            if feature.plane_u is not None and feature.plane_v is not None:
+                u = np.array(feature.plane_u, dtype=float)
+                u = u / max(float(np.linalg.norm(u)), 1e-12)
+                v = np.array(feature.plane_v, dtype=float)
+                v = v / max(float(np.linalg.norm(v)), 1e-12)
+            else:
+                hint = np.array([1.0, 0.0, 0.0]) if abs(n[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+                u = hint - np.dot(hint, n) * n
+                u /= np.linalg.norm(u)
+                v = np.cross(n, u)
+            mats.append(np.column_stack([u, v, n, np.array(feature.plane_origin, dtype=float)]).astype(float))
+    if any(abs(x) > 1e-12 for x in feature.translation):
+        m = np.eye(4)[:3]
+        m[:, 3] = feature.translation
+        mats.append(m)
+    return mats
+
+
+def _attach_brep(feature, body, shape, pre_shift) -> None:
+    """B-rep version of a plain primitive (setting "brep_bodies"): placed exactly like the mesh. Keeps the mesh if
+    the shape can't be built or doesn't match it."""
+    from omacad.model import brep
+    try:
+        shape = brep.translate(shape, pre_shift)
+        for m in _placement_matrices(feature):
+            shape = brep.transform(shape, m)
+        brep.attach(body, shape)
+    except Exception as exc:
+        applog.log("WARNING", f"{feature.name}: B-rep not built ({exc!r}); keeping the mesh")
+
+
 class BoxFeature(Feature):
     def __init__(self, feature_id: str, name: str, length: float, width: float, height: float, center: Any = False,
                  plane_origin: Any = None, plane_normal: Any = None, plane_u: Any = None, plane_v: Any = None,
@@ -555,12 +596,28 @@ class BoxFeature(Feature):
             solid = solid.translate(tuple(self.translation))
         return solid
 
+    def _plain(self) -> bool:
+        """No lid, lip, taper, wall or rounding: just a box (the only kind built as B-rep so far)."""
+        has_smart = self.wall_thickness > 1e-4 or self.outer_round > 1e-4 or self.inner_round > 1e-4
+        return (not self.is_lid and not (self.lip_height > 1e-4 and self.lip_step > 1e-4)
+                and self.taper_angle == 0.0 and not has_smart)
+
     def execute(self, doc: Any) -> None:
         solid = self.build_solid()
         body = Body(body_id=f"body_{self.feature_id}", name=self.name, manifold=solid)
         if self.is_lid:
             body.is_lid = True
             doc.lids.add(body.body_id)
+        from omacad.model import brep
+        if brep.active() and type(self) is BoxFeature and self._plain():
+            l, w, h = self.length, self.width, self.height
+            if self.center is True or self.center == "center":
+                shift = (-l / 2, -w / 2, -h / 2)
+            elif self.center == "bottom_center":
+                shift = (-l / 2, -w / 2, 0.0)
+            else:
+                shift = (0.0, 0.0, 0.0)
+            _attach_brep(self, body, brep.box(l, w, h), shift)
         body.update_render_mesh()
         doc.bodies[body.body_id] = body
 
@@ -721,6 +778,13 @@ class CylinderFeature(Feature):
     def execute(self, doc: Any) -> None:
         solid = self.build_solid()
         body = Body(body_id=f"body_{self.feature_id}", name=self.name, manifold=solid)
+        from omacad.model import brep
+        plain = (self.taper_angle == 0.0 and not self.sides and self.wall_thickness <= 1e-4
+                 and self.outer_round <= 1e-4 and self.inner_round <= 1e-4)
+        if brep.active() and type(self) is CylinderFeature and plain:
+            centred = self.center is True or self.center == "center"
+            _attach_brep(self, body, brep.cylinder(self.radius, self.height),
+                         (0.0, 0.0, -self.height / 2 if centred else 0.0))
         body.update_render_mesh()
         doc.bodies[body.body_id] = body
 

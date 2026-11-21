@@ -324,7 +324,7 @@ class InspectorPanel(QWidget):
             form.addRow("Flat faces:", QLabel(f"{len(body.faces)}"))
             form.addRow("Edges:", QLabel(f"{len(body.edges)}"))
 
-            self.info_layout.addWidget(self._make_card(f"🧊 Body: {body.name}", form))
+            self.info_layout.addWidget(self._make_card(("💎 B-rep body: " if getattr(body, "brep", None) is not None else "🧊 Body: ") + body.name, form))
             return
 
         # D. Document Overview (Nothing specifically selected)

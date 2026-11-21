@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.192 (branch brep-hybrid)
+
+### Added
+- **B-rep bodies, step 1 (experimental, off by default)**: Settings > *B-rep bodies (experimental)*. With it on, plain boxes and cylinders are built as exact OpenCascade shapes (`omacad/model/brep`, cadquery-ocp 8.0.1); the body's mesh is the tessellation of the shape (same curve smoothness), so view, picking and every mesh tool keep working. They show 💎 in the browser and "B-rep body" in the inspector. Any tool that writes a new mesh turns the body back into a mesh body. Nothing is saved differently: switching off rebuilds the model from its history as before.
+
 # Hybrid-experiment — 0.9.9.80.191
 
 ### Changed
