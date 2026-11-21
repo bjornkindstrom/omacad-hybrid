@@ -22,11 +22,16 @@ class FilletFeature(Feature):
     CHAMFER_TYPES = ("equal", "two", "angle")    # Fusion: Equal distance, Two distances, Distance and angle
 
     def __init__(self, feature_id: str, name: str, edges, size: float, kind: str = "fillet",
-                 chamfer_type: str = "equal", size2: float = 0.0, angle: float = 45.0, flip: bool = False):
+                 chamfer_type: str = "equal", size2: float = 0.0, angle: float = 45.0, flip: bool = False,
+                 edge_sizes=None):
         super().__init__(feature_id, "fillet", name)
         # each entry: ((x,y,z),(x,y,z)) for a straight edge, or ("circle", centre, axis, radius)
         self.edges = [self._norm_ref(e) for e in edges]
         self.size = float(size)
+        # radius per edge (Fusion's "+" radius sets), None = the step's size; one list entry per edge
+        sizes = list(edge_sizes or [])
+        self.edge_sizes = ([None if z is None else float(z) for z in sizes] + [None] * len(self.edges))[:len(self.edges)] \
+            if any(z is not None for z in sizes) else None
         self.kind = kind  # "fillet" or "chamfer"
         self.chamfer_type = chamfer_type if chamfer_type in self.CHAMFER_TYPES else "equal"
         self.size2 = float(size2)     # "two": distance on the second face
@@ -659,19 +664,19 @@ class FilletFeature(Feature):
         for body, edge in picked:
             if body.brep is not None:
                 by_body.setdefault(body.body_id, (body, []))[1].append(edge)
+        sizes = getattr(self, "_edge_size", {})
         for bid, (body, picked_edges) in by_body.items():
-            if self.size < 0 and self.kind == "fillet":
+            own = [sizes.get(id(e), self.size) for e in picked_edges]
+            if self.kind == "fillet" and any(z < 0 for z in own):
                 continue                        # a cove (negative fillet) is a mesh tool only
             try:
                 matched = rounding.match_edges(body.brep, [e.polyline() for e in picked_edges])
-                occ_edges = [oe for group in matched for oe in group]
-                size = abs(self.size)
+                items = [(oe, abs(z)) for group, z in zip(matched, own) for oe in group]
                 if self.kind == "chamfer":
-                    second = self.second_distance()
-                    shape = rounding.chamfer(body.brep, occ_edges, size, None if abs(second - size) < 1e-9 else second,
-                                             flip=self.flip)
+                    ratio = self.second_distance() / max(abs(self.size), 1e-12)
+                    shape = rounding.chamfer(body.brep, items, None if abs(ratio - 1.0) < 1e-9 else ratio, flip=self.flip)
                 else:
-                    shape = rounding.fillet(body.brep, occ_edges, size)
+                    shape = rounding.fillet(body.brep, items)
             except Exception as exc:
                 applog.log("INFO", f"{self.name}: B-rep {self.kind} on {body.name} not possible ({exc}); using the mesh tools")
                 continue
@@ -680,28 +685,59 @@ class FilletFeature(Feature):
                 done.add(bid)
         return done
 
+    def size_list(self) -> list:
+        """The size of every edge (its own from edge_sizes, else the step's)."""
+        own = self.edge_sizes or [None] * len(self.edges)
+        return [self.size if z is None else z for z in own]
+
     def execute(self, doc: Any) -> None:
         """All edges are matched against the body as it is *before* this step and the tools are applied
         together; rounding them one after another would hide the neighbouring edges (the first
-        rounding turns the faces next to it into curved ones)."""
-        self.skipped = 0
-        if abs(self.size) <= 1e-6:
+        rounding turns the faces next to it into curved ones). Edges with their own radius: one exact
+        OpenCascade operation for a B-rep body (a real corner blend between the radii); the mesh tools do one
+        radius after another instead, largest first."""
+        sizes = self.size_list()
+        if len({round(z, 9) for z in sizes}) <= 1:
+            self._execute_uniform(doc)
             return
+        done = self._execute_uniform(doc, mesh=False)
+        rest = [b.body_id for b in feature_bodies(doc, self) if b.body_id not in done]
+        if not rest:
+            return
+        self.skipped = 0
+        for size in sorted({round(z, 9) for z in sizes}, key=abs, reverse=True):
+            refs = [r for r, z in zip(self.edges, sizes) if abs(z - size) < 1e-9]
+            scale = abs(size) / max(abs(self.size), 1e-12)
+            part = FilletFeature(self.feature_id, self.name, refs, size, self.kind, self.chamfer_type,
+                                 self.size2 * scale, self.angle, self.flip)
+            part.target_body_ids = rest
+            part._execute_uniform(doc, use_brep=False)
+            self.skipped += part.skipped
+
+    def _execute_uniform(self, doc: Any, mesh: bool = True, use_brep: bool = True) -> set:
+        """Matches the edges and rounds them: B-rep bodies with OpenCascade (each edge its own size), the others
+        with the mesh tools (the step's size; mesh=False skips them). Returns the ids of the B-rep bodies done."""
+        self.skipped = 0
+        if all(abs(z) <= 1e-6 for z in self.size_list()):
+            return set()
         cut, add = {}, {}
         seen = []
         curved = []                     # free-form creases: only a B-rep body can round them
+        self._edge_size = {}            # id(edge) -> its size, for the B-rep operation
 
-        def take(body, edge):
+        def take(body, edge, size):
             if edge.kind == "curve":    # free-form creases can be picked (measure, paths) but the mesh tools can't round them
                 curved.append((body, edge))
+                self._edge_size[id(edge)] = size
                 self.skipped += 1
                 return
             if any(body is b and edge.same_as(e) for b, e in seen):
                 return  # the same edge selected twice
             seen.append((body, edge))
+            self._edge_size[id(edge)] = size
 
         missing = []
-        for ref in self.edges:
+        for ref, size in zip(self.edges, self.size_list()):
             hit = None
             for body in feature_bodies(doc, self):
                 edge = edge_from_ref(ref, body.edges)
@@ -709,12 +745,12 @@ class FilletFeature(Feature):
                     hit = (body, edge)
                     break
             if hit is None:
-                missing.append(ref)
+                missing.append((ref, size))
                 continue
-            take(*hit)
+            take(*hit, size)
         # Edges that moved or changed size because something earlier in the history was edited: take the
         # nearest edge of the same kind instead of leaving the sharp corner behind.
-        for ref in missing:
+        for ref, size in missing:
             best = None
             for body in feature_bodies(doc, self):
                 bb = np.array(body.manifold.bounding_box())
@@ -726,17 +762,18 @@ class FilletFeature(Feature):
             if best is None:
                 self.skipped += 1
             else:
-                take(*best)
+                take(*best, size)
 
         # B-rep bodies (experimental setting): OpenCascade rounds the exact shape; a body it can't do keeps the mesh path.
         from omacad.model import brep
-        if brep.active() and any(b.brep is not None for b, _ in seen + curved):
+        done = set()
+        if use_brep and brep.active() and any(b.brep is not None for b, _ in seen + curved):
             done = self._execute_brep(seen + curved)
             if done:
                 self.skipped -= sum(1 for b, _ in curved if b.body_id in done)
                 seen = [(b, e) for b, e in seen if b.body_id not in done]
-                if not seen:
-                    return
+        if not mesh or not seen or abs(self.size) <= 1e-6:
+            return done
 
         # If all pieces of a closed outline loop were selected (e.g. through tangent chaining
         # or picking every segment of an extruded slot or rounded plate), promote them to the loop
@@ -849,6 +886,7 @@ class FilletFeature(Feature):
             if not result.is_empty():
                 body.manifold = CadKernel.drop_slivers(result)
                 body.update_render_mesh()
+        return done
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -863,4 +901,5 @@ class FilletFeature(Feature):
             "size2": self.size2,
             "angle": self.angle,
             "flip": self.flip,
+            **({"edge_sizes": list(self.edge_sizes)} if self.edge_sizes else {}),
         }

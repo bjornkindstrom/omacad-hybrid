@@ -98,11 +98,12 @@ def _dedupe(items):
     return out
 
 
-def fillet(shape, edge_list: Sequence, radius: float):
+def fillet(shape, items: Sequence):
+    """items = [(B-rep edge, radius)]; edges with different radii meet in one corner blend."""
     from OCP.BRepFilletAPI import BRepFilletAPI_MakeFillet
     mk = BRepFilletAPI_MakeFillet(shape)
-    for (e,) in _dedupe([(e,) for e in edge_list]):
-        mk.Add(float(radius), e)
+    for e, r in _dedupe(list(items)):
+        mk.Add(float(r), e)
     mk.Build()
     if not mk.IsDone():
         raise RuntimeError("OpenCascade could not build the fillet")
@@ -156,15 +157,16 @@ def first_face(shape, edge, flip: bool):
     return fs[first]
 
 
-def chamfer(shape, edge_list: Sequence, d1: float, d2: Optional[float] = None, flip: bool = False):
-    """Equal chamfer, or d1 on the first face (see first_face) and d2 on the other."""
+def chamfer(shape, items: Sequence, ratio: Optional[float] = None, flip: bool = False):
+    """items = [(B-rep edge, first distance)]. Equal chamfer, or the first distance on the first face (see
+    first_face) and first * ratio on the other."""
     from OCP.BRepFilletAPI import BRepFilletAPI_MakeChamfer
     mk = BRepFilletAPI_MakeChamfer(shape)
-    for (e,) in _dedupe([(e,) for e in edge_list]):
-        if d2 is None or abs(d2 - d1) < 1e-9:
+    for e, d1 in _dedupe(list(items)):
+        if ratio is None:
             mk.Add(float(d1), e)
         else:
-            mk.Add(float(d1), float(d2), e, first_face(shape, e, flip))
+            mk.Add(float(d1), float(d1 * ratio), e, first_face(shape, e, flip))
     mk.Build()
     if not mk.IsDone():
         raise RuntimeError("OpenCascade could not build the chamfer")

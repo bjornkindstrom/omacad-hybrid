@@ -140,11 +140,24 @@ class RoundPatternPromptsMixin:
             else:
                 self.viewport.clear_extrude_handle()
 
+        radius_sets = []      # [{"edges": [...], "size": r}]: edges kept with their own radius (Fusion's "+")
+
+        def all_edges():
+            """(edges, their sizes or None): the kept sets, then the edges picked now with the dialog's size."""
+            kept = [(e, rs["size"]) for rs in radius_sets for e in rs["edges"]]
+            now = [e for e in self.viewport.selected_edges if not any(e.same_as(k) for k, _ in kept)
+                   if hasattr(e, "same_as")]
+            edges = [e for e, _ in kept] + now
+            if not radius_sets:
+                return edges, None
+            size = dlg.spn_size.value()
+            return edges, [z for _, z in kept] + [size] * len(now)
+
         def preview():
             from omacad.model.timeline import FilletFeature
             from omacad.model.features.base import Body
-            edges = self.viewport.selected_edges
-            dlg.set_count(len(edges))
+            dlg.set_count(len(self.viewport.selected_edges))
+            edges, edge_sizes = all_edges()
             if not edges:
                 self.viewport.fillet_rail_offset = 0.0
                 self.viewport.set_display_override(None)
@@ -154,7 +167,7 @@ class RoundPatternPromptsMixin:
             # (the originals keep their edges, so picking goes on working).
             tmp_bodies = {}
             for bid, b in self.doc.bodies.items():
-                t = Body(bid, b.name, b.manifold, edges=list(b.edges))
+                t = Body(bid, b.name, b.manifold, edges=list(b.edges), brep=b.brep)   # B-rep: preview = the real result
                 t.update_render_mesh = lambda: None
                 tmp_bodies[bid] = t
 
@@ -163,7 +176,7 @@ class RoundPatternPromptsMixin:
 
             v = dlg.values()
             tmp = FilletFeature("preview", "preview", [e.ref() for e in edges], v["size"], v["kind"],
-                                v["chamfer_type"], v["size2"], v["angle"], v["flip"])
+                                v["chamfer_type"], v["size2"], v["angle"], v["flip"], edge_sizes=edge_sizes)
             try:
                 tmp.execute(_TmpDoc)
             except Exception as ex:
@@ -201,7 +214,8 @@ class RoundPatternPromptsMixin:
             self.viewport.clear_extrude_handle()
             self.viewport.set_display_override(None)
             self.viewport.edge_tangent_chain = True
-            edges = [e.ref() for e in self.viewport.selected_edges]
+            picked, edge_sizes = all_edges()
+            edges = [e.ref() for e in picked]
             self._round_dlg = None
             dlg.deleteLater()
             self.inspector.undock_tool()
@@ -210,14 +224,39 @@ class RoundPatternPromptsMixin:
             if result and edges:
                 v = dlg.values()
                 spin = v.pop("size")
-                feat = self.doc.add_fillet(edges, spin, v.pop("kind"), exprs=dlg.get_expressions(), **v)
+                feat = self.doc.add_fillet(edges, spin, v.pop("kind"), exprs=dlg.get_expressions(), edge_sizes=edge_sizes, **v)
                 note = f" ({feat.skipped} edge(s) could not be rounded)" if feat.skipped else ""
-                self.status_label.setText(f"{feat.name}: {len(edges)} edge(s), {spin:g} mm.{note}")
+                radii = ", ".join(f"{z:g}" for z in sorted(set(edge_sizes), reverse=True)) if edge_sizes else f"{spin:g}"
+                self.status_label.setText(f"{feat.name}: {len(edges)} edge(s), {radii} mm.{note}")
             elif result:
                 self.status_label.setText("No edges were selected.")
 
         def on_chain(on: bool):
             self.viewport.edge_tangent_chain = on
+
+        def on_add_set():
+            kept = [e for rs in radius_sets for e in rs["edges"]]
+            new = [e for e in self.viewport.selected_edges if not any(e.same_as(k) for k in kept)]
+            if not new:
+                return
+            radius_sets.append({"edges": new, "size": abs(dlg.spn_size.value())})
+            dlg.add_set_row(len(new), dlg.spn_size.value())
+            self.viewport.selected_edges = []
+            self.viewport.edges_selection_changed.emit()
+            self.status_label.setText(f"Kept {len(new)} edge(s) at {abs(dlg.spn_size.value()):g} mm. "
+                                      "Pick the next edges and set their radius.")
+
+        def on_set_size(index: int, value: float):
+            radius_sets[index]["size"] = value
+            preview()
+
+        def on_set_removed(index: int):
+            radius_sets.pop(index)
+            preview()
+
+        dlg.add_set_requested.connect(on_add_set)
+        dlg.set_size_changed.connect(on_set_size)
+        dlg.set_removed.connect(on_set_removed)
 
         dlg.tangent_chain_toggled.connect(on_chain)
         self.viewport.edges_selection_changed.connect(preview)

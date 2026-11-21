@@ -574,3 +574,79 @@ def test_matrix_probe_reads_the_moves_patterns_use():
         expected = move(cube).bounding_box()
         got = cube.transform(matrix_of(move)).bounding_box()
         np.testing.assert_allclose(got, expected, atol=1e-9)
+
+
+# ---- radius per edge (Fusion's "+" radius sets) ---------------------------------------------------------------------
+def _corner_edges(doc):
+    """The three edges meeting at the box corner (40, 30, 20) and the radius each gets (x 4, y 3, z 2)."""
+    refs, sizes = [], []
+    for e in only_body(doc).edges:
+        if getattr(e, "kind", "") == "line" and any(np.allclose(p, (40, 30, 20)) for p in (e.p0, e.p1)):
+            refs.append(e.ref())
+            sizes.append((4.0, 3.0, 2.0)[int(np.argmax(np.abs(np.asarray(e.p1) - np.asarray(e.p0))))])
+    return refs, sizes
+
+
+def test_three_radii_meeting_in_one_corner_blend_exactly(brep_on):
+    doc = Document()
+    doc.add_box(40, 30, 20)
+    refs, sizes = _corner_edges(doc)
+    feat = doc.add_fillet(refs, 4.0, "fillet", edge_sizes=sizes)
+    body = only_body(doc)
+    assert body.is_brep and feat.skipped == 0
+    assert brep.volume(body.brep) == pytest.approx(23791.35743, rel=1e-8)    # OpenCascade one-operation reference
+
+
+def test_radius_per_edge_without_brep_rounds_one_radius_after_another(tmp_path):
+    from omacad.io.exporter import Exporter
+    doc = Document()
+    doc.add_box(40, 30, 20)
+    refs, sizes = _corner_edges(doc)
+    feat = doc.add_fillet(refs, 4.0, "fillet", edge_sizes=sizes)
+    assert feat.skipped == 0 and only_body(doc).manifold.volume() < 24000 - 50
+    path = tmp_path / "radii.omacad"
+    assert Exporter.save_project(doc, str(path))
+    loaded = Exporter.load_project(str(path))
+    assert loaded.timeline.features[-1].edge_sizes == sizes
+    assert only_body(loaded).manifold.volume() == pytest.approx(only_body(doc).manifold.volume(), rel=1e-9)
+
+
+@pytest.fixture
+def win():
+    from PySide6.QtWidgets import QApplication
+    from omacad.ui.main_window import MainWindow
+    QApplication.instance() or QApplication([])
+    w = MainWindow()
+    w.viewport.paintGL = lambda: None
+    w.viewport.initializeGL = lambda: None
+    yield w
+    w.close()
+
+
+def test_fillet_panel_radius_sets_make_one_step(brep_on, win):
+    from PySide6.QtWidgets import QApplication
+    win.doc.add_box(40, 30, 20)
+    body = only_body(win.doc)
+    win.prompt_round_edges("fillet")
+    dlg, vp = win._round_dlg, win.viewport
+    corner = [e for e in body.edges if getattr(e, "kind", "") == "line"
+              and any(np.allclose(p, (40, 30, 20)) for p in (e.p0, e.p1))]
+    along = {int(np.argmax(np.abs(np.asarray(e.p1) - np.asarray(e.p0)))): e for e in corner}
+    for axis, radius in ((0, 4.0), (1, 3.0)):
+        dlg.spn_size.setValue(radius)
+        vp.selected_edges = [along[axis]]
+        vp.edges_selection_changed.emit()
+        assert dlg.btn_add_set.isEnabled()
+        dlg.btn_add_set.click()
+        assert vp.selected_edges == []
+    assert len(dlg._set_spins) == 2
+    dlg.spn_size.setValue(2.0)
+    vp.selected_edges = [along[2]]
+    vp.edges_selection_changed.emit()
+    assert body.body_id in vp.display_override        # the live result includes all three radii
+    dlg.accept()
+    QApplication.processEvents()
+    feat = win.doc.timeline.features[-1]
+    assert sorted(feat.edge_sizes) == [2.0, 3.0, 4.0] and len(feat.edges) == 3
+    result = only_body(win.doc)
+    assert result.is_brep and brep.volume(result.brep) == pytest.approx(23791.35743, rel=1e-8)

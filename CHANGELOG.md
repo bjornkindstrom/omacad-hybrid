@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.198 (branch brep-hybrid)
+
+### Added
+- **Fillet: a radius per edge in one step** (like the + in Fusion's Fillet): in the Fillet / Chamfer panel, *➕ New radius for more edges* keeps the picked edges with the current radius; pick the next edges and give them another radius. Each kept set has its own radius field and ✕. On B-rep bodies (💎) all radii are one OpenCascade operation, so a corner where edges with radius 4, 3 and 2 meet becomes a real blend; on mesh bodies the radii are done one after another, largest first. Saved with the file (`edge_sizes`).
+
+### Fixed
+- The Fillet / Chamfer live result ran on copies without the B-rep, so on a 💎 body it showed the mesh tools' result (a curved pipe joint showed nothing until OK). It now shows the exact result.
+
 # Hybrid-experiment — 0.9.9.80.197 (branch brep-hybrid)
 
 ### Added

@@ -766,13 +766,14 @@ class Document:
 
     @undoable("Fillet")
     def add_fillet(self, edges, size: float, kind: str = "fillet", exprs=None, chamfer_type: str = "equal",
-                   size2: float = 0.0, angle: float = 45.0, flip: bool = False) -> FilletFeature:
+                   size2: float = 0.0, angle: float = 45.0, flip: bool = False, edge_sizes=None) -> FilletFeature:
         """Fillet or chamfer the given edges ((p0, p1) world coordinates each). A chamfer can have two distances
-        (`size2`) or a distance and an angle, like Fusion's Chamfer types."""
+        (`size2`) or a distance and an angle, like Fusion's Chamfer types. `edge_sizes` gives edges their own
+        radius (one entry per edge, None = `size`)."""
         n = len([f for f in self.timeline.features if f.feature_type == "fillet"]) + 1
         feat_id = self._feature_id("fillet")
         feat = FilletFeature(feat_id, f"{'Chamfer' if kind == 'chamfer' else 'Fillet'} {n}", edges, size, kind,
-                             chamfer_type, size2, angle, flip)
+                             chamfer_type, size2, angle, flip, edge_sizes=edge_sizes)
         feat.exprs = dict(exprs or {})
         self.timeline.add_feature(feat)
         feat.execute(self)

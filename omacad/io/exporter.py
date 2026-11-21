@@ -703,7 +703,8 @@ class Exporter:
             elif ft == "fillet":
                 feat = FilletFeature(fid, fname, [tuple(e) if e and isinstance(e[0], str) else (e[0], e[1]) for e in f_data["edges"]],
                                      f_data["size"], f_data.get("kind", "fillet"), f_data.get("chamfer_type", "equal"),
-                                     f_data.get("size2", 0.0), f_data.get("angle", 45.0), f_data.get("flip", False))
+                                     f_data.get("size2", 0.0), f_data.get("angle", 45.0), f_data.get("flip", False),
+                                     edge_sizes=f_data.get("edge_sizes"))
                 doc.timeline.add_feature(feat)
             elif ft == "pattern":
                 feat = PatternFeature(fid, fname, f_data.get("source_ids", []), f_data.get("kind", "linear"),

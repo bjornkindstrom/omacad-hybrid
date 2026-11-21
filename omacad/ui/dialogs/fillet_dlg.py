@@ -1,7 +1,7 @@
 """Dialog for RoundEdges (Fillet and Chamfer)."""
 
 from PySide6.QtCore import Signal, QTimer
-from PySide6.QtWidgets import QFormLayout, QComboBox, QLabel, QCheckBox
+from PySide6.QtWidgets import QFormLayout, QComboBox, QLabel, QCheckBox, QPushButton, QWidget, QHBoxLayout, QToolButton
 from omacad.ui.expr_spin import ExprDoubleSpinBox
 from omacad.ui.dialogs.base import BaseFeatureDialog
 
@@ -15,6 +15,9 @@ class RoundEdgesDialog(BaseFeatureDialog):
 
     changed = Signal()
     tangent_chain_toggled = Signal(bool)
+    add_set_requested = Signal()          # keep the picked edges with the current radius, pick more (Fusion's "+")
+    set_size_changed = Signal(int, float)
+    set_removed = Signal(int)
 
     CHAMFER_TYPES = (("equal", "Equal distance"), ("two", "Two distances"), ("angle", "Distance and angle"))
 
@@ -73,7 +76,20 @@ class RoundEdgesDialog(BaseFeatureDialog):
         self.lbl_count = QLabel("" if editing else _HELP)
         self.lbl_count.setWordWrap(True)
         self.main_layout.addWidget(self.lbl_count)
+        # radius sets: edges kept with their own radius while more are picked (one step, one corner blend)
+        self.sets_form = QFormLayout()
+        self._set_spins = []
+        self.btn_add_set = QPushButton("➕ New radius for more edges")
+        self.btn_add_set.setToolTip("Keeps the selected edges with this radius; then pick other edges and give them "
+                                    "another radius. All are rounded in one step, so corners where they meet blend "
+                                    "(like the + in Fusion's Fillet). Exact on B-rep bodies.")
+        self.btn_add_set.setEnabled(False)
+        self.btn_add_set.clicked.connect(self.add_set_requested.emit)
+        if not editing:
+            self.main_layout.addLayout(self.sets_form)
         self.main_layout.addLayout(form)
+        if not editing:
+            self.main_layout.addWidget(self.btn_add_set)
         self.add_buttons()
         self.cmb_kind.currentIndexChanged.connect(self._kind_changed)
         self.cmb_chamfer.currentIndexChanged.connect(lambda *_: (self._sync_fields(), self.changed.emit()))
@@ -122,6 +138,40 @@ class RoundEdgesDialog(BaseFeatureDialog):
     def set_count(self, n: int):
         self.lbl_count.setText(f"{n} edge{'s' if n != 1 else ''} selected. Click edges or a face to add or remove them."
                                if n else _HELP)
+        self.btn_add_set.setEnabled(n > 0)
+
+    def add_set_row(self, count: int, size: float):
+        """A kept radius set: its own radius field and a remove button."""
+        index = len(self._set_spins)
+        spin = ExprDoubleSpinBox()
+        spin.setRange(0.01, 10000.0)
+        spin.setDecimals(3)
+        spin.setSuffix(" mm")
+        spin.setValue(abs(size))
+        spin.setToolTip("Radius (or distance) of the edges in this set.")
+        remove = QToolButton()
+        remove.setText("✕")
+        remove.setToolTip("Remove this set (its edges are not rounded)")
+        field = QWidget()
+        lay = QHBoxLayout(field)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.addWidget(spin, 1)
+        lay.addWidget(remove)
+        self.sets_form.addRow(QLabel(f"Set {index + 1} · {count} edge{'s' if count != 1 else ''}:"), field)
+        self._set_spins.append(spin)
+        spin.valueChanged.connect(lambda v, s=spin: self.set_size_changed.emit(self._set_spins.index(s), float(v)))
+        remove.clicked.connect(lambda *_, s=spin: self._remove_set(s))
+
+    def _remove_set(self, spin):
+        index = self._set_spins.index(spin)
+        self._set_spins.pop(index)
+        self.sets_form.removeRow(index)
+        for i in range(self.sets_form.rowCount()):            # renumber the labels
+            item = self.sets_form.itemAt(i, QFormLayout.ItemRole.LabelRole)
+            if item is not None and item.widget() is not None:
+                text = item.widget().text()
+                item.widget().setText(f"Set {i + 1}" + text[text.index(" ·"):])
+        self.set_removed.emit(index)
 
     def get_expressions(self) -> dict:
         out = {}
