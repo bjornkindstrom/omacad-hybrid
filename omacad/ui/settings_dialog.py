@@ -526,7 +526,7 @@ class SettingsDialog(QDialog):
 
         # Experimental: exact B-rep bodies (OpenCascade) next to the mesh bodies
         from omacad.model import brep
-        self.chk_brep = QCheckBox("B-rep bodies (experimental): exact OpenCascade boxes, cylinders, fillets, chamfers, combine, move")
+        self.chk_brep = QCheckBox("B-rep bodies (experimental): exact OpenCascade extrude, revolve, boxes, cylinders, fillets, chamfers, combine")
         self.chk_brep.setChecked(bool(self.settings.get("brep_bodies", False)))
         tip = ("Bodies are built as exact B-rep shapes where Omacad supports it (shown with 💎 in the tree); "
                "everything else stays a mesh body. Switch off to go back: the model is rebuilt from its history.")

@@ -257,3 +257,126 @@ def test_negative_and_oversized_fillets_fall_back_to_the_mesh_tools(brep_on):
     top = line_edges(only_body(doc2), lambda a, b: a[2] == 20 and b[2] == 20)
     doc2.add_fillet(top, -2.0, "fillet")                                              # cove = mesh tool
     assert only_body(doc2).brep is None and only_body(doc2).manifold.volume() < 8000
+
+
+# ---- step 3: extrude / revolve from sketches ------------------------------------------------------------------------
+def _ring(cx, cy, r, n=96, a0=0.0, sweep=360.0, closed=True):
+    count = n if closed else n + 1
+    return [(cx + r * math.cos(math.radians(a0 + sweep * k / n)), cy + r * math.sin(math.radians(a0 + sweep * k / n)))
+            for k in range(count)]
+
+
+def test_round_parts_of_a_profile_polygon_become_arcs_and_circles():
+    from omacad.model.brep.sketch_solids import ring_pieces
+    kinds = lambda pts: [p[0] for p in ring_pieces(np.round(np.array(pts), 4))]   # profiles are rounded to 4 decimals
+    assert kinds(_ring(0, 0, 6)) == ["circle"]
+    assert kinds(_ring(0, 0, 10, n=6)) == ["line"] * 6                             # a hexagon stays a hexagon
+    slot = _ring(20, 0, 5, n=24, a0=-90, sweep=180, closed=False) + _ring(0, 0, 5, n=24, a0=90, sweep=180, closed=False)
+    assert kinds(slot) == ["arc", "line", "arc", "line"]
+    corners = []
+    for cx, cy, a0 in ((28, 2, -90), (28, 18, 0), (2, 18, 90), (2, 2, 180)):
+        corners += _ring(cx, cy, 2, n=18, a0=a0, sweep=90, closed=False)            # fast view: 72 per circle
+    assert kinds(corners) == ["arc", "line"] * 4
+
+
+def _volumes(doc):
+    return {b.name: (b.is_brep, brep.volume(b.brep) if b.is_brep else b.manifold.volume()) for b in doc.bodies.values()}
+
+
+def test_extrude_join_and_cut_from_sketches_are_exact(brep_on):
+    from omacad.scripting.api import ScriptContext
+    doc = Document()
+    ctx = ScriptContext(doc)
+    sk = ctx.sketch("XY")
+    sk.rect((0, 0), (40, 30))
+    sk.circle((20, 15), 6)
+    ctx.extrude(sk, 10)
+    (is_brep, v), = _volumes(doc).values()
+    assert is_brep and v == pytest.approx(40 * 30 * 10 - math.pi * 36 * 10, rel=1e-6)
+    top = ctx.sketch("XY", offset=10)
+    top.circle((20, 15), 10)
+    ctx.extrude(top, 5, operation="join")
+    (is_brep, v), = _volumes(doc).values()
+    assert is_brep and v == pytest.approx(40 * 30 * 10 - math.pi * 36 * 10 + math.pi * 100 * 5, rel=1e-6)
+    hole = ctx.sketch("XY", offset=15)
+    hole.circle((8, 8), 3)
+    ctx.extrude(hole, -20, operation="cut")
+    (is_brep, v2), = _volumes(doc).values()
+    assert is_brep and v2 == pytest.approx(v - math.pi * 9 * 10, rel=1e-6)
+
+
+def test_rounded_rect_and_hexagon_extrudes(brep_on):
+    from omacad.scripting.api import ScriptContext
+    from omacad.model.brep import rounding
+    doc = Document()
+    ctx = ScriptContext(doc)
+    sk = ctx.sketch("XY")
+    sk.rounded_rect((0, 0), (30, 20), 3)
+    ctx.extrude(sk, 5)
+    hexa = ctx.sketch("XY")
+    hexa.polygon((60, 10), 8, 6)
+    ctx.extrude(hexa, 5)
+    vols = list(_volumes(doc).values())
+    assert all(b for b, _ in vols)
+    assert vols[0][1] == pytest.approx((30 * 20 - (4 - math.pi) * 9) * 5, rel=1e-6)
+    hex_body = [b for b in doc.bodies.values()][1]
+    assert len(rounding.faces(hex_body.brep)) == 8                     # 6 flat sides + top + bottom
+
+
+@pytest.mark.parametrize("angle", [360, 90])
+def test_revolve_is_exact_and_placed_like_the_mesh(brep_on, angle):
+    from omacad.scripting.api import ScriptContext
+    doc = Document()
+    ctx = ScriptContext(doc)
+    sk = ctx.sketch("XZ")
+    sk.rect((5, 0), (10, 20))
+    ctx.revolve(sk, axis="v", angle=angle)
+    body = only_body(doc)
+    assert body.is_brep
+    assert brep.volume(body.brep) == pytest.approx(math.pi * (100 - 25) * 20 * angle / 360, rel=1e-9)
+    brep.set_enabled(False)
+    mesh_doc = Document()
+    mctx = ScriptContext(mesh_doc)
+    msk = mctx.sketch("XZ")
+    msk.rect((5, 0), (10, 20))
+    mctx.revolve(msk, axis="v", angle=angle)
+    brep.set_enabled(True)
+    np.testing.assert_allclose(bbox(body)[0], bbox(only_body(mesh_doc))[0], atol=2e-3)
+    np.testing.assert_allclose(bbox(body)[1], bbox(only_body(mesh_doc))[1], atol=2e-3)
+
+
+def test_sketch_extrude_then_fillet_its_rim_stays_exact(brep_on):
+    from omacad.scripting.api import ScriptContext
+    doc = Document()
+    ctx = ScriptContext(doc)
+    sk = ctx.sketch("XY")
+    sk.circle((0, 0), 10)
+    ctx.extrude(sk, 20)
+    rim = [e.ref() for e in only_body(doc).edges if getattr(e, "kind", "") == "circle" and e.center[2] > 19]
+    doc.add_fillet(rim, 2.0, "fillet")
+    body = only_body(doc)
+    r, R = 2.0, 10.0
+    area, xbar = (1 - math.pi / 4) * r * r, (10 - 3 * math.pi) / (3 * (4 - math.pi)) * r
+    assert body.is_brep      # the sketch circle is rebuilt from points rounded to 4 decimals: ~1e-6 off
+    assert brep.volume(body.brep) == pytest.approx(math.pi * R * R * 20 - 2 * math.pi * (R - xbar) * area, rel=5e-6)
+
+
+def test_twisted_extrude_and_joins_onto_mesh_bodies_stay_mesh(brep_on):
+    from omacad.scripting.api import ScriptContext
+    doc = Document()
+    ctx = ScriptContext(doc)
+    sk = ctx.sketch("XY")
+    sk.rect((0, 0), (10, 10))
+    b = ctx.extrude(sk, 10)
+    doc.timeline.features[-1].twist = 45.0
+    doc.timeline.recompute(doc)
+    assert only_body(doc).brep is None
+    doc2 = Document()
+    ctx2 = ScriptContext(doc2)
+    ctx2.box(20, 20, 10).rename("Rounded")
+    doc2.timeline.features[-1].outer_round = 2.0
+    doc2.timeline.recompute(doc2)
+    top = ctx2.sketch("XY", offset=10)
+    top.circle((10, 10), 4)
+    ctx2.extrude(top, 5, operation="join")
+    assert only_body(doc2).brep is None and only_body(doc2).manifold.volume() > 20 * 20 * 10 - 100

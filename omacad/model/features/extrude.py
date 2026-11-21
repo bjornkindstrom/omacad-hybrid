@@ -154,6 +154,19 @@ class ExtrudeFeature(ProfileRefs, Feature):
         if height < 1e-6:
             return None
 
+        self._brep_tool = None
+        from omacad.model import brep
+        if brep.active() and abs(self.twist) <= 1e-6:      # exact prism, built only if a B-rep body needs it
+            from shapely.ops import unary_union
+            region = (self.region(doc, sketch, idxs) if self.extra_refs or self.holes else
+                      unary_union([Polygon(sketch.profiles[i].exterior_pts, sketch.profiles[i].interior_holes).buffer(0)
+                                   for i in idxs]))
+            matrix = sketch.plane.get_transform_matrix_3x4()
+
+            def make(region=region, z0=float(z0), height=float(height), matrix=matrix):
+                from omacad.model.brep import sketch_solids
+                return sketch_solids.extrude(region, z0, height, matrix)
+            self._brep_tool = make
         if abs(self.twist) > 1e-6:
             solid = self._twisted(cs, height)
         else:
@@ -247,7 +260,8 @@ class ExtrudeFeature(ProfileRefs, Feature):
         if self.operation == "auto":
             self.operation = self.resolve_operation(doc)  # decided once, then stored like any other choice
 
-        combine_with_bodies(doc, self.feature_id, self.name, self.operation, tool)
+        combine_with_bodies(doc, self.feature_id, self.name, self.operation, tool,
+                            tool_brep=getattr(self, "_brep_tool", None))
 
     def to_dict(self) -> Dict[str, Any]:
         return {

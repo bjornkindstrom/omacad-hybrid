@@ -108,7 +108,19 @@ class RevolveFeature(ProfileRefs, Feature):
         x = side * (nrm[0] * ua + nrm[1] * va)
         y = np.cross(z, x)
         o = np.asarray(plane.uv_to_world(au, av), dtype=float)
-        solid = solid.transform(np.column_stack([x, y, z, o]).astype(float))
+        frame = np.column_stack([x, y, z, o]).astype(float)
+        solid = solid.transform(frame)
+        self._brep_tool = None
+        from omacad.model import brep
+        if brep.active():                                   # exact revolve, built only if a B-rep body needs it
+            from shapely.ops import unary_union
+            region = unary_union([p.buffer(0) for p in local])
+            turn = 360.0 if (full or sweep >= 360.0 - 1e-6) else float(sweep)
+
+            def make(region=region, turn=turn, start=0.0 if turn >= 360.0 else float(start), frame=frame):
+                from omacad.model.brep import sketch_solids
+                return sketch_solids.revolve(region, turn, start, frame)
+            self._brep_tool = make
         return solid if not solid.is_empty() else None
 
     def resolve_operation(self, doc: Any) -> str:
@@ -133,7 +145,8 @@ class RevolveFeature(ProfileRefs, Feature):
             return
         if self.operation == "auto":
             self.operation = self.resolve_operation(doc)
-        combine_with_bodies(doc, self.feature_id, self.name, self.operation, tool)
+        combine_with_bodies(doc, self.feature_id, self.name, self.operation, tool,
+                            tool_brep=getattr(self, "_brep_tool", None))
 
     def to_dict(self) -> Dict[str, Any]:
         return {

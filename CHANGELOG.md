@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.194 (branch brep-hybrid)
+
+### Added
+- **B-rep bodies, step 3 (experimental)**: Extrude and Revolve from sketches make exact B-rep bodies (💎). The profile's round parts are recognised again from its polygon (a run of equal small steps that one circle fits becomes an exact arc, a ring on one circle a full circle; a hexagon stays six flat sides), so rounded rectangles, slots and holes are true arcs and cylinders that Fillet can round. A new body, a join onto B-rep bodies and a cut/intersect through them are exact; a twisted extrude, or joining onto a mesh body, stays a mesh as before.
+
 # Hybrid-experiment — 0.9.9.80.193 (branch brep-hybrid)
 
 ### Added

@@ -149,10 +149,30 @@ def clean_cut(target: m3d.Manifold, tool: m3d.Manifold) -> m3d.Manifold:
     return result
 
 
-def combine_with_bodies(doc: Any, feature_id: str, name: str, operation: str, tool: m3d.Manifold) -> None:
-    """Shared by Extrude and Revolve: add `tool` as a new body, or join/cut/intersect it with every body it touches."""
+def combine_with_bodies(doc: Any, feature_id: str, name: str, operation: str, tool: m3d.Manifold,
+                        tool_brep=None) -> None:
+    """Shared by Extrude and Revolve: add `tool` as a new body, or join/cut/intersect it with every body it touches.
+    `tool_brep` (experimental B-rep bodies) builds the exact tool shape on demand: then a new body is a B-rep body,
+    and B-rep bodies are joined/cut exactly. Whatever OpenCascade can't do falls back to the mesh."""
+    from omacad.model import brep
+    shape_cache = []
+
+    def exact_tool():
+        if tool_brep is None or not brep.active():
+            return None
+        if not shape_cache:
+            try:
+                shape_cache.append(tool_brep())
+            except Exception as exc:
+                applog.log("INFO", f"{name}: no B-rep tool ({exc!r}); using the mesh")
+                shape_cache.append(None)
+        return shape_cache[0]
+
     def new_body():
         body = Body(body_id=f"body_{feature_id}", name=name, manifold=tool)
+        shape = exact_tool()
+        if shape is not None:
+            brep.attach(body, shape)
         body.update_render_mesh()
         doc.bodies[body.body_id] = body
 
@@ -172,6 +192,19 @@ def combine_with_bodies(doc: Any, feature_id: str, name: str, operation: str, to
         if not targets:
             new_body()
             return
+        shape = exact_tool() if all(b.brep is not None for b in targets) else None
+        if shape is not None:
+            try:
+                for other in targets:
+                    shape = brep.boolean(other.brep, shape, "join")
+            except Exception as exc:
+                applog.log("INFO", f"{name}: B-rep join not possible ({exc}); using the mesh")
+                shape = None
+        if shape is not None and brep.attach(targets[0], shape):
+            for other in targets[1:]:
+                doc.bodies.pop(other.body_id, None)
+            targets[0].update_render_mesh()
+            return
         merged = targets[0].manifold
         for other in targets[1:]:
             merged = merged + other.manifold
@@ -181,12 +214,25 @@ def combine_with_bodies(doc: Any, feature_id: str, name: str, operation: str, to
         return
 
     for body in targets:
+        if operation not in ("cut", "intersect"):
+            continue
+        shape = exact_tool() if body.brep is not None else None
+        if shape is not None:
+            try:
+                exact = brep.boolean(body.brep, shape, operation)
+            except ValueError:                  # nothing left
+                doc.bodies.pop(body.body_id, None)
+                continue
+            except Exception as exc:
+                applog.log("INFO", f"{name}: B-rep {operation} on {body.name} not possible ({exc}); using the mesh")
+                exact = None
+            if exact is not None and brep.attach(body, exact):
+                body.update_render_mesh()
+                continue
         if operation == "cut":
             result = clean_cut(body.manifold, tool)
-        elif operation == "intersect":
-            result = body.manifold ^ CadKernel.weld_to(tool, body.manifold)
         else:
-            continue
+            result = body.manifold ^ CadKernel.weld_to(tool, body.manifold)
         if result.is_empty():
             doc.bodies.pop(body.body_id, None)
         else:
