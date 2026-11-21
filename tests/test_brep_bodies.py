@@ -380,3 +380,96 @@ def test_twisted_extrude_and_joins_onto_mesh_bodies_stay_mesh(brep_on):
     top.circle((10, 10), 4)
     ctx2.extrude(top, 5, operation="join")
     assert only_body(doc2).brep is None and only_body(doc2).manifold.volume() > 20 * 20 * 10 - 100
+
+
+# ---- step 4: exact STEP export --------------------------------------------------------------------------------------
+def _read_step(path):
+    """[(name, surface kinds, volume)] of the free shapes in a STEP file, read back with OpenCascade."""
+    from OCP.BRepAdaptor import BRepAdaptor_Surface
+    from OCP.STEPCAFControl import STEPCAFControl_Reader
+    from OCP.TCollection import TCollection_ExtendedString
+    from OCP.TDataStd import TDataStd_Name
+    from OCP.TDocStd import TDocStd_Document
+    from OCP.XCAFDoc import XCAFDoc_DocumentTool
+    from OCP.collections import Sequence_TDF_Label
+    from omacad.model.brep import rounding
+    reader = STEPCAFControl_Reader()
+    reader.SetNameMode(True)
+    reader.ReadFile(str(path))
+    doc = TDocStd_Document(TCollection_ExtendedString("MDTV-XCAF"))
+    reader.Transfer(doc)
+    tool = XCAFDoc_DocumentTool.ShapeTool_s(doc.Main())
+    labels = Sequence_TDF_Label()
+    tool.GetFreeShapes(labels)
+    out = []
+    for i in range(1, labels.Length() + 1):
+        label = labels.Value(i)
+        shape = tool.GetShape_s(label)
+        name = TDataStd_Name()
+        text = name.Get().ToExtString() if label.FindAttribute(TDataStd_Name.GetID_s(), name) else ""
+        kinds = {str(BRepAdaptor_Surface(f).GetType()).split(".")[-1].replace("GeomAbs_", "")
+                 for f in rounding.faces(shape)}
+        out.append((text, kinds, brep.volume(shape)))
+    return out
+
+
+def test_step_export_writes_brep_bodies_exactly_with_names(brep_on, tmp_path):
+    from omacad.io.exporter import Exporter
+    from omacad.scripting.api import ScriptContext
+    doc = Document()
+    ctx = ScriptContext(doc)
+    b = ctx.box(40, 30, 20, name="Låda")
+    ctx.fillet(b, 3, "all")
+    ctx.box(20, 20, 10, at=(60, 0, 0), name="Mesh")
+    doc.timeline.features[-1].outer_round = 2.0            # a rounded box option: stays a mesh body
+    doc.timeline.recompute(doc)
+    path = tmp_path / "mix.step"
+    assert Exporter.export_all_to_step(doc, str(path))
+    assert path.read_bytes().isascii()                     # å written as \X2\00E5\X0\
+    shapes = {name: (kinds, vol) for name, kinds, vol in _read_step(path)}
+    kinds, vol = shapes["Låda"]
+    assert kinds == {"Plane", "Cylinder", "Sphere"}
+    assert vol == pytest.approx(rounded_box_volume(40, 30, 20, 3), rel=1e-9)
+    kinds, vol = shapes["Mesh"]
+    assert kinds == {"Plane"}                              # polyhedral solid, one flat face per triangle
+    mesh_body = next(x for x in doc.bodies.values() if x.name == "Mesh")
+    assert vol == pytest.approx(mesh_body.manifold.volume(), rel=1e-5)
+
+
+def test_step_export_without_brep_bodies_or_when_it_fails_uses_the_mesh_writer(tmp_path, monkeypatch):
+    from omacad.io import step_brep
+    from omacad.io.exporter import Exporter
+    doc = Document()
+    doc.add_box(10, 10, 10)
+    path = tmp_path / "mesh.step"
+    assert Exporter.export_all_to_step(doc, str(path))
+    assert "Omacad STEP AP214 Export" in path.read_text()
+    brep.set_enabled(True)
+    try:
+        doc2 = Document()
+        doc2.add_box(10, 10, 10)
+        monkeypatch.setattr(step_brep, "write", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+        path2 = tmp_path / "fallback.step"
+        assert Exporter.export_all_to_step(doc2, str(path2))
+        assert "Omacad STEP AP214 Export" in path2.read_text()
+    finally:
+        brep.set_enabled(False)
+
+
+@pytest.mark.skipif(__import__("shutil").which("freecadcmd") is None, reason="FreeCAD not installed")
+def test_freecad_reads_the_exact_step(brep_on, tmp_path):
+    """An independent reader: FreeCAD finds one valid solid with true cylinders and spheres and the exact volume."""
+    import subprocess
+    from omacad.io.exporter import Exporter
+    doc = Document()
+    doc.add_box(40, 30, 20)
+    doc.add_fillet([e.ref() for e in only_body(doc).edges], 3.0, "fillet")
+    path = tmp_path / "box.step"
+    assert Exporter.export_all_to_step(doc, str(path))
+    script = tmp_path / "check.py"
+    script.write_text("import Part, sys\ns = Part.Shape(); s.read(sys.argv[-1])\n"
+                      "print('RESULT', len(s.Solids), s.isValid(), round(s.Solids[0].Volume, 6),\n"
+                      "      sorted({type(f.Surface).__name__ for f in s.Solids[0].Faces}))\n")
+    out = subprocess.run(["freecadcmd", str(script), str(path)], capture_output=True, text=True, timeout=120).stdout
+    line = next(l for l in out.splitlines() if l.startswith("RESULT"))
+    assert line == f"RESULT 1 True {round(rounded_box_volume(40, 30, 20, 3), 6)} ['Cylinder', 'Plane', 'Sphere']"

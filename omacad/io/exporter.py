@@ -238,22 +238,43 @@ class Exporter:
         mesh = body.manifold.to_mesh()
         verts = np.asarray(mesh.vert_properties[:, :3], dtype=float)
         tris = np.asarray(mesh.tri_verts, dtype=int)
+        if Exporter._exact_step([body], [(verts, tris)], filepath, body.name):
+            return True
         return Exporter._mesh_to_step([(body.name, verts, tris)], filepath, title=body.name)
+
+    @staticmethod
+    def _exact_step(bodies, meshes, filepath: str, title: str) -> bool:
+        """B-rep bodies among `bodies` (experimental setting): write a STEP with their exact shapes (mesh bodies
+        alongside as polyhedral solids). False = nothing exact to write, or OpenCascade failed: use the mesh writer."""
+        if not any(getattr(b, "brep", None) is not None for b in bodies):
+            return False
+        try:
+            from omacad.io import step_brep
+            exact = step_brep.write([(b.name, b.color, b.brep, v, t) for b, (v, t) in zip(bodies, meshes)],
+                                    filepath, title=title)
+            applog.log("INFO", f"STEP: {exact} exact B-rep and {len(bodies) - exact} mesh bodies -> {filepath}")
+            return True
+        except Exception as exc:
+            applog.log("WARNING", f"exact STEP export failed ({exc!r}); writing the mesh STEP instead")
+            return False
 
     @staticmethod
     def export_all_to_step(doc: Document, filepath: str) -> bool:
         """Combines all visible solid bodies and exports to an ISO 10303-21 STEP file."""
         doc = Exporter.exact_document(doc)
-        tuples = []
+        tuples, shown = [], []
         for b in doc.bodies.values():
             if b.visible and b.render_mesh and len(b.render_mesh.vertices) > 0:
                 mesh = b.manifold.to_mesh()
                 verts = np.asarray(mesh.vert_properties[:, :3], dtype=float)
                 tris = np.asarray(mesh.tri_verts, dtype=int)
                 tuples.append((b.name, verts, tris))
+                shown.append(b)
 
         if not tuples:
             return False
+        if Exporter._exact_step(shown, [(v, t) for _, v, t in tuples], filepath, doc.name):
+            return True
         return Exporter._mesh_to_step(tuples, filepath, title=doc.name)
 
     @staticmethod

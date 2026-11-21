@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.195 (branch brep-hybrid)
+
+### Added
+- **B-rep bodies, step 4 (experimental)**: STEP export writes B-rep bodies (💎) exactly: true planes, cylinders, spheres, tori and fillet surfaces that Fusion, SolidWorks and FreeCAD open as editable solids. Mesh bodies in the same file become polyhedral solids (one flat face per triangle). Body names (å/ä/ö written as `\X2\` escapes) and colours go along. Without B-rep bodies, or if OpenCascade fails, the export is the mesh STEP as before.
+
 # Hybrid-experiment — 0.9.9.80.194 (branch brep-hybrid)
 
 ### Added
