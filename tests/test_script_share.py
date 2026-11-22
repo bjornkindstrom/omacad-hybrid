@@ -192,3 +192,28 @@ def test_get_scripts_window_says_why_when_it_cannot_load(tmp_path):
         time.sleep(0.01)
     assert "No GitHub token" in dlg.lbl_status.text()
     dlg.close()
+
+
+def test_api_percent_encodes_file_names_with_spaces_and_swedish_letters(monkeypatch):
+    """Björn's log: 'URL can't contain control characters' for 'Julgran med hål och tunna väggar.py'."""
+    import urllib.request
+    from omacad import rfc
+    seen = {}
+
+    class Answer:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b"{}"
+
+    def fake_urlopen(req, timeout=0):
+        seen["url"] = req.full_url
+        return Answer()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    rfc._api("GET", "/repos/o/r/contents/scripts/x/Julgran med hål.py?ref=main", None, "tok")
+    assert seen["url"].endswith("/contents/scripts/x/Julgran%20med%20h%C3%A5l.py?ref=main")

@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.199 (branch brep-hybrid)
+
+### Fixed
+- **Request #244**: with "Fast view" on, the flat sides of a box with rounded corners (Box in a Row) were bent up to 0.25 mm out of the face by the display smoothing, so hovering a side lit it only in blotches. An edge a flat triangle shares now only moves within that triangle's plane.
+- Script sharing failed for scripts with spaces or å/ä/ö in the file name ("URL can't contain control characters"); GitHub API paths are now percent-encoded.
+
+### Changed (user scripts, not in the repo)
+- **Request #243**: *Läskmärke med namnbricka* no longer makes the small snap bumps on the clip and the matching recesses in the frame.
+- **Request #245**: *Foldable Cardholder/Tray* has a label box on the back plate: text and/or a symbol (♠ ♥ ♦ ♣ ★ …) in a solid field inside the pattern, as its own body *Text* for a second colour (flush for AMS or raised), with size and position.
+
 # Hybrid-experiment — 0.9.9.80.198 (branch brep-hybrid)
 
 ### Added

@@ -88,6 +88,16 @@ def _level(P, T, N, curved, L):
     np.add.at(total, inv, bulged * w[:, None])
     linear[inv] = mid
     edge_mid = np.where(count[:, None] > 0, total / np.maximum(count, 1)[:, None], linear)
+    # An edge a flat triangle shares stays in that triangle's plane (a cap's rim moves out with the wall, but only
+    # sideways in the cap). The side of a box with rounded corners has two big triangles whose corners meet the
+    # corner blends; their tilted normals pushed the side's edges 0.25 mm out of the face, the flat side bent with
+    # them and the (flat) hover patch showed only in blotches (#244).
+    flat = np.repeat(~curved & (twice_area > 0), 3)
+    if flat.any():
+        flat_n = np.zeros((len(ukeys), 3))
+        flat_n[inv[flat]] = np.repeat(own, 3, axis=0)[flat]
+        moved = edge_mid - linear
+        edge_mid = edge_mid - (moved * flat_n).sum(1, keepdims=True) * flat_n
 
     split = curved | (count[inv].reshape(-1, 3) > 0).any(1)
     m_id = (nv + inv).reshape(-1, 3)                                 # midpoint ids per (tri, edge)
