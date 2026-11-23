@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.207
+
+### Fixed
+- **Fillet/Chamfer on cylinder-sphere seam**: `cylindrical_contours` (`omacad/model/wrapped_edges.py`) now skips contours that encircle the entire cylinder, so they are no longer exposed as unroundable `WrappedLoopEdge`s shadowing the roundable `CurveEdge` at the seam.
+
 # Hybrid-experiment — 0.9.9.80.206
 
 ### Fixed

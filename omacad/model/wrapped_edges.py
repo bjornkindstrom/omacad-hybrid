@@ -210,7 +210,14 @@ def cylindrical_contours(v, f, tm):
                 chain.append(current)
                 current = following.pop(current)
             if current == start and len(chain) >= 8:
-                result.append(WrappedLoopEdge(v[chain].copy(), axis.copy(), origin.copy(),
+                pts = v[chain].copy()
+                # A contour that encircles the cylinder cannot be unrolled into a closed 2D outline
+                # (and is already exposed as a roundable CurveEdge when its circle fits).
+                delta = np.vstack((pts, pts[:1])) - origin
+                theta = np.unwrap(np.arctan2(delta @ vv, delta @ u))
+                if abs(theta[-1] - theta[0]) > math.pi:
+                    continue
+                result.append(WrappedLoopEdge(pts, axis.copy(), origin.copy(),
                     radius, u.copy(), vv.copy(), segments[0][3], tuple(patch(r) for r in pair)))
     return result
 

@@ -1,3 +1,9 @@
+## Cylinder-sfär-skarv & WrappedLoopEdge — 2026-11-23 (0.9.9.80.207, rapport 20261123-213454)
+
+- En cylinder joinad på en ihålig sfär bildade en sluten konkav skärningskant runt hela cylindern. `cylindrical_contours` (`omacad/model/wrapped_edges.py`) skapade en `WrappedLoopEdge` före `curve_edges`, så plockning valde `WrappedLoopEdge` och `wrapped_round_tool` slog i `"A wrapped rounding contour must not encircle the entire cylinder."` trots att `CurveEdge` under redan kunde rundas med `curve_round_tool`.
+- `cylindrical_contours` hoppar nu över slingor som går ett helt varv runt cylinderaxeln (`abs(theta[-1] - theta[0]) > math.pi` på sluten slinga), så skarven exponeras enbart som rundbar `CurveEdge`.
+- Test: `tests/test_curve_edges.py::test_cylinder_on_sphere_seam_is_pickable_and_filletable` med `tests/data/cylinder_on_hollow_sphere_fillet.omacad`.
+
 ## Cirkulära kanter och skuggning efter sfär-cut — 2026-11-23 (0.9.9.80.206, rapport 20261123-211745)
 
 - **Skuggning efter cut**: `CadKernel._flat_triangles` (`omacad/model/kernel.py`) och `flat_patch_mask` (`native/src/topology.rs`) använde tröskeln `0.01` (`~5,7°`) för vinkelspridningen mellan skarpa kanter, vilket fångade små lappar längs en rund skärningskant på en sfär (~14°) och platt-skuggade dem som facetter. Höjd till `0.25` (`30°`).

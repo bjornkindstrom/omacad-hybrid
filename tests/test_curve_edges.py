@@ -105,3 +105,24 @@ def test_cut_hollow_sphere_rims_are_closed_smooth_and_filletable():
     assert fillet.skipped == 0
     assert body.manifold.genus() == 0
     assert body.manifold.volume() < vol_before
+
+
+def test_cylinder_on_sphere_seam_is_pickable_and_filletable():
+    """Report 20261123-213454: a cylinder joined onto a hollow sphere must not emit a WrappedLoopEdge
+    that encircles the cylinder (which shadows the roundable CurveEdge and fails in wrapped_round_tool)."""
+    from pathlib import Path
+
+    fixture = Path(__file__).parent / "data" / "cylinder_on_hollow_sphere_fillet.omacad"
+    doc = Exporter.load_project(str(fixture))
+    body = doc.bodies["body_sphere_1"]
+
+    assert not [e for e in body.edges if e.kind == "wrapped"]
+    seam = [e for e in body.edges if e.kind == "curve" and e.is_roundable()]
+    assert len(seam) == 1
+    assert seam[0].closed and not seam[0].convex
+
+    vol_before = body.manifold.volume()
+    fillet = doc.add_fillet([seam[0].ref()], 2.0)
+    assert fillet.skipped == 0
+    assert body.manifold.genus() == 0
+    assert body.manifold.volume() > vol_before
