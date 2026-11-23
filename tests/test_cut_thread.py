@@ -65,14 +65,16 @@ def test_cut_thread_without_keeping_screw_removes_pin_and_widens_hole():
 
 
 def test_cut_thread_rotated_pin_works():
-    doc = Document()
-    box = doc.add_box(40, 40, 40, center="bottom_center")
-    pin = doc.add_cylinder(5.0, 25.0, name="Thread Pin 1")
-    doc.move_body(pin.body_id, rx=90.0, dy=20.0, dz=20.0)
-    feat = doc.cut_thread(box.body_id, pin.body_id, pitch=2.0, clearance=0.2, chamfer=1.0, keep_screw=True)
-    assert feat is not None
-    assert doc.bodies[box.body_id].manifold.status().name == "NoError"
-    assert doc.bodies[pin.body_id].manifold.status().name == "NoError"
+    for rx, ry in [(90.0, 0.0), (0.0, 90.0), (45.0, 30.0)]:
+        doc = Document()
+        box = doc.add_box(40, 40, 40, center="bottom_center")
+        pin = doc.add_cylinder(5.0, 25.0, name="Thread Pin 1")
+        doc.move_body(pin.body_id, rx=rx, ry=ry, dy=20.0, dz=20.0)
+        feat = doc.cut_thread(box.body_id, pin.body_id, pitch=2.0, clearance=0.2, chamfer=1.0, keep_screw=True)
+        assert feat is not None
+        assert doc.bodies[box.body_id].manifold.status().name == "NoError"
+        assert doc.bodies[pin.body_id].manifold.status().name == "NoError"
+        assert len(doc.bodies[pin.body_id].manifold.decompose()) == 1
 
 
 def test_thread_pin_and_cut_thread_dialogs():

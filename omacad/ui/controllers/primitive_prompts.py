@@ -563,8 +563,16 @@ class PrimitivePromptsMixin:
             return
 
         dlg = CutThreadDialog(self.doc, self, selected_ids=self.doc.selected_body_ids)
+        hidden_ids = []
+
+        def restore_hidden():
+            for bid in hidden_ids:
+                if bid in self.doc.bodies:
+                    self.doc.bodies[bid].visible = True
+            hidden_ids.clear()
 
         def refresh_preview():
+            restore_hidden()
             vals = dlg.get_values()
             t = self.doc.bodies.get(vals["target_body_id"])
             p = self.doc.bodies.get(vals["pin_body_id"])
@@ -582,11 +590,15 @@ class PrimitivePromptsMixin:
                     keep_screw=vals["keep_screw"],
                 )
                 prev_m = (new_t + new_s) if new_s is not None else new_t
+                t.visible = False
+                p.visible = False
+                hidden_ids.extend([t.body_id, p.body_id])
             except Exception:
                 prev_m = None
             self.viewport.set_preview(prev_m, "new_body")
 
         def finished(result):
+            restore_hidden()
             self.viewport.set_preview(None)
             if result:
                 vals = dlg.get_values()

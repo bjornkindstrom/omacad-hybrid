@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.205
+
+### Fixed
+- **Cut Thread at any angle**: builds the toleranced and chamfered screw in local Z coordinates before rotating into place (eliminating boolean slivers on tilted/side pins) and hides the original bodies during live preview.
+
 # Hybrid-experiment — 0.9.9.80.204
 
 ### Fixed

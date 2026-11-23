@@ -119,7 +119,29 @@ class CutThreadFeature(Feature):
 
         if keep_screw:
             new_target = target_manifold - nominal_bolt
-            new_screw = nominal_bolt - (tf.zone(OVERSHOOT) - tf.zone(-clr)) if clr > 1e-6 else nominal_bolt
+            screw_tf = ThreadFeature(
+                "tmp_screw",
+                "tmp_screw",
+                diameter=diameter,
+                pitch=pitch,
+                length=length,
+                is_female=False,
+                clearance=0.0,
+                profile=profile,
+                taper_lead_in=taper_lead_in,
+                grow=-clr,
+            )
+            r_core = max(0.05, screw_tf.root_radius() - clr)
+            local_screw = screw_tf.build_solid(core_radius=r_core)
+            if ch > 1e-6:
+                r_out = max(0.2, 0.5 * diameter - clr)
+                c_bolt = min(ch, 0.35 * length, 0.4 * r_out)
+                if c_bolt > 1e-6:
+                    c_bot = _cone_z(0.0, c_bolt + 0.02, r_out - c_bolt, r_out + 0.02, None, seg)
+                    c_top = _cone_z(length - c_bolt - 0.02, length, r_out + 0.02, r_out - c_bolt, None, seg)
+                    mid = _cone_z(c_bolt, length - c_bolt, r_out + 1.0, r_out + 1.0, None, seg)
+                    local_screw = local_screw ^ (c_bot + mid + c_top)
+            new_screw = local_screw if mat is None else local_screw.transform(mat)
         else:
             cut_tool = (nominal_bolt + tf.zone(clr, channel=True)) if clr > 1e-6 else nominal_bolt
             new_target = target_manifold - cut_tool
@@ -146,15 +168,6 @@ class CutThreadFeature(Feature):
                 else:
                     cone = _cone_z(along - 0.02, along + c_hole, r_hole + c_hole + 0.02, r_hole, mat, seg)
                 new_target = new_target - cone
-
-            if new_screw is not None:
-                r_out = max(0.2, 0.5 * diameter - clr)
-                c_bolt = min(ch, 0.35 * length, 0.4 * r_out)
-                if c_bolt > 1e-6:
-                    c_bot = _cone_z(0.0, c_bolt + 0.02, r_out - c_bolt, r_out + 0.02, mat, seg)
-                    c_top = _cone_z(length - c_bolt - 0.02, length, r_out + 0.02, r_out - c_bolt, mat, seg)
-                    mid = _cone_z(c_bolt, length - c_bolt, r_out + 1.0, r_out + 1.0, mat, seg)
-                    new_screw = new_screw ^ (c_bot + mid + c_top)
 
         return new_target, new_screw
 
