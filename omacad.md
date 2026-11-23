@@ -1,3 +1,9 @@
+## Cirkulära kanter och skuggning efter sfär-cut — 2026-11-23 (0.9.9.80.206, rapport 20261123-211745)
+
+- **Skuggning efter cut**: `CadKernel._flat_triangles` (`omacad/model/kernel.py`) och `flat_patch_mask` (`native/src/topology.rs`) använde tröskeln `0.01` (`~5,7°`) för vinkelspridningen mellan skarpa kanter, vilket fångade små lappar längs en rund skärningskant på en sfär (~14°) och platt-skuggade dem som facetter. Höjd till `0.25` (`30°`).
+- **Hela kanter & Fillet på kurv-skärning**: `curve_edges` (`omacad/model/curve_edges.py`) sänker triangelareagränsen till `1e-12 * diag²`, ignorerar mikroskopiska `planar`-fläckar (`< 1e-4 * diag²`) så ytterkanten inte klipps i två öppna bitar, och sparar ytnormaler (`n1`, `n2`) och `convex`. `CurveEdge.circle_fit()` / `is_roundable()` + `CadKernel.curve_round_tool` roterar `_loop_section` runt cirkelns axel så slutna cirkulära skärningar mellan krökta ytor (t.ex. ihålig sfär skuren av sfär) kan väljas och runda/fasas i `FilletFeature`.
+- Test: `tests/test_curve_edges.py::test_cut_hollow_sphere_rims_are_closed_smooth_and_filletable` med `tests/data/cut_hollow_sphere_fillet.omacad`.
+
 ## Thread Pin & Cut Thread — 2026-11-23 (0.9.9.80.203)
 
 - Tvåstegsflöde för gängade hål + skruv med spel och inskruvningsfas: **Thread Pin** (`prompt_thread_pin`, `ThreadPinDialog`, i `PRIMITIVES`) skapar en placeringscylinder; **Cut Thread** (`CutThreadFeature` i `omacad/model/features/cut_thread.py`, `Document.cut_thread`, `CutThreadDialog`, `prompt_cut_thread` i `MODIFY_BODY`) extraherar cylinderns axel/diameter/längd (`extract_pin_cylinder`), gängar den, cuttar mål-bodyn, applicerar spel (`0.2 mm` via `offset_thread` eller `zone(clr, channel=True)`) samt 45° kon-fas (`1.0 mm`) på hålmynning och skruvspetsar, med val att behålla skruven (`keep_screw=True`).

@@ -1,0 +1,159 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "sphere_1": "object_sphere_1",
+      "shell_2": "object_sphere_1",
+      "sphere_3": "object_sphere_3",
+      "combine_4": "object_sphere_1",
+      "fillet_5": "object_fillet_5"
+    },
+    "names": {},
+    "outputs": {
+      "sphere_1": [
+        "body_sphere_1"
+      ],
+      "shell_2": [
+        "body_sphere_1"
+      ],
+      "sphere_3": [
+        "body_sphere_3"
+      ],
+      "combine_4": [
+        "body_sphere_1",
+        "body_sphere_3"
+      ]
+    },
+    "dependencies": {
+      "sphere_1": [],
+      "shell_2": [
+        "sphere_1"
+      ],
+      "sphere_3": [],
+      "combine_4": [
+        "shell_2",
+        "sphere_3"
+      ],
+      "fillet_5": []
+    },
+    "markers": {},
+    "active_id": "object_fillet_5"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "sphere_1",
+      "feature_type": "sphere",
+      "name": "Sphere 1",
+      "suppressed": false,
+      "radius": 35.0,
+      "center": "center",
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "shell_2",
+      "feature_type": "shell",
+      "name": "Shell 1",
+      "suppressed": false,
+      "target_body_id": "body_sphere_1",
+      "thickness": 4.0,
+      "direction": "inside",
+      "thickness2": 2.0,
+      "open_faces": [],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "sphere_3",
+      "feature_type": "sphere",
+      "name": "Sphere 2",
+      "suppressed": false,
+      "radius": 28.0,
+      "center": "center",
+      "translation": [
+        27.04185824490378,
+        -12.857964056908258,
+        0.0
+      ],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_4",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_sphere_1",
+      "tool_body_id": "body_sphere_3",
+      "operation": "cut",
+      "keep_tool": false,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "fillet_5",
+      "feature_type": "fillet",
+      "name": "Fillet 1",
+      "suppressed": false,
+      "edges": [
+        [
+          "curve",
+          [
+            27.82630013066697,
+            6.580248542932738,
+            3.719900204861701e-15
+          ],
+          78.11135232977016
+        ],
+        [
+          "curve",
+          [
+            13.425920475001735,
+            -23.677784700450257,
+            1.2883467186858959e-15
+          ],
+          86.85811131326462
+        ]
+      ],
+      "size": 5.0,
+      "kind": "fillet",
+      "chamfer_type": "equal",
+      "size2": 2.0,
+      "angle": 45.0,
+      "flip": false,
+      "exprs": {},
+      "target_body_ids": []
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "body_colors": {},
+  "construction_bodies": [],
+  "canvases": {},
+  "favorites": [],
+  "object_groups": [],
+  "lids": [],
+  "curve_segments": 72
+}

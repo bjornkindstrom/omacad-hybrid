@@ -726,7 +726,7 @@ class FilletFeature(Feature):
         self._edge_size = {}            # id(edge) -> its size, for the B-rep operation
 
         def take(body, edge, size):
-            if edge.kind == "curve":    # free-form creases can be picked (measure, paths) but the mesh tools can't round them
+            if edge.kind == "curve" and not (hasattr(edge, "is_roundable") and edge.is_roundable()):
                 curved.append((body, edge))
                 self._edge_size[id(edge)] = size
                 self.skipped += 1
@@ -822,6 +822,9 @@ class FilletFeature(Feature):
                 tool = CadKernel.circle_round_tool(edge, a, self.kind, reach=self._arc_reach(body, edge), size2=b)
             else:
                 tool = CadKernel.round_tool(edge, a, self.kind, extend=ext, size2=b)
+            if tool.is_empty():
+                self.skipped += 1
+                continue
             (cut if edge.convex else add).setdefault(body.body_id, []).append(tool)
 
         # Inside corners of a face outline: the two bevel bands end square at the corner and leave a notch there.

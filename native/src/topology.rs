@@ -83,12 +83,12 @@ pub fn flat_patch_mask<'py>(
                         let x = f[1] * d[2] - f[2] * d[1];
                         let y = f[2] * d[0] - f[0] * d[2];
                         let z = f[0] * d[1] - f[1] * d[0];
-                        x * x + y * y + z * z > 0.01_f32
+                        x * x + y * y + z * z > 0.25_f32
                     } else {
                         let x = f[1] * direction[2] - f[2] * direction[1];
                         let y = f[2] * direction[0] - f[0] * direction[2];
                         let z = f[0] * direction[1] - f[1] * direction[0];
-                        x * x + y * y + z * z > 0.01
+                        x * x + y * y + z * z > 0.25
                     };
                     if sharp {
                         flat[patch] = true;

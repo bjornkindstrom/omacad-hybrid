@@ -512,7 +512,51 @@ class CadKernel:
             return CadKernel.circle_round_tool(edge, size, kind, size2=size2)
         if getattr(edge, "kind", "line") == "loop":
             return CadKernel.loop_round_tool(edge, size, kind, size2=size2)
+        if getattr(edge, "kind", "line") == "curve":
+            return CadKernel.curve_round_tool(edge, size, kind, size2=size2)
         return CadKernel.edge_round_tool(edge, size, kind, extend, size2=size2)
+
+    @staticmethod
+    def curve_round_tool(edge, size: float, kind: str, arc_segments: int = 16, size2=None) -> m3d.Manifold:
+        """Fillet or chamfer around a closed circular crease between two curved surfaces."""
+        fit = edge.circle_fit() if hasattr(edge, "circle_fit") else None
+        if fit is None or getattr(edge, "n1", None) is None or getattr(edge, "n2", None) is None:
+            return m3d.Manifold()
+        center, axis, u, w, R, wobble = fit
+        P = edge.pts[:-1]
+        n1s = edge.n1[:-1]
+        n2s = edge.n2[:-1]
+        rad = P - center - np.outer((P - center) @ axis, axis)
+        rad_len = np.linalg.norm(rad, axis=1, keepdims=True)
+        rad = rad / np.maximum(rad_len, 1e-12)
+        n1_ra = np.c_[(n1s * rad).sum(axis=1), n1s @ axis].mean(axis=0)
+        n2_ra = np.c_[(n2s * rad).sum(axis=1), n2s @ axis].mean(axis=0)
+        if np.linalg.norm(n1_ra) < 1e-6 or np.linalg.norm(n2_ra) < 1e-6:
+            return m3d.Manifold()
+        n1_ra /= np.linalg.norm(n1_ra)
+        n2_ra /= np.linalg.norm(n2_ra)
+        e2 = n1_ra
+        e1 = np.array([-e2[1], e2[0]])
+        if (e1 @ n2_ra > 0) == bool(edge.convex):
+            e1 = -e1
+        r = abs(float(size))
+        r2 = r if size2 is None else abs(float(size2))
+        margin = max(0.25 * r + 0.1, 2.0 * wobble + 0.05) if edge.convex else max(0.05 * r + 0.05, 2.0 * wobble + 0.02)
+        sec = CadKernel._loop_section(kind, bool(edge.convex), r, r2, margin, arc_segments,
+                                      wall=(float(n2_ra @ e1), float(n2_ra @ e2)))
+        poly = [(R + a * e1[0] + h * e2[0], a * e1[1] + h * e2[1]) for a, h in sec]
+        area = sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1]
+                   for i in range(len(poly)))
+        if area < 0:
+            poly.reverse()
+        cs = m3d.CrossSection([[list(map(float, q)) for q in poly]])
+        if min(q[0] for q in poly) < 0:
+            half = m3d.CrossSection([[(0.0, -1e6), (1e6, -1e6), (1e6, 1e6), (0.0, 1e6)]])
+            cs = cs ^ half
+        if cs.is_empty():
+            return m3d.Manifold()
+        solid = m3d.Manifold.revolve(cs, circular_segments=max(len(P), 64))
+        return solid.transform(np.column_stack([u, w, axis, center]).astype(float))
 
     @staticmethod
     def round_cove_tool(edge, radius: float, extend=0.0) -> m3d.Manifold:
@@ -941,7 +985,7 @@ class CadKernel:
                     cx = first[1] * d[2] - first[2] * d[1]
                     cy = first[2] * d[0] - first[0] * d[2]
                     cz = first[0] * d[1] - first[1] * d[0]
-                    if (cx * cx + cy * cy + cz * cz) > 0.01:
+                    if (cx * cx + cy * cy + cz * cz) > 0.25:
                         flat_roots.add(patch)
         return np.array([root(i) in flat_roots for i in range(len(f))], dtype=bool)
 

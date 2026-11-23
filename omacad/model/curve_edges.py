@@ -13,12 +13,39 @@ MIN_LENGTH = 0.15          # of the body's diagonal: shorter chains are tessella
 class CurveEdge:
     pts: np.ndarray         # (N, 3) along the crease; the last point equals the first when it is closed
     convex: bool = True
+    n1: np.ndarray | None = None
+    n2: np.ndarray | None = None
 
     kind = "curve"
 
     @property
     def closed(self) -> bool:
         return bool(np.linalg.norm(self.pts[0] - self.pts[-1]) < 1e-9)
+
+    def circle_fit(self):
+        """If this is a closed circular crease, return `(center, axis, u, w, radius, max_err)`, else `None`."""
+        if not self.closed or len(self.pts) < 9:
+            return None
+        P = self.pts[:-1]
+        c = P.mean(axis=0)
+        _, _, vh = np.linalg.svd(P - c)
+        axis, u, w = vh[-1], vh[0], vh[1]
+        plane_err = float(np.abs((P - c) @ axis).max())
+        xy = np.c_[(P - c) @ u, (P - c) @ w]
+        sol, *_ = np.linalg.lstsq(np.c_[2.0 * xy, np.ones(len(xy))], (xy ** 2).sum(axis=1), rcond=None)
+        cx, cy = float(sol[0]), float(sol[1])
+        R = float(math.sqrt(max(float(sol[2]) + cx * cx + cy * cy, 0.0)))
+        if R < 1e-6:
+            return None
+        circle_err = float(np.abs(np.hypot(xy[:, 0] - cx, xy[:, 1] - cy) - R).max())
+        tol = 0.01 * max(1.0, R)
+        if plane_err > tol or circle_err > tol:
+            return None
+        center = c + cx * u + cy * w
+        return center, axis, u, w, R, max(plane_err, circle_err)
+
+    def is_roundable(self) -> bool:
+        return self.n1 is not None and self.n2 is not None and self.circle_fit() is not None
 
     @property
     def length(self) -> float:
@@ -50,13 +77,28 @@ def curve_edges(v, f, tm, find, planar) -> list:
     sharp = tm.face_adjacency_angles >= math.radians(CREASE_DEG)
     diag = float(np.linalg.norm(np.ptp(v, axis=0))) or 1.0
     area = tm.area_faces
+    face_normals = tm.face_normals
+    patch_area: dict[int, float] = {}
+    for tri_idx in range(len(f)):
+        r = find(tri_idx)
+        if r in planar:
+            patch_area[r] = patch_area.get(r, 0.0) + float(area[tri_idx])
+    real_planar = {r for r, a in patch_area.items() if a >= 1e-4 * diag * diag}
     segs = []
     for (a, b), (e0, e1), keep in zip(adj, edge_ids, sharp):
-        if keep and find(int(a)) not in planar and find(int(b)) not in planar \
-                and area[a] > 1e-9 * diag * diag and area[b] > 1e-9 * diag * diag:
-            segs.append((int(e0), int(e1)))
+        ra, rb = find(int(a)), find(int(b))
+        if keep and ra not in real_planar and rb not in real_planar \
+                and area[a] > 1e-12 * diag * diag and area[b] > 1e-12 * diag * diag:
+            na, nb = face_normals[a], face_normals[b]
+            if float(np.cross(na, nb) @ (v[e1] - v[e0])) < 0:
+                na, nb = nb, na
+                third_b = v[[k for k in f[a] if k not in (e0, e1)][0]]
+            else:
+                third_b = v[[k for k in f[b] if k not in (e0, e1)][0]]
+            conv = float(na @ (third_b - v[e0])) < 0
+            segs.append((int(e0), int(e1), na, nb, conv))
     at = {}
-    for i, (p, q) in enumerate(segs):
+    for i, (p, q, *_rest) in enumerate(segs):
         at.setdefault(p, []).append(i)
         at.setdefault(q, []).append(i)
     done, out = set(), []
@@ -64,24 +106,53 @@ def curve_edges(v, f, tm, find, planar) -> list:
     def walk(start, vertex):
         """Vertices from `vertex` on through the segment `start`, until a junction, an end or the beginning."""
         chain, seg = [vertex], start
+        n1_list, n2_list, conv_votes = [], [], 0
         while seg not in done:
             done.add(seg)
-            p, q = segs[seg]
-            vertex = q if p == vertex else p
+            p, q, na, nb, conv = segs[seg]
+            if p == vertex:
+                vertex = q
+                n1_list.append(na)
+                n2_list.append(nb)
+            else:
+                vertex = p
+                n1_list.append(nb)
+                n2_list.append(na)
+            conv_votes += 1 if conv else -1
             chain.append(vertex)
             nxt = [s for s in at[vertex] if s != seg]
             if len(at[vertex]) != 2 or not nxt:
                 break
             seg = nxt[0]
-        return chain
+        return chain, n1_list, n2_list, conv_votes >= 0
 
     ends = [vtx for vtx, s in at.items() if len(s) != 2]
     for vtx in ends:                                   # open chains first, from their ends
         for s in at[vtx]:
             if s not in done:
                 out.append(walk(s, vtx))
-    for i, (p, _q) in enumerate(segs):             # what is left are closed rings
+    for i, (p, _q, *_rest) in enumerate(segs):       # what is left are closed rings
         if i not in done:
             out.append(walk(i, p))
-    edges = [CurveEdge(v[np.asarray(c)].astype(float)) for c in out if len(c) >= 3]
+
+    def vertex_normals(n_list, closed):
+        arr = np.asarray(n_list, dtype=float)
+        if closed:
+            vn = arr + np.roll(arr, 1, axis=0)
+            vn = np.vstack([vn, vn[0:1]])
+        else:
+            vn = np.empty((len(arr) + 1, 3), dtype=float)
+            vn[0] = arr[0]
+            vn[1:-1] = arr[:-1] + arr[1:]
+            vn[-1] = arr[-1]
+        norms = np.linalg.norm(vn, axis=1, keepdims=True)
+        return vn / np.maximum(norms, 1e-12)
+
+    edges = []
+    for chain, n1_list, n2_list, convex in out:
+        if len(chain) < 3:
+            continue
+        closed = chain[0] == chain[-1]
+        pts = v[np.asarray(chain)].astype(float)
+        edges.append(CurveEdge(pts, convex=convex, n1=vertex_normals(n1_list, closed), n2=vertex_normals(n2_list, closed)))
     return [e for e in edges if e.length > MIN_LENGTH * diag]

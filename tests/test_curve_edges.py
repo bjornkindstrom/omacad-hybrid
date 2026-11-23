@@ -76,3 +76,32 @@ def test_pipe_runs_along_a_corner_curve_and_fillet_skips_it():
     doc.add_pipe(("@edges", [edge.ref()]), 2.0)
     pipe = [b for b in doc.bodies.values() if b.name.startswith("Pipe")][0]
     assert pipe.manifold.volume() > 0.8 * np.pi * 1.0 ** 2 * edge.length
+
+
+def test_cut_hollow_sphere_rims_are_closed_smooth_and_filletable():
+    """Report 20261123-211745: a hollow sphere cut by another sphere must shade smoothly (no flat-patched
+    rim facets), expose both rims as single closed CurveEdges, and allow Fillet/Chamfer on them."""
+    from pathlib import Path
+    from omacad.io.exporter import Exporter
+    from omacad.model.kernel import CadKernel
+
+    fixture = Path(__file__).parent / "data" / "cut_hollow_sphere_fillet.omacad"
+    doc = Exporter.load_project(str(fixture))
+    doc.timeline.features[-1].suppressed = True
+    doc.timeline.recompute(doc)
+    body = doc.bodies["body_sphere_1"]
+
+    m = body.manifold.to_mesh64()
+    v = np.asarray(m.vert_properties, dtype=np.float64)[:, :3]
+    f = np.asarray(m.tri_verts, dtype=np.int32)
+    assert int(CadKernel._flat_triangles(v, f).sum()) == 0
+
+    curves = [e for e in body.edges if getattr(e, "kind", "") == "curve"]
+    assert len(curves) == 2
+    assert all(e.closed and e.is_roundable() for e in curves)
+
+    vol_before = body.manifold.volume()
+    fillet = doc.add_fillet([e.ref() for e in curves], 1.5)
+    assert fillet.skipped == 0
+    assert body.manifold.genus() == 0
+    assert body.manifold.volume() < vol_before

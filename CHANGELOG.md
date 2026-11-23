@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.206
+
+### Fixed
+- **Cut hollow sphere shading & fillet**: `_flat_triangles` (Python + Rust) no longer marks small coplanar patches along curved cut rims as flat-shaded; `curve_edges` keeps sharp rim segments across tiny boolean triangles and spurious sub-threshold planar patches so circular intersections stay single closed loops; and `FilletFeature` / `CadKernel.curve_round_tool` can now fillet and chamfer closed circular `CurveEdge`s between curved surfaces.
+
 # Hybrid-experiment — 0.9.9.80.205
 
 ### Fixed
