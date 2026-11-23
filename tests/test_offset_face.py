@@ -292,3 +292,32 @@ def test_document_feature_roundtrip_and_undo(tmp_path):
     assert abs(next(iter(again.bodies.values())).manifold.volume() - v0 - 200.0) < 1e-6
     doc.undo()
     assert abs(next(iter(doc.bodies.values())).manifold.volume() - v0) < 1e-6
+
+
+
+def test_standalone_thread_offset_shrinks_roots_flanks_and_crests():
+    doc = Exporter.load_project(str(DATA_DIR / "thread_cut_box_offset_face.omacad"))
+    last = doc.timeline.features[-1]
+    last.suppressed = True
+    doc.timeline.recompute(doc)
+    feat = doc.add_offset_face("body_thread_2", last.faces, -0.2)
+    assert feat.faces[0]["kind"] == "thread" and feat.faces[0]["shift"] == [0.0, 0.0, 13.0]
+    bolt = doc.bodies["body_thread_2"].manifold
+    box = doc.bodies["body_box_1"].manifold
+    assert bolt.status().name == "NoError" and len(bolt.decompose()) == 1
+    pts = np.vstack(bolt.slice(20.0).to_polygons())
+    r = np.hypot(pts[:, 0], pts[:, 1])
+    assert r.max() == pytest.approx(4.8, abs=1e-3)
+    assert r.min() < 4.25
+    band = lambda m: m.trim_by_plane((0, 0, 1), 16.0).trim_by_plane((0, 0, -1), -22.0)
+    assert 0.18 < band(box).min_gap(band(bolt), 1.0) < 0.21
+
+    # Flanks on both the cut box and the bolt are recognised by thread_at
+    mesh = doc.bodies["body_box_1"].render_mesh
+    tri = np.asarray(mesh.vertices, float).reshape(-1, 3, 3)
+    n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    area = np.linalg.norm(n, axis=1)
+    c = tri.mean(axis=1)
+    hole = np.flatnonzero((c[:, 2] > 16) & (c[:, 2] < 22) & (np.hypot(c[:, 0], c[:, 1]) < 6) & (area > 1e-3))
+    hits = [doc.thread_at(c[i], n[i] / area[i]) for i in hole[::max(1, len(hole) // 12)]]
+    assert all(h is not None and h["sign"] == -1 for h in hits)

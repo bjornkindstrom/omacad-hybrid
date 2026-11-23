@@ -1,3 +1,18 @@
+# Hybrid-experiment — 0.9.9.80.202
+
+### Fixed
+- **Offset Face on a standalone threaded cylinder**: `ThreadFeature.zone` now uses the thread's actual root radius instead of its outer diameter, and `cylinder_sign` handles origin-placed threads and picks the move shift matching the cylinder's midpoint, so offsetting a threaded cylinder (or its cut hole) moves crests, flanks, and roots uniformly by the requested clearance.
+
+# Hybrid-experiment — 0.9.9.80.201
+
+### Added
+- **Request #248**: Combine with *Cut* shows the tool body red and see-through, also while the target is still to be picked and when the step is edited.
+- **Request #249**: Offset Face takes a whole thread with one click anywhere on it, also on a body that was cut with a threaded bolt; hovering lights up the thread only. A new offset on a thread starts at -0.2 mm (looser).
+- **Request #247**: *Run out at open ends* in Thread (on for new threads): a thread in a hole runs on out through an end that opens into the air instead of starting with a blunt step. Older threads keep their shape until it is ticked.
+
+### Fixed
+- **Request #246**: the exact (B-rep) Shell keeps sharp corners sharp, like the mesh Shell; Jar with Lid no longer gets a razor lip under the neck.
+
 # Hybrid-experiment — 0.9.9.80.200
 
 ### Fixed

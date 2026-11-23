@@ -39,6 +39,7 @@ class ThreadFeature(Feature):
         grow: float = 0.0,
         follow_host: bool = False,
         host_offset: float = 0.0,
+        run_out: bool = False,
     ):
         super().__init__(feature_id, "thread", name)
         # Where along a cylinder the thread sits: `anchor` "bottom"/"top" is the end it starts from, `anchor_gap` the
@@ -52,6 +53,11 @@ class ThreadFeature(Feature):
         self.follow_host = bool(follow_host)
         self.host_offset = float(host_offset)
         self._effective = None        # the diameter used the last time this step ran
+        # run_out: a thread cut in a hole runs on past an end that opens into the air, like a tapped hole, instead of
+        # starting with a blunt step in the mouth (#247). False in files saved before it.
+        self.run_out = bool(run_out)
+        self._run = (0.0, 0.0)        # how far it runs on past its (start, end), found when the step runs
+        self._zone_cache = None
         self.diameter = float(diameter)
         self.pitch = float(pitch)
         self.length = float(length)
@@ -109,6 +115,74 @@ class ThreadFeature(Feature):
             return max(0.0, self.host_length - self.length - self.anchor_gap)
         return self.anchor_gap
 
+    def find_run_out(self, manifold) -> None:
+        """Sets how far the cutter runs on past each end: whole turns (at least the lead-in's, which then lies in the
+        air) where nothing of the body is in its way, else 0."""
+        self._run = (0.0, 0.0)
+        if not (self.run_out and (self.is_female or self.operation == "cut")):
+            return
+        reach = self.pitch * max(1, math.ceil(self.taper_turns + 0.25 if self.taper_lead_in else 1))
+        box = self.build_solid(lead=0.0).transform(self._to_local()).bounding_box()
+        r = max(abs(box[0]), abs(box[1]), abs(box[3]), abs(box[4])) + 0.05
+        local = manifold.transform(self._to_local())
+        free = lambda z: (local ^ m3d.Manifold.cylinder(reach, r, r, circular_segments=48).translate([0.0, 0.0, z])).volume() < 1e-3
+        length = max(self.length, self.pitch)
+        self._run = (reach if free(-reach) else 0.0, reach if free(length) else 0.0)
+
+    def _to_local(self) -> np.ndarray:
+        """3x4 matrix from the world to the thread's own frame."""
+        mat = self.placement()
+        return np.eye(4)[:3] if mat is None else np.linalg.inv(np.vstack([mat, [0.0, 0.0, 0.0, 1.0]]))[:3]
+
+    def zone_triangles(self):
+        """(corners, normals) of the threaded zone's own surface: flanks, crests and the wall between the turns, without
+        the flat ends. Any point of a thread on a body lies on it, however its faces were split up by later steps."""
+        key = (self.used_diameter, self.pitch, self.length, self.grow, self.clearance, self.profile, self.taper_lead_in,
+               self.taper_turns, self.is_female, self.operation, self._run, quality.circle_segments(),
+               None if self.placement() is None else self.placement().tobytes())
+        if self._zone_cache is None or self._zone_cache[0] != key:
+            mesh = self.zone(0.0).to_mesh()
+            tri = np.asarray(mesh.vert_properties, dtype=float)[:, :3][np.asarray(mesh.tri_verts)]
+            n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+            size = np.linalg.norm(n, axis=1)
+            ok = size > 1e-9
+            n = n / np.where(ok, size, 1.0)[:, None]
+            mat = self.placement()
+            axis = np.array([0.0, 0.0, 1.0]) if mat is None else mat[:, 2]
+            ok &= np.abs(n @ axis) < 0.99
+            self._zone_cache = (key, tri[ok], n[ok])
+        return self._zone_cache[1:]
+
+    def on_zone(self, points, normals, tol: float = 0.03) -> np.ndarray:
+        """+1 / -1 per point that lies on the thread, whose surface faces the same way as / against the zone's own
+        outward normal (the body is the bolt / was cut by it); 0 elsewhere."""
+        tri, n = self.zone_triangles()
+        points, normals = np.atleast_2d(np.asarray(points, float)), np.atleast_2d(np.asarray(normals, float))
+        out = np.zeros(len(points), dtype=int)
+        if not len(tri):
+            return out
+        lo, hi = tri.min(axis=1) - tol, tri.max(axis=1) + tol
+        area = np.linalg.norm(np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]), axis=1)
+        zlo, zhi = lo.min(axis=0), hi.max(axis=0)
+        for k in np.flatnonzero(((points >= zlo) & (points <= zhi)).all(axis=1)):
+            p = points[k]
+            near = np.flatnonzero(((p >= lo) & (p <= hi)).all(axis=1))
+            if not len(near):
+                continue
+            a, b, c, m = tri[near, 0], tri[near, 1], tri[near, 2], n[near]
+            d = np.einsum("ij,ij->i", p - a, m)
+            q = p - d[:, None] * m
+            # signed distance (mm) from each side of the triangle, positive inside
+            inside = np.full(len(near), np.inf)
+            for e0, e1 in ((a, b), (b, c), (c, a)):
+                side = np.maximum(np.linalg.norm(e1 - e0, axis=1), 1e-12)
+                inside = np.minimum(inside, np.einsum("ij,ij->i", np.cross(e1 - e0, q - e0), m) / side)
+            dot = m @ normals[k]
+            hit = np.flatnonzero((np.abs(d) < tol) & (inside > -tol) & (np.abs(dot) > 0.8))
+            if len(hit):
+                out[k] = 1 if dot[hit[np.abs(d[hit]).argmin()]] > 0 else -1
+        return out
+
     def surface_sign(self, point, normal, shifts, tol: float = 0.01):
         """(+1 / -1, shift) when the picked surface point lies on this thread's coil, moved by `shift`, and the surface
         faces the same way as / against the coil's own outward normal (the picked body is the coil's own material /
@@ -144,20 +218,29 @@ class ThreadFeature(Feature):
         when it is coaxial with the thread, about the thread's diameter and inside its length (+1: a pin, the coil
         belongs to its material; -1: a hole the coil was cut from); (0, None) otherwise."""
         if self.plane_origin is None or self.plane_normal is None:
-            return 0, None
-        n = np.asarray(self.plane_normal, dtype=float)
-        n = n / max(float(np.linalg.norm(n)), 1e-12)
+            origin = np.array([0.0, 0.0, 0.0], dtype=float)
+            n = np.array([0.0, 0.0, 1.0], dtype=float)
+        else:
+            origin = np.asarray(self.plane_origin, dtype=float)
+            n = np.asarray(self.plane_normal, dtype=float)
+            n = n / max(float(np.linalg.norm(n)), 1e-12)
         a = np.asarray(ref["axis"], dtype=float)
         a = a / max(float(np.linalg.norm(a)), 1e-12)
         if np.linalg.norm(np.cross(a, n)) > 0.01 or abs(float(ref["radius"]) - 0.5 * self.used_diameter) > 0.6 * self.pitch:
             return 0, None
-        start = np.asarray(self.plane_origin, dtype=float) + n * self.start_offset()
+        start = origin + n * self.start_offset()
+        sign = -1 if ref.get("internal") else 1
+        ref_len = float(ref.get("length") or 0.0)
+        best = None
         for shift in shifts:
             d = np.asarray(ref["origin"], dtype=float) - np.asarray(shift, dtype=float) - start
             along = float(d @ n)
-            if np.linalg.norm(d - along * n) < 0.05 and -0.5 * self.pitch <= along <= self.length + 0.5 * self.pitch:
-                return (-1 if ref.get("internal") else 1), shift
-        return 0, None
+            mid = along + 0.5 * ref_len * float(a @ n)
+            if np.linalg.norm(d - along * n) < 0.05 and -0.5 * self.pitch <= mid <= self.length + 0.5 * self.pitch:
+                err = abs(mid - 0.5 * self.length)
+                if best is None or err < best[0]:
+                    best = (err, shift)
+        return (sign, best[1]) if best is not None else (0, None)
 
     def placement(self) -> Optional[np.ndarray]:
         """3x4 matrix from the thread's own frame (axis = +Z from where it starts) to the world; None: at the origin."""
@@ -181,24 +264,40 @@ class ThreadFeature(Feature):
         origin = np.array(self.plane_origin, dtype=float) + n * self.start_offset()
         return np.column_stack([u, v, n, origin]).astype(float)
 
+    def root_radius(self) -> float:
+        """Radius of the core cylinder this thread sits on or in."""
+        if self.is_female or (self.target_body_id and self.operation == "join"):
+            return 0.5 * self.used_diameter
+        p = max(0.2, float(self.pitch))
+        if self.profile in ("round", "circular"):
+            dr = 0.22 * p
+        elif self.profile == "iso_60":
+            dr = 0.35 * p / math.tan(math.radians(30)) * 0.5
+        else:
+            dr = 0.28 * p
+        return 0.5 * self.used_diameter - 0.5 * max(0.0, float(self.clearance)) - dr
+
     def build_solid(self, grow: Optional[float] = None, diameter: Optional[float] = None,
-                    lead: float = 0.0) -> m3d.Manifold:
+                    lead: float = 0.0, core_radius: Optional[float] = None) -> m3d.Manifold:
         """The thread solid; `lead` > 0 starts it that much earlier (whole turns keep the coil where it was), untapered,
         so a mating part cut with it gets a channel the coil can screw out through."""
         include_core = (self.operation == "new_body" or not self.target_body_id) and not self.is_female
         attached = bool(self.target_body_id and self.operation == "join" and not self.is_female)
+        tapered = self.taper_lead_in and lead <= 0.0
+        lead, tail = max(lead, self._run[0]), self._run[1]
         solid = CadKernel.create_thread(
             diameter=self.used_diameter if diameter is None else diameter,
             pitch=self.pitch,
-            length=self.length + lead,
+            length=(max(self.length, self.pitch) if lead or tail else self.length) + lead + tail,
             is_female=self.is_female,
             clearance=self.clearance,
             profile=self.profile,
-            taper_lead_in=self.taper_lead_in and lead <= 0.0,
+            taper_lead_in=tapered,
             taper_turns=self.taper_turns,
             include_core=include_core,
             attached_to_cylinder=attached,
             grow=self.grow if grow is None else grow,
+            core_radius=core_radius,
         )
         if lead > 0.0:
             solid = solid.translate([0.0, 0.0, -lead])
@@ -211,11 +310,11 @@ class ThreadFeature(Feature):
         coil runs one turn further back and is not tapered, so a part cut with it (a lid cut from a jar) has a full
         groove out through its mouth; a groove copied from the tapered or ending coil is too shallow there and the
         coil's full tooth jams in it while screwing."""
-        r = 0.5 * self.used_diameter + extra
+        r = max(0.01, self.root_radius() + extra)
         core = m3d.Manifold.cylinder(self.length, r, r, circular_segments=quality.circle_segments())
         mat = self.placement()
         core = core if mat is None else core.transform(mat)
-        return self.build_solid(grow=self.grow + extra, lead=self.pitch if channel else 0.0) + core
+        return self.build_solid(grow=self.grow + extra, lead=self.pitch if channel else 0.0, core_radius=r) + core
 
     def execute(self, doc: Any) -> None:
         self._effective = None
@@ -223,6 +322,9 @@ class ThreadFeature(Feature):
             host = self.measure_host(doc.bodies[self.target_body_id].manifold)
             if host is not None:
                 self._effective = host + self.host_offset
+        self._run = (0.0, 0.0)
+        if self.target_body_id in doc.bodies:
+            self.find_run_out(doc.bodies[self.target_body_id].manifold)
         tool = self.build_solid()
 
         if self.target_body_id and self.target_body_id in doc.bodies:
@@ -269,6 +371,7 @@ class ThreadFeature(Feature):
             "grow": self.grow,
             "follow_host": self.follow_host,
             "host_offset": self.host_offset,
+            "run_out": self.run_out,
         }
 
     @classmethod
@@ -296,6 +399,7 @@ class ThreadFeature(Feature):
             grow=data.get("grow", 0.0),
             follow_host=data.get("follow_host", False),
             host_offset=data.get("host_offset", 0.0),
+            run_out=data.get("run_out", False),
         )
         feat.suppressed = bool(data.get("suppressed", False))
         feat.exprs = dict(data.get("exprs") or {})

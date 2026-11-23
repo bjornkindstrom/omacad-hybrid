@@ -1319,6 +1319,7 @@ class CadKernel:
         include_core: bool = True,
         attached_to_cylinder: bool = False,
         grow: float = 0.0,
+        core_radius: Optional[float] = None,
     ) -> m3d.Manifold:
         """Create a 3D-print optimized helical thread (male bolt or female cutter/nut core).
 
@@ -1435,7 +1436,8 @@ class CadKernel:
             coil = coil.trim_by_plane((0.0, 0.0, 1.0), 0.0).trim_by_plane((0.0, 0.0, -1.0), -l)
 
             if include_core and not is_female:
-                cyl_core = m3d.Manifold.cylinder(l, r_root, r_root, circular_segments=seg)
+                r_c = r_root if core_radius is None else max(0.01, float(core_radius))
+                cyl_core = m3d.Manifold.cylinder(l, r_c, r_c, circular_segments=seg)
                 return cyl_core + coil
             return coil
 
@@ -1471,7 +1473,8 @@ class CadKernel:
                 # Standalone male bolt: outer crest is at (dia * 0.5) - (clr * 0.5)
                 r_outer = (dia * 0.5) - (clr * 0.5)
                 r_root = r_outer - dr_full
-                r_in = r_root - (0.2 * dr_full)  # slight overlap inside core for watertight boolean
+                r_c = r_root if core_radius is None else max(0.01, float(core_radius))
+                r_in = min(r_root, r_c) - (0.2 * dr_full)  # slight overlap inside core for watertight boolean
                 dr_eff = dr_full
         else:
             # Female cutter thread:
@@ -1552,7 +1555,8 @@ class CadKernel:
         coil = coil.trim_by_plane((0.0, 0.0, 1.0), 0.0).trim_by_plane((0.0, 0.0, -1.0), -l)
 
         if include_core and not is_female:
-            cyl_core = m3d.Manifold.cylinder(l, r_root, r_root, circular_segments=seg)
+            r_c = r_root if core_radius is None else max(0.01, float(core_radius))
+            cyl_core = m3d.Manifold.cylinder(l, r_c, r_c, circular_segments=seg)
             return cyl_core + coil
         return coil
 

@@ -1,0 +1,203 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "box_1": "object_box_1",
+      "thread_2": "object_thread_2",
+      "move_3": "object_thread_2",
+      "combine_4": "object_box_1",
+      "offset_face_5": "object_thread_2"
+    },
+    "names": {},
+    "outputs": {
+      "box_1": [
+        "body_box_1"
+      ],
+      "thread_2": [
+        "body_thread_2"
+      ],
+      "move_3": [
+        "body_thread_2"
+      ],
+      "combine_4": [
+        "body_box_1"
+      ],
+      "offset_face_5": [
+        "body_thread_2"
+      ]
+    },
+    "dependencies": {
+      "box_1": [],
+      "thread_2": [],
+      "move_3": [
+        "thread_2"
+      ],
+      "combine_4": [
+        "box_1",
+        "move_3"
+      ],
+      "offset_face_5": [
+        "move_3"
+      ]
+    },
+    "markers": {},
+    "active_id": "object_thread_2"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "box_1",
+      "feature_type": "box",
+      "name": "Box 1",
+      "suppressed": false,
+      "length": 50.0,
+      "width": 50.0,
+      "height": 25.0,
+      "center": "bottom_center",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "taper_angle": 0.0,
+      "wall_thickness": 0.0,
+      "outer_round": 0.0,
+      "outer_round_kind": "fillet",
+      "inner_round": 0.0,
+      "inner_round_kind": "fillet",
+      "lip_height": 0.0,
+      "lip_step": 0.0,
+      "bottom_thickness": 0.0,
+      "honeycomb": false,
+      "honeycomb_size": 4.0,
+      "honeycomb_wall": 1.2,
+      "honeycomb_margin": 2.0,
+      "is_lid": false,
+      "clearance": 0.2,
+      "lid_top": 2.0,
+      "tab_size": 4.0,
+      "snap_size": 0.6,
+      "slot_length": 0.0,
+      "slot_width": 0.0,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "thread_2",
+      "feature_type": "thread",
+      "name": "Thread 1",
+      "suppressed": false,
+      "exprs": {},
+      "diameter": 10.0,
+      "pitch": 2.0,
+      "length": 25.0,
+      "is_female": false,
+      "clearance": 0.0,
+      "profile": "trapezoidal_45",
+      "taper_lead_in": true,
+      "taper_turns": 0.3,
+      "target_body_id": null,
+      "operation": "new_body",
+      "plane_origin": null,
+      "plane_normal": null,
+      "plane_u": null,
+      "plane_v": null,
+      "anchor": "bottom",
+      "anchor_gap": 0.0,
+      "host_length": null,
+      "grow": 0.0,
+      "follow_host": false,
+      "host_offset": 0.0,
+      "run_out": false,
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "move_3",
+      "feature_type": "move",
+      "name": "Move Thread 1 (1)",
+      "suppressed": false,
+      "target_body_id": "body_thread_2",
+      "copy_body": false,
+      "dx": 0.0,
+      "dy": 0.0,
+      "dz": 13.0,
+      "rx": 0.0,
+      "ry": 0.0,
+      "rz": 0.0,
+      "pivot": "center",
+      "from_point": null,
+      "to_point": null,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "combine_4",
+      "feature_type": "combine",
+      "name": "Combine (cut)",
+      "suppressed": false,
+      "target_body_id": "body_box_1",
+      "tool_body_id": "body_thread_2",
+      "operation": "cut",
+      "keep_tool": true,
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "offset_face_5",
+      "feature_type": "offset_face",
+      "name": "Offset Face 1",
+      "suppressed": false,
+      "target_body_id": "body_thread_2",
+      "faces": [
+        {
+          "kind": "cylinder",
+          "origin": [
+            -0.01956294801366322,
+            0.004819049496115045,
+            12.993085682557368
+          ],
+          "axis": [
+            0.0015641686135652077,
+            -4.10255163174611e-11,
+            0.9999987766875259
+          ],
+          "radius": 4.793378546317521,
+          "length": 25.013859234655612,
+          "internal": false
+        }
+      ],
+      "distance": -0.2,
+      "exprs": {},
+      "target_body_ids": null
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "body_colors": {},
+  "construction_bodies": [],
+  "canvases": {},
+  "favorites": [],
+  "object_groups": [],
+  "lids": [],
+  "curve_segments": 72
+}
