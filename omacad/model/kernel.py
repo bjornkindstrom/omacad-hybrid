@@ -119,7 +119,14 @@ class RenderMesh:
         normals = np.repeat(normal[:, None, :], 3, axis=1)
         normals[matched] = self.normals.reshape(-1, 3, 3)[order[at[matched]]]
         from omacad.model.display_smooth import smooth_arrays
-        result = smooth_arrays(vertices, normals.reshape(-1, 3), lines)
+        # the triangles around the patch come along: a flat one beside it decides how the shared edge moves (#244)
+        corner = np.dtype((np.void, 3 * full.dtype.itemsize))
+        touching = np.isin(np.ascontiguousarray(full.reshape(-1, 3)).view(corner).ravel(),
+                           np.ascontiguousarray(vertices).view(corner).ravel()).reshape(-1, 3).any(axis=1)
+        touching[order[at[matched]]] = False
+        around, around_n = full.reshape(-1, 3, 3)[touching], self.normals.reshape(-1, 3, 3)[touching]
+        result = smooth_arrays(np.concatenate([tri, around]).reshape(-1, 3),
+                               np.concatenate([normals, around_n]).reshape(-1, 3), lines, wanted=len(tri))
         if len(self._patch_display) >= 4:
             self._patch_display.clear()
         self._patch_display[key] = (triangles, result)

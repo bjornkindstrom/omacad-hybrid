@@ -45,8 +45,9 @@ def _curved(normals: np.ndarray, points: np.ndarray = None) -> np.ndarray:
     return curved
 
 
-def _level(P, T, N, curved, L):
-    """One split of every triangle that is curved or borders a curved one. Returns the new P, T, N, curved, L."""
+def _level(P, T, N, curved, L, owner):
+    """One split of every triangle that is curved or borders a curved one. Returns the new P, T, N, curved, L, owner
+    (`owner`: the first triangle each piece came from)."""
     nv = len(P)
     pairs = np.array([[0, 1], [1, 2], [2, 0]])
     a, b = T[:, pairs[:, 0]], T[:, pairs[:, 1]]                     # (F, 3) edge ends
@@ -131,12 +132,14 @@ def _level(P, T, N, curved, L):
         found = (ukeys[at] == lcode) & (count[at] > 0)
         m = nv + at
         L = np.concatenate([L[~found], np.stack([L[found, 0], m[found]], 1), np.stack([m[found], L[found, 1]], 1)])
-    return P2, T2, N2, curved2, L
+    return P2, T2, N2, curved2, L, np.concatenate([owner[keep], np.tile(owner[s], 4)])
 
 
-def smooth_arrays(vertices: np.ndarray, normals: np.ndarray, lines: np.ndarray, levels: int = LEVELS):
+def smooth_arrays(vertices: np.ndarray, normals: np.ndarray, lines: np.ndarray, levels: int = LEVELS,
+                  wanted: int = None):
     """Unrolled triangle corners, their normals and edge-line pairs, smoothed for drawing. Unchanged when nothing
-    is curved or the mesh is too big to grow."""
+    is curved or the mesh is too big to grow. `wanted`: only the first so many triangles are returned; the rest are
+    the neighbours that decide how the shared edges move."""
     vertices = np.asarray(vertices, dtype=np.float32)
     corner_n = np.asarray(normals, dtype=np.float64).reshape(-1, 3, 3)
     if len(corner_n) == 0:
@@ -146,13 +149,17 @@ def smooth_arrays(vertices: np.ndarray, normals: np.ndarray, lines: np.ndarray, 
     while levels > 0 and len(corner_n) + n_curved * (4 ** levels) * 2 > MAX_TRIANGLES:
         levels -= 1
     if levels == 0 or n_curved == 0:
-        return vertices, normals, lines
+        k = None if wanted is None else 3 * wanted
+        return vertices[:k], normals[:k], lines
+    owner = np.arange(len(corner_n))
 
     lines = np.asarray(lines, dtype=np.float32).reshape(-1, 3)
     P, ids = _vertex_ids(np.concatenate([vertices, lines]))
     T = ids[:len(vertices)].reshape(-1, 3).astype(np.int64)
     L = ids[len(vertices):].reshape(-1, 2).astype(np.int64)
     for _ in range(levels):
-        P, T, corner_n, curved, L = _level(P, T, corner_n, curved, L)
+        P, T, corner_n, curved, L, owner = _level(P, T, corner_n, curved, L, owner)
+    if wanted is not None:
+        T, corner_n = T[owner < wanted], corner_n[owner < wanted]
     return (P[T].reshape(-1, 3).astype(np.float32), corner_n.reshape(-1, 3).astype(np.float32),
             P[L].reshape(-1, 3).astype(np.float32))
