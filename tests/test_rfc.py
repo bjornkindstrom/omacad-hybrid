@@ -201,3 +201,16 @@ def test_request_upload_is_deferred_and_does_not_retry_failed_folder_immediately
     window.status_label = SimpleNamespace(setText=status.append)
     callbacks["on_error"]("offline")
     assert not window._request_upload_active and "offline" in status[-1]
+
+
+def test_api_keeps_an_encoded_search_query_and_encodes_file_names(monkeypatch):
+    import io
+    import urllib.parse
+    from omacad import rfc
+    urls = []
+    monkeypatch.setattr(rfc.urllib.request, "urlopen", lambda req, timeout=0: urls.append(req.full_url) or io.BytesIO(b"{}"))
+    q = 'repo:a/b is:issue in:body "request-for-change/x"'
+    rfc._api("GET", "/search/issues?" + urllib.parse.urlencode({"q": q}), None, "t")
+    rfc._api("GET", "/repos/a/b/contents/Julgran med hål.py", None, "t")
+    assert urllib.parse.parse_qs(urllib.parse.urlsplit(urls[0]).query)["q"] == [q]      # %2B instead of + = HTTP 422
+    assert urls[1].endswith("/Julgran%20med%20h%C3%A5l.py")

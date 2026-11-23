@@ -64,7 +64,7 @@ def _slug(text: str, limit: int = 30) -> str:
 def _api(method: str, path: str, data: Optional[dict], tok: str, timeout: int = 180) -> dict:
     """One GitHub REST call; returns the decoded JSON answer. The path is percent-encoded here, so file names with
     spaces or å/ä/ö ("Julgran med hål.py") upload instead of failing with "URL can't contain control characters"."""
-    path = urllib.parse.quote(path, safe="/?=&%:,-._~")
+    path = urllib.parse.quote(path, safe="/?=&%+:,-._~")
     req = urllib.request.Request(API + path, method=method, headers={
         "Authorization": f"Bearer {tok}", "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28", "User-Agent": f"Omacad/{__version__}",

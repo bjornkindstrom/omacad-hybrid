@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.200
+
+### Fixed
+- Requests were uploaded but never became an issue (HTTP 422): the path encoding from .199 turned the `+` of the issue search into `%2B`. Saved requests go out at the next start.
+
 # Hybrid-experiment — 0.9.9.80.199 (branch brep-hybrid)
 
 ### Fixed
