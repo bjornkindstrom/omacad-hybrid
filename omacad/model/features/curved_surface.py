@@ -7,9 +7,11 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 import shapely.geometry as sg
-from shapely.ops import linemerge
+from shapely import affinity
+from shapely.ops import linemerge, unary_union
 import manifold3d as m3d
 
+from omacad.model.faces_hit_tests import fit_sphere_patch
 from omacad.model.features.offset_face import _surface_patch
 
 
@@ -214,3 +216,107 @@ def curved_wall(manifold, ref: Dict[str, Any]) -> Optional[CurvedWall]:
     normals_2d = np.column_stack([tangents[:, 1], -tangents[:, 0]])
 
     return CurvedWall(s, coords, normals_2d, z0, z1, closed, M)
+
+
+class SphericalWall:
+    """A spherical surface patch parameterized in conformal Mercator (u, v) around its frame M."""
+
+    def __init__(self, center: np.ndarray, radius: float, internal: bool, M: np.ndarray,
+                 region: sg.base.BaseGeometry, v_max: float):
+        self.center = np.asarray(center, dtype=float)
+        self.R = float(radius)
+        self.internal = bool(internal)
+        self.M = np.asarray(M, dtype=float)
+        self.region = region
+        self.period = 2.0 * math.pi * self.R
+        self.v_max = float(v_max)
+
+    def point_and_normal(self, u: float, v: float) -> Tuple[np.ndarray, np.ndarray]:
+        """World 3D point on the sphere and outward unit normal (away from center) at Mercator (u, v)."""
+        th = u / self.R
+        sp = math.tanh(v / self.R)
+        cp = 1.0 / math.cosh(v / self.R)
+        local_n = np.array([cp * math.cos(th), cp * math.sin(th), sp])
+        world_n = self.M[:3, :3] @ local_n
+        world_p = self.center + self.R * world_n
+        return world_p, world_n
+
+    def warp(self, r_in: float, r_out: float) -> Callable[[np.ndarray], np.ndarray]:
+        """Warp unit-tall prism (u, v, w in [0, 1]) onto the spherical shell between r_in and r_out."""
+        R = self.R
+
+        def warper(pts: np.ndarray) -> np.ndarray:
+            th = pts[:, 0] / R
+            sp = np.tanh(pts[:, 1] / R)
+            cp = 1.0 / np.cosh(pts[:, 1] / R)
+            rad = r_in + pts[:, 2] * (r_out - r_in)
+            return np.column_stack([rad * cp * np.cos(th), rad * cp * np.sin(th), rad * sp])
+
+        return warper
+
+
+def spherical_wall(manifold, ref: Dict[str, Any], max_lat_deg: float = 72.0) -> Optional[SphericalWall]:
+    """Extract a SphericalWall from a picked surface reference, or None if the patch is not spherical."""
+    mesh = manifold.to_mesh()
+    verts = np.asarray(mesh.vert_properties, dtype=np.float64)[:, :3]
+    tris = np.asarray(mesh.tri_verts, dtype=np.int64)
+    a, b, c = (verts[tris[:, i]] for i in range(3))
+    cross = np.cross(b - a, c - a)
+    area2 = np.linalg.norm(cross, axis=1)
+    normals = cross / np.where(area2 > 1e-12, area2, 1.0)[:, None]
+    centroids = (a + b + c) / 3.0
+
+    p = np.asarray(ref.get("point", [0, 0, 0]), dtype=float)
+    n = np.asarray(ref.get("normal", [0, 0, 1]), dtype=float)
+    dist = np.linalg.norm(centroids - p, axis=1) + 10.0 * (normals @ n < 0.5)
+    seed = int(dist.argmin())
+    if dist[seed] > 10.0 + 0.2 * float(np.ptp(verts, axis=0).max()):
+        return None
+
+    idx = _surface_patch(verts, tris, normals, seed, max_angle_deg=35.0)
+    fit = fit_sphere_patch(centroids[idx], normals[idx], area2[idx])
+    if fit is None:
+        return None
+    center, R, internal, inliers = fit
+    idx_in = idx[inliers]
+
+    # Prefer world Z as pole axis; if the patch is a polar cap near ±Z, pick an equatorial axis so it sits near phi=0
+    z_axis = np.array([0.0, 0.0, 1.0])
+    rel_c = centroids[idx_in] - center
+    sin_z = np.abs(rel_c[:, 2]) / np.maximum(np.linalg.norm(rel_c, axis=1), 1e-12)
+    if float(np.percentile(sin_z, 25)) > math.sin(math.radians(65.0)):
+        mean_dir = rel_c.mean(axis=0)
+        ref_v = np.array([1.0, 0.0, 0.0]) if abs(mean_dir[0]) < 0.9 * np.linalg.norm(mean_dir) else np.array([0.0, 1.0, 0.0])
+        z_axis = np.cross(mean_dir, ref_v)
+        z_axis /= np.linalg.norm(z_axis)
+
+    M = _frame(center, z_axis)
+    M_inv = np.linalg.inv(M)
+    local_verts = verts @ M_inv[:3, :3].T + M_inv[:3, 3]
+    p_tris = local_verts[tris[idx_in]]
+
+    r_xy = np.hypot(p_tris[:, :, 0], p_tris[:, :, 1])
+    th = np.arctan2(p_tris[:, :, 1], p_tris[:, :, 0])
+    cross_seam = (th.max(axis=1) - th.min(axis=1)) > math.pi
+    th[cross_seam] = np.where(th[cross_seam] < 0, th[cross_seam] + 2.0 * math.pi, th[cross_seam])
+    phi = np.arctan2(p_tris[:, :, 2], np.maximum(r_xy, 1e-12))
+
+    phi_max = math.radians(max_lat_deg)
+    keep = (phi.min(axis=1) < phi_max) & (phi.max(axis=1) > -phi_max)
+    if not keep.any():
+        return None
+    phi = np.clip(phi[keep], -phi_max, phi_max)
+    u = R * th[keep]
+    v = R * np.arcsinh(np.tan(phi))
+
+    polys = [sg.Polygon(np.column_stack([u[k], v[k]])) for k in range(len(u))]
+    polys = [poly for poly in polys if poly.is_valid and poly.area > 1e-6]
+    if not polys:
+        return None
+    region = unary_union(polys).buffer(1e-4).buffer(-1e-4)
+    if region.is_empty:
+        return None
+    period = 2.0 * math.pi * R
+    region = unary_union([affinity.translate(region, -period, 0.0), region, affinity.translate(region, period, 0.0)])
+    v_max = R * math.asinh(math.tan(phi_max))
+    return SphericalWall(center, R, internal, M, region, v_max)

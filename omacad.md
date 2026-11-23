@@ -1,3 +1,9 @@
+## Surface Texture (Cells) på sfäriska ytor — 2026-11-23 (0.9.9.80.209, rapport 20261123-215451)
+
+- `curved_surface_tool` (`omacad/model/features/honeycomb.py`) föll tillbaka på `(None, 0)` när `curved_wall` returnerade `None` för dubbelkrökta ytor (t.ex. ihåliga sfärer med urtag), och `detect_cylinder_surface` (`omacad/model/faces_hit_tests.py`) kunde dessutom felklassa en inre sfärs ekvatorsband som en kort cylinder via `_wall_mask`.
+- Ny `fit_sphere_patch` i `omacad/model/faces_hit_tests.py` (tvåstegs sfärpassning som filtrerar bort anslutande rundningar) hindrar sfärer från att tas som cylindrar och driver `spherical_wall` / `SphericalWall` (`omacad/model/features/curved_surface.py`) + `spherical_surface_tool` (`omacad/model/features/honeycomb.py`), som konformt Mercator-projicerar sfärens inlier-trianglar (periodiskt skarvfritt runt ekvatorn, med marginal till hål och kanter) och skär celler rakt genom skalet.
+- Test: `tests/test_curved_surface_texture.py::test_spherical_surface_texture_cuts_holes_in_hollow_sphere` med `tests/data/hollow_sphere_surface_texture.omacad`.
+
 ## Cylinder-sfär-skarv & WrappedLoopEdge — 2026-11-23 (0.9.9.80.207, rapport 20261123-213454)
 
 - En cylinder joinad på en ihålig sfär bildade en sluten konkav skärningskant runt hela cylindern. `cylindrical_contours` (`omacad/model/wrapped_edges.py`) skapade en `WrappedLoopEdge` före `curve_edges`, så plockning valde `WrappedLoopEdge` och `wrapped_round_tool` slog i `"A wrapped rounding contour must not encircle the entire cylinder."` trots att `CurveEdge` under redan kunde rundas med `curve_round_tool`.

@@ -274,6 +274,49 @@ def _circle_fit(patch, nrm, p_mean, diff, axis, u_vec, v_vec):
     return center_on_axis, radius
 
 
+def _fit_sphere_once(pts: np.ndarray, nrms: np.ndarray, weights: np.ndarray):
+    w_sum = float(weights.sum())
+    if w_sum <= 1e-12:
+        return None
+    p_mean = (pts * weights[:, None]).sum(axis=0) / w_sum
+    n_mean = (nrms * weights[:, None]).sum(axis=0) / w_sum
+    dp, dn = pts - p_mean, nrms - n_mean
+    denom = float(np.sum(weights[:, None] * (dn * dn)))
+    if denom < 1e-12:
+        return None
+    sr = float(np.sum(weights[:, None] * (dp * dn))) / denom
+    R = abs(sr)
+    if R < 0.1 or R > 5000.0:
+        return None
+    return p_mean - sr * n_mean, R, bool(sr < 0.0)
+
+
+def fit_sphere_patch(pts: np.ndarray, nrms: np.ndarray, weights: np.ndarray):
+    """Fit a sphere `(center, radius, is_internal, inlier_mask)` to triangle centroids/normals, or None."""
+    if len(pts) < 12:
+        return None
+    first = _fit_sphere_once(pts, nrms, weights)
+    if first is None:
+        return None
+    c1, r1, int1 = first
+    rad1 = np.linalg.norm(pts - c1, axis=1)
+    sign1 = -1.0 if int1 else 1.0
+    dots1 = np.einsum("ij,ij->i", nrms, sign1 * (pts - c1) / np.maximum(rad1[:, None], 1e-12))
+    inliers = (np.abs(rad1 - r1) < 0.05 * r1 + 0.1) & (dots1 > 0.95)
+    if int(inliers.sum()) < 12 or float(weights[inliers].sum()) < 0.5 * float(weights.sum()):
+        return None
+    refit = _fit_sphere_once(pts[inliers], nrms[inliers], weights[inliers])
+    if refit is None:
+        return None
+    c2, r2, int2 = refit
+    rad2 = np.linalg.norm(pts[inliers] - c2, axis=1)
+    sign2 = -1.0 if int2 else 1.0
+    dots2 = np.einsum("ij,ij->i", nrms[inliers], sign2 * (pts[inliers] - c2) / np.maximum(rad2[:, None], 1e-12))
+    if float(np.percentile(np.abs(rad2 - r2), 95)) > 0.02 * r2 + 0.05 or float(np.percentile(dots2, 10)) < 0.95:
+        return None
+    return c2, r2, int2, inliers
+
+
 def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
     """Detect if the smooth patch around tri_idx is a cylindrical surface (pin/bolt or internal hole).
 
@@ -307,6 +350,8 @@ def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
     # For a cylindrical surface, face normals are perpendicular to the cylinder axis: nrm @ axis ~ 0
     axis = _normal_axis(nrm)
     if axis is None:
+        if fit_sphere_patch(whole_tri.mean(axis=1), whole_nrm, whole_area) is not None:
+            return None
         # A fillet or round that runs into the wall is smooth enough to join the patch, and its normals spread out
         # of the wall's plane. Keep only the wall: the triangles whose normals are perpendicular to one axis.
         t = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3, 3)[tri_idx]

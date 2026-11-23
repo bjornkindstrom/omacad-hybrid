@@ -17,7 +17,7 @@ from omacad.model.features.offset_face import _frame, cylinder_face_ref, find_pl
 from omacad.model.features.cell_patterns import (HOLE_SHAPES, VORONOI_STYLES, _site_random, finish_cells, revolved_styled_cells, revolved_voronoi_cells,
                                                  styled_cells, voronoi_cells)
 from omacad.model.features.revolved_surface import RevolvedSurface, revolved_surface
-from omacad.model.features.curved_surface import CurvedWall, curved_wall
+from omacad.model.features.curved_surface import CurvedWall, curved_wall, spherical_wall
 from omacad.model.svg_importer import parse_svg_to_geometry, svg_to_template
 
 SHAPES = ("hexagon", "circle", "square", "diamond", "triangle", "voronoi", "svg")
@@ -411,9 +411,39 @@ def cylinder_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Mani
     return (m3d.Manifold.compose(tools) if tools else None), len(cells)
 
 
+def spherical_surface_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Manifold], int]:
+    wall = spherical_wall(manifold, ref)
+    if wall is None:
+        return None, 0
+    margin = params["margin"]
+    bounds = box(-wall.period, -wall.v_max, 2.0 * wall.period, wall.v_max)
+    room = (wall.region.buffer(-margin, join_style=2) if margin > 0 else wall.region).intersection(bounds)
+    if room.is_empty or room.area < 1e-9:
+        return None, 0
+    cells = best_fit(params, room, (wall.period / 2.0, 0.0), wall.period)
+    if not cells:
+        return None, 0
+    centres, inward = [], []
+    for c in cells:
+        p, n = wall.point_and_normal(c.centroid.x, c.centroid.y)
+        centres.append(p)
+        inward.append(n if wall.internal else -n)
+    depths = _depths(centres, inward, rays, None if params["through"] else params["depth"])
+    step = max(0.2, wall.R * math.radians(3.0))
+    tools = []
+    for d, group in _grouped(cells, depths).items():
+        r_in, r_out = (max(wall.R - d, 0.01), wall.R + AIR) if not wall.internal else (wall.R - AIR, wall.R + d)
+        cs = region_cross_section(segmentize(unary_union(group), max_segment_length=step))
+        prism = m3d.Manifold.extrude(cs, height=1.0, n_divisions=2).refine_to_length(step)
+        tools.append(prism.warp_batch(wall.warp(r_in, r_out)).transform(wall.M[:3, :]))
+    return (m3d.Manifold.batch_boolean(tools, m3d.OpType.Add) if tools else None), len(cells)
+
+
 def curved_surface_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Manifold], int]:
     wall = curved_wall(manifold, ref)
-    if wall is None or wall.L < 1e-3 or wall.height < 1e-3:
+    if wall is None:
+        return spherical_surface_tool(manifold, ref, params, rays)
+    if wall.L < 1e-3 or wall.height < 1e-3:
         return None, 0
     margin = params["margin"]
     if wall.closed:

@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.209
+
+### Fixed
+- **Surface Texture (Cells) on spherical surfaces**: added `fit_sphere_patch` (`omacad/model/faces_hit_tests.py`), `spherical_wall` / `SphericalWall` (`omacad/model/features/curved_surface.py`), and `spherical_surface_tool` (`omacad/model/features/honeycomb.py`) so Surface Texture → Cells works on spheres and hollow spherical shells with cutouts (both outer and inner faces), and `detect_cylinder_surface` no longer misclassifies an equatorial band of an inner sphere as a short cylinder.
+
 # Hybrid-experiment — 0.9.9.80.207
 
 ### Fixed

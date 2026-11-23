@@ -100,3 +100,32 @@ def test_curved_japandi_rib_path(path):
     assert result.status().name == "NoError"
     assert result.volume() < body.manifold.volume()
     assert abs(result.volume() - straight.volume()) > 1e-6     # the path really moved the grooves
+
+
+def test_spherical_surface_texture_cuts_holes_in_hollow_sphere():
+    from pathlib import Path
+    from omacad.io.exporter import Exporter
+    from omacad.model.features.offset_face import face_to_ref
+
+    doc = Exporter.load_project(str(Path(__file__).parent / "data" / "hollow_sphere_surface_texture.omacad"))
+    body = doc.bodies["body_sphere_1"]
+    body.update_render_mesh()
+    rm = body.render_mesh
+    tris = np.asarray(rm.vertices, dtype=np.float64).reshape(-1, 3, 3)
+    mids = tris.mean(axis=1)
+
+    i_outer = int(np.argmax(mids[:, 0]))
+    r_from_c = np.linalg.norm(mids - np.array([0.0, 0.0, 26.0]), axis=1)
+    i_inner = int(np.argmin(np.abs(r_from_c - 23.0) + np.abs(mids[:, 0] - 15.0)))
+
+    params = HoneycombFeature("h", "h", body.body_id).params()
+    vol_before = body.manifold.volume()
+    for idx in (i_outer, i_inner):
+        patch = rm.curved_surface(idx)
+        ref = face_to_ref(patch, body)
+        assert ref["kind"] == "surface"
+        res, cells, skipped = HoneycombFeature.compute(body.manifold, [ref], params)
+        assert skipped == 0
+        assert cells > 50
+        assert res.status().name == "NoError"
+        assert res.volume() < vol_before * 0.85
