@@ -154,8 +154,10 @@ class ObjectHistory:
                 sketches[feat.sketch.sketch_id] = fid
             elif feat.feature_type == 'linked_sketch':
                 sketches[feat.target_sketch_id] = fid
-            tool = bodies.get(getattr(feat, 'tool_body_id', None))
-            if (feat.feature_type == 'combine' and not feat.keep_tool and not feat.suppressed
+            tool = bodies.get(getattr(feat, 'tool_body_id', None) or getattr(feat, 'pin_body_id', None))
+            consumed = ((feat.feature_type == 'combine' and not feat.keep_tool)
+                        or (feat.feature_type == 'cut_thread' and not feat.keep_screw))
+            if (consumed and not feat.suppressed
                     and tool in objects and tool != owner and not self._is_ancestor(objects, tool, owner)):
                 # The tool body is gone into the target: its object becomes a branch of the target's object.
                 objects[tool].parent_id, objects[tool].consumed_by = owner, fid

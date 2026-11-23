@@ -156,6 +156,8 @@ class Ribbon(QWidget):
     move_clicked = Signal()
     joint_clicked = Signal()
     thread_clicked = Signal()
+    thread_pin_clicked = Signal()
+    cut_thread_clicked = Signal()
     canvas_clicked = Signal()
     import_svg_clicked = Signal()
     import_3mf_clicked = Signal()

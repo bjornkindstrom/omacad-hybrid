@@ -18,7 +18,7 @@ from omacad.model.features.lip_joint import LipJointFeature
 from omacad.model.timeline import (
     PatternFeature, FilletFeature, Body, Timeline, BoxFeature, CylinderFeature, PrismFeature,
     SphereFeature, ExtrudeFeature, EmbossFeature, RevolveFeature, HoleFeature, DeleteBodyFeature, SketchFeature, SplitBodyFeature, ShellFeature, MoveFeature,
-    ImportMeshFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature, ConeFeature, SweepFeature, LoftFeature,
+    ImportMeshFeature, ThreadFeature, CutThreadFeature, OffsetFaceFeature, HoneycombFeature, ConeFeature, SweepFeature, LoftFeature,
     PipeFeature, WavySlicesFeature, KnurlFeature, JapandiFeature, JointFeature
 )
 from omacad.model.features.knurl import apply_knurl
@@ -527,6 +527,7 @@ class Document:
         host_length: Optional[float] = None,
         follow_host: bool = False,
         host_offset: float = 0.0,
+        run_out: bool = False,
         exprs: Optional[Dict[str, str]] = None,
     ) -> Optional[Body]:
         feat_id = self._feature_id("thread")
@@ -553,6 +554,7 @@ class Document:
             host_length=host_length,
             follow_host=follow_host,
             host_offset=host_offset,
+            run_out=run_out,
         )
         if exprs:
             feat.exprs = {k: v for k, v in exprs.items() if v}
@@ -563,6 +565,42 @@ class Document:
             return self.bodies[target_body_id]
         body_id = f"body_{feat_id}"
         return self.bodies.get(body_id)
+
+    @undoable("Cut Thread")
+    def cut_thread(
+        self,
+        target_body_id: str,
+        pin_body_id: str,
+        pitch: float = 2.0,
+        profile: str = "trapezoidal_45",
+        clearance: float = 0.2,
+        chamfer: float = 1.0,
+        keep_screw: bool = True,
+        taper_lead_in: bool = True,
+        exprs: Optional[Dict[str, str]] = None,
+    ) -> Optional[CutThreadFeature]:
+        """Thread a placed cylinder pin, cut it into target_body_id, and apply 3D-print clearance + chamfer."""
+        if target_body_id not in self.bodies or pin_body_id not in self.bodies or target_body_id == pin_body_id:
+            return None
+        n = len([f for f in self.timeline.features if f.feature_type == "cut_thread"]) + 1
+        feat = CutThreadFeature(
+            self._feature_id("cut_thread"),
+            f"Cut Thread {n}",
+            target_body_id,
+            pin_body_id,
+            pitch=pitch,
+            profile=profile,
+            clearance=clearance,
+            chamfer=chamfer,
+            keep_screw=keep_screw,
+            taper_lead_in=taper_lead_in,
+        )
+        if exprs:
+            feat.exprs = {k: v for k, v in exprs.items() if v}
+        self.timeline.add_feature(feat)
+        feat.execute(self)
+        self.notify_changed()
+        return feat
 
 
     def refresh_sketch_references(self, sketch: Sketch, body_ids=None) -> None:
@@ -1354,7 +1392,7 @@ class Document:
         "revolve": ("sketch_id", "profile_idx", "segments", "operation", "axis", "angle", "direction", "angle2", "extra_profiles"),
         "combine": ("target_body_id", "tool_body_id", "operation", "keep_tool"),
         "fillet": ("size", "kind", "chamfer_type", "size2", "angle", "flip"),
-        "thread": ("diameter", "pitch", "length", "is_female", "clearance", "profile", "taper_lead_in", "taper_turns", "target_body_id", "operation", "plane_origin", "plane_normal", "plane_u", "plane_v", "anchor", "anchor_gap", "host_length", "grow", "follow_host", "host_offset"),
+        "thread": ("diameter", "pitch", "length", "is_female", "clearance", "profile", "taper_lead_in", "taper_turns", "target_body_id", "operation", "plane_origin", "plane_normal", "plane_u", "plane_v", "anchor", "anchor_gap", "host_length", "grow", "follow_host", "host_offset", "run_out"),
         "pattern": ("source_ids", "kind", "axis1", "count1", "spacing1", "axis2", "count2", "spacing2",
                     "mirror_mode", "about", "angle", "rotation_axis", "axis_origin", "axis_direction"),
         "split_body": ("target_body_id", "plane_id", "plane_origin", "plane_normal"),
@@ -1737,6 +1775,42 @@ class Document:
         self.notify_changed()
         return feat
 
+    @staticmethod
+    def _moves_after(feats, i):
+        """Where a thread made by step i may have been moved to since (translations; a turn ends the search)."""
+        shifts, here = [(0.0, 0.0, 0.0)], np.zeros(3)
+        for g in feats[i + 1:]:
+            if g.feature_type == "move" and not g.suppressed:
+                if abs(g.rx) > 1e-4 or abs(g.ry) > 1e-4 or abs(g.rz) > 1e-4:
+                    break
+                here = here + (g.dx, g.dy, g.dz)
+                shifts.append(tuple(here))
+        return shifts
+
+    def thread_at(self, point, normal):
+        """The whole thread under a picked surface point as a face reference (kind "thread"), or None. Works anywhere on
+        the thread (flank, crest, the wall between the turns), also on a body that was cut with it (#249)."""
+        feats = self.timeline.features
+        for i in range(len(feats) - 1, -1, -1):
+            f = feats[i]
+            if f.feature_type != "thread" or f.suppressed or getattr(f, "error", None):
+                continue
+            for shift in self._moves_after(feats, i):
+                sign = int(f.on_zone(np.asarray(point, float) - shift, normal)[0])
+                if sign:
+                    return {"kind": "thread", "thread_id": f.feature_id, "sign": sign, "shift": [float(x) for x in shift]}
+        return None
+
+    def thread_triangles(self, ref, mesh) -> np.ndarray:
+        """(N, 3, 3) triangles of a body's render mesh that lie on the thread reference, for highlighting."""
+        tri = np.asarray(mesh.vertices, dtype=float).reshape(-1, 3, 3)
+        f = next((f for f in self.timeline.features if f.feature_id == ref["thread_id"]), None)
+        if f is None or not len(tri):
+            return tri[:0]
+        n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+        n = n / np.maximum(np.linalg.norm(n, axis=1), 1e-12)[:, None]
+        return tri[f.on_zone(tri.mean(axis=1) - np.asarray(ref["shift"], float), n) == ref["sign"]]
+
     def _thread_offset(self, faces):
         """(thread feature, sign, shift) when every picked face belongs to the same thread: its coil, or the wall between
         the turns (a coaxial cylinder inside the threaded length). Else None."""
@@ -1746,13 +1820,7 @@ class Document:
         for i, f in enumerate(feats):
             if f.feature_type != "thread" or f.suppressed:
                 continue
-            shifts, here = [(0.0, 0.0, 0.0)], np.zeros(3)
-            for g in feats[i + 1:]:                       # the body may have been moved (not turned) since
-                if g.feature_type == "move" and not g.suppressed:
-                    if abs(g.rx) > 1e-4 or abs(g.ry) > 1e-4 or abs(g.rz) > 1e-4:
-                        break
-                    here = here + (g.dx, g.dy, g.dz)
-                    shifts.append(tuple(here))
+            shifts = self._moves_after(feats, i)
             hits = [f.surface_sign(r["point"], r["normal"], shifts) if r["kind"] == "surface" else f.cylinder_sign(r, shifts)
                     for r in faces]
             keys = {(sign, tuple(shift) if shift is not None else None) for sign, shift in hits}
@@ -1763,6 +1831,8 @@ class Document:
     def thread_faces(self, faces):
         """The picked faces as one thread reference when they all belong to the same thread (see `_thread_offset`):
         Offset Face then cuts or adds a grown/shrunk copy of the threaded zone on this body only; else None."""
+        if faces and all(r.get("kind") == "thread" for r in faces):
+            return list(faces)                             # picked as a whole thread (`thread_at`)
         hit = self._thread_offset(faces)
         if hit is None:
             return None

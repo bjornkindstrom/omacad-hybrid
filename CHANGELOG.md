@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.203
+
+### Added
+- **Thread Pin & Cut Thread**: two-step workflow for 3D-printable threaded holes and screws. **Thread Pin** (under *Primitives* / *Create*) creates a placement cylinder to move and rotate into position; **Cut Thread** (under *Modify* → *Body*) threads the pin, cuts it into the target body, applies 3D-print clearance (`0.2 mm` default) to the screw (or hole), and adds lead-in chamfers (`1.0 mm` default) to the hole mouth and screw tips, with an option to keep or remove the screw body.
+
 # Hybrid-experiment — 0.9.9.80.202
 
 ### Fixed

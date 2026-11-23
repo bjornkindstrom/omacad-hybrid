@@ -51,6 +51,8 @@ from omacad.ui.dialogs.transform_dlg import (
 from omacad.ui.dialogs.joint_dlg import JointDialog
 from omacad.ui.dialogs.thread_dlg import (
     ThreadDialog,
+    ThreadPinDialog,
+    CutThreadDialog,
 )
 from omacad.ui.dialogs.hole_dlg import HoleDialog
 
@@ -94,5 +96,7 @@ __all__ = [
     "MoveBodyDialog",
     "JointDialog",
     "ThreadDialog",
+    "ThreadPinDialog",
+    "CutThreadDialog",
     "HoleDialog",
 ]

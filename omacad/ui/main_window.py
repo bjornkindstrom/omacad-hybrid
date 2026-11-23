@@ -218,6 +218,8 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.pipe_clicked.connect(lambda: self.prompt_sweep_tool("pipe"))
         self.ribbon.jar_clicked.connect(self.prompt_jar)
         self.ribbon.thread_clicked.connect(self.prompt_thread)
+        self.ribbon.thread_pin_clicked.connect(self.prompt_thread_pin)
+        self.ribbon.cut_thread_clicked.connect(self.prompt_cut_thread)
         self.ribbon.combine_clicked.connect(self.prompt_combine)
         self.ribbon.split_body_clicked.connect(self.prompt_split_body)
         self.viewport.join_bodies_requested.connect(self.on_join_bodies)

@@ -50,6 +50,10 @@ _ALL = [
     _c("hexagon", "Prism", "⬢", "A regular prism (6 sides = hexagon), sized across flats", signal="hexagon_clicked"),
     _c("thread", "Thread / Coil", "🔩", "3D-printable threads and coils, on a cylinder or on their own",
        signal="thread_clicked"),
+    _c("thread_pin", "Thread Pin", "📍", "Create a placement cylinder to move into position before cutting a thread",
+       signal="thread_pin_clicked"),
+    _c("cut_thread", "Cut Thread", "🔩", "Thread a placed pin, cut it into a body, and apply 3D-print clearance and lead-in chamfer",
+       signal="cut_thread_clicked"),
     _c("jar", "Jar with Lid", "🫙", "A threaded jar and its screw lid, with thread tolerance, ready to print",
        signal="jar_clicked"),
     _c("pattern", "Pattern", "🔁", "Copy features (a rib and its fillets together): linear, circular, mirrored or "
@@ -157,11 +161,11 @@ COMMANDS: Dict[str, Command] = {c.cid: c for c in _ALL}
 
 # A dropdown in the ribbon: (dropdown id, label, icon, tip, [command ids]). With the matching setting off its
 # commands stand as separate buttons instead (Settings > ribbon layout).
-PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Pipe, Thread / Coil, Jar with Lid (each "
-              "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "pipe", "thread", "jar"])
+PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Pipe, Thread / Coil, Thread Pin, Jar with Lid (each "
+              "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "pipe", "thread", "thread_pin", "jar"])
 INSERT = ("insert", "Insert", "🖼️", "Canvas (Image), Import SVG and Import 3MF", ["canvas", "import_svg", "import_3mf"])
-MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Split Body, Offset Face, Move, Joint",
-               ["combine", "split_body", "offset_face", "move", "joint"])
+MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Cut Thread, Split Body, Offset Face, Move, Joint",
+               ["combine", "cut_thread", "split_body", "offset_face", "move", "joint"])
 INSPECT = ("inspect", "Inspect", "📏", "Measure, Section View, Document Statistics", ["measure", "section", "statistics"])
 EXPORT = ("export", "Export", "📤", "Screenshot, Copy Image, Rotating Video of the model as it is shown",
           ["screenshot", "copy_image", "turntable"])
@@ -189,7 +193,7 @@ MENUS: List[Tuple[str, list]] = [
     ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", None, PRIMITIVES,       # a tuple is a submenu that opens to the right (saves vertical space)
                 None, "pattern_linear", "pattern_circular", "mirror", "pattern_fill", None,
                 "offset_plane", "canvas"]),
-    ("Modify", ["fillet", "chamfer", "shell", "surface_texture", "offset_face", None, "combine", "split_body", "move", "joint", None,
+    ("Modify", ["fillet", "chamfer", "shell", "surface_texture", "offset_face", None, "combine", "cut_thread", "split_body", "move", "joint", None,
                 "parameters", "delete"]),
     ("Assemble", ["joint"]),
     ("Inspect", ["measure", "section", "statistics"]),

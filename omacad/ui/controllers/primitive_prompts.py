@@ -456,6 +456,8 @@ class PrimitivePromptsMixin:
                 vals = dlg.get_values()
                 feat = ThreadFeature("preview_thread", "Preview", **vals)
                 try:
+                    if vals.get("target_body_id") in self.doc.bodies:
+                        feat.find_run_out(self.doc.bodies[vals["target_body_id"]].manifold)
                     solid = feat.build_solid()
                 except Exception:
                     solid = None
@@ -517,3 +519,90 @@ class PrimitivePromptsMixin:
         self.dock(dlg)
         refresh_preview()
         on_pick_face()
+
+
+    @leaves_sketch
+    def prompt_thread_pin(self):
+        """Create a plain placement cylinder ('Thread Pin') to move into position before Cut Thread."""
+        import manifold3d as m3d
+        from omacad.model import quality
+        from omacad.ui.dialogs import ThreadPinDialog
+
+        dlg = ThreadPinDialog(self)
+
+        def preview():
+            v = dlg.get_values()
+            r = 0.5 * v["diameter"]
+            m = m3d.Manifold.cylinder(v["length"], r, r, circular_segments=quality.circle_segments())
+            self.viewport.set_preview(m, "new_body")
+
+        def finished(result):
+            self.viewport.set_preview(None)
+            if result:
+                v = dlg.get_values()
+                n = len([b for b in self.doc.bodies.values() if "Thread Pin" in b.name]) + 1
+                body = self.doc.add_cylinder(0.5 * v["diameter"], v["length"], name=f"Thread Pin {n}")
+                self.doc.timeline.last_added.exprs = dlg.get_expressions()
+                self.viewport.zoom_fit()
+                self.status_label.setText(f"Created {body.name} (D={v['diameter']} × {v['length']} mm). Move it into place (M), then run Cut Thread.")
+
+        timer = self._connect_debounced_preview(dlg, preview, throttle=True)
+        dlg.finished.connect(lambda _: timer.stop())
+        dlg.finished.connect(finished)
+        self.dock(dlg)
+        preview()
+
+    @leaves_sketch
+    def prompt_cut_thread(self):
+        """Thread a placed pin, cut it into a target body, and apply 3D-print clearance + lead-in chamfer."""
+        from omacad.model.features.cut_thread import CutThreadFeature
+        from omacad.ui.dialogs import CutThreadDialog
+
+        if len(self.doc.bodies) < 2:
+            QMessageBox.information(self, "Cut Thread", "Need at least two bodies (a target body and a placed pin cylinder).")
+            return
+
+        dlg = CutThreadDialog(self.doc, self, selected_ids=self.doc.selected_body_ids)
+
+        def refresh_preview():
+            vals = dlg.get_values()
+            t = self.doc.bodies.get(vals["target_body_id"])
+            p = self.doc.bodies.get(vals["pin_body_id"])
+            if not t or not p or vals["target_body_id"] == vals["pin_body_id"]:
+                self.viewport.set_preview(None)
+                return
+            try:
+                new_t, new_s = CutThreadFeature.compute(
+                    t.manifold,
+                    p.manifold,
+                    pitch=vals["pitch"],
+                    profile=vals["profile"],
+                    clearance=vals["clearance"],
+                    chamfer=vals["chamfer"],
+                    keep_screw=vals["keep_screw"],
+                )
+                prev_m = (new_t + new_s) if new_s is not None else new_t
+            except Exception:
+                prev_m = None
+            self.viewport.set_preview(prev_m, "new_body")
+
+        def finished(result):
+            self.viewport.set_preview(None)
+            if result:
+                vals = dlg.get_values()
+                feat = self.doc.cut_thread(exprs=dlg.get_expressions(), **vals)
+                if feat:
+                    self.status_label.setText(
+                        f"Cut Thread: clearance {vals['clearance']:g} mm, chamfer {vals['chamfer']:g} mm"
+                        + (" (kept screw)." if vals["keep_screw"] else ".")
+                    )
+                else:
+                    self.status_label.setText("Cut Thread: pick two different bodies.")
+
+        timer = self._connect_debounced_preview(dlg, refresh_preview, throttle=True)
+        dlg.finished.connect(lambda _: timer.stop())
+        dlg.finished.connect(finished)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport))
+        self.dock(dlg)
+        refresh_preview()

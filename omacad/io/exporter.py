@@ -14,7 +14,7 @@ from omacad.model.document import Document, Parameter, default_origin_vis
 from omacad.model.features.lip_joint import LipJointFeature
 from omacad.model.timeline import (Body, SketchFeature, BoxFeature, CylinderFeature, PrismFeature, SphereFeature,
                                     ExtrudeFeature, EmbossFeature, RevolveFeature, CombineFeature, FilletFeature,
-                                    PatternFeature, SplitBodyFeature, ShellFeature, MoveFeature, ImportMeshFeature, HoleFeature, DeleteBodyFeature, ThreadFeature, OffsetFaceFeature, HoneycombFeature,
+                                    PatternFeature, SplitBodyFeature, ShellFeature, MoveFeature, ImportMeshFeature, HoleFeature, DeleteBodyFeature, ThreadFeature, CutThreadFeature, OffsetFaceFeature, HoneycombFeature,
                                     ConeFeature, SweepFeature, LoftFeature, PipeFeature, WavySlicesFeature, KnurlFeature, JapandiFeature, JointFeature)
 from omacad import applog
 from omacad.model.sketch import Sketch
@@ -798,6 +798,9 @@ class Exporter:
                 doc.timeline.add_feature(feat)
             elif ft == "thread":
                 feat = ThreadFeature.from_dict(f_data)
+                doc.timeline.add_feature(feat)
+            elif ft == "cut_thread":
+                feat = CutThreadFeature.from_dict(f_data)
                 doc.timeline.add_feature(feat)
             else:
                 continue

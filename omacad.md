@@ -1,3 +1,8 @@
+## Thread Pin & Cut Thread — 2026-11-23 (0.9.9.80.203)
+
+- Tvåstegsflöde för gängade hål + skruv med spel och inskruvningsfas: **Thread Pin** (`prompt_thread_pin`, `ThreadPinDialog`, i `PRIMITIVES`) skapar en placeringscylinder; **Cut Thread** (`CutThreadFeature` i `omacad/model/features/cut_thread.py`, `Document.cut_thread`, `CutThreadDialog`, `prompt_cut_thread` i `MODIFY_BODY`) extraherar cylinderns axel/diameter/längd (`extract_pin_cylinder`), gängar den, cuttar mål-bodyn, applicerar spel (`0.2 mm` via `offset_thread` eller `zone(clr, channel=True)`) samt 45° kon-fas (`1.0 mm`) på hålmynning och skruvspetsar, med val att behålla skruven (`keep_screw=True`).
+- Test: `tests/test_cut_thread.py`.
+
 ## Offset Face på fristående gängad cylinder — 2026-11-23 (0.9.9.80.202, rapport 20261123-184228)
 
 - `ThreadFeature.zone` (`omacad/model/features/thread.py`) använde `0.5 * used_diameter` (ytterdiametern) i stället för `root_radius()`, vilket svalde hela gängspåret i kärncylindern så `zone_triangles` missade flanker/botten och `offset_thread(-0.2)` bara hyvlade av topparna. `CadKernel.create_thread` (`omacad/model/kernel.py`) tar nu `core_radius` så även `r_in` krymper med negativa offsetar och spiralen sitter fast i kärnan.

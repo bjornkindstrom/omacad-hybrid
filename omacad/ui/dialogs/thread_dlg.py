@@ -140,6 +140,13 @@ class ThreadDialog(BaseFeatureDialog):
         self.cmb_taper.currentIndexChanged.connect(lambda _: self.changed.emit())
         grp_lay.addRow("Lead-in:", self.cmb_taper)
 
+        self.chk_run_out = QCheckBox("Run out at open ends")
+        self.chk_run_out.setToolTip("A thread in a hole runs on out through an end that opens into the air, so the screw "
+                                    "finds it, instead of starting with a blunt step in the mouth.")
+        self.chk_run_out.setChecked(True)
+        self.chk_run_out.toggled.connect(lambda _: self.changed.emit())
+        grp_lay.addRow("", self.chk_run_out)
+
         form.addRow(grp_3d)
 
         # Placement Face button & label
@@ -403,6 +410,7 @@ class ThreadDialog(BaseFeatureDialog):
             "profile": profile_type,
             "taper_lead_in": bool(self.cmb_taper.currentData()[0]),
             "taper_turns": float(self.cmb_taper.currentData()[1]),
+            "run_out": bool(op == "cut" and self.chk_run_out.isChecked()),
             "target_body_id": target_bid,
             "operation": op,
             "plane_origin": self.plane_origin,
@@ -416,3 +424,157 @@ class ThreadDialog(BaseFeatureDialog):
             "host_offset": (self.spn_dia.value() - self.host_diameter) if self.host_diameter is not None else 0.0,
         }
 
+
+
+
+class ThreadPinDialog(BaseFeatureDialog):
+    """Create a plain placement cylinder ('Thread Pin') to move into position before Cut Thread."""
+
+    changed = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__("Thread Pin", parent)
+
+        grp = QGroupBox("Pin Size")
+        form = QFormLayout(grp)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+
+        self.spn_dia = ExprDoubleSpinBox()
+        self.spn_dia.setRange(2.0, 300.0)
+        self.spn_dia.setValue(10.0)
+        self.spn_dia.setSingleStep(1.0)
+        self.spn_dia.setSuffix(" mm")
+        self.spn_dia.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Diameter:", self.spn_dia)
+
+        self.spn_length = ExprDoubleSpinBox()
+        self.spn_length.setRange(2.0, 500.0)
+        self.spn_length.setValue(25.0)
+        self.spn_length.setSingleStep(1.0)
+        self.spn_length.setSuffix(" mm")
+        self.spn_length.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Length:", self.spn_length)
+
+        self.main_layout.addWidget(grp)
+        note = QLabel("Move this pin into place (M), then run Cut Thread.")
+        note.setWordWrap(True)
+        self.main_layout.addWidget(note)
+        self.add_buttons()
+
+    def get_values(self) -> dict:
+        return {"diameter": self.spn_dia.value(), "length": self.spn_length.value()}
+
+    def get_expressions(self) -> dict:
+        out = {"radius": f"({self.spn_dia.expression()}) / 2" if self.spn_dia.expression() else "",
+               "height": self.spn_length.expression()}
+        return {k: v for k, v in out.items() if v}
+
+
+class CutThreadDialog(BaseFeatureDialog):
+    """Thread a placed cylinder pin, cut it into a target body, and apply clearance + lead-in chamfer."""
+
+    changed = Signal()
+
+    def __init__(self, doc, parent=None, selected_ids=None):
+        super().__init__("Cut Thread", parent)
+        self.doc = doc
+
+        grp = QGroupBox("Bodies")
+        form = QFormLayout(grp)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+
+        self.cmb_target = QComboBox()
+        self.cmb_pin = QComboBox()
+        bodies = list(doc.bodies.values()) if doc else []
+        for b in bodies:
+            self.cmb_target.addItem(b.name, b.body_id)
+            self.cmb_pin.addItem(b.name, b.body_id)
+
+        # Smart defaults: pick a Thread Pin (or second body) as pin, and another body as target
+        sel = list(selected_ids or [])
+        pin_idx = next((i for i, b in enumerate(bodies) if "Thread Pin" in b.name or "Cylinder" in b.name), -1)
+        if len(sel) >= 2:
+            t_idx = next((i for i, b in enumerate(bodies) if b.body_id == sel[0]), 0)
+            p_idx = next((i for i, b in enumerate(bodies) if b.body_id == sel[1]), 0)
+            self.cmb_target.setCurrentIndex(t_idx)
+            self.cmb_pin.setCurrentIndex(p_idx)
+        elif pin_idx >= 0 and len(bodies) >= 2:
+            self.cmb_pin.setCurrentIndex(pin_idx)
+            self.cmb_target.setCurrentIndex(0 if pin_idx != 0 else 1)
+        elif len(bodies) >= 2:
+            self.cmb_target.setCurrentIndex(0)
+            self.cmb_pin.setCurrentIndex(1)
+
+        self.cmb_target.currentIndexChanged.connect(lambda _: self.changed.emit())
+        self.cmb_pin.currentIndexChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Target Body:", self.cmb_target)
+        form.addRow("Thread Pin:", self.cmb_pin)
+        self.main_layout.addWidget(grp)
+
+        grp_t = QGroupBox("Thread, Tolerance & Chamfer")
+        form_t = QFormLayout(grp_t)
+        form_t.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+
+        self.cmb_profile = QComboBox()
+        self.cmb_profile.addItem("3D Print (45° Trapezoidal)", "trapezoidal_45")
+        self.cmb_profile.addItem("ISO Metric (60°)", "iso_60")
+        self.cmb_profile.addItem("Bottle / Jar (Round)", "round")
+        self.cmb_profile.currentIndexChanged.connect(lambda _: self.changed.emit())
+        form_t.addRow("Profile:", self.cmb_profile)
+
+        self.spn_pitch = ExprDoubleSpinBox()
+        self.spn_pitch.setRange(0.4, 20.0)
+        self.spn_pitch.setValue(2.0)
+        self.spn_pitch.setSingleStep(0.25)
+        self.spn_pitch.setSuffix(" mm")
+        self.spn_pitch.valueChanged.connect(lambda _: self.changed.emit())
+        form_t.addRow("Pitch:", self.spn_pitch)
+
+        self.spn_clearance = ExprDoubleSpinBox()
+        self.spn_clearance.setRange(0.0, 2.0)
+        self.spn_clearance.setValue(0.2)
+        self.spn_clearance.setSingleStep(0.05)
+        self.spn_clearance.setSuffix(" mm")
+        self.spn_clearance.setToolTip("3D-printer clearance gap between screw and hole.")
+        self.spn_clearance.valueChanged.connect(lambda _: self.changed.emit())
+        form_t.addRow("Clearance:", self.spn_clearance)
+
+        self.chk_chamfer = QCheckBox("Lead-in chamfer (hole & screw)")
+        self.chk_chamfer.setChecked(True)
+        self.chk_chamfer.toggled.connect(lambda on: (self.spn_chamfer.setEnabled(on), self.changed.emit()))
+        form_t.addRow(self.chk_chamfer)
+
+        self.spn_chamfer = ExprDoubleSpinBox()
+        self.spn_chamfer.setRange(0.1, 10.0)
+        self.spn_chamfer.setValue(1.0)
+        self.spn_chamfer.setSingleStep(0.2)
+        self.spn_chamfer.setSuffix(" mm")
+        self.spn_chamfer.valueChanged.connect(lambda _: self.changed.emit())
+        form_t.addRow("Chamfer size:", self.spn_chamfer)
+
+        self.chk_keep_screw = QCheckBox("Keep screw body")
+        self.chk_keep_screw.setChecked(True)
+        self.chk_keep_screw.toggled.connect(lambda _: self.changed.emit())
+        form_t.addRow(self.chk_keep_screw)
+
+        self.main_layout.addWidget(grp_t)
+        self.add_buttons()
+
+    def get_values(self) -> dict:
+        return {
+            "target_body_id": self.cmb_target.currentData(),
+            "pin_body_id": self.cmb_pin.currentData(),
+            "pitch": self.spn_pitch.value(),
+            "profile": str(self.cmb_profile.currentData() or "trapezoidal_45"),
+            "clearance": self.spn_clearance.value(),
+            "chamfer": self.spn_chamfer.value() if self.chk_chamfer.isChecked() else 0.0,
+            "keep_screw": self.chk_keep_screw.isChecked(),
+        }
+
+    def get_expressions(self) -> dict:
+        out = {
+            "pitch": self.spn_pitch.expression(),
+            "clearance": self.spn_clearance.expression(),
+            "chamfer": self.spn_chamfer.expression() if self.chk_chamfer.isChecked() else "",
+        }
+        return {k: v for k, v in out.items() if v}
