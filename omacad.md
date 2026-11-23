@@ -1,3 +1,9 @@
+## Sfärisk Surface Texture (Cells) utan kvarlämnat skräp — 2026-11-23 (0.9.9.80.210, rapport 20261123-220728)
+
+- `spherical_wall` (`omacad/model/features/curved_surface.py`) sparar nu ytans faktiska min-/max-hörnradie (`r_min`, `r_max`), eftersom `fit_sphere_patch` anpassar `wall.R` till triangelcentroiderna som ligger ~0,05 mm innanför sfärens verkliga hörn (`24,947` mot `25,000`).
+- `spherical_surface_tool` (`omacad/model/features/honeycomb.py`) använder `r_max`/`r_min` plus `AIR + step²/R` (som täcker både hörnradien och verktygslockets kordasagitta) samt `+0,25 mm` genomslagsmarginal vid `through=True`, så varken polygoner eller SVG-stjärnor lämnar flytande ytskräp kvar i hålen.
+- Test: `tests/test_curved_surface_texture.py::test_spherical_surface_texture_no_debris_across_shapes`.
+
 ## Surface Texture (Cells) på sfäriska ytor — 2026-11-23 (0.9.9.80.209, rapport 20261123-215451)
 
 - `curved_surface_tool` (`omacad/model/features/honeycomb.py`) föll tillbaka på `(None, 0)` när `curved_wall` returnerade `None` för dubbelkrökta ytor (t.ex. ihåliga sfärer med urtag), och `detect_cylinder_surface` (`omacad/model/faces_hit_tests.py`) kunde dessutom felklassa en inre sfärs ekvatorsband som en kort cylinder via `_wall_mask`.

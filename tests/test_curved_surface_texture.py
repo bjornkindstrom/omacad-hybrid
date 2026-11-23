@@ -129,3 +129,36 @@ def test_spherical_surface_texture_cuts_holes_in_hollow_sphere():
         assert cells > 50
         assert res.status().name == "NoError"
         assert res.volume() < vol_before * 0.85
+        assert len(res.decompose()) == 1
+
+
+@pytest.mark.parametrize("shape", ["hexagon", "circle", "square", "diamond", "triangle", "voronoi", "svg"])
+def test_spherical_surface_texture_no_debris_across_shapes(tmp_path, shape):
+    from pathlib import Path
+    from omacad.io.exporter import Exporter
+    from omacad.model.features.offset_face import face_to_ref
+
+    doc = Exporter.load_project(str(Path(__file__).parent / "data" / "hollow_sphere_surface_texture.omacad"))
+    body = doc.bodies["body_sphere_1"]
+    body.update_render_mesh()
+    rm = body.render_mesh
+    tris = np.asarray(rm.vertices, dtype=np.float64).reshape(-1, 3, 3)
+    i_outer = int(np.argmax(tris.mean(axis=1)[:, 0]))
+    ref = face_to_ref(rm.curved_surface(i_outer), body)
+
+    params = HoneycombFeature("h", "h", body.body_id, shape=shape).params()
+    if shape == "svg":
+        star_svg = tmp_path / "star.svg"
+        star_svg.write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+            '<polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35"/>'
+            '</svg>'
+        )
+        params["svg_path"] = str(star_svg)
+
+    res, cells, skipped = HoneycombFeature.compute(body.manifold, [ref], params)
+    assert skipped == 0
+    assert cells > 20
+    assert res.status().name == "NoError"
+    assert res.volume() < body.manifold.volume()
+    assert len(res.decompose()) == 1

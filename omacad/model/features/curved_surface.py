@@ -222,9 +222,12 @@ class SphericalWall:
     """A spherical surface patch parameterized in conformal Mercator (u, v) around its frame M."""
 
     def __init__(self, center: np.ndarray, radius: float, internal: bool, M: np.ndarray,
-                 region: sg.base.BaseGeometry, v_max: float):
+                 region: sg.base.BaseGeometry, v_max: float,
+                 r_min: Optional[float] = None, r_max: Optional[float] = None):
         self.center = np.asarray(center, dtype=float)
         self.R = float(radius)
+        self.r_min = float(radius if r_min is None else r_min)
+        self.r_max = float(radius if r_max is None else r_max)
         self.internal = bool(internal)
         self.M = np.asarray(M, dtype=float)
         self.region = region
@@ -294,6 +297,8 @@ def spherical_wall(manifold, ref: Dict[str, Any], max_lat_deg: float = 72.0) -> 
     M_inv = np.linalg.inv(M)
     local_verts = verts @ M_inv[:3, :3].T + M_inv[:3, 3]
     p_tris = local_verts[tris[idx_in]]
+    vert_r = np.linalg.norm(p_tris, axis=2)
+    r_min, r_max = float(vert_r.min()), float(vert_r.max())
 
     r_xy = np.hypot(p_tris[:, :, 0], p_tris[:, :, 1])
     th = np.arctan2(p_tris[:, :, 1], p_tris[:, :, 0])
@@ -319,4 +324,4 @@ def spherical_wall(manifold, ref: Dict[str, Any], max_lat_deg: float = 72.0) -> 
     period = 2.0 * math.pi * R
     region = unary_union([affinity.translate(region, -period, 0.0), region, affinity.translate(region, period, 0.0)])
     v_max = R * math.asinh(math.tan(phi_max))
-    return SphericalWall(center, R, internal, M, region, v_max)
+    return SphericalWall(center, R, internal, M, region, v_max, r_min=r_min, r_max=r_max)

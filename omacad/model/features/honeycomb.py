@@ -429,10 +429,20 @@ def spherical_surface_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional
         centres.append(p)
         inward.append(n if wall.internal else -n)
     depths = _depths(centres, inward, rays, None if params["through"] else params["depth"])
+    if params["through"]:
+        # A faceted/curved far wall can sit closer to the surface at cell corners than at the centroid ray
+        depths = [d + 0.25 if d > 0 else d for d in depths]
     step = max(0.2, wall.R * math.radians(3.0))
+    # Clear both the tessellation's vertex radius (R is fitted to centroids) and the tool cap's chord sagitta
+    pad = AIR + step * step / wall.R
     tools = []
     for d, group in _grouped(cells, depths).items():
-        r_in, r_out = (max(wall.R - d, 0.01), wall.R + AIR) if not wall.internal else (wall.R - AIR, wall.R + d)
+        if not wall.internal:
+            r_in = max(wall.R - d, 0.01)
+            r_out = max(wall.R, wall.r_max) + pad
+        else:
+            r_in = max(min(wall.R, wall.r_min) - pad, 0.01)
+            r_out = wall.R + d
         cs = region_cross_section(segmentize(unary_union(group), max_segment_length=step))
         prism = m3d.Manifold.extrude(cs, height=1.0, n_divisions=2).refine_to_length(step)
         tools.append(prism.warp_batch(wall.warp(r_in, r_out)).transform(wall.M[:3, :]))

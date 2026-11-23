@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.210
+
+### Fixed
+- **Spherical Surface Texture (Cells) debris**: `SphericalWall` (`omacad/model/features/curved_surface.py`) now records the patch's actual vertex radial bounds (`r_min`, `r_max`), and `spherical_surface_tool` (`omacad/model/features/honeycomb.py`) clears those bounds plus tool-cap chord sagitta (`AIR + step**2 / R`) and adds a `0.25 mm` through-cut overshoot so polygons and SVG stars no longer leave floating skin fragments inside the cut cells.
+
 # Hybrid-experiment — 0.9.9.80.209
 
 ### Fixed
