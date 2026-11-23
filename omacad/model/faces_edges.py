@@ -39,7 +39,7 @@ def tangent_chain(edge, edges) -> list:
 
 LOOP_WALL_LEAN = 0.7   # |cos| between a wall and the face it rounds with: walls up to ~45° off square
 
-def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar) -> list:
+def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar, claimed=None) -> list:
     """Outlines of flat faces made of straight pieces, arcs and free-form curves with square or leaning walls
     (see LoopEdge)."""
     by_face: dict = {}
@@ -126,6 +126,8 @@ def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar) -> list:
                     if ws[k] is None:
                         ws[k] = ws[max([j for j in known if j < k], default=known[-1])]
                 walls = np.array(ws)
+            if claimed is not None:
+                claimed.add(pr)
             out.append(LoopEdge(pts.copy(), n_pl.copy(), kinds == {1}, walls))
     return out
 
@@ -290,7 +292,7 @@ def _edge_from(c, t):
     convex = float(c["n1"] @ (c["tb"] - m)) < 0
     return PlanarEdge(p0, p1, c["n1"], c["n2"], d1, d2, convex)
 
-def _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, planar, normals) -> list:
+def _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, planar, normals, claimed=None) -> list:
     """Closed loops where a flat face meets the strips of a cylinder whose axis is the face normal."""
     # cluster the strips of one curved surface (shallow-angle neighbours belong together)
     cl = {r: r for r in curved}
@@ -420,6 +422,8 @@ def _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, plan
         s2 = 1.0 if float((third_cu - center) @ n_plane) > 0 else -1.0
         convex = float(n_plane @ (third_cu - m)) < 0
         if closed:
+            if claimed is not None:
+                claimed.add(pr)
             out.append(CircularEdge(center, n_plane.copy(), R, s1, s2, convex, len(segs)))
             continue
         # an open arc: walk the chain from one end and measure the angle it covers
@@ -444,6 +448,8 @@ def _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, plan
             a0, sweep = float(ang[-1]), -sweep
         if sweep < np.radians(8.0) or sweep > 2 * np.pi - 0.2:
             continue
+        if claimed is not None:
+            claimed.add(pr)
         out.append(CircularEdge(center, n_plane.copy(), R, s1, s2, convex, int(round(len(segs) * 2 * np.pi / sweep)), a0, sweep))
     return _join_arcs(out, v)
 

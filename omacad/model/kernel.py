@@ -518,45 +518,81 @@ class CadKernel:
 
     @staticmethod
     def curve_round_tool(edge, size: float, kind: str, arc_segments: int = 16, size2=None) -> m3d.Manifold:
-        """Fillet or chamfer around a closed circular crease between two curved surfaces."""
-        fit = edge.circle_fit() if hasattr(edge, "circle_fit") else None
-        if fit is None or getattr(edge, "n1", None) is None or getattr(edge, "n2", None) is None:
+        """Fillet or chamfer around a closed crease between two curved surfaces (circular or free-form 3D loop)."""
+        if not getattr(edge, "closed", False) or getattr(edge, "n1", None) is None or getattr(edge, "n2", None) is None:
             return m3d.Manifold()
-        center, axis, u, w, R, wobble = fit
-        P = edge.pts[:-1]
-        n1s = edge.n1[:-1]
-        n2s = edge.n2[:-1]
-        rad = P - center - np.outer((P - center) @ axis, axis)
-        rad_len = np.linalg.norm(rad, axis=1, keepdims=True)
-        rad = rad / np.maximum(rad_len, 1e-12)
-        n1_ra = np.c_[(n1s * rad).sum(axis=1), n1s @ axis].mean(axis=0)
-        n2_ra = np.c_[(n2s * rad).sum(axis=1), n2s @ axis].mean(axis=0)
-        if np.linalg.norm(n1_ra) < 1e-6 or np.linalg.norm(n2_ra) < 1e-6:
-            return m3d.Manifold()
-        n1_ra /= np.linalg.norm(n1_ra)
-        n2_ra /= np.linalg.norm(n2_ra)
-        e2 = n1_ra
-        e1 = np.array([-e2[1], e2[0]])
-        if (e1 @ n2_ra > 0) == bool(edge.convex):
-            e1 = -e1
         r = abs(float(size))
         r2 = r if size2 is None else abs(float(size2))
-        margin = max(0.25 * r + 0.1, 2.0 * wobble + 0.05) if edge.convex else max(0.05 * r + 0.05, 2.0 * wobble + 0.02)
-        sec = CadKernel._loop_section(kind, bool(edge.convex), r, r2, margin, arc_segments,
-                                      wall=(float(n2_ra @ e1), float(n2_ra @ e2)))
-        poly = [(R + a * e1[0] + h * e2[0], a * e1[1] + h * e2[1]) for a, h in sec]
-        area = sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1]
-                   for i in range(len(poly)))
-        if area < 0:
-            poly.reverse()
-        cs = m3d.CrossSection([[list(map(float, q)) for q in poly]])
-        if min(q[0] for q in poly) < 0:
-            half = m3d.CrossSection([[(0.0, -1e6), (1e6, -1e6), (1e6, 1e6), (0.0, 1e6)]])
-            cs = cs ^ half
-        if cs.is_empty():
+        if r <= 1e-6:
             return m3d.Manifold()
-        solid = m3d.Manifold.revolve(cs, circular_segments=max(len(P), 64))
-        return solid.transform(np.column_stack([u, w, axis, center]).astype(float))
+        fit = edge.circle_fit() if hasattr(edge, "circle_fit") else None
+        if fit is not None:
+            center, axis, u, w, R, wobble = fit
+            P = edge.pts[:-1]
+            n1s = edge.n1[:-1]
+            n2s = edge.n2[:-1]
+            rad = P - center - np.outer((P - center) @ axis, axis)
+            rad = rad / np.maximum(np.linalg.norm(rad, axis=1, keepdims=True), 1e-12)
+            n1_ra = np.c_[(n1s * rad).sum(axis=1), n1s @ axis].mean(axis=0)
+            n2_ra = np.c_[(n2s * rad).sum(axis=1), n2s @ axis].mean(axis=0)
+            if np.linalg.norm(n1_ra) >= 1e-6 and np.linalg.norm(n2_ra) >= 1e-6:
+                n1_ra /= np.linalg.norm(n1_ra)
+                n2_ra /= np.linalg.norm(n2_ra)
+                e2 = n1_ra
+                e1 = np.array([-e2[1], e2[0]])
+                if (e1 @ n2_ra > 0) == bool(edge.convex):
+                    e1 = -e1
+                margin = (max(0.25 * r + 0.1, 2.0 * wobble + 0.05) if edge.convex
+                          else max(0.05 * r + 0.05, 2.0 * wobble + 0.02))
+                sec = CadKernel._loop_section(kind, bool(edge.convex), r, r2, margin, arc_segments,
+                                              wall=(float(n2_ra @ e1), float(n2_ra @ e2)))
+                poly = [(R + a * e1[0] + h * e2[0], a * e1[1] + h * e2[1]) for a, h in sec]
+                area = sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1]
+                           for i in range(len(poly)))
+                if area < 0:
+                    poly.reverse()
+                cs = m3d.CrossSection([[list(map(float, q)) for q in poly]])
+                if min(q[0] for q in poly) < 0:
+                    half = m3d.CrossSection([[(0.0, -1e6), (1e6, -1e6), (1e6, 1e6), (0.0, 1e6)]])
+                    cs = cs ^ half
+                if not cs.is_empty():
+                    solid = m3d.Manifold.revolve(cs, circular_segments=max(len(P), 64))
+                    return solid.transform(np.column_stack([u, w, axis, center]).astype(float))
+        from omacad.model.sweep_geometry import ring_solid
+        P, n1s, n2s = edge.pts[:-1], edge.n1[:-1], edge.n2[:-1]
+        min_step = min(0.25, 0.02 * edge.length)
+        keep = [0]
+        for i in range(1, len(P)):
+            if np.linalg.norm(P[i] - P[keep[-1]]) >= min_step:
+                keep.append(i)
+        if len(keep) > 3 and np.linalg.norm(P[keep[0]] - P[keep[-1]]) < min_step:
+            keep.pop()
+        if len(keep) < 3:
+            return m3d.Manifold()
+        P, n1s, n2s = P[keep], n1s[keep], n2s[keep]
+        N = len(P)
+        margin = 0.15 * r + 0.05 if edge.convex else 0.05 * r + 0.02
+        rings = []
+        for i in range(N):
+            t = P[(i + 1) % N] - P[i - 1]
+            t_len = float(np.linalg.norm(t))
+            if t_len < 1e-12:
+                continue
+            t /= t_len
+            n1 = n1s[i] - (n1s[i] @ t) * t
+            n2 = n2s[i] - (n2s[i] @ t) * t
+            if np.linalg.norm(n1) < 1e-6 or np.linalg.norm(n2) < 1e-6:
+                continue
+            n1 /= np.linalg.norm(n1)
+            n2 /= np.linalg.norm(n2)
+            e1 = np.cross(t, n1)
+            if (e1 @ n2 > 0) == bool(edge.convex):
+                e1 = -e1
+            e2 = n1
+            sec = CadKernel._loop_section(kind, bool(edge.convex), r, r2, margin, arc_segments,
+                                          wall=(float(n2 @ e1), float(n2 @ e2)))
+            rings.append(np.array([P[i] + a * e1 + h * e2 for a, h in sec]))
+        return ring_solid(rings, closed=True) if len(rings) >= 3 else m3d.Manifold()
 
     @staticmethod
     def round_cove_tool(edge, radius: float, extend=0.0) -> m3d.Manifold:

@@ -117,12 +117,38 @@ def test_cylinder_on_sphere_seam_is_pickable_and_filletable():
     body = doc.bodies["body_sphere_1"]
 
     assert not [e for e in body.edges if e.kind == "wrapped"]
-    seam = [e for e in body.edges if e.kind == "curve" and e.is_roundable()]
+    roundable = [e for e in body.edges if e.kind == "curve" and e.is_roundable()]
+    assert len(roundable) == 3
+    assert all(e.closed for e in roundable)
+    seam = [e for e in roundable if not e.convex]
     assert len(seam) == 1
-    assert seam[0].closed and not seam[0].convex
 
     vol_before = body.manifold.volume()
     fillet = doc.add_fillet([seam[0].ref()], 2.0)
     assert fillet.skipped == 0
     assert body.manifold.genus() == 0
     assert body.manifold.volume() > vol_before
+
+
+def test_non_circular_closed_curve_edges_fillet_and_chamfer():
+    """Closed non-circular 3D CurveEdges (off-center cylinder on sphere, two intersecting cylinders)
+    must be selectable as single closed loops and support both Fillet and Chamfer."""
+    import manifold3d as m3d
+    from omacad.model.document import Document
+    from omacad.model.features.base import Body
+
+    for idx, (manifold, kind) in enumerate([
+        (m3d.Manifold.sphere(25.0, 64) + m3d.Manifold.cylinder(40.0, 8.0, 8.0, 48).translate((8.0, 0.0, 0.0)), "fillet"),
+        (m3d.Manifold.cylinder(50.0, 15.0, 15.0, 48, center=True) + m3d.Manifold.cylinder(50.0, 8.0, 8.0, 48, center=True).rotate((90.0, 0.0, 0.0)), "chamfer"),
+    ]):
+        doc = Document()
+        bid = f"b_{idx}"
+        doc.bodies[bid] = Body(bid, f"B{idx}", manifold)
+        doc.bodies[bid].update_render_mesh()
+        curves = [e for e in doc.bodies[bid].edges if e.kind == "curve" and e.is_roundable()]
+        assert curves and all(e.closed and e.circle_fit() is None for e in curves)
+        vol_before = doc.bodies[bid].manifold.volume()
+        feat = doc.add_fillet([e.ref() for e in curves], 2.0, kind=kind)
+        assert feat.skipped == 0
+        assert doc.bodies[bid].manifold.genus() == 0
+        assert doc.bodies[bid].manifold.volume() > vol_before

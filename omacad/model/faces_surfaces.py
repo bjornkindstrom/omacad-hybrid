@@ -436,14 +436,15 @@ def compute_planar_faces_and_edges(manifold: m3d.Manifold, body_id: str = "") ->
         if cur is not None:
             edges.append(_edge_from(cur, t))
     lines = [e for e in edges if e is not None and e.length > 1e-6]
-    loops = _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar)
+    claimed_planar = {r for pair in buckets for r in pair}
+    loops = _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar, claimed=claimed_planar)
     # straight pieces of a loop stay edges of their own (Björn #104, see faces_edges)
     lines = drop_round_loop_chords(lines, loops)
-    all_edges = lines + _circles_for_round_loops(loops, _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, planar, normals))
+    all_edges = lines + _circles_for_round_loops(loops, _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, planar, normals, claimed=claimed_planar))
     from omacad.model.wrapped_edges import cylindrical_contours
     all_edges += cylindrical_contours(v, f, tm)
     from omacad.model.curve_edges import curve_edges
-    all_edges += curve_edges(v, f, tm, find, planar)
+    all_edges += curve_edges(v, f, tm, find, planar, claimed_planar=claimed_planar)
 
     if len(_TOPOLOGY_CACHE) >= _TOPOLOGY_CACHE_MAX:
         _TOPOLOGY_CACHE.clear()

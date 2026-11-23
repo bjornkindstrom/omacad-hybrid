@@ -45,7 +45,7 @@ class CurveEdge:
         return center, axis, u, w, R, max(plane_err, circle_err)
 
     def is_roundable(self) -> bool:
-        return self.n1 is not None and self.n2 is not None and self.circle_fit() is not None
+        return bool(self.closed and len(self.pts) >= 4 and self.n1 is not None and self.n2 is not None)
 
     @property
     def length(self) -> float:
@@ -70,7 +70,7 @@ class CurveEdge:
         return getattr(other, "kind", "") == self.kind and self.matches(other.ref())
 
 
-def curve_edges(v, f, tm, find, planar) -> list:
+def curve_edges(v, f, tm, find, planar, claimed_planar=None) -> list:
     """Chains of mesh edges sharper than CREASE_DEG where neither side is a flat face, joined through vertices
     that only two of them meet in."""
     adj, edge_ids = tm.face_adjacency, tm.face_adjacency_edges
@@ -78,16 +78,11 @@ def curve_edges(v, f, tm, find, planar) -> list:
     diag = float(np.linalg.norm(np.ptp(v, axis=0))) or 1.0
     area = tm.area_faces
     face_normals = tm.face_normals
-    patch_area: dict[int, float] = {}
-    for tri_idx in range(len(f)):
-        r = find(tri_idx)
-        if r in planar:
-            patch_area[r] = patch_area.get(r, 0.0) + float(area[tri_idx])
-    real_planar = {r for r, a in patch_area.items() if a >= 1e-4 * diag * diag}
+    skip = planar if claimed_planar is None else claimed_planar
     segs = []
     for (a, b), (e0, e1), keep in zip(adj, edge_ids, sharp):
         ra, rb = find(int(a)), find(int(b))
-        if keep and ra not in real_planar and rb not in real_planar \
+        if keep and not (ra in planar and rb in planar) and ra not in skip and rb not in skip \
                 and area[a] > 1e-12 * diag * diag and area[b] > 1e-12 * diag * diag:
             na, nb = face_normals[a], face_normals[b]
             if float(np.cross(na, nb) @ (v[e1] - v[e0])) < 0:

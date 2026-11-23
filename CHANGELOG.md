@@ -3,6 +3,11 @@
 ### Fixed
 - **Fillet/Chamfer on cylinder-sphere seam**: `cylindrical_contours` (`omacad/model/wrapped_edges.py`) now skips contours that encircle the entire cylinder, so they are no longer exposed as unroundable `WrappedLoopEdge`s shadowing the roundable `CurveEdge` at the seam.
 
+# Hybrid-experiment — 0.9.9.80.208
+
+### Fixed
+- **Curve edges & Fillet on all curved intersections**: `curve_edges` now only skips `planar` patches that actually own a `PlanarEdge`, `LoopEdge`, or `CircularEdge`, so larger sphere facets (`0.6–1.2 mm²`) no longer break circular sphere-cut rims into unroundable open segments; and `CadKernel.curve_round_tool` now also sweeps non-circular closed 3D `CurveEdge`s (e.g. off-center cylinder-sphere or intersecting cylinders) with `ring_solid` for both Fillet and Chamfer.
+
 # Hybrid-experiment — 0.9.9.80.206
 
 ### Fixed
