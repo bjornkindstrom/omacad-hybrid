@@ -38,15 +38,18 @@ def extract_pin_cylinder(manifold: m3d.Manifold) -> Tuple[list, list, list, list
     c1 = np.asarray(f1.origin, dtype=float)
     c2 = np.asarray(f2.origin, dtype=float)
     if float(np.dot(c2 - c1, n)) < 0.0:
-        c1, c2 = c2, c1
         n = -n
-    length = abs(float(np.dot(c2 - c1, n)))
-    diameter = 2.0 * math.sqrt(max(f1.area, 1e-9) / math.pi)
     hint = np.array([1.0, 0.0, 0.0]) if abs(n[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
     u = hint - float(np.dot(hint, n)) * n
     u /= max(float(np.linalg.norm(u)), 1e-12)
     v = np.cross(n, u)
-    return c1.tolist(), n.tolist(), u.tolist(), v.tolist(), float(diameter), float(length)
+    verts = np.asarray(manifold.to_mesh().vert_properties, dtype=float)[:, :3]
+    px, py, pz = verts @ u, verts @ v, verts @ n
+    z_min, z_max = float(pz.min()), float(pz.max())
+    origin = (0.5 * float(px.min() + px.max())) * u + (0.5 * float(py.min() + py.max())) * v + z_min * n
+    length = z_max - z_min
+    diameter = 0.5 * (float(px.max() - px.min()) + float(py.max() - py.min()))
+    return origin.tolist(), n.tolist(), u.tolist(), v.tolist(), float(diameter), float(length)
 
 
 def _cone_z(z0: float, z1: float, r0: float, r1: float, mat: Optional[np.ndarray], seg: int) -> m3d.Manifold:

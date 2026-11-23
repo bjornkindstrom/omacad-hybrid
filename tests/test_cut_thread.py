@@ -90,3 +90,20 @@ def test_thread_pin_and_cut_thread_dialogs():
     assert vals["chamfer"] == pytest.approx(1.0)
     assert vals["keep_screw"] is True
     assert vals["target_body_id"] != vals["pin_body_id"]
+
+
+
+def test_cut_thread_off_origin_pin_stays_in_place():
+    doc = Document()
+    box = doc.add_box(50, 50, 25, center="bottom_center")
+    pin = doc.add_cylinder(5.0, 25.0, name="Thread Pin 1")
+    doc.move_body(pin.body_id, dx=10.0, dy=5.0, dz=13.0)
+    bb0 = pin.manifold.bounding_box()
+    doc.cut_thread(box.body_id, pin.body_id, pitch=2.0, clearance=0.2, chamfer=1.0, keep_screw=True)
+    bb1 = doc.bodies[pin.body_id].manifold.bounding_box()
+    assert bb1[0] == pytest.approx(bb0[0] + 0.2, abs=1e-3)
+    assert bb1[3] == pytest.approx(bb0[3] - 0.2, abs=1e-3)
+    assert bb1[1] == pytest.approx(bb0[1] + 0.2, abs=1e-3)
+    assert bb1[4] == pytest.approx(bb0[4] - 0.2, abs=1e-3)
+    assert bb1[2] == pytest.approx(bb0[2], abs=1e-3)
+    assert bb1[5] == pytest.approx(bb0[5], abs=1e-3)

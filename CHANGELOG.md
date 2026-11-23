@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.204
+
+### Fixed
+- **Cut Thread**: `extract_pin_cylinder` now computes the cylinder's center from its mesh bounds instead of `PlanarFace.origin` (which could be off-center on moved cylinders), so the threaded screw stays in place.
+
 # Hybrid-experiment — 0.9.9.80.203
 
 ### Added
