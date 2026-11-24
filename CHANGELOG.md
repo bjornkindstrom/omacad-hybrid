@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.213
+
+### Fixed
+- **Smooth shading around sharp cutouts on curved surfaces**: `CadKernel._flat_triangles` (`omacad/model/kernel.py`) no longer flat-shades coplanar patches that have smooth (`< 30°`) solid neighbours (those are handled by `_wide_flat_triangles` when truly wider than adjacent curved strips), eliminating faceted shading artifacts around star cutouts on spheres.
+
 # Hybrid-experiment — 0.9.9.80.212
 
 ### Added

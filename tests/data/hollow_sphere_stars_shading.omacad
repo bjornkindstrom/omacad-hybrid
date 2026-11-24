@@ -1,0 +1,138 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "sphere_1": "object_sphere_1",
+      "shell_2": "object_sphere_1",
+      "honeycomb_3": "object_sphere_1"
+    },
+    "names": {},
+    "outputs": {
+      "sphere_1": [
+        "body_sphere_1"
+      ],
+      "shell_2": [
+        "body_sphere_1"
+      ],
+      "honeycomb_3": [
+        "body_sphere_1"
+      ]
+    },
+    "dependencies": {
+      "sphere_1": [],
+      "shell_2": [
+        "sphere_1"
+      ],
+      "honeycomb_3": [
+        "shell_2"
+      ]
+    },
+    "markers": {},
+    "active_id": "object_sphere_1"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "sphere_1",
+      "feature_type": "sphere",
+      "name": "Sphere 1",
+      "suppressed": false,
+      "radius": 25.0,
+      "center": "center",
+      "translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "shell_2",
+      "feature_type": "shell",
+      "name": "Shell 1",
+      "suppressed": false,
+      "target_body_id": "body_sphere_1",
+      "thickness": 2.0,
+      "direction": "inside",
+      "thickness2": 2.0,
+      "open_faces": [],
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "honeycomb_3",
+      "feature_type": "honeycomb",
+      "name": "Cells 1",
+      "suppressed": false,
+      "target_body_id": "body_sphere_1",
+      "faces": [
+        {
+          "kind": "surface",
+          "point": [
+            22.666019515944754,
+            5.281246109055246,
+            9.009451410326164
+          ],
+          "normal": [
+            0.9031358605865708,
+            0.16900302609881487,
+            0.3946943051172607
+          ]
+        }
+      ],
+      "shape": "star",
+      "size": 11.0,
+      "wall": 0.0,
+      "margin": 3.0,
+      "depth": 1.0,
+      "through": true,
+      "angle": 0.0,
+      "partial": false,
+      "randomness": 100.0,
+      "seed": 1,
+      "style": "even",
+      "fine_size": 2.0,
+      "inner_wall": 0.8,
+      "hotspots": 1,
+      "rounding": 0.0,
+      "opening": 100.0,
+      "opening_end": 100.0,
+      "relaxation": 0,
+      "hole": "cell",
+      "svg_path": "",
+      "random_rotation": 0.0,
+      "random_size": false,
+      "star_points": 5,
+      "star_inner": 45.0,
+      "star_density": 100.0,
+      "exprs": {},
+      "target_body_ids": null
+    }
+  ],
+  "sketches": [],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "body_colors": {},
+  "construction_bodies": [],
+  "canvases": {},
+  "favorites": [],
+  "object_groups": [],
+  "lids": [],
+  "curve_segments": 72
+}

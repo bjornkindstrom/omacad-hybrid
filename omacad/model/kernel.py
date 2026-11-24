@@ -985,14 +985,41 @@ class CadKernel:
         diag = float(np.linalg.norm(np.ptp(v, axis=0))) if len(v) else 1.0
         areas = tm.area_faces
         solid = (areas[adj[:, 0]] > 1e-7 * diag * diag) & (areas[adj[:, 1]] > 1e-7 * diag * diag)
+        coplanar_rad = np.radians(coplanar_deg)
+        smooth_rad = np.radians(smooth_below_deg)
+        coplanar_adj = adj[angles < coplanar_rad]
+        sharp = (angles >= smooth_rad) & solid
+        smooth = (angles >= coplanar_rad) & (angles < smooth_rad) & solid
         from omacad import viewport_accel
         if viewport_accel.backend_name() == "rust":
-            sharp = (angles >= np.radians(smooth_below_deg)) & solid
             edges = tm.face_adjacency_edges[sharp]
             diffs = v[edges[:, 1]] - v[edges[:, 0]]
             norms = np.linalg.norm(diffs, axis=1, keepdims=True)
             norms[norms == 0] = 1.0
-            return viewport_accel.flat_patch_mask(len(f), adj[angles < np.radians(coplanar_deg)], adj[sharp], diffs / norms)
+            mask = viewport_accel.flat_patch_mask(len(f), coplanar_adj, adj[sharp], diffs / norms).copy()
+            # A facet on a curved surface (e.g. a sphere with star cutouts) can get sharp edges in two
+            # directions at a cutout corner while still meeting neighbouring facets smoothly (< 30 deg).
+            # Smooth-neighboured flat faces are handled by _wide_flat_triangles instead.
+            if mask.any() and smooth.any():
+                sm_adj = adj[smooth]
+                seed = np.unique(sm_adj[mask[sm_adj]])
+                if len(seed):
+                    cop_m = coplanar_adj[mask[coplanar_adj[:, 0]] & mask[coplanar_adj[:, 1]]]
+                    nbrs = {}
+                    for a, b in cop_m:
+                        a, b = int(a), int(b)
+                        nbrs.setdefault(a, []).append(b)
+                        nbrs.setdefault(b, []).append(a)
+                    stack = [int(s) for s in seed]
+                    for s in stack:
+                        mask[s] = False
+                    while stack:
+                        cur = stack.pop()
+                        for nb in nbrs.get(cur, ()):
+                            if mask[nb]:
+                                mask[nb] = False
+                                stack.append(nb)
+            return mask
         parent = np.arange(len(f))
 
         def root(i):
@@ -1001,9 +1028,12 @@ class CadKernel:
                 i = parent[i]
             return i
 
-        for a, b in adj[angles < np.radians(coplanar_deg)]:
+        for a, b in coplanar_adj:
             parent[root(a)] = root(b)
-        sharp = (angles >= np.radians(smooth_below_deg)) & solid
+        has_smooth = set()
+        for a, b in adj[smooth]:
+            has_smooth.add(root(a))
+            has_smooth.add(root(b))
         directions = {}          # patch -> first sharp edge direction
         flat_roots = set()
         edges = tm.face_adjacency_edges[sharp]
@@ -1013,6 +1043,8 @@ class CadKernel:
         d_vec = diffs / norms
         for (a, b), d in zip(adj[sharp], d_vec):
             for patch in (root(a), root(b)):
+                if patch in has_smooth:
+                    continue
                 first = directions.get(patch)
                 if first is None:
                     directions[patch] = d

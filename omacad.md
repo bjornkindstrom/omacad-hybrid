@@ -1,3 +1,8 @@
+## Mjuk skuggning runt skarpa urtag på krökta ytor — 2026-11-24 (0.9.9.80.213, rapport 20261124-181021)
+
+- `CadKernel._flat_triangles` (`omacad/model/kernel.py`) platt-skuggade sfärfacetter runt stjärnurtag (1 586 yttre och 1 624 inre trianglar i rapportdokumentet) eftersom ett stjärnhörn gav facetten två skarpa kanter (`>= 30°`) i olika riktningar trots att den också hade mjuka grannar (`0,5°..30°`) på sfären. Både Rust- och Python-vägen i `_flat_triangles` exkluderar nu lappar som har mjuka solida grannar (verkligt breda plana ytor mot smala kurvremsor hanteras redan av `_wide_flat_triangles`). Själva geometrin/STL:en var hel och vattentät (`genus=40`, 41 rena hål).
+- Test: `tests/test_render_smooth_normals.py::test_hollow_sphere_star_cutouts_stay_smoothly_shaded` med `tests/data/hollow_sphere_stars_shading.omacad`.
+
 ## Stjärnform i Surface Texture (Cells) med slumpad storlek/placering/rotation — 2026-11-24 (0.9.9.80.211–.212, rapport 20261124-164740)
 
 - Ny form `"star"` i `SHAPES` (`omacad/model/features/honeycomb.py`) via `star_cells` och `_star_polygon`, med ställbara `star_points` (uddar), `star_inner` (inre radie i %), `star_density` (`Star amount`, `0–100 %` för att styra mängden stjärnor), `randomness` (slumpad placering), `random_size` + `fine_size` (olika storlekar mellan minsta och största cell), `random_rotation` samt `seed`. Kollisionsfiltrering i deterministisk prioritetsordning garanterar minst `wall` mellan alla stjärnor även runt periodiska skarvar på cylindrar och sfärer (`spherical_surface_tool` undviker automatiskt öppning, övre fäste och platt botten via `wall.region` + `margin`).
