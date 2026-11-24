@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.214
+
+### Fixed
+- **Extrude-cut along projected curved walls**: `clean_cut` (`omacad/model/features/base.py`) now escalates cutter clearance (`1e-3` → `5e-3` → `1e-2` → `2e-2` → `5e-2` mm) while zero-thickness sheets (`CadKernel.has_sheets`) remain, eliminating vertical skin strips and faceted stripes left when a projected arc re-tessellates a curved wall.
+
 # Hybrid-experiment — 0.9.9.80.213
 
 ### Fixed

@@ -1,3 +1,9 @@
+## Extrude-cut längs projicerade bågar utan väggskräp — 2026-11-24 (0.9.9.80.214, rapport 20261124-185556)
+
+- En Extrude-cut från en skiss på ovansidan med projicerade bågar (`arc_2`, `arc_4`) gav en ny tessellering ~5–10 µm från den ursprungliga cylinderväggen (utanför `weld_to` `2e-3` och `CUT_CLEARANCE = 1e-3`), så snittet lämnade vikta noll-tjockleksremsor (`has_sheets=True`) med 105 vertikala skarpa kanter och platt-skuggade ränder på båda rundade ändarna.
+- `clean_cut` (`omacad/model/features/base.py`) stegar nu upp `CUT_CLEARANCE` (`1e-3`, `5e-3`, `1e-2`, `2e-2`, `5e-2` mm) bara så länge `CadKernel.has_sheets(result)` är sann.
+- Test: `tests/test_requests_237_240.py::test_projected_arc_extrude_cut_leaves_no_wall_sheets` med `tests/data/projected_arc_extrude_cut_sheets.omacad`.
+
 ## Mjuk skuggning runt skarpa urtag på krökta ytor — 2026-11-24 (0.9.9.80.213, rapport 20261124-181021)
 
 - `CadKernel._flat_triangles` (`omacad/model/kernel.py`) platt-skuggade sfärfacetter runt stjärnurtag (1 586 yttre och 1 624 inre trianglar i rapportdokumentet) eftersom ett stjärnhörn gav facetten två skarpa kanter (`>= 30°`) i olika riktningar trots att den också hade mjuka grannar (`0,5°..30°`) på sfären. Både Rust- och Python-vägen i `_flat_triangles` exkluderar nu lappar som har mjuka solida grannar (verkligt breda plana ytor mot smala kurvremsor hanteras redan av `_wide_flat_triangles`). Själva geometrin/STL:en var hel och vattentät (`genus=40`, 41 rena hål).

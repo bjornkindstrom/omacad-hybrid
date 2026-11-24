@@ -166,3 +166,21 @@ def test_240_the_outline_can_be_rounded_and_bevelled(kind, expected):
     assert feat.skipped == 0
     removed = before - doc.bodies["body_cylinder_1"].manifold.volume()
     assert abs(removed - expected * rim.perimeter) < 0.05 * expected * rim.perimeter
+
+
+def test_projected_arc_extrude_cut_leaves_no_wall_sheets():
+    doc = Exporter.load_project(os.path.join(DATA, "projected_arc_extrude_cut_sheets.omacad"))
+    doc.timeline.recompute(doc)
+    body = doc.bodies["body_extrude_2"]
+    assert not CadKernel.has_sheets(body.manifold)
+    rm = body.render_mesh
+    sl = rm.sharp_lines.reshape(-1, 2, 3)
+    vert_sl = np.abs(sl[:, 0, 2] - sl[:, 1, 2]) > 0.1
+    assert int(np.sum(vert_sl)) == 6
+    v = rm.vertices.reshape(-1, 3, 3)
+    vn = rm.normals.reshape(-1, 3, 3)
+    fn = np.cross(v[:, 1] - v[:, 0], v[:, 2] - v[:, 0])
+    fn /= np.maximum(np.linalg.norm(fn, axis=1, keepdims=True), 1e-12)
+    flat_tris = np.all(np.sum(fn[:, None, :] * vn, axis=2) > 0.9999, axis=1)
+    vert_mask = np.abs(fn[:, 2]) < 0.1
+    assert int(np.sum(vert_mask & flat_tris)) < 50

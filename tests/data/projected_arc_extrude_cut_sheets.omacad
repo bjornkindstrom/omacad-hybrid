@@ -1,0 +1,852 @@
+{
+  "format_version": 2,
+  "object_history": {
+    "owners": {
+      "feat_sketch_1": "object_feat_sketch_1",
+      "extrude_2": "object_feat_sketch_1",
+      "feat_sketch_2": "object_feat_sketch_1",
+      "extrude_4": "object_feat_sketch_1"
+    },
+    "names": {
+      "object_feat_sketch_1": "Body 1"
+    },
+    "outputs": {
+      "extrude_2": [
+        "body_extrude_2"
+      ],
+      "extrude_4": [
+        "body_extrude_2"
+      ]
+    },
+    "dependencies": {
+      "feat_sketch_1": [],
+      "extrude_2": [
+        "feat_sketch_1"
+      ],
+      "feat_sketch_2": [
+        "extrude_2"
+      ],
+      "extrude_4": [
+        "extrude_2",
+        "feat_sketch_2"
+      ]
+    },
+    "markers": {},
+    "active_id": "object_feat_sketch_1"
+  },
+  "name": "Omacad - Untitled",
+  "units": "mm",
+  "parameters": [],
+  "timeline": [
+    {
+      "feature_id": "feat_sketch_1",
+      "feature_type": "sketch",
+      "name": "Sketch 1",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_1",
+        "name": "Sketch 1",
+        "plane": {
+          "name": "XY",
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "circle_1",
+            "entity_type": "circle",
+            "center": [
+              -17.62321658471034,
+              29.98726011425232
+            ],
+            "radius": 7.55,
+            "is_construction": false
+          },
+          {
+            "entity_id": "circle_2",
+            "entity_type": "circle",
+            "center": [
+              22.37975311279297,
+              29.91924285888672
+            ],
+            "radius": 7.55,
+            "is_construction": false
+          },
+          {
+            "entity_id": "circle_3",
+            "entity_type": "circle",
+            "center": [
+              -17.62322311080441,
+              29.986742734471015
+            ],
+            "radius": 12.547946244025185,
+            "is_construction": false
+          },
+          {
+            "entity_id": "circle_4",
+            "entity_type": "circle",
+            "center": [
+              22.379636870954208,
+              29.916619103142892
+            ],
+            "radius": 12.54538298211447,
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_5",
+            "entity_type": "line",
+            "p1": [
+              -17.52624628185358,
+              42.53431422661653
+            ],
+            "p2": [
+              22.762162320497414,
+              42.456168873704
+            ],
+            "is_construction": false
+          },
+          {
+            "entity_id": "line_6",
+            "entity_type": "line",
+            "p1": [
+              -17.678825423702,
+              17.438919686680748
+            ],
+            "p2": [
+              22.452975001439196,
+              17.37145048384788
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Diameter",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "circle_1",
+            "value": 15.1,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d2",
+            "name": "Diameter",
+            "dim_type": "DIAMETER",
+            "target_entity_id": "circle_2",
+            "value": 15.1,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d3",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_5",
+            "value": 40.28848438953954,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          },
+          {
+            "dim_id": "d4",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_6",
+            "value": 40.13185713939357,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          }
+        ],
+        "constraints": [
+          {
+            "cid": "c1",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_3",
+              "line_5"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c2",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_4",
+              "line_5"
+            ],
+            "pts": [
+              "p2"
+            ]
+          },
+          {
+            "cid": "c3",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_3",
+              "line_6"
+            ],
+            "pts": [
+              "p1"
+            ]
+          },
+          {
+            "cid": "c4",
+            "ctype": "POINT_ON_CIRCLE",
+            "refs": [
+              "circle_4",
+              "line_6"
+            ],
+            "pts": [
+              "p2"
+            ]
+          }
+        ],
+        "face_key": null,
+        "parent_body_id": null,
+        "face_center": null,
+        "visible": false
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "extrude_2",
+      "feature_type": "extrude",
+      "name": "Extrude 1",
+      "suppressed": false,
+      "sketch_id": "sketch_1",
+      "profile_idx": 3,
+      "extra_profiles": [
+        2,
+        4
+      ],
+      "distance": 25.0,
+      "operation": "new_body",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "twist": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -17.623211484988147,
+          29.98646961397663,
+          315.17104171543326
+        ],
+        [
+          2.3779684596290465,
+          29.949247909750532,
+          509.77128386360437
+        ],
+        [
+          22.379567476823144,
+          29.91523987963483,
+          314.9726025859622
+        ]
+      ],
+      "profile_sigs_for": [
+        3,
+        [
+          2,
+          4
+        ]
+      ],
+      "follows_text": false,
+      "exprs": {},
+      "target_body_ids": []
+    },
+    {
+      "feature_id": "feat_sketch_2",
+      "feature_type": "sketch",
+      "name": "Sketch 2",
+      "suppressed": false,
+      "sketch": {
+        "sketch_id": "sketch_2",
+        "name": "Sketch 2",
+        "plane": {
+          "name": "FACE",
+          "origin": [
+            2.3769304752349854,
+            29.953100204467773,
+            25.0
+          ],
+          "u_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v_axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "entities": [
+          {
+            "entity_id": "line_1",
+            "entity_type": "line",
+            "p1": [
+              -20.000130475234986,
+              12.581599795532227
+            ],
+            "p2": [
+              20.385269524765015,
+              12.50309979553223
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_2",
+            "entity_type": "arc",
+            "p_start": [
+              20.385269524765015,
+              12.50309979553223
+            ],
+            "p_mid": [
+              32.548084639643264,
+              -0.036450204467769254
+            ],
+            "p_end": [
+              20.076069524765014,
+              -12.581600204467772
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_3",
+            "entity_type": "line",
+            "p1": [
+              20.076069524765014,
+              -12.581600204467772
+            ],
+            "p2": [
+              -20.055730475234984,
+              -12.514200204467773
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "arc_4",
+            "entity_type": "arc",
+            "p_start": [
+              -20.055730475234984,
+              -12.514200204467773
+            ],
+            "p_mid": [
+              -32.536142521632414,
+              0.5809466816933053
+            ],
+            "p_end": [
+              -20.000130475234986,
+              12.581599795532227
+            ],
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "circle_5",
+            "entity_type": "circle",
+            "center": [
+              20.00283463504645,
+              -0.03386531474922094
+            ],
+            "radius": 7.549994099052575,
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "circle_6",
+            "entity_type": "circle",
+            "center": [
+              -20.000144809347006,
+              0.0341690724729915
+            ],
+            "radius": 7.550003421026533,
+            "is_construction": false,
+            "projected": true
+          },
+          {
+            "entity_id": "line_7",
+            "entity_type": "line",
+            "p1": [
+              -32.54808449745178,
+              0.033611297607421875
+            ],
+            "p2": [
+              32.548084020614624,
+              -0.03644943237304686
+            ],
+            "is_construction": false
+          }
+        ],
+        "dimensions": [
+          {
+            "dim_id": "d1",
+            "name": "Length",
+            "dim_type": "LENGTH",
+            "target_entity_id": "line_7",
+            "value": 65.09620622001243,
+            "offset_distance": 12.0,
+            "refs": [],
+            "pts": [],
+            "expr": null,
+            "moving_entity_id": null
+          }
+        ],
+        "constraints": [],
+        "face_key": null,
+        "parent_body_id": "body_extrude_2",
+        "face_center": [
+          -0.0024518172559706564,
+          -0.0028798242108152294
+        ],
+        "visible": false
+      },
+      "exprs": {},
+      "target_body_ids": null
+    },
+    {
+      "feature_id": "extrude_4",
+      "feature_type": "extrude",
+      "name": "Extrude 2",
+      "suppressed": false,
+      "sketch_id": "sketch_2",
+      "profile_idx": 1,
+      "extra_profiles": [],
+      "distance": -18.5,
+      "operation": "cut",
+      "direction": "one_side",
+      "distance2": 10.0,
+      "start_offset": 0.0,
+      "twist": 0.0,
+      "extra_refs": [],
+      "holes": [],
+      "profile_sigs": [
+        [
+          -0.00032143443056254704,
+          -6.825847732119815,
+          570.0554633274594
+        ]
+      ],
+      "profile_sigs_for": [
+        1,
+        []
+      ],
+      "follows_text": false,
+      "exprs": {},
+      "target_body_ids": [
+        "body_extrude_2"
+      ]
+    }
+  ],
+  "sketches": [
+    {
+      "sketch_id": "sketch_1",
+      "name": "Sketch 1",
+      "plane": {
+        "name": "XY",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "circle_1",
+          "entity_type": "circle",
+          "center": [
+            -17.62321658471034,
+            29.98726011425232
+          ],
+          "radius": 7.55,
+          "is_construction": false
+        },
+        {
+          "entity_id": "circle_2",
+          "entity_type": "circle",
+          "center": [
+            22.37975311279297,
+            29.91924285888672
+          ],
+          "radius": 7.55,
+          "is_construction": false
+        },
+        {
+          "entity_id": "circle_3",
+          "entity_type": "circle",
+          "center": [
+            -17.62322311080441,
+            29.986742734471015
+          ],
+          "radius": 12.547946244025185,
+          "is_construction": false
+        },
+        {
+          "entity_id": "circle_4",
+          "entity_type": "circle",
+          "center": [
+            22.379636870954208,
+            29.916619103142892
+          ],
+          "radius": 12.54538298211447,
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_5",
+          "entity_type": "line",
+          "p1": [
+            -17.52624628185358,
+            42.53431422661653
+          ],
+          "p2": [
+            22.762162320497414,
+            42.456168873704
+          ],
+          "is_construction": false
+        },
+        {
+          "entity_id": "line_6",
+          "entity_type": "line",
+          "p1": [
+            -17.678825423702,
+            17.438919686680748
+          ],
+          "p2": [
+            22.452975001439196,
+            17.37145048384788
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Diameter",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "circle_1",
+          "value": 15.1,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d2",
+          "name": "Diameter",
+          "dim_type": "DIAMETER",
+          "target_entity_id": "circle_2",
+          "value": 15.1,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d3",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_5",
+          "value": 40.28848438953954,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        },
+        {
+          "dim_id": "d4",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_6",
+          "value": 40.13185713939357,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        }
+      ],
+      "constraints": [
+        {
+          "cid": "c1",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_3",
+            "line_5"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c2",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_4",
+            "line_5"
+          ],
+          "pts": [
+            "p2"
+          ]
+        },
+        {
+          "cid": "c3",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_3",
+            "line_6"
+          ],
+          "pts": [
+            "p1"
+          ]
+        },
+        {
+          "cid": "c4",
+          "ctype": "POINT_ON_CIRCLE",
+          "refs": [
+            "circle_4",
+            "line_6"
+          ],
+          "pts": [
+            "p2"
+          ]
+        }
+      ],
+      "face_key": null,
+      "parent_body_id": null,
+      "face_center": null,
+      "visible": false
+    },
+    {
+      "sketch_id": "sketch_2",
+      "name": "Sketch 2",
+      "plane": {
+        "name": "FACE",
+        "origin": [
+          2.3769304752349854,
+          29.953100204467773,
+          25.0
+        ],
+        "u_axis": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "v_axis": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "normal": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "entities": [
+        {
+          "entity_id": "line_1",
+          "entity_type": "line",
+          "p1": [
+            -20.000130475234986,
+            12.581599795532227
+          ],
+          "p2": [
+            20.385269524765015,
+            12.50309979553223
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_2",
+          "entity_type": "arc",
+          "p_start": [
+            20.385269524765015,
+            12.50309979553223
+          ],
+          "p_mid": [
+            32.548084639643264,
+            -0.036450204467769254
+          ],
+          "p_end": [
+            20.076069524765014,
+            -12.581600204467772
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_3",
+          "entity_type": "line",
+          "p1": [
+            20.076069524765014,
+            -12.581600204467772
+          ],
+          "p2": [
+            -20.055730475234984,
+            -12.514200204467773
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "arc_4",
+          "entity_type": "arc",
+          "p_start": [
+            -20.055730475234984,
+            -12.514200204467773
+          ],
+          "p_mid": [
+            -32.536142521632414,
+            0.5809466816933053
+          ],
+          "p_end": [
+            -20.000130475234986,
+            12.581599795532227
+          ],
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "circle_5",
+          "entity_type": "circle",
+          "center": [
+            20.00283463504645,
+            -0.03386531474922094
+          ],
+          "radius": 7.549994099052575,
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "circle_6",
+          "entity_type": "circle",
+          "center": [
+            -20.000144809347006,
+            0.0341690724729915
+          ],
+          "radius": 7.550003421026533,
+          "is_construction": false,
+          "projected": true
+        },
+        {
+          "entity_id": "line_7",
+          "entity_type": "line",
+          "p1": [
+            -32.54808449745178,
+            0.033611297607421875
+          ],
+          "p2": [
+            32.548084020614624,
+            -0.03644943237304686
+          ],
+          "is_construction": false
+        }
+      ],
+      "dimensions": [
+        {
+          "dim_id": "d1",
+          "name": "Length",
+          "dim_type": "LENGTH",
+          "target_entity_id": "line_7",
+          "value": 65.09620622001243,
+          "offset_distance": 12.0,
+          "refs": [],
+          "pts": [],
+          "expr": null,
+          "moving_entity_id": null
+        }
+      ],
+      "constraints": [],
+      "face_key": null,
+      "parent_body_id": "body_extrude_2",
+      "face_center": [
+        -0.0024518172559706564,
+        -0.0028798242108152294
+      ],
+      "visible": false
+    }
+  ],
+  "construction_planes": {},
+  "sections": {},
+  "origin_vis": {
+    "all": true,
+    "axes": {
+      "X": true,
+      "Y": true,
+      "Z": true
+    },
+    "planes": {
+      "XY": false,
+      "XZ": false,
+      "YZ": false
+    }
+  },
+  "body_colors": {},
+  "construction_bodies": [],
+  "canvases": {},
+  "favorites": [],
+  "object_groups": [],
+  "lids": [],
+  "curve_segments": 72
+}

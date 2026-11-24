@@ -136,12 +136,16 @@ def clean_cut(target: m3d.Manifold, tool: m3d.Manifold) -> m3d.Manifold:
     if _triangle_count(nudged) < _triangle_count(result) or CadKernel.has_sheets(result):
         result = nudged
     # A profile drawn on the wall is cut into its own flat pieces, so its sides wander up
-    # to a facet's sagitta (0.5 um at 360 segments) around the wall. The leftovers are either
-    # zero-thickness sheets or a skin a few 1e-5 mm thick that stands above the floor (a
-    # moved body rounds its corners differently from the sketch). Only when a micron of
+    # to a facet's sagitta around the wall (0.5 um at 360 segments, 5-50 um on coarser
+    # projected arcs). The leftovers are either zero-thickness sheets or a skin a few 1e-5 mm
+    # thick that stands above the floor (a moved body rounds its corners differently from the
+    # sketch). Escalate clearance only while zero-thickness sheets remain; only when a micron of
     # clearance removes the needles (fewer triangles) is it used; exact volumes otherwise.
     if CadKernel.has_sheets(result):
-        result = target - CadKernel.grown(tool, CUT_CLEARANCE)
+        for clr in (CUT_CLEARANCE, 5e-3, 1e-2, 2e-2, 5e-2):
+            result = target - CadKernel.grown(tool, clr)
+            if not CadKernel.has_sheets(result):
+                break
     elif CadKernel.has_needles(result):
         clear = target - CadKernel.grown(tool, CUT_CLEARANCE)
         if _triangle_count(clear) < _triangle_count(result):
