@@ -60,7 +60,7 @@ class ObjectHistory:
 
     @staticmethod
     def body_inputs(feature):
-        refs = [getattr(feature, key, None) for key in ('target_body_id', 'tool_body_id')]
+        refs = [getattr(feature, key, None) for key in ('target_body_id', 'tool_body_id', 'pin_body_id')]
         for key in ('edges', 'faces', 'points'):
             for value in getattr(feature, key, None) or []:
                 if isinstance(value, dict):

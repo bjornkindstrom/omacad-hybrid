@@ -152,21 +152,33 @@ class CutThreadFeature(Feature):
             norm_v = np.asarray(normal, dtype=float)
             r_hole = 0.5 * diameter + (0.0 if keep_screw else clr)
             c_hole = min(ch, 0.4 * diameter)
+            r_outer = r_hole + c_hole
+            r_inner = max(0.2, tf.root_radius() - 0.05)
+            dz = min(r_outer - r_inner, 0.45 * length)
+            r_tip = r_outer - dz
+            seen = []
             for pf in compute_planar_faces(new_target):
                 dot = float(np.dot(pf.normal, norm_v))
                 if abs(dot) < 0.99:
                     continue
-                along = float(np.dot(np.asarray(pf.origin, dtype=float) - orig_v, norm_v))
+                pts = pf.tris.reshape(-1, 3) - orig_v
+                radial = np.linalg.norm(pts - np.outer(pts @ norm_v, norm_v), axis=1)
+                if float(radial.min()) > r_outer + 0.5:
+                    continue
+                along = float(np.dot(np.asarray(pf.origin, dtype=float) - orig_v, pf.normal)) / dot
                 if not (-0.01 <= along <= length + 0.01):
+                    continue
+                if any(abs(along - a) < 0.05 and (dot > 0.0) == s for a, s in seen):
                     continue
                 # Only chamfer faces that the pin actually intersects around the axis
                 probe = _cone_z(along - 0.05, along + 0.05, r_hole * 0.5, r_hole * 0.5, mat, 16)
                 if (pin_manifold ^ probe).volume() < 1e-6:
                     continue
+                seen.append((along, dot > 0.0))
                 if dot > 0.0:
-                    cone = _cone_z(along - c_hole, along + 0.02, r_hole, r_hole + c_hole + 0.02, mat, seg)
+                    cone = _cone_z(along - dz, along + 0.02, r_tip, r_outer + 0.02, mat, seg)
                 else:
-                    cone = _cone_z(along - 0.02, along + c_hole, r_hole + c_hole + 0.02, r_hole, mat, seg)
+                    cone = _cone_z(along - 0.02, along + dz, r_outer + 0.02, r_tip, mat, seg)
                 new_target = new_target - cone
 
         return new_target, new_screw

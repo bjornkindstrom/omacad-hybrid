@@ -495,10 +495,10 @@ class Document:
         return self._add_body_step(LoftFeature(self._feature_id("loft"), f"Loft {n}", sections, operation, twist, smooth=smooth))
 
     @undoable("Sphere")
-    def add_sphere(self, radius: float, name: Optional[str] = None, translation: Any = None) -> Body:
+    def add_sphere(self, radius: float, name: Optional[str] = None, translation: Any = None, **params) -> Body:
         feat_id = self._feature_id("sphere")
         feat_name = name or f"Sphere {len([f for f in self.timeline.features if f.feature_type == 'sphere']) + 1}"
-        feat = SphereFeature(feat_id, feat_name, radius, translation=translation)
+        feat = SphereFeature(feat_id, feat_name, radius, translation=translation, **params)
         self.timeline.add_feature(feat)
         feat.execute(self)
         self.notify_changed()
@@ -1381,7 +1381,7 @@ class Document:
                      "wall_thickness", "outer_round", "outer_round_kind", "inner_round", "inner_round_kind", "taper_angle"),
         "prism": ("across_flats", "sides", "height", "center", "plane_origin", "plane_normal", "plane_u", "plane_v",
                   "wall_thickness", "outer_round", "outer_round_kind", "inner_round", "inner_round_kind", "taper_angle"),
-        "sphere": ("radius",),
+        "sphere": ("radius", "center", "plane_origin", "plane_normal", "plane_u", "plane_v", "wall_thickness"),
         "cone": ("radius", "top_radius", "height", "center", "plane_origin", "plane_normal", "plane_u", "plane_v",
                  "wall_thickness"),
         "sweep": ("sketch_id", "profile_idx", "extra_profiles", "path", "operation", "twist"),
@@ -2083,6 +2083,8 @@ class Document:
                 left.pop(f.target_body_id, None)
             elif f.feature_type == "combine" and not f.keep_tool:
                 left.pop(f.tool_body_id, None)
+            elif f.feature_type == "cut_thread" and not f.keep_screw:
+                left.pop(f.pin_body_id, None)
         left.pop(body_id, None)
         return list(left)
 

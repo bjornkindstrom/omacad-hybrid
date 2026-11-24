@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.215
+
+### Fixed
+- **Cut Thread entrance chamfer & Split Body**: `CutThreadFeature.compute` (`omacad/model/features/cut_thread.py`) now extends the 45° entrance chamfer cone down past `root_radius()`, projects `along` onto the face plane at the pin axis, skips faces away from the pin, and deduplicates overlapping coplanar faces so no thread tooth burr remains at the hole mouth. `ObjectHistory.body_inputs` (`omacad/model/object_history.py`) and `Document._bodies_left_by` (`omacad/model/document.py`) now track `pin_body_id`, so `split_body` clones the pin's pre-cut steps for the split half instead of re-threading the already-threaded/moved screw.
+
 # Hybrid-experiment — 0.9.9.80.214
 
 ### Fixed

@@ -1,3 +1,9 @@
+## Cut Thread utan mynningsfnas & Split Body efter Cut Thread — 2026-11-24 (0.9.9.80.215, rapport 20261124-190514)
+
+- **Fnas i gängmynning**: `CutThreadFeature.compute` (`omacad/model/features/cut_thread.py`) avslutade 45°-faskonen vid `r_hole` (`0.5 * diameter`) i stället för att fortsätta ner förbi `root_radius()`, vilket lämnade en vass gängkant/fnas i öppningen; dessutom kunde snedställda eller närliggande ytor utan kontakt med pinnen träffas av `probe` längs axeln och få en extra förskjuten kon. Konen skär nu ända ner till `root_radius() - 0.05`, ytor filtreras mot `pf.tris` inom `r_outer + 0.5`, `along` projiceras på ytplanet vid pinnaxeln och dubbletter inom `0.05 mm` hoppas över.
+- **Split Body efter Cut Thread**: `ObjectHistory.body_inputs` (`omacad/model/object_history.py`) saknade `pin_body_id` (och `Document._bodies_left_by` saknade `cut_thread` med `not keep_screw`), så `_copy_body_steps` inte klonade pinnens byggsteg; andra halvan fick i stället skäras av den redan gängade (och ev. flyttade) skruven, vilket förstörde gängan och dubbelgängade skruven.
+- Test: `tests/test_cut_thread.py` (`test_cut_thread_chamfer_cuts_through_thread_teeth_without_burr`, `test_split_body_after_cut_thread_preserves_thread_and_screw`).
+
 ## Extrude-cut längs projicerade bågar utan väggskräp — 2026-11-24 (0.9.9.80.214, rapport 20261124-185556)
 
 - En Extrude-cut från en skiss på ovansidan med projicerade bågar (`arc_2`, `arc_4`) gav en ny tessellering ~5–10 µm från den ursprungliga cylinderväggen (utanför `weld_to` `2e-3` och `CUT_CLEARANCE = 1e-3`), så snittet lämnade vikta noll-tjockleksremsor (`has_sheets=True`) med 105 vertikala skarpa kanter och platt-skuggade ränder på båda rundade ändarna.

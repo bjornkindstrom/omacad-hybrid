@@ -109,3 +109,53 @@ def test_cut_thread_off_origin_pin_stays_in_place():
     assert bb1[4] == pytest.approx(bb0[4] - 0.2, abs=1e-3)
     assert bb1[2] == pytest.approx(bb0[2], abs=1e-3)
     assert bb1[5] == pytest.approx(bb0[5], abs=1e-3)
+
+
+def test_cut_thread_chamfer_cuts_through_thread_teeth_without_burr():
+    import manifold3d as m3d
+    from omacad.model.features.thread import ThreadFeature
+
+    doc = Document()
+    box = doc.add_box(40, 40, 20, center="bottom_center")
+    pin = doc.add_cylinder(6.5, 30.0, name="Thread Pin 1")
+    doc.move_body(pin.body_id, dz=-5.0)
+
+    doc.cut_thread(box.body_id, pin.body_id, pitch=2.0, clearance=0.2, chamfer=1.0, keep_screw=True)
+    m = doc.bodies[box.body_id].manifold
+    assert m.status().name == "NoError"
+
+    # At z = 20 - 0.5 = 19.5 (midway along the 1.0 mm 45-deg chamfer), everything inside
+    # r = 6.5 + 0.5 - 0.05 = 6.95 must be cleared, including the female thread teeth down to root_radius.
+    tf = ThreadFeature("t", "t", diameter=13.0, pitch=2.0, length=30.0)
+    r_root = tf.root_radius()
+    probe = (
+        m3d.Manifold.cylinder(0.2, 6.9, 6.9, circular_segments=64)
+        - m3d.Manifold.cylinder(0.4, max(0.2, r_root - 0.1), max(0.2, r_root - 0.1), circular_segments=64).translate([0, 0, -0.1])
+    ).translate([0, 0, 19.4])
+    assert (m ^ probe).volume() < 1e-4
+
+
+def test_split_body_after_cut_thread_preserves_thread_and_screw():
+    doc = Document()
+    box = doc.add_box(40, 40, 20, center="bottom_center")
+    pin = doc.add_cylinder(6.5, 30.0, name="Thread Pin 1")
+    doc.move_body(pin.body_id, dz=-5.0)
+    doc.cut_thread(box.body_id, pin.body_id, pitch=2.0, clearance=0.2, chamfer=1.0, keep_screw=True)
+
+    v_box = doc.bodies[box.body_id].manifold.volume()
+    v_pin = doc.bodies[pin.body_id].manifold.volume()
+
+    # Move the kept screw away after Cut Thread, then split the threaded body in half
+    doc.move_body(pin.body_id, dx=40.0)
+    cp = doc.add_construction_plane(doc.origin_planes["YZ"], 0.0)
+    feat = doc.split_body(box.body_id, cp)
+    assert feat is not None
+
+    b1 = doc.bodies[box.body_id].manifold
+    b2 = doc.bodies[feat.result_body_id].manifold
+    p = doc.bodies[pin.body_id].manifold
+    assert b1.status().name == "NoError"
+    assert b2.status().name == "NoError"
+    assert p.status().name == "NoError"
+    assert b1.volume() + b2.volume() == pytest.approx(v_box, abs=1e-3)
+    assert p.volume() == pytest.approx(v_pin, abs=1e-3)
