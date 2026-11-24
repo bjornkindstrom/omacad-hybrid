@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.211
+
+### Added
+- **Surface Texture (Cells) — Star shape with random sizes, positions & rotations**: added `"star"` to `SHAPES` (`omacad/model/features/honeycomb.py`) with `star_cells` (`star_points`, `star_inner`, `random_size`, `fine_size`, `randomness`, `random_rotation`, `seed`) and corresponding controls in `SurfaceTextureDialog` (`omacad/ui/dialogs/surface_texture_dlg.py`). Works on flat, cylindrical, revolved, and spherical surfaces (avoiding openings, mounts, and flat bottoms while wrapping seamlessly around 360° with guaranteed `wall` clearance).
+
 # Hybrid-experiment — 0.9.9.80.210
 
 ### Fixed

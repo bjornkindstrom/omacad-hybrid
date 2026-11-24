@@ -132,7 +132,7 @@ def test_spherical_surface_texture_cuts_holes_in_hollow_sphere():
         assert len(res.decompose()) == 1
 
 
-@pytest.mark.parametrize("shape", ["hexagon", "circle", "square", "diamond", "triangle", "voronoi", "svg"])
+@pytest.mark.parametrize("shape", ["hexagon", "circle", "square", "diamond", "triangle", "star", "voronoi", "svg"])
 def test_spherical_surface_texture_no_debris_across_shapes(tmp_path, shape):
     from pathlib import Path
     from omacad.io.exporter import Exporter
@@ -156,6 +156,31 @@ def test_spherical_surface_texture_no_debris_across_shapes(tmp_path, shape):
         )
         params["svg_path"] = str(star_svg)
 
+    res, cells, skipped = HoneycombFeature.compute(body.manifold, [ref], params)
+    assert skipped == 0
+    assert cells > 20
+    assert res.status().name == "NoError"
+    assert res.volume() < body.manifold.volume()
+    assert len(res.decompose()) == 1
+
+
+def test_spherical_surface_texture_random_stars():
+    from pathlib import Path
+    from omacad.io.exporter import Exporter
+    from omacad.model.features.offset_face import face_to_ref
+
+    doc = Exporter.load_project(str(Path(__file__).parent / "data" / "hollow_sphere_surface_texture.omacad"))
+    body = doc.bodies["body_sphere_1"]
+    body.update_render_mesh()
+    rm = body.render_mesh
+    tris = np.asarray(rm.vertices, dtype=np.float64).reshape(-1, 3, 3)
+    i_outer = int(np.argmax(tris.mean(axis=1)[:, 0]))
+    ref = face_to_ref(rm.curved_surface(i_outer), body)
+
+    params = HoneycombFeature(
+        "h", "h", body.body_id, shape="star", size=6.0, fine_size=2.5, wall=1.5, margin=3.0,
+        randomness=100.0, random_size=True, random_rotation=180.0, star_points=5, star_inner=45.0,
+    ).params()
     res, cells, skipped = HoneycombFeature.compute(body.manifold, [ref], params)
     assert skipped == 0
     assert cells > 20

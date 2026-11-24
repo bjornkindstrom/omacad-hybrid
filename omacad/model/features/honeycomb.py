@@ -20,9 +20,11 @@ from omacad.model.features.revolved_surface import RevolvedSurface, revolved_sur
 from omacad.model.features.curved_surface import CurvedWall, curved_wall, spherical_wall
 from omacad.model.svg_importer import parse_svg_to_geometry, svg_to_template
 
-SHAPES = ("hexagon", "circle", "square", "diamond", "triangle", "voronoi", "svg")
+SHAPES = ("hexagon", "circle", "square", "diamond", "triangle", "star", "voronoi", "svg")
 TURN_SAMPLES = 145      # angles tried for the room a randomly turned SVG cell needs
 TURN_SALT = 3           # keeps the turn apart from the Voronoi jitter drawn from the same index
+STAR_SIZE_SALT = 4
+STAR_PRIO_SALT = 5
 TURN_INDEX_SHIFT = 1 << 20   # _site_random draws alike for (i, j) and (-i, -j): positive indices keep opposite cells apart
 AIR = 0.05          # the tool starts this far out in the air: never a face coinciding with the body's
 OVERSHOOT = 0.05    # and a Through cell ends this far past the far side
@@ -69,14 +71,133 @@ def _templates(shape: str, size: float, wall: float, svg_path: Optional[str] = N
     return [up, down], ((s, 0.0), (s / 2.0, hgt)), [(0.0, 0.0, 0), (s / 2.0, rho_t, 1)], (s, 2.0 * hgt)
 
 
+def _star_polygon(size: float, points: int = 5, inner_pct: float = 45.0) -> Polygon:
+    """A star centred on 0 with outer diameter `size`, `points` points, and inner radius `inner_pct` % of outer."""
+    r = size / 2.0
+    inner = max(0.05, min(0.95, float(inner_pct) / 100.0))
+    n = max(3, int(round(points)))
+    radii = np.tile([r, r * inner], n)
+    turns = np.arange(2 * n) * math.pi / n + math.pi / 2.0
+    return Polygon(np.column_stack((radii * np.cos(turns), radii * np.sin(turns))))
+
+
+def star_cells(size: float, wall: float, angle: float, bounds, anchor, period: Optional[float] = None,
+               randomness: float = 100.0, seed: int = 1, random_rotation: float = 0.0,
+               random_size: bool = False, fine_size: float = 2.0,
+               star_points: int = 5, star_inner: float = 45.0) -> list:
+    """Star cells on a hexagonal grid, optionally with random positions (`randomness`), random sizes
+    (between `fine_size` and `size` when `random_size` is True), and random rotations (`random_rotation`).
+    Guaranteed to keep at least `wall` between any two stars (including across `period`)."""
+    ax, ay = float(anchor[0]), float(anchor[1])
+    minx, miny, maxx, maxy = bounds
+    lo = min(max(float(fine_size), 0.1), size) if random_size else size
+    hi = size
+    rand_frac = float(np.clip(randomness, 0.0, 100.0)) / 100.0
+    # When both random_size and randomness are active, use average size for grid pitch so small stars pack nicely
+    base_size = max(lo, 0.5 * (lo + hi)) if (random_size and rand_frac > 0.0) else size
+    p = base_size + wall
+    a1, a2 = np.array([p, 0.0]), np.array([p / 2.0, p * math.sqrt(3.0) / 2.0])
+    stretch = 1.0
+    columns = 0
+    if period is not None:
+        angle = 90.0 * round(angle / 90.0)
+        step = p if round(angle / 90.0) % 2 == 0 else p * math.sqrt(3.0)
+        columns = max(1, int(period / step + 1e-9))
+        stretch = period / (columns * step)
+    rad = math.radians(angle)
+    rot = np.array([[math.cos(rad), -math.sin(rad)], [math.sin(rad), math.cos(rad)]])
+    reach = math.hypot(max(maxx - ax, ax - minx), max(maxy - ay, ay - miny)) + 2.0 * (size + wall)
+    if period is not None:
+        reach = max(reach, period)
+    det = abs(a1[0] * a2[1] - a1[1] * a2[0])
+    k = int(reach * max(np.linalg.norm(a1), np.linalg.norm(a2)) / det) + 2
+    ii, jj = np.meshgrid(np.arange(-k, k + 1), np.arange(-k, k + 1))
+    ii_f, jj_f = ii.ravel(), jj.ravel()
+    pts = (ii_f.reshape(-1, 1) * a1 + jj_f.reshape(-1, 1) * a2) @ rot.T
+    pts[:, 0] = pts[:, 0] * stretch + ax
+    pts[:, 1] += ay
+
+    pad = size + wall
+    if period is not None:
+        keep = (pts[:, 0] >= ax - period / 2.0 - 1e-6) & (pts[:, 0] < ax + period / 2.0 - 1e-6)
+    else:
+        keep = (pts[:, 0] > minx - pad) & (pts[:, 0] < maxx + pad)
+    keep &= (pts[:, 1] > miny - pad) & (pts[:, 1] < maxy + pad)
+
+    pts = pts[keep]
+    if not len(pts):
+        return []
+    ii_k, jj_k = ii_f[keep], jj_f[keep]
+    wrapped_i = np.mod(ii_k, columns) if (period is not None and columns > 0) else ii_k
+    si = wrapped_i + TURN_INDEX_SHIFT
+    sj = jj_k + TURN_INDEX_SHIFT
+
+    if random_size:
+        sizes = lo + (hi - lo) * _site_random(si, sj, seed, STAR_SIZE_SALT)
+    else:
+        sizes = np.full(len(pts), size, dtype=float)
+
+    if rand_frac > 0.0:
+        jitter_r = rand_frac * 0.45 * p * np.sqrt(_site_random(si, sj, seed, 1))
+        jitter_a = 2.0 * math.pi * _site_random(si, sj, seed, 2)
+        pts = pts + np.column_stack((jitter_r * np.cos(jitter_a), jitter_r * np.sin(jitter_a)))
+        if period is not None:
+            pts[:, 0] = (ax - period / 2.0) + np.mod(pts[:, 0] - (ax - period / 2.0), period)
+
+    rot_lim = max(0.0, float(random_rotation))
+    if rot_lim > 0.0:
+        turns = angle + (2.0 * _site_random(si, sj, seed, TURN_SALT) - 1.0) * rot_lim
+    else:
+        turns = np.full(len(pts), angle, dtype=float)
+
+    # Filter collisions in deterministic priority order so no two stars ever get closer than `wall`
+    if rand_frac > 0.0 or random_size:
+        prio = _site_random(si, sj, seed, STAR_PRIO_SALT)
+        order = np.argsort(-prio)
+        acc_x, acc_y, acc_s = [], [], []
+        chosen = []
+        for idx in order:
+            x, y, s = float(pts[idx, 0]), float(pts[idx, 1]), float(sizes[idx])
+            if acc_x:
+                ax_arr = np.asarray(acc_x)
+                ay_arr = np.asarray(acc_y)
+                as_arr = np.asarray(acc_s)
+                dx = x - ax_arr
+                if period is not None:
+                    dx = dx - period * np.round(dx / period)
+                dy = y - ay_arr
+                min_dist = 0.5 * (s + as_arr) + wall - 1e-9
+                if np.any(dx * dx + dy * dy < min_dist * min_dist):
+                    continue
+            acc_x.append(x)
+            acc_y.append(y)
+            acc_s.append(s)
+            chosen.append(idx)
+        chosen = np.asarray(chosen, dtype=np.int64)
+        pts, sizes, turns = pts[chosen], sizes[chosen], turns[chosen]
+
+    unit_star = _star_polygon(1.0, star_points, star_inner)
+    cells = []
+    for (x, y), s, turn in zip(pts, sizes, turns):
+        poly = affinity.scale(unit_star, float(s), float(s), origin=(0.0, 0.0))
+        if turn != 0.0:
+            poly = affinity.rotate(poly, float(turn), origin=(0.0, 0.0))
+        cells.append(affinity.translate(poly, float(x), float(y)))
+    return cells
+
+
 def lattice(shape: str, size: float, wall: float, angle: float, bounds, anchor, period: Optional[float] = None,
-            randomness: float = 100.0, seed: int = 1, svg_path: Optional[str] = None, random_rotation: float = 0.0):
+            randomness: float = 100.0, seed: int = 1, svg_path: Optional[str] = None, random_rotation: float = 0.0,
+            random_size: bool = False, fine_size: float = 2.0, star_points: int = 5, star_inner: float = 45.0):
     """Cells (shapely polygons) covering `bounds` with one cell centred on `anchor`. With `period` (the length of a
     cylinder's circumference) the lattice is fitted to repeat exactly along x, and only one turn is made.
-    `random_rotation` (SVG cells) turns each cell by up to that many degrees either way, from its lattice index and
+    `random_rotation` (SVG and star cells) turns each cell by up to that many degrees either way, from its lattice index and
     `seed`, so a cell keeps its turn when the face grows."""
     if shape == "voronoi":
         return voronoi_cells(size, wall, angle, bounds, anchor, period, randomness, seed)
+    if shape == "star":
+        return star_cells(size, wall, angle, bounds, anchor, period, randomness, seed, random_rotation,
+                          random_size, fine_size, star_points, star_inner)
     random_rotation = max(0.0, random_rotation) if shape == "svg" else 0.0
     templates, (a1, a2), motif, (px, py) = _templates(shape, size, wall, svg_path, random_rotation)
     a1, a2 = np.array(a1), np.array(a2)
@@ -143,11 +264,15 @@ def best_fit(params, room, anchor, period=None):
         return finish_cells(cells, params, room.bounds, anchor, period)
     best = []
     shifts = ((0.0, 0.0), (0.0, half), (half, 0.0), (half, half))
-    for dx, dy in shifts[:1] if params["shape"] in ("voronoi", "svg") else shifts:   # shifting would only reshuffle it
+    for dx, dy in shifts[:1] if params["shape"] in ("voronoi", "svg", "star") else shifts:   # shifting would only reshuffle it
         cells = fit_cells(lattice(params["shape"], params["size"], params["wall"], params["angle"], room.bounds,
                                   (anchor[0] + dx, anchor[1] + dy), period, params.get("randomness", 100.0),
                                   int(round(params.get("seed", 1))), params.get("svg_path"),
-                                  params.get("random_rotation", 0.0)), room, params["partial"])
+                                  params.get("random_rotation", 0.0),
+                                  bool(params.get("random_size", False)),
+                                  float(params.get("fine_size", 2.0)),
+                                  int(round(params.get("star_points", 5))),
+                                  float(params.get("star_inner", 45.0))), room, params["partial"])
         if len(cells) > len(best):
             best = cells
     return finish_cells(best, params, room.bounds, anchor, period)
@@ -501,14 +626,16 @@ class HoneycombFeature(Feature):
     """Cuts a lattice of cells into the chosen faces of one body."""
 
     PARAMS = ("shape", "size", "wall", "margin", "depth", "through", "angle", "partial", "randomness", "seed", "style",
-              "fine_size", "inner_wall", "hotspots", "rounding", "opening", "opening_end", "relaxation", "hole", "svg_path", "random_rotation")
+              "fine_size", "inner_wall", "hotspots", "rounding", "opening", "opening_end", "relaxation", "hole", "svg_path", "random_rotation",
+              "random_size", "star_points", "star_inner")
 
     def __init__(self, feature_id: str, name: str, target_body_id: str, faces=None, shape: str = "hexagon",
                  size: float = 6.0, wall: float = 1.5, margin: float = 3.0, depth: float = 1.0, through: bool = True,
                  angle: float = 0.0, partial: bool = False, randomness: float = 100.0, seed: int = 1, style: str = "even",
                  fine_size: float = 2.0, inner_wall: float = 0.8, hotspots: int = 1, rounding: float = 0.0,
                  opening: float = 100.0, opening_end: float = 100.0, relaxation: int = 0, hole: str = "cell",
-                 svg_path: str = "", random_rotation: float = 0.0):
+                 svg_path: str = "", random_rotation: float = 0.0, random_size: bool = False,
+                 star_points: int = 5, star_inner: float = 45.0):
         super().__init__(feature_id, "honeycomb", name)
         self.target_body_id = target_body_id
         self.faces = list(faces or [])
@@ -523,6 +650,9 @@ class HoneycombFeature(Feature):
         self.relaxation, self.hole = int(round(relaxation)), hole if hole in HOLE_SHAPES else "cell"
         self.svg_path = str(svg_path or "")
         self.random_rotation = float(random_rotation)
+        self.random_size = bool(random_size)
+        self.star_points = max(3, int(round(star_points)))
+        self.star_inner = float(star_inner)
         self.cells = 0
         self.skipped = 0
 

@@ -1,3 +1,9 @@
+## Stjärnform i Surface Texture (Cells) med slumpad storlek/placering/rotation — 2026-11-24 (0.9.9.80.211, rapport 20261124-164740)
+
+- Ny form `"star"` i `SHAPES` (`omacad/model/features/honeycomb.py`) via `star_cells` och `_star_polygon`, med ställbara `star_points` (uddar), `star_inner` (inre radie i %), `randomness` (slumpad placering), `random_size` + `fine_size` (olika storlekar mellan minsta och största cell), `random_rotation` samt `seed`. Kollisionsfiltrering i deterministisk prioritetsordning garanterar minst `wall` mellan alla stjärnor även runt periodiska skarvar på cylindrar och sfärer (`spherical_surface_tool` undviker automatiskt öppning, övre fäste och platt botten via `wall.region` + `margin`).
+- UI i `SurfaceTextureDialog._CellsPage` (`omacad/ui/dialogs/surface_texture_dlg.py`).
+- Test: `tests/test_honeycomb.py::test_star_cells_random_sizes_rotations_and_wall_clearance`, `tests/test_honeycomb_ui.py::test_star_shape_ui_toggles_and_params`, `tests/test_curved_surface_texture.py::test_spherical_surface_texture_random_stars`.
+
 ## Sfärisk Surface Texture (Cells) utan kvarlämnat skräp — 2026-11-23 (0.9.9.80.210, rapport 20261123-220728)
 
 - `spherical_wall` (`omacad/model/features/curved_surface.py`) sparar nu ytans faktiska min-/max-hörnradie (`r_min`, `r_max`), eftersom `fit_sphere_patch` anpassar `wall.R` till triangelcentroiderna som ligger ~0,05 mm innanför sfärens verkliga hörn (`24,947` mot `25,000`).

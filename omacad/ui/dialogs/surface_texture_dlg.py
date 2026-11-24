@@ -115,8 +115,13 @@ class _CellsPage(_Page):
         self.lbl_style = QLabel("Style:")
         self.form.addRow(self.lbl_style, self.cmb_style)
         self.field("size", "Cell size:", 0.1, 10000, 2, " mm", 6.0,
-                   "Width of a cell across its flats (a circle's diameter, a Voronoi cell's average width).")
-        self.field("fine_size", "Smallest cell:", 0.1, 10000, 2, " mm", 2.0, "The smallest cells of the style; Cell size sets the largest.")
+                   "Width of a cell across its flats (a circle's diameter, a star's outer size, a Voronoi cell's average width).")
+        self.field("fine_size", "Smallest cell:", 0.1, 10000, 2, " mm", 2.0, "The smallest cells of the style (or smallest star when Random sizes is on); Cell size sets the largest.")
+        self.field("star_points", "Star points:", 3, 24, 0, "", 5, "Number of points on each star.")
+        self.field("star_inner", "Inner radius:", 10.0, 90.0, 0, " %", 45.0, "Inner corner radius of each star, as a percentage of its outer size.")
+        self.chk_random_size = QCheckBox("Random sizes")
+        self.chk_random_size.setToolTip("Give each star a random size between Smallest cell and Cell size.")
+        self.form.addRow("", self.chk_random_size)
         self.field("wall", "Wall:", 0.0, 10000, 2, " mm", 1.5, "Material left between two cells.")
         self.field("inner_wall", "Inner wall:", 0.0, 10000, 2, " mm", 0.8, "Material between the small cells inside a big one.")
         self.field("margin", "Margin to edge:", 0.0, 10000, 2, " mm", 3.0, "Distance kept to the face's edges and to holes already in it.")
@@ -133,10 +138,10 @@ class _CellsPage(_Page):
         self.form.addRow("", self.chk_partial)
         self.field("hotspots", "Hotspots:", 1, 12, 0, "", 1, "Points the small cells gather round: the face's middle first, the rest from the seed.")
         self.field("randomness", "Randomness:", 0.0, 100.0, 2, " %", 100.0,
-                   "How far the Voronoi cells stray from a regular pattern. 0 % gives hexagons.")
+                   "How far the cells stray from a regular pattern. 0 % gives a regular grid (hexagons for Voronoi).")
         self.field("random_rotation", "Random rotation:", 0.0, 180.0, 2, " °", 0.0,
-                   "Turns each SVG cell by a random angle up to this far either way. 180° points them anywhere. "
-                   "The grid widens so turned cells keep the wall between them.")
+                   "Turns each SVG or star cell by a random angle up to this far either way. 180° points them anywhere. "
+                   "The grid widens for SVG so turned cells keep the wall between them.")
         self.field("seed", "Seed:", 0.0, 999999.0, 0, "", 1.0, "Picks another random layout with the same settings.")
         self.field("relaxation", "Relaxation:", 0, MAX_RELAXATION, 0, "", 0, "Evens the Voronoi cells out, a little more each step. 0 keeps them as they fell.")
         self.cmb_hole = QComboBox()
@@ -150,6 +155,7 @@ class _CellsPage(_Page):
         BaseFeatureDialog.pair_form_rows(self.form, [
             (self.cmb_shape, self.cmb_style),
             (self.spins["size"], self.spins["wall"]),
+            (self.spins["star_points"], self.spins["star_inner"]),
             (self.spins["fine_size"], self.spins["inner_wall"]),
             (self.spins["margin"], self.spins["angle"]),
             (self.chk_through, self.chk_partial),
@@ -159,15 +165,17 @@ class _CellsPage(_Page):
             (self.spins["opening"], self.spins["opening_end"])])
         # not setRowVisible: docking moves each field into a slider widget, which follows the field
         self.toggled = {key: [self.form.labelForField(self.spins[key]), self.spins[key]]
-                        for key in ("fine_size", "inner_wall", "hotspots", "randomness", "random_rotation", "seed", "relaxation")}
+                        for key in ("fine_size", "inner_wall", "hotspots", "randomness", "random_rotation", "seed", "relaxation", "star_points", "star_inner")}
         self.toggled["style"] = [self.lbl_style, self.cmb_style]
         self.toggled["svg"] = [self.lbl_svg, self.svg_row]
+        self.toggled["random_size"] = [self.chk_random_size]
         self.chk_through.toggled.connect(self._sync)
+        self.chk_random_size.toggled.connect(self._sync)
         self.cmb_shape.currentIndexChanged.connect(self._sync)
         self.cmb_style.currentIndexChanged.connect(self._sync)
         self.txt_svg_path.textChanged.connect(lambda *_: self.changed.emit())
-        for signal in (self.chk_through.toggled, self.chk_partial.toggled, self.cmb_shape.currentIndexChanged,
-                       self.cmb_style.currentIndexChanged, self.cmb_hole.currentIndexChanged):
+        for signal in (self.chk_through.toggled, self.chk_partial.toggled, self.chk_random_size.toggled,
+                       self.cmb_shape.currentIndexChanged, self.cmb_style.currentIndexChanged, self.cmb_hole.currentIndexChanged):
             signal.connect(lambda *_: self.changed.emit())
         self._sync()
 
@@ -182,10 +190,14 @@ class _CellsPage(_Page):
         shape = SHAPES[self.cmb_shape.currentIndex()]
         voronoi = shape == "voronoi"
         is_svg = shape == "svg"
+        is_star = shape == "star"
         style = VORONOI_STYLES[self.cmb_style.currentIndex()]
-        shown = {"style": voronoi, "randomness": voronoi, "random_rotation": is_svg, "seed": voronoi or is_svg,
+        shown = {"style": voronoi, "randomness": voronoi or is_star,
+                 "random_rotation": is_svg or is_star, "seed": voronoi or is_svg or is_star,
+                 "random_size": is_star, "star_points": is_star, "star_inner": is_star,
                  "relaxation": voronoi and style != "radial",
-                 "fine_size": voronoi and style != "even" , "inner_wall": voronoi and style == "nested",
+                 "fine_size": (voronoi and style != "even") or (is_star and self.chk_random_size.isChecked()),
+                 "inner_wall": voronoi and style == "nested",
                  "hotspots": voronoi and style == "hotspot", "svg": is_svg}
         for key, widgets in self.toggled.items():
             for widget in widgets:
@@ -194,13 +206,15 @@ class _CellsPage(_Page):
     def params(self):
         return {**super().params(), "shape": SHAPES[self.cmb_shape.currentIndex()], "style": VORONOI_STYLES[self.cmb_style.currentIndex()],
                 "hole": HOLE_SHAPES[self.cmb_hole.currentIndex()], "svg_path": self.txt_svg_path.text().strip(),
-                "through": self.chk_through.isChecked(), "partial": self.chk_partial.isChecked()}
+                "through": self.chk_through.isChecked(), "partial": self.chk_partial.isChecked(),
+                "random_size": self.chk_random_size.isChecked()}
 
     def load(self, feature):
         self.cmb_shape.setCurrentIndex(SHAPES.index(feature.shape))
         self.cmb_style.setCurrentIndex(VORONOI_STYLES.index(feature.style))
         self.cmb_hole.setCurrentIndex(HOLE_SHAPES.index(feature.hole))
         self.txt_svg_path.setText(getattr(feature, "svg_path", ""))
+        self.chk_random_size.setChecked(bool(getattr(feature, "random_size", False)))
         super().load(feature)
         self.chk_through.setChecked(feature.through)
         self.chk_partial.setChecked(feature.partial)

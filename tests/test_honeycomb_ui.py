@@ -57,3 +57,42 @@ def test_panel_shows_randomness_and_seed_only_for_voronoi(win):
     assert (params["shape"], params["seed"], params["randomness"]) == ("voronoi", 5.0, 100.0)
     dlg.close()
     dlg.deleteLater()
+
+
+def test_star_shape_ui_toggles_and_params(win):
+    from omacad.model.features.honeycomb import HoneycombFeature
+    dlg = SurfaceTextureDialog(win.doc)
+    dlg.show()
+    page = dlg.pages["honeycomb"]
+    page.cmb_shape.setCurrentIndex(SHAPES.index("star"))
+    assert page.spins["star_points"].isVisible()
+    assert page.spins["star_inner"].isVisible()
+    assert page.spins["randomness"].isVisible()
+    assert page.spins["random_rotation"].isVisible()
+    assert page.spins["seed"].isVisible()
+    assert page.chk_random_size.isVisible()
+    assert not page.spins["fine_size"].isVisible()
+
+    page.chk_random_size.setChecked(True)
+    assert page.spins["fine_size"].isVisible()
+    page.spins["star_points"].setValue(6)
+    page.spins["star_inner"].setValue(35)
+    page.spins["fine_size"].setValue(2.5)
+    page.spins["random_rotation"].setValue(180)
+    params = dlg.params()
+    assert params["shape"] == "star"
+    assert params["random_size"] is True
+    assert params["star_points"] == 6.0
+    assert params["star_inner"] == 35.0
+    assert params["fine_size"] == 2.5
+    assert params["random_rotation"] == 180.0
+
+    feat = HoneycombFeature("h1", "Cells 1", "b1", **params)
+    dlg2 = SurfaceTextureDialog(win.doc, feature=feat)
+    p2 = dlg2.params()
+    assert p2["shape"] == "star" and p2["random_size"] is True
+    assert p2["star_points"] == 6.0 and p2["star_inner"] == 35.0
+    dlg.close()
+    dlg.deleteLater()
+    dlg2.close()
+    dlg2.deleteLater()

@@ -96,6 +96,30 @@ def test_lattice_closes_round_a_cylinder_without_overlap(shape, angle):
     assert unary_union(cells).area == pytest.approx(sum(c.area for c in cells), rel=1e-9)
 
 
+def test_star_cells_random_sizes_rotations_and_wall_clearance():
+    from omacad.model.features.honeycomb import star_cells
+    circ = 2 * math.pi * 20.0
+    cells = star_cells(
+        size=6.0, wall=1.5, angle=0.0, bounds=(0, 0, circ, 40), anchor=(circ / 2, 20),
+        period=circ, randomness=100.0, seed=7, random_rotation=180.0,
+        random_size=True, fine_size=2.0, star_points=6, star_inner=40.0,
+    )
+    assert len(cells) >= 15
+    areas = [c.area for c in cells]
+    assert max(areas) > 1.5 * min(areas)
+    copies = cells + [affinity.translate(c, circ) for c in cells]
+    gaps = [a.distance(b) for i, a in enumerate(copies) for b in copies[i + 1:] if a.distance(b) < 1.4]
+    assert not gaps
+    assert unary_union(cells).area == pytest.approx(sum(areas), rel=1e-9)
+
+    regular = star_cells(
+        size=6.0, wall=1.5, angle=0.0, bounds=(0, 0, 40, 40), anchor=(20, 20),
+        period=None, randomness=0.0, seed=1, random_rotation=0.0, random_size=False,
+    )
+    reg_areas = [c.area for c in regular]
+    assert max(reg_areas) == pytest.approx(min(reg_areas), rel=1e-9)
+
+
 def test_document_save_load_and_undo(tmp_path):
     doc, body = _doc_box()
     v0 = body.manifold.volume()
