@@ -119,6 +119,13 @@ def test_star_cells_random_sizes_rotations_and_wall_clearance():
     reg_areas = [c.area for c in regular]
     assert max(reg_areas) == pytest.approx(min(reg_areas), rel=1e-9)
 
+    sparse = star_cells(
+        size=6.0, wall=1.5, angle=0.0, bounds=(0, 0, 40, 40), anchor=(20, 20),
+        period=None, randomness=0.0, seed=1, random_rotation=0.0, random_size=False, star_density=35.0,
+    )
+    assert 0 < len(sparse) < len(regular)
+    assert star_cells(size=6.0, wall=1.5, angle=0.0, bounds=(0, 0, 40, 40), anchor=(20, 20), star_density=0.0) == []
+
 
 def test_document_save_load_and_undo(tmp_path):
     doc, body = _doc_box()

@@ -67,6 +67,7 @@ def test_star_shape_ui_toggles_and_params(win):
     page.cmb_shape.setCurrentIndex(SHAPES.index("star"))
     assert page.spins["star_points"].isVisible()
     assert page.spins["star_inner"].isVisible()
+    assert page.spins["star_density"].isVisible()
     assert page.spins["randomness"].isVisible()
     assert page.spins["random_rotation"].isVisible()
     assert page.spins["seed"].isVisible()
@@ -77,6 +78,7 @@ def test_star_shape_ui_toggles_and_params(win):
     assert page.spins["fine_size"].isVisible()
     page.spins["star_points"].setValue(6)
     page.spins["star_inner"].setValue(35)
+    page.spins["star_density"].setValue(40)
     page.spins["fine_size"].setValue(2.5)
     page.spins["random_rotation"].setValue(180)
     params = dlg.params()
@@ -84,6 +86,7 @@ def test_star_shape_ui_toggles_and_params(win):
     assert params["random_size"] is True
     assert params["star_points"] == 6.0
     assert params["star_inner"] == 35.0
+    assert params["star_density"] == 40.0
     assert params["fine_size"] == 2.5
     assert params["random_rotation"] == 180.0
 
@@ -91,7 +94,7 @@ def test_star_shape_ui_toggles_and_params(win):
     dlg2 = SurfaceTextureDialog(win.doc, feature=feat)
     p2 = dlg2.params()
     assert p2["shape"] == "star" and p2["random_size"] is True
-    assert p2["star_points"] == 6.0 and p2["star_inner"] == 35.0
+    assert p2["star_points"] == 6.0 and p2["star_inner"] == 35.0 and p2["star_density"] == 40.0
     dlg.close()
     dlg.deleteLater()
     dlg2.close()

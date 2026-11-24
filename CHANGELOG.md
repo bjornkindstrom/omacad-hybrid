@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.212
+
+### Added
+- **Surface Texture (Cells) — Star amount (`star_density`)**: added `Star amount` (`0–100 %`) to `Shape: Star` in `HoneycombFeature` (`omacad/model/features/honeycomb.py`) and `SurfaceTextureDialog` (`omacad/ui/dialogs/surface_texture_dlg.py`) so the number of stars on the surface can be adjusted smoothly.
+
 # Hybrid-experiment — 0.9.9.80.211
 
 ### Added

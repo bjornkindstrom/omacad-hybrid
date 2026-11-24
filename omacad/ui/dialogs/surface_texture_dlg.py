@@ -119,6 +119,8 @@ class _CellsPage(_Page):
         self.field("fine_size", "Smallest cell:", 0.1, 10000, 2, " mm", 2.0, "The smallest cells of the style (or smallest star when Random sizes is on); Cell size sets the largest.")
         self.field("star_points", "Star points:", 3, 24, 0, "", 5, "Number of points on each star.")
         self.field("star_inner", "Inner radius:", 10.0, 90.0, 0, " %", 45.0, "Inner corner radius of each star, as a percentage of its outer size.")
+        self.field("star_density", "Star amount:", 0.0, 100.0, 0, " %", 100.0,
+                   "How many of the stars are kept (100 % fills the surface, lower values scatter fewer stars).")
         self.chk_random_size = QCheckBox("Random sizes")
         self.chk_random_size.setToolTip("Give each star a random size between Smallest cell and Cell size.")
         self.form.addRow("", self.chk_random_size)
@@ -165,7 +167,7 @@ class _CellsPage(_Page):
             (self.spins["opening"], self.spins["opening_end"])])
         # not setRowVisible: docking moves each field into a slider widget, which follows the field
         self.toggled = {key: [self.form.labelForField(self.spins[key]), self.spins[key]]
-                        for key in ("fine_size", "inner_wall", "hotspots", "randomness", "random_rotation", "seed", "relaxation", "star_points", "star_inner")}
+                        for key in ("fine_size", "inner_wall", "hotspots", "randomness", "random_rotation", "seed", "relaxation", "star_points", "star_inner", "star_density")}
         self.toggled["style"] = [self.lbl_style, self.cmb_style]
         self.toggled["svg"] = [self.lbl_svg, self.svg_row]
         self.toggled["random_size"] = [self.chk_random_size]
@@ -194,7 +196,7 @@ class _CellsPage(_Page):
         style = VORONOI_STYLES[self.cmb_style.currentIndex()]
         shown = {"style": voronoi, "randomness": voronoi or is_star,
                  "random_rotation": is_svg or is_star, "seed": voronoi or is_svg or is_star,
-                 "random_size": is_star, "star_points": is_star, "star_inner": is_star,
+                 "random_size": is_star, "star_points": is_star, "star_inner": is_star, "star_density": is_star,
                  "relaxation": voronoi and style != "radial",
                  "fine_size": (voronoi and style != "even") or (is_star and self.chk_random_size.isChecked()),
                  "inner_wall": voronoi and style == "nested",
