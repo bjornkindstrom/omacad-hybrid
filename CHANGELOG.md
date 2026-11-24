@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.216
+
+### Added
+- **Cut Thread across multiple target bodies**: `CutThreadDialog` (`omacad/ui/dialogs/thread_dlg.py`) now lets you check multiple target bodies (auto-checking bodies whose bounding boxes overlap the selected Thread Pin), and `CutThreadFeature.compute_many` / `Document.cut_thread` / `prompt_cut_thread` cut aligned threads, clearance, and lead-in chamfers through all selected bodies in one step while keeping a single screw body if requested.
+
 # Hybrid-experiment — 0.9.9.80.215
 
 ### Fixed

@@ -569,7 +569,7 @@ class Document:
     @undoable("Cut Thread")
     def cut_thread(
         self,
-        target_body_id: str,
+        target_body_id: Union[str, Sequence[str]],
         pin_body_id: str,
         pitch: float = 2.0,
         profile: str = "trapezoidal_45",
@@ -578,15 +578,22 @@ class Document:
         keep_screw: bool = True,
         taper_lead_in: bool = True,
         exprs: Optional[Dict[str, str]] = None,
+        target_body_ids: Optional[Sequence[str]] = None,
     ) -> Optional[CutThreadFeature]:
-        """Thread a placed cylinder pin, cut it into target_body_id, and apply 3D-print clearance + chamfer."""
-        if target_body_id not in self.bodies or pin_body_id not in self.bodies or target_body_id == pin_body_id:
+        """Thread a placed cylinder pin, cut it into one or more target bodies, and apply clearance + chamfer."""
+        raw_ids = (
+            list(target_body_ids)
+            if target_body_ids is not None
+            else (list(target_body_id) if isinstance(target_body_id, (list, tuple, set)) else [target_body_id])
+        )
+        ids = [bid for bid in dict.fromkeys(raw_ids) if bid in self.bodies and bid != pin_body_id]
+        if not ids or pin_body_id not in self.bodies:
             return None
         n = len([f for f in self.timeline.features if f.feature_type == "cut_thread"]) + 1
         feat = CutThreadFeature(
             self._feature_id("cut_thread"),
             f"Cut Thread {n}",
-            target_body_id,
+            ids[0],
             pin_body_id,
             pitch=pitch,
             profile=profile,
@@ -594,6 +601,7 @@ class Document:
             chamfer=chamfer,
             keep_screw=keep_screw,
             taper_lead_in=taper_lead_in,
+            target_body_ids=ids,
         )
         if exprs:
             feat.exprs = {k: v for k, v in exprs.items() if v}

@@ -413,26 +413,61 @@ class PrimitivePromptsMixin:
 
     @leaves_sketch
     def prompt_sphere(self):
-        from omacad.model.kernel import CadKernel
+        from omacad.model.features.primitives import SphereFeature
         from omacad.ui.primitive_handles import attach_primitive_handles
         dlg = SphereDialog(self)
         self._apply_fan_origin(dlg)
 
+        def on_pick_face():
+            self.viewport.begin_plane_pick("primitive_face")
+            self.status_label.setText("Click a face or plane in the 3D view where the sphere should sit.")
+
+        def on_face_picked(plane):
+            dlg.set_target_plane(plane)
+            self.status_label.setText("Target face selected.")
+
         def preview():
-            solid = CadKernel.create_sphere(dlg.get_values()).translate(tuple(getattr(dlg, "placement_offset", (0, 0, 0))))
-            self.viewport.set_preview(solid, "new_body")
+            r = dlg.get_values()
+            try:
+                solid = SphereFeature(
+                    "tmp", "tmp", r,
+                    translation=getattr(dlg, "placement_offset", (0, 0, 0)),
+                    **dlg.get_placement_params(),
+                ).build_solid()
+                dlg.lbl_problem.setText("")
+                self.viewport.set_preview(solid, "new_body")
+            except ValueError as exc:
+                dlg.lbl_problem.setText(str(exc))
+                self.viewport.set_preview(None)
 
         def finished(result):
+            for sig, slot in (
+                (dlg.pick_face_requested, on_pick_face),
+                (self.viewport.primitive_face_picked, on_face_picked),
+            ):
+                try:
+                    sig.disconnect(slot)
+                except (RuntimeError, TypeError):
+                    pass
+            if self.viewport.plane_pick_mode:
+                self.viewport.end_plane_pick()
             self.viewport.set_preview(None)
+            self.viewport.update()
             if result:
                 r = dlg.get_values()
-                body = self.doc.add_sphere(r, translation=getattr(dlg, "placement_offset", (0, 0, 0)))
+                body = self.doc.add_sphere(
+                    r,
+                    translation=getattr(dlg, "placement_offset", (0, 0, 0)),
+                    **dlg.get_placement_params(),
+                )
                 self.doc.timeline.last_added.exprs = dlg.get_expressions()
                 self.viewport.zoom_fit()
                 self.status_label.setText(f"Created {body.name} (R={r} mm).")
 
         timer = self._connect_debounced_preview(dlg, preview, throttle=True)
         dlg.finished.connect(lambda _: timer.stop())
+        dlg.pick_face_requested.connect(on_pick_face)
+        self.viewport.primitive_face_picked.connect(on_face_picked)
         attach_primitive_handles(self.viewport, dlg, "sphere", preview)
         dlg.finished.connect(finished)
         self.dock(dlg)
@@ -572,16 +607,21 @@ class PrimitivePromptsMixin:
             hidden_ids.clear()
 
         def refresh_preview():
+            import manifold3d as m3d
             restore_hidden()
             vals = dlg.get_values()
-            t = self.doc.bodies.get(vals["target_body_id"])
             p = self.doc.bodies.get(vals["pin_body_id"])
-            if not t or not p or vals["target_body_id"] == vals["pin_body_id"]:
+            targets = [
+                self.doc.bodies[bid]
+                for bid in vals.get("target_body_ids", [])
+                if bid in self.doc.bodies and bid != vals["pin_body_id"]
+            ]
+            if not targets or not p:
                 self.viewport.set_preview(None)
                 return
             try:
-                new_t, new_s = CutThreadFeature.compute(
-                    t.manifold,
+                new_targets, new_s = CutThreadFeature.compute_many(
+                    [t.manifold for t in targets],
                     p.manifold,
                     pitch=vals["pitch"],
                     profile=vals["profile"],
@@ -589,10 +629,15 @@ class PrimitivePromptsMixin:
                     chamfer=vals["chamfer"],
                     keep_screw=vals["keep_screw"],
                 )
-                prev_m = (new_t + new_s) if new_s is not None else new_t
-                t.visible = False
+                parts = list(new_targets)
+                if new_s is not None:
+                    parts.append(new_s)
+                prev_m = m3d.Manifold.batch_boolean(parts, m3d.OpType.Add) if len(parts) > 1 else parts[0]
+                for t in targets:
+                    t.visible = False
+                    hidden_ids.append(t.body_id)
                 p.visible = False
-                hidden_ids.extend([t.body_id, p.body_id])
+                hidden_ids.append(p.body_id)
             except Exception:
                 prev_m = None
             self.viewport.set_preview(prev_m, "new_body")
@@ -609,7 +654,7 @@ class PrimitivePromptsMixin:
                         + (" (kept screw)." if vals["keep_screw"] else ".")
                     )
                 else:
-                    self.status_label.setText("Cut Thread: pick two different bodies.")
+                    self.status_label.setText("Cut Thread: pick at least one target body and a Thread Pin.")
 
         timer = self._connect_debounced_preview(dlg, refresh_preview, throttle=True)
         dlg.finished.connect(lambda _: timer.stop())

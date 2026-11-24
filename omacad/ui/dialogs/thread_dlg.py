@@ -5,7 +5,8 @@ Omacad - Thread & Coil Dialog
 
 from typing import Optional, Any
 from PySide6.QtWidgets import (
-    QFormLayout, QComboBox, QCheckBox, QLabel, QHBoxLayout, QPushButton, QGroupBox, QVBoxLayout
+    QFormLayout, QComboBox, QCheckBox, QLabel, QHBoxLayout, QPushButton, QGroupBox, QVBoxLayout,
+    QListWidget, QListWidgetItem,
 )
 from PySide6.QtCore import Qt, Signal
 from omacad.model.document import Document
@@ -471,43 +472,55 @@ class ThreadPinDialog(BaseFeatureDialog):
 
 
 class CutThreadDialog(BaseFeatureDialog):
-    """Thread a placed cylinder pin, cut it into a target body, and apply clearance + lead-in chamfer."""
+    """Thread a placed cylinder pin, cut it into one or more target bodies, and apply clearance + lead-in chamfer."""
 
     changed = Signal()
+
+    @staticmethod
+    def _boxes_overlap(bb_a, bb_b) -> bool:
+        return (
+            bb_a[0] <= bb_b[3] and bb_a[3] >= bb_b[0]
+            and bb_a[1] <= bb_b[4] and bb_a[4] >= bb_b[1]
+            and bb_a[2] <= bb_b[5] and bb_a[5] >= bb_b[2]
+        )
 
     def __init__(self, doc, parent=None, selected_ids=None):
         super().__init__("Cut Thread", parent)
         self.doc = doc
+        self._bodies = list(doc.bodies.values()) if doc else []
 
         grp = QGroupBox("Bodies")
         form = QFormLayout(grp)
         form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
 
-        self.cmb_target = QComboBox()
+        self.lst_targets = QListWidget()
+        self.lst_targets.setMaximumHeight(min(120, max(54, len(self._bodies) * 24 + 8)))
         self.cmb_pin = QComboBox()
-        bodies = list(doc.bodies.values()) if doc else []
-        for b in bodies:
-            self.cmb_target.addItem(b.name, b.body_id)
+        for b in self._bodies:
             self.cmb_pin.addItem(b.name, b.body_id)
 
-        # Smart defaults: pick a Thread Pin (or second body) as pin, and another body as target
+        # Smart defaults: pick a Thread Pin (or second body) as pin, and overlapping/selected bodies as targets
         sel = list(selected_ids or [])
-        pin_idx = next((i for i, b in enumerate(bodies) if "Thread Pin" in b.name or "Cylinder" in b.name), -1)
+        pin_idx = next((i for i, b in enumerate(self._bodies) if "Thread Pin" in b.name or "Cylinder" in b.name), -1)
         if len(sel) >= 2:
-            t_idx = next((i for i, b in enumerate(bodies) if b.body_id == sel[0]), 0)
-            p_idx = next((i for i, b in enumerate(bodies) if b.body_id == sel[1]), 0)
-            self.cmb_target.setCurrentIndex(t_idx)
+            if pin_idx >= 0 and self._bodies[pin_idx].body_id in sel:
+                p_idx = pin_idx
+            else:
+                p_idx = next((i for i, b in enumerate(self._bodies) if b.body_id == sel[-1]), 0)
             self.cmb_pin.setCurrentIndex(p_idx)
-        elif pin_idx >= 0 and len(bodies) >= 2:
-            self.cmb_pin.setCurrentIndex(pin_idx)
-            self.cmb_target.setCurrentIndex(0 if pin_idx != 0 else 1)
-        elif len(bodies) >= 2:
-            self.cmb_target.setCurrentIndex(0)
-            self.cmb_pin.setCurrentIndex(1)
+            pin_id = self.cmb_pin.currentData()
+            default_targets = {bid for bid in sel if bid != pin_id}
+        else:
+            if pin_idx >= 0 and len(self._bodies) >= 2:
+                self.cmb_pin.setCurrentIndex(pin_idx)
+            elif len(self._bodies) >= 2:
+                self.cmb_pin.setCurrentIndex(1)
+            default_targets = self._default_target_ids(self.cmb_pin.currentData())
 
-        self.cmb_target.currentIndexChanged.connect(lambda _: self.changed.emit())
-        self.cmb_pin.currentIndexChanged.connect(lambda _: self.changed.emit())
-        form.addRow("Target Body:", self.cmb_target)
+        self._populate_targets(default_targets)
+        self.lst_targets.itemChanged.connect(lambda _: self.changed.emit())
+        self.cmb_pin.currentIndexChanged.connect(self._on_pin_changed)
+        form.addRow("Target Bodies:", self.lst_targets)
         form.addRow("Thread Pin:", self.cmb_pin)
         self.main_layout.addWidget(grp)
 
@@ -560,9 +573,55 @@ class CutThreadDialog(BaseFeatureDialog):
         self.main_layout.addWidget(grp_t)
         self.add_buttons()
 
+    def _default_target_ids(self, pin_id: Optional[str]) -> set:
+        pin = self.doc.bodies.get(pin_id) if (self.doc and pin_id) else None
+        others = [b for b in self._bodies if b.body_id != pin_id]
+        if not others:
+            return set()
+        if pin is not None and pin.manifold is not None:
+            pin_bb = pin.manifold.bounding_box()
+            overlapping = {
+                b.body_id for b in others
+                if b.manifold is not None and self._boxes_overlap(b.manifold.bounding_box(), pin_bb)
+            }
+            if overlapping:
+                return overlapping
+        return {others[0].body_id}
+
+    def _populate_targets(self, checked_ids: set) -> None:
+        pin_id = self.cmb_pin.currentData()
+        self.lst_targets.blockSignals(True)
+        self.lst_targets.clear()
+        for b in self._bodies:
+            if b.body_id == pin_id:
+                continue
+            item = QListWidgetItem(b.name)
+            item.setData(Qt.ItemDataRole.UserRole, b.body_id)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Checked if b.body_id in checked_ids else Qt.CheckState.Unchecked)
+            self.lst_targets.addItem(item)
+        self.lst_targets.blockSignals(False)
+
+    def _on_pin_changed(self, _index: int) -> None:
+        pin_id = self.cmb_pin.currentData()
+        checked = {bid for bid in self.target_body_ids() if bid != pin_id}
+        if not checked:
+            checked = self._default_target_ids(pin_id)
+        self._populate_targets(checked)
+        self.changed.emit()
+
+    def target_body_ids(self) -> list:
+        return [
+            self.lst_targets.item(i).data(Qt.ItemDataRole.UserRole)
+            for i in range(self.lst_targets.count())
+            if self.lst_targets.item(i).checkState() == Qt.CheckState.Checked
+        ]
+
     def get_values(self) -> dict:
+        target_ids = self.target_body_ids()
         return {
-            "target_body_id": self.cmb_target.currentData(),
+            "target_body_id": target_ids[0] if target_ids else None,
+            "target_body_ids": target_ids,
             "pin_body_id": self.cmb_pin.currentData(),
             "pitch": self.spn_pitch.value(),
             "profile": str(self.cmb_profile.currentData() or "trapezoidal_45"),

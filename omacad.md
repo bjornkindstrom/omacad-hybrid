@@ -1,3 +1,9 @@
+## Cut Thread genom flera kroppar — 2026-11-24 (0.9.9.80.216, rapport 20261124-191726)
+
+- `CutThreadDialog` (`omacad/ui/dialogs/thread_dlg.py`) ersätter den enskilda `Target Body`-dropdownen med en krysslista (`lst_targets`) som automatiskt markerar alla icke-pinnkroppar vars bounding box överlappar pinnen (eller markerade kroppar).
+- `CutThreadFeature` (`omacad/model/features/cut_thread.py`), `Document.cut_thread` (`omacad/model/document.py`) och `prompt_cut_thread` (`omacad/ui/controllers/primitive_prompts.py`) stöder nu `target_body_ids`: verktygsgängan och eventuell behållen skruv beräknas en gång (`compute_many`) och skärs med spel och ingångsfas i samtliga valda mål-kroppar.
+- Test: `tests/test_cut_thread.py::test_cut_thread_multiple_target_bodies_and_dialog`.
+
 ## Cut Thread utan mynningsfnas & Split Body efter Cut Thread — 2026-11-24 (0.9.9.80.215, rapport 20261124-190514)
 
 - **Fnas i gängmynning**: `CutThreadFeature.compute` (`omacad/model/features/cut_thread.py`) avslutade 45°-faskonen vid `r_hole` (`0.5 * diameter`) i stället för att fortsätta ner förbi `root_radius()`, vilket lämnade en vass gängkant/fnas i öppningen; dessutom kunde snedställda eller närliggande ytor utan kontakt med pinnen träffas av `probe` längs axeln och få en extra förskjuten kon. Konen skär nu ända ner till `root_radius() - 0.05`, ytor filtreras mot `pf.tris` inom `r_outer + 0.5`, `along` projiceras på ytplanet vid pinnaxeln och dubbletter inom `0.05 mm` hoppas över.

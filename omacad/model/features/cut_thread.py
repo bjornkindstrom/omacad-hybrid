@@ -4,7 +4,7 @@ Takes a placed cylinder ("Thread Pin"), turns it into a helical thread, cuts it
 into a target body, and applies 3D-printer clearance + lead-in chamfers.
 """
 
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, List, Optional, Sequence, Tuple, Union
 import math
 import numpy as np
 import manifold3d as m3d
@@ -59,13 +59,13 @@ def _cone_z(z0: float, z1: float, r0: float, r1: float, mat: Optional[np.ndarray
 
 
 class CutThreadFeature(Feature):
-    """Threads a placed cylinder pin, cuts it into a target body, and adds clearance + lead-in chamfers."""
+    """Threads a placed cylinder pin, cuts it into one or more target bodies, and adds clearance + lead-in chamfers."""
 
     def __init__(
         self,
         feature_id: str,
         name: str,
-        target_body_id: str,
+        target_body_id: Union[str, Sequence[str]],
         pin_body_id: str,
         pitch: float = 2.0,
         profile: str = "trapezoidal_45",
@@ -73,9 +73,16 @@ class CutThreadFeature(Feature):
         chamfer: float = 1.0,
         keep_screw: bool = True,
         taper_lead_in: bool = True,
+        target_body_ids: Optional[Sequence[str]] = None,
     ):
         super().__init__(feature_id, "cut_thread", name)
-        self.target_body_id = str(target_body_id)
+        raw_ids = (
+            list(target_body_ids)
+            if target_body_ids is not None
+            else (list(target_body_id) if isinstance(target_body_id, (list, tuple, set)) else [target_body_id])
+        )
+        self.target_body_ids: List[str] = list(dict.fromkeys(str(b) for b in raw_ids if b))
+        self.target_body_id: str = self.target_body_ids[0] if self.target_body_ids else ""
         self.pin_body_id = str(pin_body_id)
         self.pitch = float(pitch)
         self.profile = str(profile)
@@ -85,8 +92,7 @@ class CutThreadFeature(Feature):
         self.taper_lead_in = bool(taper_lead_in)
 
     @staticmethod
-    def compute(
-        target_manifold: m3d.Manifold,
+    def _prepare_tools(
         pin_manifold: m3d.Manifold,
         pitch: float = 2.0,
         profile: str = "trapezoidal_45",
@@ -94,7 +100,7 @@ class CutThreadFeature(Feature):
         chamfer: float = 1.0,
         keep_screw: bool = True,
         taper_lead_in: bool = True,
-    ) -> Tuple[m3d.Manifold, Optional[m3d.Manifold]]:
+    ):
         origin, normal, u, v, diameter, length = extract_pin_cylinder(pin_manifold)
         tf = ThreadFeature(
             "tmp_thread",
@@ -118,7 +124,7 @@ class CutThreadFeature(Feature):
         mat = tf.placement()
 
         if keep_screw:
-            new_target = target_manifold - nominal_bolt
+            cut_tool = nominal_bolt
             screw_tf = ThreadFeature(
                 "tmp_screw",
                 "tmp_screw",
@@ -144,9 +150,27 @@ class CutThreadFeature(Feature):
             new_screw = local_screw if mat is None else local_screw.transform(mat)
         else:
             cut_tool = (nominal_bolt + tf.zone(clr, channel=True)) if clr > 1e-6 else nominal_bolt
-            new_target = target_manifold - cut_tool
             new_screw = None
 
+        return cut_tool, new_screw, tf, origin, normal, diameter, length, clr, ch, seg, mat
+
+    @staticmethod
+    def _cut_one(
+        target_manifold: m3d.Manifold,
+        pin_manifold: m3d.Manifold,
+        cut_tool: m3d.Manifold,
+        tf: ThreadFeature,
+        origin: list,
+        normal: list,
+        diameter: float,
+        length: float,
+        clr: float,
+        ch: float,
+        keep_screw: bool,
+        seg: int,
+        mat: Optional[np.ndarray],
+    ) -> m3d.Manifold:
+        new_target = target_manifold - cut_tool
         if ch > 1e-6:
             orig_v = np.asarray(origin, dtype=float)
             norm_v = np.asarray(normal, dtype=float)
@@ -180,16 +204,68 @@ class CutThreadFeature(Feature):
                 else:
                     cone = _cone_z(along - 0.02, along + dz, r_outer + 0.02, r_tip, mat, seg)
                 new_target = new_target - cone
+        return new_target
 
-        return new_target, new_screw
+    @classmethod
+    def compute_many(
+        cls,
+        target_manifolds: Sequence[m3d.Manifold],
+        pin_manifold: m3d.Manifold,
+        pitch: float = 2.0,
+        profile: str = "trapezoidal_45",
+        clearance: float = 0.2,
+        chamfer: float = 1.0,
+        keep_screw: bool = True,
+        taper_lead_in: bool = True,
+    ) -> Tuple[List[m3d.Manifold], Optional[m3d.Manifold]]:
+        cut_tool, new_screw, tf, origin, normal, diameter, length, clr, ch, seg, mat = cls._prepare_tools(
+            pin_manifold,
+            pitch=pitch,
+            profile=profile,
+            clearance=clearance,
+            chamfer=chamfer,
+            keep_screw=keep_screw,
+            taper_lead_in=taper_lead_in,
+        )
+        results = [
+            cls._cut_one(m, pin_manifold, cut_tool, tf, origin, normal, diameter, length, clr, ch, keep_screw, seg, mat)
+            for m in target_manifolds
+        ]
+        return results, new_screw
+
+    @classmethod
+    def compute(
+        cls,
+        target_manifold: m3d.Manifold,
+        pin_manifold: m3d.Manifold,
+        pitch: float = 2.0,
+        profile: str = "trapezoidal_45",
+        clearance: float = 0.2,
+        chamfer: float = 1.0,
+        keep_screw: bool = True,
+        taper_lead_in: bool = True,
+    ) -> Tuple[m3d.Manifold, Optional[m3d.Manifold]]:
+        results, new_screw = cls.compute_many(
+            [target_manifold],
+            pin_manifold,
+            pitch=pitch,
+            profile=profile,
+            clearance=clearance,
+            chamfer=chamfer,
+            keep_screw=keep_screw,
+            taper_lead_in=taper_lead_in,
+        )
+        return results[0], new_screw
 
     def execute(self, doc: Any) -> None:
-        target = doc.bodies.get(self.target_body_id)
         pin = doc.bodies.get(self.pin_body_id)
-        if not target or not pin:
+        if not pin:
             return
-        new_target, new_screw = self.compute(
-            target.manifold,
+        targets = [doc.bodies[bid] for bid in self.target_body_ids if bid in doc.bodies and bid != self.pin_body_id]
+        if not targets:
+            return
+        new_targets, new_screw = self.compute_many(
+            [t.manifold for t in targets],
             pin.manifold,
             pitch=self.pitch,
             profile=self.profile,
@@ -198,8 +274,9 @@ class CutThreadFeature(Feature):
             keep_screw=self.keep_screw,
             taper_lead_in=self.taper_lead_in,
         )
-        target.manifold = new_target
-        target.update_render_mesh()
+        for target, new_m in zip(targets, new_targets):
+            target.manifold = new_m
+            target.update_render_mesh()
         if self.keep_screw and new_screw is not None:
             pin.manifold = new_screw
             pin.update_render_mesh()
@@ -213,6 +290,7 @@ class CutThreadFeature(Feature):
             "name": self.name,
             "suppressed": self.suppressed,
             "target_body_id": self.target_body_id,
+            "target_body_ids": list(self.target_body_ids),
             "pin_body_id": self.pin_body_id,
             "pitch": self.pitch,
             "profile": self.profile,
@@ -236,6 +314,7 @@ class CutThreadFeature(Feature):
             chamfer=data.get("chamfer", 1.0),
             keep_screw=data.get("keep_screw", True),
             taper_lead_in=data.get("taper_lead_in", True),
+            target_body_ids=data.get("target_body_ids"),
         )
         feat.suppressed = data.get("suppressed", False)
         feat.exprs = dict(data.get("exprs", {}))

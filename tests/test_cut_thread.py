@@ -159,3 +159,54 @@ def test_split_body_after_cut_thread_preserves_thread_and_screw():
     assert p.status().name == "NoError"
     assert b1.volume() + b2.volume() == pytest.approx(v_box, abs=1e-3)
     assert p.volume() == pytest.approx(v_pin, abs=1e-3)
+
+
+def test_cut_thread_multiple_target_bodies_and_dialog(tmp_path):
+    QApplication.instance() or QApplication([])
+    doc = Document()
+    box = doc.add_box(40, 40, 20, center="bottom_center")
+    cp = doc.add_construction_plane(doc.origin_planes["YZ"], 0.0)
+    split = doc.split_body(box.body_id, cp)
+    assert split is not None
+    other_id = split.result_body_id
+
+    pin = doc.add_cylinder(5.0, 30.0, name="Thread Pin 1")
+    doc.move_body(pin.body_id, ry=90.0, dz=-5.0)
+
+    dlg = CutThreadDialog(doc, selected_ids=[pin.body_id])
+    vals = dlg.get_values()
+    assert set(vals["target_body_ids"]) == {box.body_id, other_id}
+    assert vals["pin_body_id"] == pin.body_id
+
+    v_b1 = doc.bodies[box.body_id].manifold.volume()
+    v_b2 = doc.bodies[other_id].manifold.volume()
+    feat = doc.cut_thread(exprs=dlg.get_expressions(), **vals)
+    assert feat is not None
+    assert set(feat.target_body_ids) == {box.body_id, other_id}
+
+    m1 = doc.bodies[box.body_id].manifold
+    m2 = doc.bodies[other_id].manifold
+    ms = doc.bodies[pin.body_id].manifold
+    assert m1.status().name == "NoError"
+    assert m2.status().name == "NoError"
+    assert ms.status().name == "NoError"
+    assert m1.volume() < v_b1 - 500.0
+    assert m2.volume() < v_b2 - 500.0
+    assert len(ms.decompose()) == 1
+
+    path = str(tmp_path / "cut_thread_multi.omacad")
+    Exporter.save_project(doc, path)
+    again = Exporter.load_project(path)
+    assert again.bodies[box.body_id].manifold.volume() == pytest.approx(m1.volume(), rel=1e-5)
+    assert again.bodies[other_id].manifold.volume() == pytest.approx(m2.volume(), rel=1e-5)
+    assert again.bodies[pin.body_id].manifold.volume() == pytest.approx(ms.volume(), rel=1e-5)
+
+    doc.undo()
+    assert doc.bodies[box.body_id].manifold.volume() == pytest.approx(v_b1, rel=1e-5)
+    assert doc.bodies[other_id].manifold.volume() == pytest.approx(v_b2, rel=1e-5)
+
+    feat2 = doc.cut_thread([box.body_id, other_id], pin.body_id, pitch=2.0, clearance=0.2, chamfer=1.0, keep_screw=False)
+    assert feat2 is not None
+    assert pin.body_id not in doc.bodies
+    assert doc.bodies[box.body_id].manifold.volume() < v_b1 - 500.0
+    assert doc.bodies[other_id].manifold.volume() < v_b2 - 500.0
