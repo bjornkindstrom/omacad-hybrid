@@ -7,7 +7,7 @@ from omacad.ui.dialogs.base import BaseFeatureDialog
 
 HINT = ("Click flat faces, holes, pins or curved surfaces such as threads in the viewport (click again to deselect). "
         "Plus moves the face out of the body (adds material, a hole gets smaller), minus moves it in.\n\n"
-        "Fit of a thread: click the thread flank on the part you want to change. Minus removes material there "
+        "Fit of a thread: click anywhere on the thread of the part you want to change; the whole thread is taken. Minus removes material there "
         "(looser fit), plus adds material (tighter fit). The Thread step is adjusted, so the thread stays clean.")
 
 
@@ -20,6 +20,8 @@ class FacePickMixin:
         import numpy as np
         if a["kind"] != b["kind"]:
             return False
+        if a["kind"] == "thread":
+            return a["thread_id"] == b["thread_id"] and a["sign"] == b["sign"]
         if a["kind"] == "surface":    # the same patch: clicks close to each other
             return bool(np.linalg.norm(np.asarray(a["point"]) - np.asarray(b["point"])) < 0.5)
         keys = ("normal", "origin") if a["kind"] == "plane" else ("origin", "axis")
@@ -54,8 +56,12 @@ class OffsetFaceDialog(FacePickMixin, BaseFeatureDialog):
 
     changed = Signal()
 
-    def __init__(self, parent=None, distance: float = 0.2, editing: bool = False, embedded: bool = False):
+    def __init__(self, parent=None, distance: float = 0.2, editing: bool = False, embedded: bool = False,
+                 doc=None):
         super().__init__("Offset Face", parent, embedded)
+        self.doc = doc           # needed to show a picked thread
+        self._editing = editing
+        self._default = distance
         self.faces = []          # face references, see offset_face.plane_face_ref / cylinder_face_ref
         self.body_id = ""        # the body the faces belong to
         form = QFormLayout()
@@ -90,6 +96,12 @@ class OffsetFaceDialog(FacePickMixin, BaseFeatureDialog):
         self._update_count()
         self.spn_dist.valueChanged.connect(lambda *_: self.changed.emit())
         QTimer.singleShot(0, self, lambda: (self.spn_dist.setFocus(), self.spn_dist.selectAll()))
+
+    def toggle(self, ref: dict, body_id: str) -> bool:
+        if (ref["kind"] == "thread" and not self._editing and not self.faces and not self.spn_dist.expression()
+                and self.spn_dist.value() == self._default > 0):
+            self.spn_dist.setValue(-self._default)     # a thread is picked to get play: start on the looser side
+        return super().toggle(ref, body_id)
 
     def _update_count(self):
         n = len(self.faces)
@@ -131,6 +143,9 @@ class OffsetFaceDialog(FacePickMixin, BaseFeatureDialog):
                 for face in body.faces:
                     if np.dot(face.normal, ref["normal"]) > 0.9999 and abs(np.dot(face.normal, np.asarray(ref["origin"]) - face.origin)) < 0.01:
                         highlighted.append(face)
+            elif len(triangles) and ref["kind"] == "thread":
+                if self.doc is not None:
+                    highlighted.append({"tris": self.doc.thread_triangles(ref, mesh)})
             elif len(triangles) and ref["kind"] == "surface":
                 normals = np.cross(triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0])
                 normals /= np.maximum(np.linalg.norm(normals, axis=1)[:, None], 1e-12)
@@ -170,6 +185,8 @@ class OffsetFaceDialog(FacePickMixin, BaseFeatureDialog):
                 weights = np.linalg.norm(np.cross(triangles[:, 1] - triangles[:, 0],
                                                  triangles[:, 2] - triangles[:, 0]), axis=1)
                 point = np.average(triangles.mean(axis=1), axis=0, weights=weights) if weights.sum() else triangles.mean(axis=(0, 1))
+        elif ref["kind"] == "thread":
+            return None
         else:
             point = np.asarray(ref.get("point", ref.get("origin")), dtype=float)
         if ref["kind"] == "cylinder":
@@ -179,6 +196,11 @@ class OffsetFaceDialog(FacePickMixin, BaseFeatureDialog):
             normal = radial - axis * np.dot(radial, axis)
             if ref.get("internal"):
                 normal = -normal
+        elif ref["kind"] == "thread":
+            if triangles is None or not len(triangles):
+                return None
+            t0 = triangles[len(triangles) // 2]
+            point, normal = t0.mean(axis=0), np.cross(t0[1] - t0[0], t0[2] - t0[0])
         else:
             normal = np.asarray(ref.get("normal", [0., 0., 0.]), dtype=float)
         length = np.linalg.norm(normal)

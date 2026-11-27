@@ -811,7 +811,10 @@ class PickerMixin:
         self._hover_patch_time = now
         surf = self._pick_surface(x, y)
         face, patch = None, None
-        if surf is not None:
+        thread = self.doc.thread_at(surf["point"], surf["normal"]) if surf is not None else None
+        if thread is not None:
+            patch = self._thread_patch(thread, surf["body_id"])
+        elif surf is not None:
             target = self._pick_plane_target(x, y)
             if target is not None and target[0] == "face":
                 proj, view, _ = self.get_matrices()
@@ -831,11 +834,24 @@ class PickerMixin:
             self.hover_plane, self.hover_patch = new, patch
             self.update()
 
+    def _thread_patch(self, thread: dict, body_id: str):
+        """The whole thread on a body as flat vertices (kept until the mesh or the thread changes)."""
+        mesh = self._pick_mesh(self.doc.bodies[body_id])
+        key = (thread["thread_id"], thread["sign"], tuple(thread["shift"]), body_id, getattr(mesh, "mesh_id", id(mesh)))
+        if getattr(self, "_thread_patch_cache", (None,))[0] != key:
+            patch = np.asarray(self.doc.thread_triangles(thread, mesh), dtype=np.float32).reshape(-1, 3)
+            self._thread_patch_cache = (key, patch if len(patch) else None)
+        return self._thread_patch_cache[1]
+
     def _offset_face_click(self, x: float, y: float):
         """Offset Face: the nearest of a flat face and a cylinder under the cursor is picked."""
         from omacad.model.features.offset_face import cylinder_face_ref, plane_face_ref, surface_face_ref
         surf = self._pick_surface(x, y)     # what the cursor touches first, flat or curved
         if surf is None:
+            return
+        thread = self.doc.thread_at(surf["point"], surf["normal"])
+        if thread is not None:              # anywhere on a thread takes the whole thread
+            self.offset_face_picked.emit(thread, surf["body_id"])
             return
         target = self._pick_plane_target(x, y)
         if target is not None and target[0] == "face":
@@ -977,7 +993,14 @@ class PickerMixin:
         GL.glUseProgram(0)
 
     def align_to_plane(self, plane):
-        """Orbits the camera so it looks straight at the given sketch plane."""
+        """Orbits the camera so it looks straight at the given sketch plane (gliding there, `camera_ease`)."""
+        from omacad.ui.viewport import camera_ease
+        before = camera_ease.state(self)
+        self._align_to_plane_now(plane)
+        if hasattr(self, "camera_ease"):
+            self.camera_ease.start(self, before)
+
+    def _align_to_plane_now(self, plane):
         n = np.asarray(plane.normal, dtype=np.float64)
         el = math.degrees(math.asin(max(-1.0, min(1.0, float(n[2])))))
         if abs(n[2]) > 0.999:

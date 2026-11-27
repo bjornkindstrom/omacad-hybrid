@@ -8,6 +8,7 @@ import copy
 import json
 from typing import List, Any
 from omacad.model import brep, quality
+from omacad.model.features.base import analyse_bodies
 from omacad.model.features import (
     Body,
     Feature,
@@ -147,9 +148,11 @@ class Timeline:
         limit = min(self.marker_index, len(self.features))
         hidden = {bid for bid, b in doc.bodies.items() if not getattr(b, "visible", True)}   # the user's eye clicks
 
-        # Invalidate any cache entries beyond current marker or length
+        # Checkpoints past the marker are kept: rolling back to look at or edit an earlier step and then forward
+        # (or Cancel) reuses them. Each is still checked in order by its step's fingerprint below, and the first
+        # changed step drops it and everything after it, so a stale state is never used.
         for k in list(self._state_cache.keys()):
-            if k > limit:
+            if k >= len(self.features):
                 del self._state_cache[k]
 
         # Find the latest valid checkpoint in cache
@@ -255,6 +258,7 @@ class Timeline:
                 doc.bodies[bid].color = list(col)
         if active and active.sketch_id not in doc.sketches:
             doc.sketches[active.sketch_id] = active
+        analyse_bodies(doc)
 
     def _place_linked_objects(self, history) -> bool:
         """A linked object follows its original: steps the original got after the link (and that do not build on the

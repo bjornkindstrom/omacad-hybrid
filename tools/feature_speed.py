@@ -3,7 +3,7 @@
 import argparse,cProfile,hashlib,json,os,pstats,subprocess,sys,tempfile,time
 from pathlib import Path
 
-p=argparse.ArgumentParser();p.add_argument('--root',type=Path,required=True);p.add_argument('--case',choices=['box_fillet','rim_fillet','jar'],required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--segments',type=int,choices=[360,720],default=720);p.add_argument('--profile',action='store_true');p.add_argument('--build-only',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--root',type=Path,required=True);p.add_argument('--case',choices=['box_fillet','rim_fillet','jar'],required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--segments',type=int,choices=[360,720],default=720);p.add_argument('--profile',action='store_true');p.add_argument('--build-only',action='store_true');p.add_argument('--eager',action='store_true',help='analyse every body as soon as it is made (the behaviour before lazy analysis), for comparisons');a=p.parse_args()
 a.output.parent.mkdir(parents=True,exist_ok=True)
 sys.path.insert(0,str(a.root.resolve()))
 import numpy as np
@@ -13,7 +13,7 @@ settings._instance.set('theme_mode','fixed');settings._instance.set('theme_name'
 from omacad.ui import theme
 theme.CUSTOM_DIR=state/'themes';theme._ARROW_DIR=state/'arrows'
 from omacad.model import quality
-quality.set_circle_segments(a.segments);quality.set_interactive_mode(False)
+quality.set_circle_segments(a.segments);quality.set_fast_view(False);quality.set_interactive_mode(False)
 from omacad.model.document import Document
 from omacad.model.features.base import Body
 from omacad.model.jar import JarSpec
@@ -23,7 +23,9 @@ original_update=Body.update_render_mesh
 
 def instrumented_update(self):
     start=time.perf_counter()
-    try:return original_update(self)
+    try:
+        original_update(self)
+        if a.eager and hasattr(self,'analyse_now'):self.analyse_now()
     finally:
         elapsed=time.perf_counter()-start;stages.append({'body':self.name,'seconds':elapsed})
         if elapsed>0.5:print(f'Render/topology: {self.name}: {elapsed:.2f}s',flush=True)

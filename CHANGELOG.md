@@ -1,7 +1,52 @@
+# Hybrid-experiment — 0.9.9.80.224
+
+### Changed
+- **Rolling back and forward is free**: the timeline keeps its checkpoints past the marker (each is still checked in order by its step's fingerprint, and the first changed step drops it and everything after it), so looking at or editing an earlier step and then rolling forward, or cancelling, no longer runs the later steps again.
+- **No hitch on the first frame or hover after a rebuild**: in the app the busy thread also prepares what the first paint draws (edge lines incl. tangent edges, Fast view smoothing) and the first hover picks with (face triangle stacks and the native BVH), with the same functions and caches the view uses.
+
+# Hybrid-experiment — 0.9.9.80.223
+
+### Changed
+- **Faster rebuilds, same geometry**: a body's render mesh and face/edge analysis are now computed the first time something reads them, once per manifold and shared by checkpoint copies, instead of for every intermediate body a step makes. The end of a rebuild (and of every undo step) still analyses the final bodies on the busy thread, so the first paint does not pay for it. The Jar with Lid (360 segments) builds in 8.4 s instead of 13.8 s. Edge welding samples edges without a Python loop and curve edges filter adjacent triangles in bulk.
+- **Quality gate for speed work**: `tools/golden_check.py` rebuilds all 135 project documents and compares every body's mesh, faces, edges and render mesh with a recorded baseline; this release gives zero differences. `tools/feature_speed.py --eager` times the old behaviour for comparison.
+- **A calmer, more polished 3D view**: a soft backdrop gradient (theme keys `canvas_top`/`canvas_bottom`, derived from the canvas colour otherwise); grid lines fade out towards the horizon and minor lines fade in with zoom instead of popping; softer studio lighting (hemisphere ambient, faint under-light, rim at the silhouette); a selected body keeps a trace of its own colour under the highlight; body edges are drawn at a real 1.5 px (2.4 px selected) instead of being capped at 1 px; previews are lit like bodies with crisp edges.
+- **Smooth camera moves**: view presets, the ViewCube, Fit, Find and Look At glide to the new view (0.28 s, ease-out, the short way round). Code still reads the final camera at once; any mouse orbit/pan/zoom ends the glide. Settings > 3D View > Display can turn it off.
+
+# Hybrid-experiment — 0.9.9.80.222
+
+### Fixed
+- **Scroll bars round at both ends**: the handle (10 px thick) had a 6 px corner radius, more than half its side, so Qt drew it square. Both radii are now computed as exactly half the track/handle thickness (`theme.scrollbar_handle_px`).
+
 # Hybrid-experiment — 0.9.9.80.221
 
 ### Fixed
 - **Lines down a round wall far from the origin** (report 20261127-161058): a script's parts laid out for printing (~500 mm out) showed tangent lines down single facets of the scalloped top's wall. The render mesh read its edges from the float32 mesh, and float32 noise that far out tipped the thin facets off their plane, so one facet became a "flat face" with a line on each side. Edges are now found on the float64 mesh, and scripted/imported bodies are stored and rebuilt in float64 (`ctx.solid`, `ImportMeshFeature`).
+
+# Hybrid-experiment — 0.9.9.80.220
+
+### Added
+- **Scripts can make their values fit together**: `ctx.adjust(name, value, why)` changes another value instead of stopping with an error (a bigger sphere for a wider top, say), and `ctx.changed` tells the script which value the person just changed, so that one stays. The script panel puts the adjusted value in its field and shows the reason in orange under the fields; Run saves the adjusted values and the status bar repeats the reason. The check report lists them. Documented in the scripting guide.
+
+# Hybrid-experiment — 0.9.9.80.219
+
+### Changed
+- **Settings sorted where people look for them**: five pages (Appearance, Interface, Modelling, 3D View, General). The Split Body lip joint, B-rep bodies and curve quality are under Modelling; camera, zoom direction and tangent edges under 3D View; the fan menu, scripts and autosave/restart have their own sections instead of sitting under "Toolbar size", "Change requests" or "Problem reporting"; the extrude arrow's colour, size and gap and all sketch line colours/thicknesses/dash gap are together under Appearance. Only the layout moved: every field keeps its value and save key.
+
+### Fixed
+- **Scroll bars everywhere** were faint 6 px strips (the ribbon's too). One app-wide style (`theme.scrollbar_stylesheet`, set with the tick boxes via `theme.app_stylesheet`) gives every scroll bar 16 px, a visible track, a handle in the muted text colour and the accent on hover/drag, in every theme; widget sheets no longer carry their own QScrollBar rules (`tests/test_scrollbars.py`).
+- Settings: the Split Body lip style list was cut off ("Inner lip ("), and the B-rep and sketch-palette descriptions were split at the wrong parenthesis.
+
+# Hybrid-experiment — 0.9.9.80.218
+
+### Fixed
+- **Offset Face on a thread joined to a neck**: a thinner thread stays attached to its shrunk core instead of floating 0.1 mm beside it (`CadKernel.create_thread`).
+- **Slow Surface Texture preview with many cells**: previews no longer compute smooth normals they never draw, cell depths use Manifold's ray cast, cell outlines are combined in one go, star cells are built in bulk, and the wall of a curved face is remembered between previews. 800 stars on a cylinder or hollow sphere update in about half a second instead of 7-9 s.
+- **Surface Texture previews half-typed numbers**: a typed value is previewed after a 0.7 s pause, or at once on Enter, Tab or leaving the field; the arrows are immediate.
+
+# Hybrid-experiment — 0.9.9.80.217
+
+### Added
+- **Lithophane**: new primitive (`omacad/model/features/lithophane.py`, `omacad/ui/dialogs/lithophane_dlg.py`) that turns a picture into a wall of varying thickness: Flat, Cylinder / arc or Sphere with a lamp opening. The picture is stored in the project. Relief bodies skip edge analysis and detail is capped so dense pictures stay usable.
 
 # Hybrid-experiment — 0.9.9.80.216
 

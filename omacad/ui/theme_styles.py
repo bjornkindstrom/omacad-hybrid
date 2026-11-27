@@ -469,11 +469,6 @@ QComboBox QAbstractItemView {
 QSlider::groove:horizontal { background: @border; border: none; height: 4px; }
 QSlider::sub-page:horizontal { background: @accent; }
 QSlider::handle:horizontal { background: @surface; border: 2px solid @accent; }
-QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
-QScrollBar:horizontal { background: transparent; height: 10px; margin: 2px; }
-QScrollBar::handle:vertical, QScrollBar::handle:horizontal { background: @border; border-radius: 3px; min-height: 24px; min-width: 24px; }
-QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover { background: @border_strong; }
-QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page { background: transparent; border: none; width: 0; height: 0; }
 QStatusBar { background-color: @surface; color: @muted; border-top: 1px solid @border; }
 QToolTip { background-color: @text; color: @surface; border: none; border-radius: 6px; padding: 6px 10px; }
 """
@@ -498,7 +493,6 @@ QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox { border-color: transparent; }
 QLineEdit:disabled, QDoubleSpinBox:disabled, QSpinBox:disabled, QComboBox:disabled { border: 1px solid transparent; }
 QSpinBox::up-button, QDoubleSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::down-button { border-left: none; }
 QSlider::groove:horizontal { border-radius: 2px; }
-QScrollBar::handle:vertical, QScrollBar::handle:horizontal { border-radius: 4px; }
 QWidget#BrowserWidget, QWidget#InspectorPanel { border: none; border-radius: 14px; }
 """
 

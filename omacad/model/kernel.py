@@ -83,6 +83,11 @@ class RenderMesh:
             cache[tangent] = np.ascontiguousarray(lines.reshape(-1, 2, 3)[keep].reshape(-1, 3))
         return cache[tangent]
 
+    def prepare_display(self, tangent: bool) -> None:
+        """Computes now what the first paint would: the drawn edge lines and the Fast view smoothing (both cached,
+        same functions, so the paint gets exactly the same arrays). The rebuild calls it on the busy thread."""
+        self.display_arrays(self.drawn_edges(tangent))
+
     def display_arrays(self, edge_lines: np.ndarray):
         """(vertices, normals, edge lines) to draw: smoothed (display_smooth) while "Fast view, exact export" is
         on, otherwise the mesh as it is. Cached per set of edge lines (tangent edges on/off)."""
@@ -170,6 +175,19 @@ class RenderMesh:
         verts = np.asarray(self.vertices, dtype=np.float32).reshape(-1, 3, 3)[mask]
         norms = np.asarray(self.normals, dtype=np.float32).reshape(-1, 3, 3)[mask]
         return verts, norms
+
+
+def _ramps(counts: np.ndarray) -> np.ndarray:
+    """`np.concatenate([np.linspace(0.0, 1.0, k) for k in counts])` without a Python loop, bit for bit the same
+    (linspace computes i * (1 / (k - 1)) and puts exactly 1.0 last); counts are all >= 2."""
+    counts = np.asarray(counts, dtype=np.int64)
+    ends = np.cumsum(counts)
+    starts = ends - counts
+    idx = np.arange(int(ends[-1]) if len(ends) else 0, dtype=np.float64) - np.repeat(starts, counts)
+    step = 1.0 / (counts - 1).astype(np.float64)
+    t = idx * np.repeat(step, counts) + 0.0
+    t[ends - 1] = 1.0
+    return t
 
 
 class CadKernel:
@@ -380,7 +398,7 @@ class CadKernel:
         h = max(float(np.ptp(tv, axis=0).max()) / 128.0, 4.0 * eps)
         n_samp = np.maximum(2, np.ceil(seg_len / (h / 2.0)).astype(int) + 1)
         rep = np.repeat(np.arange(len(edges)), n_samp)
-        t = np.concatenate([np.linspace(0.0, 1.0, k) for k in n_samp])
+        t = _ramps(n_samp)
         samples = a[rep] + t[:, None] * seg[rep]
         M = 2097152
 
@@ -1583,6 +1601,11 @@ class CadKernel:
                 r_root = dia * 0.5
                 r_in = r_root - 0.1
                 dr_eff = dr_full - (clr * 0.5)
+                if core_radius is not None and core_radius < r_root:
+                    # A core shrunk by Offset Face: carry the flanks on down into it, or the coil floats beside it
+                    deeper = r_root - max(0.01, float(core_radius))
+                    r_in -= deeper
+                    half_slot = min(half_slot + deeper * (half_slot - half_crest) / (dr_eff + 0.1), 0.49 * p)
             else:
                 # Standalone male bolt: outer crest is at (dia * 0.5) - (clr * 0.5)
                 r_outer = (dia * 0.5) - (clr * 0.5)

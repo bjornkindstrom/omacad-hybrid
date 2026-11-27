@@ -14,6 +14,8 @@ import uuid
 import numpy as np
 import manifold3d as m3d
 from omacad import busy
+from omacad.model.features.base import analyse_bodies
+from omacad.model.features.lithophane import LithophaneFeature
 from omacad.model.features.lip_joint import LipJointFeature
 from omacad.model.timeline import (
     PatternFeature, FilletFeature, Body, Timeline, BoxFeature, CylinderFeature, PrismFeature,
@@ -88,6 +90,7 @@ def undoable(label: str):
                 try:
                     result = fn(self, *args, **kwargs)
                     self._finish_object_operation(feature_ids_before, bodies_before)
+                    analyse_bodies(self)    # bodies made without a full rebuild: analysed here, off the GUI thread
                     return result
                 except Exception:
                     self.restore(before)
@@ -501,6 +504,17 @@ class Document:
         feat = SphereFeature(feat_id, feat_name, radius, translation=translation, **params)
         self.timeline.add_feature(feat)
         feat.execute(self)
+        self.notify_changed()
+        return self.bodies[f"body_{feat_id}"]
+
+    @undoable("Lithophane")
+    def add_lithophane(self, name: Optional[str] = None, translation: Any = None, **params) -> Body:
+        """A picture as a lit wall; `params` are LithophaneFeature.PARAMS (image_data from encode_picture)."""
+        feat_id = self._feature_id("lithophane")
+        n = len([f for f in self.timeline.features if f.feature_type == "lithophane"]) + 1
+        feat = LithophaneFeature(feat_id, name or f"Lithophane {n}", translation=translation, **params)
+        feat.execute(self)
+        self.timeline.add_feature(feat)
         self.notify_changed()
         return self.bodies[f"body_{feat_id}"]
 
@@ -1130,7 +1144,7 @@ class Document:
         for f in feats[index + 1:]:
             if history.owners.get(f.feature_id) != old:
                 continue
-            new_body = getattr(f, "operation", None) == "new_body" or f.feature_type in ("box", "cylinder", "cone", "prism", "sphere")
+            new_body = getattr(f, "operation", None) == "new_body" or f.feature_type in ("box", "cylinder", "cone", "prism", "sphere", "lithophane")
             bodies = set(history.body_inputs(f))
             if (new_body and sketch_ids & set(history.sketch_inputs(f))) or (bodies and bodies <= made):
                 take(f)
@@ -1407,6 +1421,7 @@ class Document:
         "lip_joint": ("style", "height", "width", "clearance", "snap_fit"),
         "shell": ("thickness", "direction", "thickness2", "open_faces"),
         "wavy_slices": WavySlicesFeature.PARAMS,
+        "lithophane": LithophaneFeature.PARAMS,
         "knurl": KnurlFeature.PARAMS,
         "japandi": JapandiFeature.PARAMS,
         "offset_face": ("distance", "faces"),

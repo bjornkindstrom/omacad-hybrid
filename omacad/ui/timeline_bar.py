@@ -34,6 +34,7 @@ class FeatureNodeWidget(QFrame):
         "loft": "🏺",
         "pipe": "🧪",
         "sphere": "⚽",
+        "lithophane": "🏮",
         "sketch": "✏️",
         "extrude": "⬆️",
         "emboss": "🔖",
@@ -165,6 +166,8 @@ class FeatureNodeWidget(QFrame):
             return f"{f.name}\n{f.operation.replace('_', ' ')}"
         if t == "sphere":
             return f"{f.name}\nRadius {f.radius:g} mm"
+        if t == "lithophane":
+            return f"{f.name}\n{f.shape.title()}, {f.min_thickness:g} to {f.max_thickness:g} mm"
         if t == "pattern":
             return f"{f.name}\n{f.kind} of {len(f.source_ids)} step(s), {f.copies} copies"
         if t == "fillet":

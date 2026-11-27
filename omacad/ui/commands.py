@@ -48,6 +48,9 @@ _ALL = [
     _c("cylinder", "Cylinder", "🥫", "A cylinder; the panel can also hollow, round and taper it", signal="cylinder_clicked"),
     _c("cone", "Cone", "🔺", "A cone or frustum: bottom and top radius (0 = a point) and height", signal="cone_clicked"),
     _c("hexagon", "Prism", "⬢", "A regular prism (6 sides = hexagon), sized across flats", signal="hexagon_clicked"),
+    _c("sphere", "Sphere", "⚽", "A sphere; the panel can also hollow and place it", signal="sphere_clicked"),
+    _c("lithophane", "Lithophane", "🏮", "A picture as a wall of varying thickness, flat, round or as a globe, to light from behind",
+       signal="lithophane_clicked"),
     _c("thread", "Thread / Coil", "🔩", "3D-printable threads and coils, on a cylinder or on their own",
        signal="thread_clicked"),
     _c("thread_pin", "Thread Pin", "📍", "Create a placement cylinder to move into position before cutting a thread",
@@ -161,8 +164,8 @@ COMMANDS: Dict[str, Command] = {c.cid: c for c in _ALL}
 
 # A dropdown in the ribbon: (dropdown id, label, icon, tip, [command ids]). With the matching setting off its
 # commands stand as separate buttons instead (Settings > ribbon layout).
-PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Pipe, Thread / Coil, Thread Pin, Jar with Lid (each "
-              "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "pipe", "thread", "thread_pin", "jar"])
+PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Sphere, Lithophane, Pipe, Thread / Coil, Thread Pin, Jar with Lid (each "
+              "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "sphere", "lithophane", "pipe", "thread", "thread_pin", "jar"])
 INSERT = ("insert", "Insert", "🖼️", "Canvas (Image), Import SVG and Import 3MF", ["canvas", "import_svg", "import_3mf"])
 MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Cut Thread, Split Body, Offset Face, Move, Joint",
                ["combine", "cut_thread", "split_body", "offset_face", "move", "joint"])

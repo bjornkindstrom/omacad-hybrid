@@ -261,18 +261,30 @@ def shell(shape, open_faces, inward: float, outward: float):
             other.Reverse()
         out = boolean(shape, other, "cut") if inward > 1e-9 else boolean(other, shape, "cut")
         return out
-    mk = BRepOffsetAPI_MakeThickSolid()
-    mk.MakeThickSolidByJoin(shape, removed, float(offset), 1e-4)
-    mk.Build()
-    if not mk.IsDone():
-        raise RuntimeError("OpenCascade could not build the shell")
-    out = mk.Shape()
-    if not is_valid(out):
-        raise RuntimeError("OpenCascade made an invalid shell")
-    v0, v1 = volume(shape), volume(out)
-    if not (0 < v1 < v0) and inward > 0 or outward > 0 and not v1 > 0:
-        raise RuntimeError("the B-rep shell has an unexpected volume")
-    return out
+    from OCP.BRepOffset import BRepOffset_Skin
+    from OCP.GeomAbs import GeomAbs_Arc, GeomAbs_Intersection
+    v0, problem = volume(shape), "OpenCascade could not build the shell"
+    # sharp corners stay sharp, like the mesh shell (#246: an arc at a jar's shoulder left a razor lip under the neck);
+    # rounded corners only where the walls cannot be carried on to meet
+    for join in (GeomAbs_Intersection, GeomAbs_Arc):
+        try:
+            mk = BRepOffsetAPI_MakeThickSolid()
+            mk.MakeThickSolidByJoin(shape, removed, float(offset), 1e-4, BRepOffset_Skin, False, False, join)
+            mk.Build()
+            if not mk.IsDone():
+                continue
+            out = mk.Shape()
+            if not is_valid(out):
+                problem = "OpenCascade made an invalid shell"
+                continue
+            v1 = volume(out)
+        except Exception as exc:
+            problem = str(exc)
+            continue
+        if (0 < v1 < v0) if inward > 1e-9 else v1 > 0:
+            return out
+        problem = "the B-rep shell has an unexpected volume"
+    raise RuntimeError(problem)
 
 
 class MatrixProbe:

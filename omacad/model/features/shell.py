@@ -64,12 +64,41 @@ class ShellFeature(Feature):
         n = n[ok] / ln[ok, None]
         d = np.einsum("ij,ij->i", n, v[ok, 0])
         _, keep = np.unique(np.round(np.column_stack((n, d)), 4), axis=0, return_index=True)
+        if len(keep) > 200:
+            return None
         return n[keep], d[keep]
+
+    @staticmethod
+    def _sphere_center_radius(m):
+        """If `m` is a sphere (all vertices equidistant from bounding-box center and matching sphere volume),
+        return (center, radius), else None."""
+        mesh = m.to_mesh()
+        verts = np.asarray(mesh.vert_properties, dtype=float)[:, :3]
+        if len(verts) < 12:
+            return None
+        center = 0.5 * (verts.min(axis=0) + verts.max(axis=0))
+        radii = np.linalg.norm(verts - center, axis=1)
+        r = float(np.mean(radii))
+        if r <= 1e-6 or float(np.max(np.abs(radii - r))) >= 1e-3 * max(1.0, r):
+            return None
+        sphere_vol = (4.0 / 3.0) * np.pi * (r ** 3)
+        if abs(m.volume() - sphere_vol) >= 0.05 * sphere_vol:
+            return None
+        return center, r
+
+    @staticmethod
+    def _scale_about(m, center, factor: float):
+        c = np.asarray(center, dtype=float)
+        return m.translate(tuple(-c)).scale((factor, factor, factor)).translate(tuple(c))
 
     @classmethod
     def _grow(cls, m, t):
         """The body with every surface moved outward by t. Convex bodies keep sharp corners (facet planes moved
         out and intersected); anything else is grown with a ball, which rounds its outer edges."""
+        sph = cls._sphere_center_radius(m)
+        if sph is not None:
+            center, r = sph
+            return cls._scale_about(m, center, (r + t) / r)
         planes = cls._facet_planes(m)
         if planes is not None:
             bb = np.array(m.bounding_box())
@@ -85,6 +114,12 @@ class ShellFeature(Feature):
     def _shrink(cls, m, t):
         """Erodes the body inward by t. For convex bodies (cubes, prisms, cylinders) facet-plane trims are
         exact and 20-50x faster than a 3D Minkowski difference."""
+        sph = cls._sphere_center_radius(m)
+        if sph is not None:
+            center, r = sph
+            if r - t <= 1e-6:
+                return m3d.Manifold()
+            return cls._scale_about(m, center, (r - t) / r)
         planes = cls._facet_planes(m)
         if planes is not None:
             cav = cls._trimmed(m, *planes, t)

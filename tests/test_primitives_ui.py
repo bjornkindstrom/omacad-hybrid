@@ -296,3 +296,52 @@ def test_cone_panel_makes_a_pointed_cone(app):
     vol = next(iter(w.doc.bodies.values())).manifold.volume()
     assert abs(vol - math.pi * 100 * 30 / 3) < 0.01 * math.pi * 1000
     w.close()
+
+
+@pytest.mark.parametrize("grouped", [True, False])
+def test_sphere_in_primitives_ribbon_triggers_dialog(app, grouped):
+    get_settings().set("group_primitives", grouped)
+    w = MainWindow()
+    if grouped:
+        menu = next(m for m in w.ribbon.findChildren(QMenu) if any(a.text() == "Sphere" for a in m.actions()))
+        next(a for a in menu.actions() if a.text() == "Sphere").trigger()
+    else:
+        next(b for b in w.ribbon.findChildren(QToolButton) if b.text() == "Sphere").click()
+    handles = w.viewport.primitive_handles
+    assert handles is not None and handles.kind == "sphere"
+    assert handles.dialog.windowTitle() == "Create Sphere"
+    handles.dialog.reject()
+    w.close()
+
+
+def test_sphere_panel_placement_shell_wall_and_edit(app):
+    from omacad.io.exporter import Exporter
+    from omacad.model.document import Document
+    from omacad.model.kernel import CadKernel
+
+    w = MainWindow()
+    w.prompt_sphere()
+    dlg = w.viewport.primitive_handles.dialog
+    dlg.spn_radius.setValue(20.0)
+    dlg.cmb_placement.setCurrentIndex(dlg.cmb_placement.findData("bottom_center"))
+    dlg.spn_wall.setValue(25.0)
+    dlg.accept()
+    assert not w.doc.bodies
+    assert dlg.lbl_problem.text()
+
+    dlg.spn_wall.setValue(2.0)
+    dlg.accept()
+    body = next(iter(w.doc.bodies.values()))
+    expected = (CadKernel.create_sphere(20.0) - CadKernel.create_sphere(18.0)).volume()
+    assert body.manifold.volume() == pytest.approx(expected, rel=1e-6)
+    assert body.manifold.bounding_box()[2] == pytest.approx(0.0, abs=1e-4)
+    assert body.manifold.bounding_box()[5] == pytest.approx(40.0, abs=1e-4)
+
+    assert w.doc.edit_feature(0, wall_thickness=3.0)
+    expected_edited = (CadKernel.create_sphere(20.0) - CadKernel.create_sphere(17.0)).volume()
+    assert next(iter(w.doc.bodies.values())).manifold.volume() == pytest.approx(expected_edited, rel=1e-6)
+
+    loaded = Document()
+    Exporter.apply_dict(loaded, Exporter.document_to_dict(w.doc))
+    assert next(iter(loaded.bodies.values())).manifold.volume() == pytest.approx(expected_edited, rel=1e-6)
+    w.close()

@@ -3,6 +3,7 @@
 import math
 from typing import Optional, List, Tuple
 import numpy as np
+from omacad.ui.viewport import camera_ease
 from PySide6.QtCore import Qt, QPoint, QRectF, QPointF, QTimer
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QPolygonF, QFontMetrics
@@ -157,7 +158,9 @@ class OverlayMixin:
         self._draw_plane_labels(painter)
         self._draw_link_badges(painter)
         # 1. ViewCube
-        self.viewcube.draw(painter, w, h, self.azimuth, self.elevation)
+        eased = self.camera_ease.current(self) if hasattr(self, "camera_ease") else None
+        az, el = (eased[2], eased[3]) if eased else (self.azimuth, self.elevation)
+        self.viewcube.draw(painter, w, h, az, el)       # turns with the gliding camera
         if self.rotate_handles.drag is None:
             draw_body_dimensions(self, painter)
         self.rotate_handles.draw(painter)
@@ -637,7 +640,13 @@ class OverlayMixin:
         self.azimuth, self.elevation = orbit_step(self.azimuth, self.elevation, dx, dy)
         self.update()
 
-    def set_view(self, view_name: str):
+    def set_view(self, *args, **kwargs):
+        before = camera_ease.state(self)
+        result = self._set_view_now(*args, **kwargs)
+        self.camera_ease.start(self, before)
+        return result
+
+    def _set_view_now(self, view_name: str):
         """Snaps camera to preset orthographic or isometric views."""
         v = view_name.upper()
         if v == "HOME":
@@ -672,7 +681,13 @@ class OverlayMixin:
                 self.elevation = math.degrees(math.atan2(z, math.hypot(x, y)))
         self.update()
 
-    def zoom_to_points(self, pts) -> None:
+    def zoom_to_points(self, *args, **kwargs):
+        before = camera_ease.state(self)
+        result = self._zoom_to_points_now(*args, **kwargs)
+        self.camera_ease.start(self, before)
+        return result
+
+    def _zoom_to_points_now(self, pts) -> None:
         """Frames the given world points (Find in Window)."""
         pts = np.asarray(pts, dtype=float).reshape(-1, 3)
         if len(pts) == 0:
@@ -683,7 +698,13 @@ class OverlayMixin:
         self.distance = clamp_distance(max(40.0, float(np.linalg.norm(b_max - b_min)) * 1.8))
         self.update()
 
-    def frame_face(self, plane, tris, fill: float = 0.8) -> None:
+    def frame_face(self, *args, **kwargs):
+        before = camera_ease.state(self)
+        result = self._frame_face_now(*args, **kwargs)
+        self.camera_ease.start(self, before)
+        return result
+
+    def _frame_face_now(self, plane, tris, fill: float = 0.8) -> None:
         """Centres a face seen straight on (after align_to_plane) and zooms so it fills `fill` of the view's
         shorter side: sketching on a face starts with the face filling the screen."""
         pts = np.asarray(tris, dtype=float).reshape(-1, 3)
@@ -728,7 +749,13 @@ class OverlayMixin:
                 pts = pts @ placed[:3, :3].T + placed[:3, 3]
             self.zoom_to_points(list(pts))
 
-    def zoom_fit(self):
+    def zoom_fit(self, *args, **kwargs):
+        before = camera_ease.state(self)
+        result = self._zoom_fit_now(*args, **kwargs)
+        self.camera_ease.start(self, before)
+        return result
+
+    def _zoom_fit_now(self):
         """Centers and fits camera to visible bodies or origin."""
         all_pts = []
         for b in self.doc.bodies.values():

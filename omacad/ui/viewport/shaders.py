@@ -36,11 +36,16 @@ void main() {
     float diff = max(dot(n, key), 0.0);
     float fill = max(dot(n, v), 0.0);
     vec3 h = normalize(key + v);
-    float spec = pow(max(dot(n, h), 0.0), 32.0) * 0.22;
-    // Ambient / sky gradient: upward-facing surfaces get subtle sky reflection
-    float sky = dot(n, vec3(0.0, 0.0, 1.0)) * 0.12 + 0.36;
-    float k = clamp(sky + 0.40 * diff + 0.22 * fill, 0.0, 1.0);
-    frag_color = vec4(min(u_color.rgb * k + vec3(spec), vec3(1.0)), u_color.a);
+    float spec = pow(max(dot(n, h), 0.0), 48.0) * 0.20 + pow(max(dot(n, h), 0.0), 8.0) * 0.04;
+    // Hemisphere ambient: faces looking up catch the sky, faces looking down the darker ground bounce
+    float sky = mix(0.24, 0.44, n.z * 0.5 + 0.5);
+    // A faint light from below and behind, so undersides keep their shape instead of going flat grey
+    float under = max(dot(n, normalize(vec3(0.3, -0.45, -0.85))), 0.0) * 0.07;
+    // Rim: a soft brightening at grazing angles separates the silhouette from the backdrop
+    float rim = pow(1.0 - fill, 3.0) * 0.14;
+    float k = clamp(sky + 0.40 * diff + 0.26 * fill + under, 0.0, 1.0);
+    vec3 col = u_color.rgb * k + vec3(spec) + rim * mix(u_color.rgb, vec3(1.0), 0.6);
+    frag_color = vec4(min(col, vec3(1.0)), u_color.a);
 }
 """
 
@@ -95,6 +100,7 @@ in float in_side;
 uniform mat4 u_mvp;
 uniform vec2 u_viewport;
 uniform float u_width;
+uniform float u_depth_bias;   // pulls body edges a hair towards the eye so the faces they border never cover them
 void main() {
     vec4 c0 = u_mvp * vec4(in_pos, 1.0);
     vec4 c1 = u_mvp * vec4(in_other, 1.0);
@@ -105,8 +111,59 @@ void main() {
     d = len > 1e-6 ? d / len : vec2(1.0, 0.0);
     vec2 n = vec2(-d.y, d.x);
     vec2 off = (n * in_side + d) * (u_width * 0.5);
-    gl_Position = c0 + vec4(off / (u_viewport * 0.5) * c0.w, 0.0, 0.0);
+    gl_Position = c0 + vec4(off / (u_viewport * 0.5) * c0.w, -u_depth_bias * c0.w, 0.0);
 }
 """
 
 SKETCH_GROUP_ICONS = {"Create": "✏️", "Modify": "🛠️"}
+
+# Backdrop: a full-screen quad with a soft vertical gradient (lighter at the top), dithered against banding
+VERTEX_SHADER_BACKDROP = """
+#version 330 core
+in vec2 in_xy;
+out float v_t;
+void main() {
+    v_t = in_xy.y * 0.5 + 0.5;
+    gl_Position = vec4(in_xy, 0.0, 1.0);
+}
+"""
+
+FRAGMENT_SHADER_BACKDROP = """
+#version 330 core
+in float v_t;
+uniform vec3 u_top;
+uniform vec3 u_bottom;
+out vec4 frag_color;
+void main() {
+    float t = smoothstep(0.0, 1.0, v_t);
+    float noise = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+    frag_color = vec4(mix(u_bottom, u_top, t) + noise / 255.0, 1.0);
+}
+"""
+
+# Grid lines that fade out towards the edge of the grid instead of stopping at a hard line or crowding the horizon
+VERTEX_SHADER_GRID = """
+#version 330 core
+in vec3 in_pos;
+uniform mat4 u_mvp;
+out vec3 v_world;
+void main() {
+    v_world = in_pos;
+    gl_Position = u_mvp * vec4(in_pos, 1.0);
+}
+"""
+
+FRAGMENT_SHADER_GRID = """
+#version 330 core
+in vec3 v_world;
+uniform vec4 u_color;
+uniform vec3 u_center;
+uniform float u_fade_start;
+uniform float u_fade_end;
+out vec4 frag_color;
+void main() {
+    float d = distance(v_world, u_center);
+    float fade = 1.0 - smoothstep(u_fade_start, u_fade_end, d);
+    frag_color = vec4(u_color.rgb, u_color.a * fade);
+}
+"""

@@ -289,7 +289,7 @@ class RoundPatternPromptsMixin:
             return
         if self.inspector.current_tool_dlg is not None:
             return
-        dlg = OffsetFaceDialog(self, embedded=True)
+        dlg = OffsetFaceDialog(self, embedded=True, doc=self.doc)
         self.dock(dlg)
         vp = self.viewport
         hidden = [None]    # the body whose preview replaces it

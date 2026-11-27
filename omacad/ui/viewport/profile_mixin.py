@@ -23,7 +23,8 @@ class ProfileMixin:
         (a pattern both adds and removes material). Under a section view only the kept side is shown, like the bodies.
         Material thinner than `min_thickness` is not drawn (the skins in the difference between two states)."""
         manifold, extra = self.section_trim(manifold), self.section_trim(extra)
-        mesh = lambda solid: CadKernel.extract_render_mesh(solid, min_thickness=min_thickness)
+        # previews are lit with their flat per-triangle normals (free); smooth normals took 3-4 s at 100k triangles
+        mesh = lambda solid: CadKernel.extract_render_mesh(solid, min_thickness=min_thickness, smooth=False)
         if manifold is None or manifold.is_empty():
             self.preview_mesh = None
         else:

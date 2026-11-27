@@ -385,7 +385,7 @@ def compute_planar_faces_and_edges(manifold: m3d.Manifold, body_id: str = "") ->
     angles = tm.face_adjacency_angles
     roots, groups, planar, _, curved = _face_groups(v, f, tm)
     tol = 1e-6 * max(1.0, float(np.ptp(v, axis=0).max()))
-    find = lambda i: int(roots[i])
+    find = np.asarray(roots).tolist().__getitem__      # = int(roots[i]), without a numpy scalar per lookup
 
     faces: List[PlanarFace] = []
     for root in planar:

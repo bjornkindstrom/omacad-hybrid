@@ -883,26 +883,55 @@ class PrismFeature(CylinderFeature):
         return d
 
 class SphereFeature(Feature):
-    def __init__(self, feature_id: str, name: str, radius: float, translation: Any = None):
+    def __init__(self, feature_id: str, name: str, radius: float, center: Any = "center",
+                 plane_origin: Any = None, plane_normal: Any = None, plane_u: Any = None, plane_v: Any = None,
+                 wall_thickness: float = 0.0, translation: Any = None):
         super().__init__(feature_id, "sphere", name)
         self.radius = float(radius)
+        self.center = center
+        self.plane_origin = [float(x) for x in plane_origin] if plane_origin is not None else None
+        self.plane_normal = [float(x) for x in plane_normal] if plane_normal is not None else None
+        self.plane_u = [float(x) for x in plane_u] if plane_u is not None else None
+        self.plane_v = [float(x) for x in plane_v] if plane_v is not None else None
+        self.wall_thickness = float(wall_thickness)
         self.translation = [float(x) for x in ((0.0, 0.0, 0.0) if translation is None else translation)]
 
+    def build_solid(self) -> m3d.Manifold:
+        solid = CadKernel.create_sphere(self.radius)
+        if self.wall_thickness > 1e-4:
+            if self.wall_thickness >= self.radius - 0.1:
+                raise ValueError(f"Shell Wall ({self.wall_thickness:g} mm) must be smaller than Radius ({self.radius:g} mm).")
+            solid = solid - CadKernel.create_sphere(self.radius - self.wall_thickness)
+        if self.center in ("bottom_center", "on_face", False):
+            solid = solid.translate((0.0, 0.0, self.radius))
+        return CylinderFeature._place(self, solid)
+
     def execute(self, doc: Any) -> None:
-        solid = CadKernel.create_sphere(self.radius).translate(tuple(self.translation))
+        solid = self.build_solid()
         body = Body(body_id=f"body_{self.feature_id}", name=self.name, manifold=solid)
         body.update_render_mesh()
         doc.bodies[body.body_id] = body
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d: Dict[str, Any] = {
             "feature_id": self.feature_id,
             "feature_type": self.feature_type,
             "name": self.name,
             "suppressed": self.suppressed,
             "radius": self.radius,
+            "center": self.center,
             "translation": self.translation,
         }
+        if self.wall_thickness > 1e-4:
+            d["wall_thickness"] = self.wall_thickness
+        if self.plane_origin is not None:
+            d["plane_origin"] = self.plane_origin
+            d["plane_normal"] = self.plane_normal
+            if self.plane_u is not None:
+                d["plane_u"] = self.plane_u
+            if self.plane_v is not None:
+                d["plane_v"] = self.plane_v
+        return d
 
 
 class SketchFeature(Feature):

@@ -1,7 +1,8 @@
 from omacad.ui.viewport.shaders import (
     VERTEX_SHADER_SOLID, FRAGMENT_SHADER_SOLID, VERTEX_SHADER_FLAT,
     FRAGMENT_SHADER_FLAT, VERTEX_SHADER_TEXTURE, FRAGMENT_SHADER_TEXTURE,
-    VERTEX_SHADER_THICK, SKETCH_GROUP_ICONS
+    VERTEX_SHADER_THICK, SKETCH_GROUP_ICONS, VERTEX_SHADER_BACKDROP, FRAGMENT_SHADER_BACKDROP,
+    VERTEX_SHADER_GRID, FRAGMENT_SHADER_GRID
 )
 from omacad.ui.viewport.render_mixin import RenderGLMixin
 from omacad.ui.viewport.gizmo_mixin import GizmoMixin
@@ -174,6 +175,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self._profile_fill_cache: Dict[tuple, np.ndarray] = {}
         self.preview_mesh = None
         self.preview_op: str = "new_body"
+        self.cut_tool_ids = set()       # bodies a Combine (cut) is about to cut with: drawn red and see-through
 
         # The status line, the sketch status and the busy mark are painted into the view (no status bar)
         from omacad.ui.hud_text import HudText
@@ -305,6 +307,11 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self.prog_flat = None
         self.prog_thick = None
         self.prog_tex = None
+        from omacad.ui.viewport.camera_ease import CameraEase
+        self.camera_ease = CameraEase()   # view presets, Fit and Find glide instead of jumping
+        self.prog_backdrop = None      # gradient behind the scene (render_backdrop)
+        self.prog_grid = None          # grid lines fading out towards the grid's edge
+        self.vbo_backdrop = None
         self._canvas_textures = {}
         self.vbo_thick = None
         self.vao = None
@@ -638,6 +645,17 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
             self.prog_tex = shaders.compileProgram(vs_tex, fs_tex)
         except Exception as e:
             print(f"Error compiling CAD shaders: {e}")
+        try:        # looks only: without them the view falls back to a flat backdrop and the plain grid
+            self.prog_backdrop = shaders.compileProgram(
+                shaders.compileShader(VERTEX_SHADER_BACKDROP, GL.GL_VERTEX_SHADER),
+                shaders.compileShader(FRAGMENT_SHADER_BACKDROP, GL.GL_FRAGMENT_SHADER))
+            self.vbo_backdrop = GL.glGenBuffers(1)
+            self.prog_grid = shaders.compileProgram(
+                shaders.compileShader(VERTEX_SHADER_GRID, GL.GL_VERTEX_SHADER),
+                shaders.compileShader(FRAGMENT_SHADER_GRID, GL.GL_FRAGMENT_SHADER))
+        except Exception as e:
+            print(f"Backdrop/grid shaders unavailable, using the plain look: {e}")
+            self.prog_backdrop = self.prog_grid = None
 
     def draw_buffer_arrays(self, mode, pos_loc, pos_data: np.ndarray, norm_loc=None, norm_data=None):
         """Safely draws arrays using bound VAO and VBO buffers for modern OpenGL."""
@@ -686,9 +704,12 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         settings = get_settings()
         fov = float(settings.get("view_fov", 30.0))
         ortho = settings.get("view_projection", "perspective") == "orthographic"
-        key = (tuple(float(c) for c in self.target), float(self.distance), float(self.azimuth), float(self.elevation), w, h, fov, ortho)
+        ease = getattr(self, "camera_ease", None)
+        eased = ease.current(self) if ease is not None else None
+        target, distance, azimuth, elevation = eased or (self.target, self.distance, self.azimuth, self.elevation)
+        key = (tuple(float(c) for c in target), float(distance), float(azimuth), float(elevation), w, h, fov, ortho)
         if key != getattr(self, "_matrices_key", None):
-            proj, view = camera_matrices(self.target, self.distance, self.azimuth, self.elevation, float(w) / float(h), fov, ortho)
+            proj, view = camera_matrices(target, distance, azimuth, elevation, float(w) / float(h), fov, ortho)
             self._matrices = (proj, view, proj @ view)
             self._matrices_key = key
         return self._matrices
@@ -709,6 +730,8 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
         proj, view, mvp = self.get_matrices()
+        if not self.capture_model_only:
+            self.render_backdrop()
         if self.capture_model_only:      # Export: the bodies alone (media_export.model_only), cut face included
             self.render_bodies(mvp)
             self.render_section_cap(mvp)
@@ -756,6 +779,8 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
             self.draw_painter_overlays(painter)
         finally:
             painter.end()
+        if self.camera_ease.active:
+            QTimer.singleShot(0, self.update)     # next frame of a camera glide
 
     def _get_canvas_texture(self, cid: str, b64_data: str) -> Optional[int]:
         key = hash(b64_data)

@@ -101,6 +101,8 @@ class Palette:
         # explicit overrides from the theme editor
         self.canvas = _rgb(d["canvas"]) if "canvas" in d else None
         self.grid = _rgb(d["grid"]) if "grid" in d else None
+        self.canvas_top = _rgb(d["canvas_top"]) if "canvas_top" in d else None          # 3D view backdrop gradient
+        self.canvas_bottom = _rgb(d["canvas_bottom"]) if "canvas_bottom" in d else None
         if "highlight" in d:
             self.highlight = _rgb(d["highlight"])
         # Studio-style themes name their surfaces outright (white panels on a grey-blue window, own fields and
@@ -170,6 +172,15 @@ class Palette:
             return tuple(v / 255.0 for v in self.canvas)  # type: ignore[return-value]
         c = _mix(self.darker, self.background, 0.5) if self.loaded else (41, 43, 48)
         return tuple(v / 255.0 for v in c)  # type: ignore[return-value]
+
+    def canvas_gradient01(self) -> Tuple[Tuple[float, float, float], Tuple[float, float, float]]:
+        """(top, bottom) of the 3D view's backdrop: the theme's canvas_top/canvas_bottom, otherwise a soft gradient
+        around the canvas colour (light themes brighten towards the top, dark ones deepen towards the bottom)."""
+        c = tuple(v * 255.0 for v in self.canvas_rgb01())
+        light = _lum(c) > 0.5
+        top = self.canvas_top or (_mix(c, (255, 255, 255), 0.6) if light else _mix(c, self.foreground, 0.09))
+        bottom = self.canvas_bottom or (_mix(c, self.foreground, 0.07) if light else _mix(c, (0, 0, 0), 0.35))
+        return (tuple(v / 255.0 for v in top), tuple(v / 255.0 for v in bottom))  # type: ignore[return-value]
 
     def grid_rgb01(self) -> Tuple[float, float, float]:
         if self.grid is not None:
@@ -479,7 +490,7 @@ def refresh() -> None:
     from PySide6.QtWidgets import QApplication
     app = QApplication.instance()
     if app is not None:
-        app.setStyleSheet(indicator_stylesheet())
+        app.setStyleSheet(app_stylesheet())
     alive = []
     for ref, css, studio in _styled:
         w = ref()
@@ -546,6 +557,43 @@ def indicator_stylesheet() -> str:
     return (themeify(_MENU_CSS) + f"{views} {{ width: 16px; height: 16px; }}\n"
             + ", ".join(f"{v}:unchecked" for v in views.split(", ")) + f" {{ image: url({off.as_posix()}); }}\n"
             + ", ".join(f"{v}:checked" for v in views.split(", ")) + f" {{ image: url({on.as_posix()}); }}\n")
+
+
+def scrollbar_stylesheet() -> str:
+    """Every scroll bar in the app, set once on the application: wide enough to grab, a visible track, a handle in
+    the muted text colour and the accent while hovered or dragged. Widget sheets carry no QScrollBar rules, so
+    nothing overrides this."""
+    p = _palette
+    if p.studio:
+        track, edge = p.surfaces["field"], p.surfaces["border"]
+    else:
+        track, edge = _mix(p.background, p.foreground, 0.07), _mix(p.background, p.foreground, 0.16)
+    t, e, h, a = _hex(track), _hex(edge), _hex(p.muted), _hex(p.accent)
+    w, track_r, handle_r, m = SCROLLBAR_PX, SCROLLBAR_PX // 2, scrollbar_handle_px() // 2, SCROLLBAR_HANDLE_MARGIN
+    # Qt draws a corner square when its radius is more than half the side, so both radii are exactly half
+    return (f"QScrollBar:vertical {{ background: {t}; border: 1px solid {e}; width: {w}px; margin: 0; border-radius: {track_r}px; }}\n"
+            f"QScrollBar:horizontal {{ background: {t}; border: 1px solid {e}; height: {w}px; margin: 0; border-radius: {track_r}px; }}\n"
+            f"QScrollBar::handle:vertical {{ background: {h}; border-radius: {handle_r}px; min-height: 48px; margin: {m}px; }}\n"
+            f"QScrollBar::handle:horizontal {{ background: {h}; border-radius: {handle_r}px; min-width: 48px; margin: {m}px; }}\n"
+            f"QScrollBar::handle:hover, QScrollBar::handle:pressed {{ background: {a}; }}\n"
+            "QScrollBar::add-line, QScrollBar::sub-line { border: none; background: transparent; width: 0; height: 0; }\n"
+            "QScrollBar::up-arrow, QScrollBar::down-arrow, QScrollBar::left-arrow, QScrollBar::right-arrow { image: none; width: 0; height: 0; }\n"
+            "QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }\n"
+            "QAbstractScrollArea::corner { background: transparent; border: none; }\n")
+
+
+def scrollbar_handle_px() -> int:
+    """The handle's thickness: the bar minus its 1 px border and the handle margin on each side."""
+    return SCROLLBAR_PX - 2 * (1 + SCROLLBAR_HANDLE_MARGIN)
+
+
+SCROLLBAR_PX = 16
+SCROLLBAR_HANDLE_MARGIN = 2
+
+
+def app_stylesheet() -> str:
+    """The application-wide sheet: tick boxes and scroll bars everywhere (lists, trees, dialogs, menus)."""
+    return indicator_stylesheet() + scrollbar_stylesheet()
 
 
 def base_stylesheet() -> str:

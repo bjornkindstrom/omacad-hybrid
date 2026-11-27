@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import manifold3d as m3d
+import shapely
 from shapely import affinity, segmentize
 from shapely.geometry import Point, Polygon, box
 from shapely.ops import unary_union
@@ -164,14 +165,12 @@ def star_cells(size: float, wall: float, angle: float, bounds, anchor, period: O
     if rand_frac > 0.0 or random_size:
         prio = _site_random(si, sj, seed, STAR_PRIO_SALT)
         order = np.argsort(-prio)
-        acc_x, acc_y, acc_s = [], [], []
+        acc = np.empty((3, len(pts)))        # x, y, size of the stars taken so far
         chosen = []
         for idx in order:
             x, y, s = float(pts[idx, 0]), float(pts[idx, 1]), float(sizes[idx])
-            if acc_x:
-                ax_arr = np.asarray(acc_x)
-                ay_arr = np.asarray(acc_y)
-                as_arr = np.asarray(acc_s)
+            if chosen:
+                ax_arr, ay_arr, as_arr = acc[:, :len(chosen)]
                 dx = x - ax_arr
                 if period is not None:
                     dx = dx - period * np.round(dx / period)
@@ -179,21 +178,17 @@ def star_cells(size: float, wall: float, angle: float, bounds, anchor, period: O
                 min_dist = 0.5 * (s + as_arr) + wall - 1e-9
                 if np.any(dx * dx + dy * dy < min_dist * min_dist):
                     continue
-            acc_x.append(x)
-            acc_y.append(y)
-            acc_s.append(s)
+            acc[:, len(chosen)] = x, y, s
             chosen.append(idx)
         chosen = np.asarray(chosen, dtype=np.int64)
         pts, sizes, turns = pts[chosen], sizes[chosen], turns[chosen]
 
-    unit_star = _star_polygon(1.0, star_points, star_inner)
-    cells = []
-    for (x, y), s, turn in zip(pts, sizes, turns):
-        poly = affinity.scale(unit_star, float(s), float(s), origin=(0.0, 0.0))
-        if turn != 0.0:
-            poly = affinity.rotate(poly, float(turn), origin=(0.0, 0.0))
-        cells.append(affinity.translate(poly, float(x), float(y)))
-    return cells
+    unit = np.asarray(_star_polygon(1.0, star_points, star_inner).exterior.coords)
+    rad = np.radians(turns)
+    c, sn = np.cos(rad)[:, None], np.sin(rad)[:, None]
+    x, y = unit[:, 0] * sizes[:, None], unit[:, 1] * sizes[:, None]
+    rings = np.stack((c * x - sn * y + pts[:, :1], sn * x + c * y + pts[:, 1:]), axis=2)
+    return list(shapely.polygons(rings))
 
 
 def lattice(shape: str, size: float, wall: float, angle: float, bounds, anchor, period: Optional[float] = None,
@@ -294,36 +289,20 @@ class _Rays:
     """Ray casts against one body: the distance to the next surface along a direction."""
 
     def __init__(self, manifold):
-        mesh = manifold.to_mesh()
-        v = np.asarray(mesh.vert_properties, dtype=np.float64)[:, :3]
-        t = v[np.asarray(mesh.tri_verts, dtype=np.int64)]
-        self.v0, self.e1, self.e2 = t[:, 0], t[:, 1] - t[:, 0], t[:, 2] - t[:, 0]
-        self.lo, self.hi = t.min(axis=1), t.max(axis=1)
+        self.manifold = manifold
+        box = np.asarray(manifold.bounding_box(), dtype=float)
+        self.lo, self.hi = box[:3], box[3:]
 
     def hit(self, o, d) -> Optional[Tuple[float, bool]]:
         """(distance to the nearest surface, whether the ray enters the material there) or None."""
         o, d = np.asarray(o, dtype=float), np.asarray(d, dtype=float)
-        # only triangles whose box the ray can reach (cheap prefilter on the two axes across the ray)
-        far = o + d * 1e6
-        lo, hi = np.minimum(o, far) - 1e-6, np.maximum(o, far) + 1e-6
-        near = np.all((self.hi >= lo) & (self.lo <= hi), axis=1)
-        v0, e1, e2 = self.v0[near], self.e1[near], self.e2[near]
-        if not len(v0):
-            return None
-        p = np.cross(d, e2)
-        det = np.einsum("ij,ij->i", e1, p)
-        ok = np.abs(det) > 1e-12
-        inv = np.where(ok, 1.0 / np.where(ok, det, 1.0), 0.0)
-        sv = o - v0
-        u = np.einsum("ij,ij->i", sv, p) * inv
-        q = np.cross(sv, e1)
-        w = (q @ d) * inv
-        t = np.einsum("ij,ij->i", e2, q) * inv
-        hit = ok & (u >= -1e-9) & (w >= -1e-9) & (u + w <= 1 + 1e-9) & (t > 1e-6)
-        if not hit.any():
-            return None
-        k = int(np.argmin(np.where(hit, t, np.inf)))
-        return float(t[k]), bool(det[k] > 0.0)      # det = -d . (e1 x e2): positive against an outward face
+        # to past the far corner of the body, in units of `d`
+        reach = (float(np.linalg.norm(np.maximum(np.abs(self.lo - o), np.abs(self.hi - o)))) + 1.0) / float(np.linalg.norm(d))
+        for h in self.manifold.ray_cast(tuple(o), tuple(o + d * reach)):     # sorted by distance
+            t = h.distance * reach
+            if t > 1e-6:
+                return t, float(np.dot(h.normal, d)) < 0.0
+        return None
 
 
 def _depths(points, inward, rays: _Rays, depth: Optional[float]) -> List[float]:
@@ -549,7 +528,7 @@ def cylinder_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Mani
 
 
 def spherical_surface_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Manifold], int]:
-    wall = spherical_wall(manifold, ref)
+    wall = _cached_wall(spherical_wall, manifold, ref)
     if wall is None:
         return None, 0
     margin = params["margin"]
@@ -586,8 +565,23 @@ def spherical_surface_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional
     return (m3d.Manifold.batch_boolean(tools, m3d.OpType.Add) if tools else None), len(cells)
 
 
+_walls: list = []        # (manifold, face, kind, wall) read last: a preview asks for the same ones at every change
+
+
+def _cached_wall(read, manifold, ref):
+    """`read(manifold, ref)`, remembered: finding the wall of a big mesh takes longer than cutting it."""
+    key = repr(ref)
+    for m, k, r, wall in _walls:
+        if m is manifold and k == key and r is read:
+            return wall
+    wall = read(manifold, ref)
+    _walls.append((manifold, key, read, wall))
+    del _walls[:-8]
+    return wall
+
+
 def curved_surface_tool(manifold, ref, params, rays: _Rays) -> Tuple[Optional[m3d.Manifold], int]:
-    wall = curved_wall(manifold, ref)
+    wall = _cached_wall(curved_wall, manifold, ref)
     if wall is None:
         return spherical_surface_tool(manifold, ref, params, rays)
     if wall.L < 1e-3 or wall.height < 1e-3:

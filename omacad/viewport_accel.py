@@ -50,17 +50,24 @@ def face_hits(index, origin, direction, bary_tol):
     return np.frombuffer(values, dtype="<f8").copy()
 
 
-def mesh_hit(mesh, origin, direction):
-    """Nearest triangle, preserving the original RenderMesh triangle index."""
+def mesh_index(mesh):
+    """The mesh's triangle BVH, built once per vertex array (None on the NumPy path)."""
     if _NATIVE is None:
-        raise RuntimeError("mesh_hit requires the native backend")
+        return None
     vertices = mesh.vertices
     cached = getattr(mesh, "_native_pick_index", None)
     if cached is None or cached[0] is not vertices:
         triangles = np.asarray(vertices, dtype=np.float64).reshape(-1, 3, 3)
         cached = (vertices, build_index(triangles, np.zeros(len(triangles), dtype=np.uint32), 1))
         mesh._native_pick_index = cached
-    return cached[1].nearest(tuple(map(float, origin)), tuple(map(float, direction)))
+    return cached[1]
+
+
+def mesh_hit(mesh, origin, direction):
+    """Nearest triangle, preserving the original RenderMesh triangle index."""
+    if _NATIVE is None:
+        raise RuntimeError("mesh_hit requires the native backend")
+    return mesh_index(mesh).nearest(tuple(map(float, origin)), tuple(map(float, direction)))
 
 
 def flat_patch_mask(count, coplanar, sharp, directions):

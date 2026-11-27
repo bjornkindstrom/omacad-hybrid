@@ -49,6 +49,7 @@ class BodyPromptsMixin:
             from omacad.model.kernel import CadKernel
             restore_visibility()
             target_id, tool_id, op, _ = dlg.get_values()
+            vp.cut_tool_ids = {tool_id} if tool_id and op == "cut" else set()     # red, see-through: it is cut away
             if not target_id or not tool_id or dlg.picking_target():
                 vp.set_preview(None)
                 vp.update()
@@ -72,6 +73,7 @@ class BodyPromptsMixin:
             except (RuntimeError, TypeError):
                 pass
             restore_visibility()
+            vp.cut_tool_ids = set()
             vp.set_preview(None)
             self.inspector.undock_tool()
             if result:

@@ -80,10 +80,20 @@ def curve_edges(v, f, tm, find, planar, claimed_planar=None) -> list:
     face_normals = tm.face_normals
     skip = planar if claimed_planar is None else claimed_planar
     segs = []
-    for (a, b), (e0, e1), keep in zip(adj, edge_ids, sharp):
-        ra, rb = find(int(a)), find(int(b))
-        if keep and not (ra in planar and rb in planar) and ra not in skip and rb not in skip \
-                and area[a] > 1e-12 * diag * diag and area[b] > 1e-12 * diag * diag:
+    # the cheap tests for every adjacent pair at once; only the few sharp candidates go through the loop below
+    if len(adj):
+        roots = np.fromiter((find(int(i)) for i in range(len(area))), dtype=np.int64, count=len(area))
+        ra_all, rb_all = roots[adj[:, 0]], roots[adj[:, 1]]
+        planar_ids, skip_ids = np.fromiter(planar, dtype=np.int64), np.fromiter(skip, dtype=np.int64)
+        in_planar_a, in_planar_b = np.isin(ra_all, planar_ids), np.isin(rb_all, planar_ids)
+        min_area = 1e-12 * diag * diag
+        cand = np.flatnonzero(sharp & ~(in_planar_a & in_planar_b) & ~np.isin(ra_all, skip_ids)
+                              & ~np.isin(rb_all, skip_ids) & (area[adj[:, 0]] > min_area) & (area[adj[:, 1]] > min_area))
+    else:
+        cand = np.zeros(0, dtype=np.int64)
+    for i in cand:
+        (a, b), (e0, e1) = adj[i], edge_ids[i]
+        if True:
             na, nb = face_normals[a], face_normals[b]
             if float(np.cross(na, nb) @ (v[e1] - v[e0])) < 0:
                 na, nb = nb, na

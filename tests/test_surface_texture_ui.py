@@ -27,6 +27,34 @@ def win():
     w.close()
 
 
+def test_typed_number_is_previewed_when_complete(win):
+    from PySide6.QtCore import Qt
+    dlg = SurfaceTextureDialog(win.doc, win)
+    dlg.show()
+    page = dlg.pages["honeycomb"]
+    spin, seen = page.spins["size"], []
+    dlg.changed.connect(lambda: seen.append(spin.value()))
+
+    def type_in(text):
+        spin.lineEdit().selectAll()
+        QTest.keyClicks(spin.lineEdit(), text)
+
+    type_in("15")
+    assert seen == [] and page.typing.isActive()
+    QTest.qWait(900)
+    assert seen == [15.0]
+    type_in("12")
+    QTest.keyClick(spin, Qt.Key_Tab)
+    spin.editingFinished.emit()
+    assert seen == [15.0, 12.0]                 # at once, and once
+    spin.stepUp()
+    QTest.qWait(50)
+    assert seen[-1] == 13.0                     # the arrows don't wait
+    type_in("14")
+    dlg.reject()
+    assert not page.typing.isActive()
+
+
 def flat(items):
     for item in items:
         if isinstance(item, tuple):

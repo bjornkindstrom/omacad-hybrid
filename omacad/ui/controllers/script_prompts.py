@@ -198,17 +198,22 @@ class ScriptPromptsMixin:
             report = f"RESULT: FAILED\nScript name: {r.name}\nError: {r.error}\nValues used: {r.values}\n\n{r.details}"
             self._show_script_error(r.name, path, report, r.error)
             return False
+        if res.adjusted:
+            saved[key] = dict(res.values, __name__=name)
+            settings.set("script_values", saved)
         if not had_bodies and self.doc.bodies:
             self.viewport.zoom_fit()
         note = f"Script “{res.name}” done ({res.seconds:.1f} s) — Ctrl+Z undoes it."
-        if res.messages:
+        if res.notes:
+            note += "  Adjusted: " + " · ".join(res.notes)
+        elif res.messages:
             note += "  " + " · ".join(res.messages[-3:])
         self.status_label.setText(note)
         return True
 
     def _script_preview(self, dlg, path: Path) -> None:
         """Live preview while the values are set: the script runs on a private document after each change."""
-        from omacad.scripting.runner import ScriptRunError, preview_solid
+        from omacad.scripting.runner import ScriptRunError, preview_run
 
         done = []
         dlg.finished.connect(lambda *_: done.append(True))
@@ -221,8 +226,12 @@ class ScriptPromptsMixin:
             except RuntimeError:         # the panel is already closed
                 return
             try:
-                solid = preview_solid(path, values, name)
+                solid, res = preview_run(path, values, name, changed=getattr(dlg, "last_changed", None))
                 dlg.lbl_problem.setText("" if solid is not None else "Preview: the script makes nothing new.")
+                if res.adjusted:
+                    dlg.set_values(res.adjusted)
+                if res.notes or res.adjusted or getattr(dlg, "last_changed", None):
+                    dlg.show_notes(res.notes)     # kept until the next change, which may need none
             except ScriptRunError as e:
                 r = e.result
                 solid = None

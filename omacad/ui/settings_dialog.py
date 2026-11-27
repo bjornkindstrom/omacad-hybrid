@@ -150,7 +150,7 @@ class SettingsDialog(QDialog):
         self.navigation.setObjectName("SettingsNavigation")
         self.navigation.setAccessibleName("Settings categories")
         self.navigation.setFixedWidth(160)
-        self.navigation.addItems(["Appearance", "Interface", "Sketch & View", "General"])
+        self.navigation.addItems(["Appearance", "Interface", "Modelling", "3D View", "General"])
         body.addWidget(self.navigation)
         self.tabs = QTabWidget()
         self.tabs.tabBar().hide()
@@ -363,7 +363,7 @@ class SettingsDialog(QDialog):
         lay_ui.addLayout(pos_row)
 
         # Autohide on measure
-        self.chk_autohide = QCheckBox("Hide the sketch palette automatically while measuring (M)")
+        self.chk_autohide = QCheckBox("Hide the sketch palette automatically while measuring (Measure tool, M)")
         self.chk_autohide.setToolTip("Stops the palette from covering lines or dimensions while you measure.")
         self.chk_autohide.setChecked(bool(self.settings.get("autohide_palette_on_measure", True)))
         lay_ui.addWidget(self.chk_autohide)
@@ -397,7 +397,7 @@ class SettingsDialog(QDialog):
         self.tabs.addTab(self._make_scrollable(tab_ui), "🖥️ Interface")
 
         # ----------------------------------------------------
-        # Tab 4: Sketch & 3D View (📐 Sketch & View)
+        # Tab 3: Sketch & 3D View controls (sorted into Modelling and 3D View below)
         # ----------------------------------------------------
         tab_sketch = QWidget()
         lay_sketch = QVBoxLayout(tab_sketch)
@@ -412,6 +412,9 @@ class SettingsDialog(QDialog):
         self.chk_tangent_edges = QCheckBox("Show tangent edges (a line where a flat face runs smoothly into a curve)")
         self.chk_tangent_edges.setChecked(bool(self.settings.get("show_tangent_edges", True)))
         lay_sketch.addWidget(self.chk_tangent_edges)
+        self.chk_camera_animation = QCheckBox("Smooth camera moves (view presets, Fit and Find glide to the new view)")
+        self.chk_camera_animation.setChecked(bool(self.settings.get("camera_animation", True)))
+        lay_sketch.addWidget(self.chk_camera_animation)
 
         # Grid step
         grid_row = QHBoxLayout()
@@ -526,7 +529,7 @@ class SettingsDialog(QDialog):
 
         # Experimental: exact B-rep bodies (OpenCascade) next to the mesh bodies
         from omacad.model import brep
-        self.chk_brep = QCheckBox("B-rep bodies (experimental): exact OpenCascade extrude, revolve, fillet, chamfer, shell, hole, pattern, combine")
+        self.chk_brep = QCheckBox("B-rep bodies, experimental (exact OpenCascade extrude, revolve, fillet, chamfer, shell, hole, pattern, combine)")
         self.chk_brep.setChecked(bool(self.settings.get("brep_bodies", False)))
         tip = ("Bodies are built as exact B-rep shapes where Omacad supports it (shown with 💎 in the tree); "
                "everything else stays a mesh body. Switch off to go back: the model is rebuilt from its history.")
@@ -612,8 +615,7 @@ class SettingsDialog(QDialog):
         if idx_lip >= 0:
             self.cmb_split_lip_style.setCurrentIndex(idx_lip)
         lip_row.addWidget(self.chk_split_lip)
-        lip_row.addWidget(self.cmb_split_lip_style)
-        lip_row.addStretch(1)
+        lip_row.addWidget(self.cmb_split_lip_style, 1)
         lay_general.addLayout(lip_row)
 
         # AI Agent for fixing errors / reporting problems
@@ -686,22 +688,74 @@ class SettingsDialog(QDialog):
         # ----------------------------------------------------
         # Bottom buttons
         # ----------------------------------------------------
-        self._group_page(lay_appearance, [
-            (theme_row, "Theme & icons"),
-            (info_lbl, "Colours & line weights"),
-            (btn_editor_row, "Custom theme")])
-        self._group_page(lay_ui, [
-            (btn_size_row, "Toolbar size & labels"),
-            (pos_row, "Sketch palette"),
-            (grp_lbl, "Toolbar organisation")])
-        self._group_page(lay_sketch, [
-            (self.chk_invert_zoom, "Navigation & edges"),
-            (grid_row, "Sketch & precision"),
-            (arrow_row, "Extrude handles"),
-            (q_row, "Rendering & camera")])
-        self._group_page(lay_general, [
-            (rfc_row, "Change requests"),
-            (agent_row, "Problem reporting & updates")])
+        # The controls above are built per old tab; here they are sorted into the pages
+        # and sections where people look for them. Only layout moves: every field keeps
+        # its value and its save binding (self.edt_rfc_token etc. are the same objects).
+        tab_model, tab_view = QWidget(), QWidget()
+        lay_model, lay_view = QVBoxLayout(tab_model), QVBoxLayout(tab_view)
+        pool = []
+        for lay in (lay_appearance, lay_ui, lay_sketch, lay_general):
+            while lay.count():
+                item = lay.takeAt(0)
+                content = item.widget() or item.layout()
+                if content is not None:
+                    pool.append(content)
+
+        def row(widget):
+            """The row layout holding `widget` (or the widget itself when it stands alone)."""
+            if widget in pool:
+                return widget
+            return next(c for c in pool if isinstance(c, QHBoxLayout) and c.indexOf(widget) >= 0)
+
+        pages = [
+            (lay_appearance, [
+                ("Theme & icons", [theme_row, icon_row]),
+                ("Highlights & tools", [info_lbl, self.row_highlight, self.row_hover, row(self.spn_hover_w),
+                                        self.row_measure]),
+                ("Sketch lines", [self.row_sketch, row(self.spn_sketch_w), self.row_selected,
+                                  row(self.spn_selected_w), self.row_construct, guide_gap_row, self.row_finished]),
+                ("Extrude arrow", [self.row_arrow, arrow_row, gap_row]),
+                ("Custom theme", [btn_editor_row])]),
+            (lay_ui, [
+                ("Toolbar", [btn_size_row, self.chk_labels]),
+                ("Toolbar organisation", [grp_lbl, self.chk_group_primitives, self.chk_group_modify,
+                                          self.chk_group_inspect, self.chk_group_constraints]),
+                ("Fan menu", [fan_style_row, self.chk_fan_anim, fan_labels_row, fan_icon_row]),
+                ("Sketch palette", [pos_row, self.chk_autohide])]),
+            (lay_model, [
+                ("Sketching", [grid_row, fillet_row]),
+                ("Primitives & Split Body", [primitive_row, lip_row]),
+                ("Geometry & quality", [q_row, self.chk_fast_view, self.chk_brep])]),
+            (lay_view, [
+                ("Navigation", [self.chk_invert_zoom]),
+                ("Camera", [proj_row, fov_row]),
+                ("Display", [self.chk_tangent_edges, self.chk_camera_animation])]),
+            (lay_general, [
+                ("Change requests & problem reports", [rfc_row, tok_row, agent_row]),
+                ("Scripts", [folder_row, self.chk_share_scripts]),
+                ("Saving & updates", [autosave_row, self.chk_auto_restart])]),
+        ]
+        placed = [c for _lay, sections in pages for _t, items in sections for c in items]
+        missing = [c for c in pool if not any(c is p for p in placed)]
+        if missing or len(placed) != len(pool):
+            raise RuntimeError(f"settings controls left out or placed twice: {missing}")
+        for lay, sections in pages:
+            for _title, items in sections:
+                for content in items:
+                    if isinstance(content, QWidget):
+                        lay.addWidget(content)
+                    else:
+                        lay.addLayout(content)
+            self._group_page(lay, [(items[0], title) for title, items in sections])
+
+        scrolls = [self.tabs.widget(i) for i in range(self.tabs.count())]
+        self.tabs.clear()
+        for scroll, name in ((scrolls[0], "🎨 Appearance"), (scrolls[1], "🖥️ Interface"),
+                             (self._make_scrollable(tab_model), "📐 Modelling"),
+                             (self._make_scrollable(tab_view), "🧭 3D View"),
+                             (scrolls[3], "⚙️ General")):
+            self.tabs.addTab(scroll, name)
+        scrolls[2].deleteLater()
         self.spn_fov.setEnabled(self.cmb_projection.currentData() == "perspective")
         self.cmb_projection.currentIndexChanged.connect(
             lambda: self.spn_fov.setEnabled(self.cmb_projection.currentData() == "perspective"))
@@ -846,6 +900,7 @@ class SettingsDialog(QDialog):
         self.chk_autohide.setChecked(True)
         self.chk_invert_zoom.setChecked(False)
         self.chk_tangent_edges.setChecked(False)
+        self.chk_camera_animation.setChecked(True)
         self.cmb_primitive_decimals.setCurrentIndex(0)
         self.spn_guide_gap.setValue(6.0)
         self.spn_grid.setValue(5.0)
@@ -915,6 +970,7 @@ class SettingsDialog(QDialog):
             "autohide_palette_on_measure": self.chk_autohide.isChecked(),
             "invert_zoom": self.chk_invert_zoom.isChecked(),
             "show_tangent_edges": self.chk_tangent_edges.isChecked(),
+            "camera_animation": self.chk_camera_animation.isChecked(),
             "primitive_drag_decimals": self.cmb_primitive_decimals.currentData(),
             "guide_line_gap": self.spn_guide_gap.value(),
             "grid_step": self.spn_grid.value(),

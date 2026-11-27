@@ -9,6 +9,7 @@ import math
 import functools
 import numpy as np
 import manifold3d as m3d
+import shapely
 from shapely.geometry import Polygon
 from shapely.geometry.polygon import orient
 from omacad import applog
@@ -32,6 +33,7 @@ class Body:
     is_lid: bool = False         # a slide-over or screw lid (toggleable via viewport HUD)
     faces: List[PlanarFace] = field(default_factory=list)
     edges: List[PlanarEdge] = field(default_factory=list)
+    relief: bool = False         # a dense picture relief: only its large flat faces are picked, no edges
     # Exact OpenCascade shape (experimental "brep_bodies" setting). When set, `manifold` is its tessellation.
     brep: Any = field(default=None, repr=False, compare=False)
 
@@ -59,21 +61,116 @@ class Body:
         return self.visible and not self.construction
 
     def update_render_mesh(self):
-        self.render_mesh = CadKernel.extract_render_mesh(self.manifold)
+        """Marks the render mesh, faces and edges as belonging to the current manifold. They are computed the first
+        time something reads them (`_LazyAnalysis`): a step's intermediate bodies that nothing picks, draws or
+        matches edges on are never analysed, and the results are exactly those an immediate analysis gives (same
+        manifold, same body id). Shallow copies (checkpoints, cached step outputs) share one analysis."""
+        for name in _LAZY_FIELDS:
+            self.__dict__.pop(name, None)
+        # Manifold evaluates booleans lazily: settle this result now, as the analysis used to by reading the mesh.
+        # Otherwise the next boolean folds it into a deeper CSG tree and triangulates the same solid differently.
+        self.manifold.num_tri()
+        object.__setattr__(self, "_lazy", _LazyAnalysis(self.manifold, self.body_id, self.name, self.relief))
+
+    def analyse_now(self) -> None:
+        """Computes anything still pending (the end of a rebuild does this, so the cost stays off the GUI thread)."""
+        for name in _LAZY_FIELDS:
+            getattr(self, name)
+
+    def __getattr__(self, name):
+        # only reached when the attribute is not set: a pending render mesh, faces or edges
+        if name in _LAZY_FIELDS:
+            lazy = self.__dict__.get("_lazy")
+            if lazy is not None:
+                value = lazy.get(name)
+                self.__dict__[name] = value
+                return value
+            return _LAZY_DEFAULTS[name]()
+        raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}")
+
+
+_LAZY_FIELDS = ("render_mesh", "faces", "edges")
+del Body.render_mesh   # the dataclass default stays in __init__; without the class attribute a pending value reaches __getattr__
+_LAZY_DEFAULTS = {"render_mesh": lambda: None, "faces": list, "edges": list}
+
+
+class _LazyAnalysis:
+    """The render mesh and face/edge analysis of one manifold, computed once on first use (thread-safe: a rebuild on
+    the busy thread and a paint on the GUI thread may ask at the same time)."""
+    __slots__ = ("manifold", "body_id", "name", "relief", "values", "lock")
+
+    def __init__(self, manifold, body_id: str, name: str, relief: bool):
+        import threading
+        self.manifold, self.body_id, self.name, self.relief = manifold, body_id, name, relief
+        self.values: Dict[str, Any] = {}
+        self.lock = threading.Lock()
+
+    def get(self, name: str):
+        values = self.values
+        if name in values:
+            return values[name]
+        with self.lock:
+            if name not in values:
+                if name == "render_mesh":
+                    values["render_mesh"] = CadKernel.extract_render_mesh(self.manifold)
+                else:
+                    values.update(zip(("faces", "edges"), self._faces_and_edges()))
+            return values[name]
+
+    def _faces_and_edges(self):
+        m, bid = self.manifold, self.body_id
+        if self.relief and m.num_tri() > 5000:
+            # Full edge analysis of hundreds of thousands of relief facets takes many seconds and finds only noise
+            limit = 0.005 * m.surface_area()
+            return [f for f in compute_planar_faces(m, bid) if f.area >= limit], []
         try:
-            self.faces, self.edges = compute_planar_faces_and_edges(self.manifold, self.body_id)
+            return compute_planar_faces_and_edges(m, bid)
         except Exception as e:      # fall back piece by piece; a body without picks still shows, the log says why
             applog.log("ERROR", f"{self.name}: face/edge analysis failed, trying separately: {e!r}")
             try:
-                self.faces = compute_planar_faces(self.manifold, self.body_id)
+                faces = compute_planar_faces(m, bid)
             except Exception as e2:
                 applog.log("ERROR", f"{self.name}: faces unavailable: {e2!r}")
-                self.faces = []
+                faces = []
             try:
-                self.edges = compute_planar_edges(self.manifold)
+                edges = compute_planar_edges(m)
             except Exception as e2:
                 applog.log("ERROR", f"{self.name}: edges unavailable: {e2!r}")
-                self.edges = []
+                edges = []
+            return faces, edges
+
+
+def analyse_bodies(doc: Any) -> None:
+    """Finishes the pending analysis of the document's bodies, where the rebuild runs (the busy thread), so the first
+    paint or pick after it does not pay for it on the GUI thread. A failure is logged; the body then has no picks."""
+    from omacad import busy
+    tangent = _show_tangent_edges() if busy.in_worker() else None   # only in the app's busy thread, never in tests
+    for body in list(getattr(doc, "bodies", {}).values()):
+        if isinstance(body, Body):
+            try:
+                body.analyse_now()
+                if body.visible and body.render_mesh is not None and tangent is not None:
+                    body.render_mesh.prepare_display(tangent)   # the first paint's edge lines and smoothing
+                    _warm_picking(body)                         # and the first hover's triangle indexes
+            except Exception as e:
+                applog.log("ERROR", f"{body.name}: render/analysis failed: {e!r}")
+
+
+def _warm_picking(body) -> None:
+    from omacad import viewport_accel
+    from omacad.model.faces_hit_tests import face_stack
+    if body.faces:
+        face_stack(body.faces)
+    viewport_accel.mesh_index(body.render_mesh)
+
+
+def _show_tangent_edges() -> Optional[bool]:
+    """The view's tangent-edge setting, or None outside the app (scripts, tests without settings): nothing to warm."""
+    try:
+        from omacad.ui.settings import get_settings
+        return bool(get_settings().get("show_tangent_edges", True))
+    except Exception:
+        return None
 
 
 def profile_cross_section(profile: Any) -> m3d.CrossSection:
@@ -345,14 +442,23 @@ def region_cross_section(geom) -> m3d.CrossSection:
     """CrossSection of a shapely polygon or multipolygon (holes included)."""
     from types import SimpleNamespace
     polys = list(geom.geoms) if hasattr(geom, "geoms") else [geom]
-    cs = None
+    parts, rings = [], []
     for poly in polys:
         if poly.is_empty or poly.area < 1e-9:
             continue
+        if not poly.interiors:
+            ring = shapely.get_coordinates(poly.exterior)[:-1]
+            rings.append(ring if poly.exterior.is_ccw else ring[::-1])
+            continue
         part = profile_cross_section(SimpleNamespace(exterior_pts=list(poly.exterior.coords)[:-1],
                                                      interior_holes=[list(r.coords)[:-1] for r in poly.interiors]))
-        cs = part if cs is None else cs + part
-    return cs if cs is not None else m3d.CrossSection([])
+        parts.append(part)
+    if rings:
+        parts.append(m3d.CrossSection(rings, m3d.FillRule.Positive))
+    if len(parts) == 1:
+        return parts[0]
+    # all at once: adding them one by one is quadratic, seconds for a thousand texture cells
+    return m3d.CrossSection.batch_boolean(parts, m3d.OpType.Add) if parts else m3d.CrossSection([])
 
 
 class ProfileRefs:

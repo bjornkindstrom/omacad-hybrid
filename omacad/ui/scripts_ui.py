@@ -492,6 +492,7 @@ class ScriptParamsDialog(BaseFeatureDialog):
         super().__init__(info.name, parent)
         self.info = info
         self.fields = {}
+        self.last_changed = None     # the value the person changed last (the script may adjust the others to fit it)
         self._values = {p.name: p.coerce(values.get(p.name, p.default)) for p in info.params}
         self.lbl_image = None
         if getattr(info, "image_path", None) and info.image_path.exists():
@@ -526,6 +527,11 @@ class ScriptParamsDialog(BaseFeatureDialog):
         self.lbl_problem.setWordWrap(True)
         self.lbl_problem.setStyleSheet("color: #d9534f;")
         self.main_layout.addWidget(self.lbl_problem)
+        self.lbl_note = QLabel("")    # values the script adjusted so the others fit, and why
+        self.lbl_note.setWordWrap(True)
+        self.lbl_note.setStyleSheet("color: #e0a030;")
+        self.lbl_note.setVisible(False)
+        self.main_layout.addWidget(self.lbl_note)
         self.add_buttons()
         self.btn_ok.setText("Run")
 
@@ -542,7 +548,7 @@ class ScriptParamsDialog(BaseFeatureDialog):
             self.fields[p.name] = (p, w)
             sig = (w.toggled if isinstance(w, QCheckBox) else w.currentIndexChanged if isinstance(w, QComboBox)
                    else w.textChanged if isinstance(w, QLineEdit) else w.valueChanged)
-            sig.connect(lambda *_: self.changed.emit())
+            sig.connect(lambda *_, key=p.name: self._on_field_changed(key))
         names = [p.name for p in self.info.params if p.name in self.fields]
         if mode == "Easy" and self.info.easy_params is not None:
             names = list(dict.fromkeys([n for n in self.info.easy_params if n in self.fields] + names))
@@ -584,6 +590,41 @@ class ScriptParamsDialog(BaseFeatureDialog):
             w.setSingleStep(float(p.step or 1.0))
             w.setValue(float(value))
         return w
+
+    def _on_field_changed(self, key: str) -> None:
+        self.last_changed = key
+        self.changed.emit()
+
+    def set_values(self, values: Dict) -> None:
+        """Puts values the script adjusted into the fields without starting another preview."""
+        params = {p.name: p for p in self.info.params}
+        for key, value in values.items():
+            if key not in params:
+                continue
+            value = params[key].coerce(value)
+            self._values[key] = value
+            if key not in self.fields:
+                continue
+            w = self.fields[key][1]
+            w.blockSignals(True)
+            try:
+                if isinstance(w, QCheckBox):
+                    w.setChecked(bool(value))
+                elif isinstance(w, QComboBox):
+                    i = w.findData(value)
+                    if i >= 0:
+                        w.setCurrentIndex(i)
+                elif isinstance(w, QLineEdit):
+                    w.setText(str(value))
+                else:
+                    w.setValue(value)
+            finally:
+                w.blockSignals(False)
+
+    def show_notes(self, notes) -> None:
+        text = "\n".join(f"⚠ {n}" for n in notes)
+        self.lbl_note.setText(text)
+        self.lbl_note.setVisible(bool(text))
 
     def name(self) -> str:
         return self.edt_name.text().strip() or self.info.default_name

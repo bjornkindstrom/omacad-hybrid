@@ -321,3 +321,19 @@ def test_standalone_thread_offset_shrinks_roots_flanks_and_crests():
     hole = np.flatnonzero((c[:, 2] > 16) & (c[:, 2] < 22) & (np.hypot(c[:, 0], c[:, 1]) < 6) & (area > 1e-3))
     hits = [doc.thread_at(c[i], n[i] / area[i]) for i in hole[::max(1, len(hole) // 12)]]
     assert all(h is not None and h["sign"] == -1 for h in hits)
+
+
+def test_attached_thread_stays_on_its_core_when_made_thinner():
+    """The coil floated 0.1 mm beside the shrunk neck ("Stor stjärna", 2026-11-25)."""
+    from omacad.model.features.offset_face import offset_thread
+    from omacad.model.features.thread import ThreadFeature
+    for profile in ("trapezoidal_45", "iso_60", "round"):
+        doc = Document()
+        feat = ThreadFeature("thread_1", "t", 101.99, 6.5, 20.66, profile=profile, target_body_id="b", operation="join",
+                             taper_turns=0.3, plane_origin=[0, 0, 10], plane_normal=[0, 0, 1])
+        doc.timeline.features.append(feat)
+        neck = m3d.Manifold.cylinder(40, 51, 51, circular_segments=96) + feat.build_solid()
+        out = offset_thread(neck, {"kind": "thread", "thread_id": "thread_1", "sign": 1}, -0.2, doc)
+        for z in (15.0, 20.0, 25.0):
+            loops = [p for p in out.slice(z).to_polygons() if abs(m3d.CrossSection([p]).area()) > 0.5]
+            assert len(loops) == 1, profile

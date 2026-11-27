@@ -192,6 +192,34 @@ def test_through_from_inside_the_material_stops_where_it_ends():
     assert d == pytest.approx(1.8 + H.OVERSHOOT, abs=0.02)
 
 
+def test_many_cells_region_and_cached_wall():
+    import omacad.model.features.honeycomb as H
+    from omacad.model.features.base import region_cross_section
+    region = unary_union([box(3 * i, 0, 3 * i + 2, 2) for i in range(50)] + [box(0, 5, 9, 9).difference(box(2, 6, 4, 8))])
+    assert region_cross_section(region).area() == pytest.approx(region.area)
+    calls = []
+
+    def read(manifold, ref):
+        calls.append(ref)
+        return None
+
+    a, b = m3d.Manifold.cube((1, 1, 1)), m3d.Manifold.cube((2, 2, 2))
+    for solid in (a, a, b):         # remembered per body, a None answer too
+        H._cached_wall(read, solid, {"point": [0, 0, 0]})
+    H._cached_wall(read, a, {"point": [1, 0, 0]})
+    assert len(calls) == 3
+
+
+def test_preview_mesh_skips_smooth_normals(monkeypatch):
+    from types import SimpleNamespace
+    from omacad.model.kernel import CadKernel
+    from omacad.ui.viewport.profile_mixin import ProfileMixin
+    monkeypatch.setattr(CadKernel, "_strip_normals", lambda *a: pytest.fail("smooth normals made for a preview"))
+    vp = SimpleNamespace(section_trim=lambda solid: solid, update=lambda: None)
+    ProfileMixin.set_preview(vp, m3d.Manifold.sphere(5, 32))
+    assert len(vp.preview_mesh.vertices)
+
+
 # =========================================================================
 # 3. Voronoi Cells (Randomness, Sizing, Bounds & Cylinder Seams)
 # =========================================================================

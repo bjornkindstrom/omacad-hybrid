@@ -213,6 +213,8 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.cylinder_clicked.connect(self.prompt_cylinder)
         self.ribbon.hexagon_clicked.connect(self.prompt_prism)
         self.ribbon.cone_clicked.connect(self.prompt_cone)
+        self.ribbon.sphere_clicked.connect(self.prompt_sphere)
+        self.ribbon.lithophane_clicked.connect(self.prompt_lithophane)
         self.ribbon.sweep_clicked.connect(lambda: self.prompt_sweep_tool("sweep"))
         self.ribbon.loft_clicked.connect(lambda: self.prompt_sweep_tool("loft"))
         self.ribbon.pipe_clicked.connect(lambda: self.prompt_sweep_tool("pipe"))
@@ -375,7 +377,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
             if app.font() != f:
                 app.setFont(f)
             theme.apply_qt_palette()
-            css = theme.indicator_stylesheet()                # visible tick boxes everywhere (lists, trees, dialogs)
+            css = theme.app_stylesheet()                      # tick boxes and scroll bars everywhere (lists, trees, dialogs)
             if app.styleSheet() != css:
                 app.setStyleSheet(css)
 

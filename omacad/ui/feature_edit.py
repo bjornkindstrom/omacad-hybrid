@@ -22,7 +22,7 @@ OPERATIONS = ["auto", "new_body", "join", "cut", "intersect"]  # same order as t
 
 def can_edit(feature) -> bool:
     return feature.feature_type in (
-        "box", "cylinder", "prism", "sphere", "extrude", "emboss", "revolve", "loft",
+        "box", "cylinder", "prism", "sphere", "lithophane", "extrude", "emboss", "revolve", "loft",
         "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "wavy_slices", "knurl", "japandi", "combine", "split_body", "joint"
     )
 
@@ -428,19 +428,47 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
                                 exprs=dlg.get_expressions(), **dlg.get_smart_params())
 
     if t == "sphere":
-        from omacad.model.kernel import CadKernel
+        from omacad.model.features.primitives import SphereFeature
         dlg = SphereDialog(win)
         dlg.setWindowTitle(f"Edit {feat.name}")
         dlg.spn_radius.setValue(feat.radius)
-        if feat.exprs.get("radius"):
-            dlg.spn_radius.set_expression(feat.exprs["radius"])
+        dlg.spn_wall.setValue(getattr(feat, "wall_thickness", 0.0))
+        _set_primitive_placement(dlg, feat)
+        _set_expressions(dlg, feat, {"radius": dlg.spn_radius, "wall_thickness": dlg.spn_wall})
 
         def _preview_sphere():
-            vp.set_preview(CadKernel.create_sphere(dlg.get_values()).translate(tuple(feat.translation)), "new_body")
+            try:
+                solid = SphereFeature(
+                    "tmp", "tmp", dlg.get_values(),
+                    translation=feat.translation,
+                    **dlg.get_placement_params(),
+                ).build_solid()
+                dlg.lbl_problem.setText("")
+                vp.set_preview(solid, "new_body")
+            except ValueError as exc:
+                dlg.lbl_problem.setText(str(exc))
+                vp.set_preview(None)
 
-        if not _exec_with_preview(win, doc, dlg, _preview_sphere, [f"body_{feat.feature_id}"]):
+        if not _exec_with_preview(win, doc, dlg, _preview_sphere, [f"body_{feat.feature_id}"],
+                                  wiring=_primitive_face_wiring(vp, dlg)):
             return False
-        return commit(radius=dlg.get_values(), exprs=dlg.get_expressions())
+        return commit(radius=dlg.get_values(), exprs=dlg.get_expressions(), **dlg.get_placement_params())
+
+    if t == "lithophane":
+        from omacad.ui.dialogs.lithophane_dlg import LithophaneDialog
+        dlg = LithophaneDialog(win)
+        dlg.setWindowTitle(f"Edit {feat.name}")
+        dlg.set_params(feat.to_dict())
+        for key, spin in dlg.spins.items():
+            if feat.exprs.get(key):
+                spin.set_expression(feat.exprs[key])
+
+        def _preview_lithophane():
+            vp.set_preview(dlg.build_preview(feat.translation), "new_body")
+
+        if not _exec_with_preview(win, doc, dlg, _preview_lithophane, [f"body_{feat.feature_id}"]):
+            return False
+        return commit(**dlg.get_params(), exprs=dlg.get_expressions())
 
     if t == "hole":
         import numpy as np
@@ -606,7 +634,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
     if t == "offset_face":
         from omacad.ui.dialogs import OffsetFaceDialog
         from omacad.model.features.offset_face import OffsetFaceFeature
-        dlg = OffsetFaceDialog(win, feat.distance, editing=True)
+        dlg = OffsetFaceDialog(win, feat.distance, editing=True, doc=doc)
         dlg.setWindowTitle(f"Edit {feat.name}")
         if feat.exprs.get("distance"):
             dlg.spn_dist.set_expression(feat.exprs["distance"])
@@ -720,10 +748,17 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
             m_tool = state_before.get(tool_id or feat.tool_body_id)
             if m_t is not None and m_tool is not None:
                 from omacad.model.kernel import CadKernel
-                vp.set_preview(CadKernel.boolean_op(m_t, m_tool, op), "new_body")
+                shown = tool_id in doc.bodies and doc.bodies[tool_id].visible     # kept: drawn red where it stands
+                vp.cut_tool_ids = {tool_id} if op == "cut" and shown else set()
+                vp.set_preview(CadKernel.boolean_op(m_t, m_tool, op), "new_body",
+                               extra=m_tool if op == "cut" and not shown else None, extra_op="cut")
 
-        if not _exec_with_preview(win, doc, dlg, _preview_combine, [feat.target_body_id]):
-            return False
+        try:
+            if not _exec_with_preview(win, doc, dlg, _preview_combine, [feat.target_body_id]):
+                return False
+        finally:
+            if vp is not None:
+                vp.cut_tool_ids = set()
         t_id, tool_id, op, keep = dlg.get_values()
         kwargs = {"operation": op, "keep_tool": keep}
         if t_id and tool_id:
@@ -912,6 +947,7 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         if prof_idx >= 0:
             dlg.cmb_profile.setCurrentIndex(prof_idx)
         dlg.set_lead_in(feat.taper_lead_in, feat.taper_turns)
+        dlg.chk_run_out.setChecked(feat.run_out or not (feat.is_female or feat.operation == "cut"))
         idx_type = 1 if feat.is_female else 0
         dlg.cmb_type.setCurrentIndex(idx_type)
         if getattr(feat, "plane_origin", None) is not None:
@@ -932,6 +968,8 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         def _preview_thread():
             vals = dlg.get_values()
             tmp = ThreadFeature("tmp", "tmp", **vals)
+            if before is not None:
+                tmp.find_run_out(before)
             solid = tmp.build_solid()
             op = "cut" if vals.get("operation") == "cut" else "new_body"
             vp.set_preview(solid, op)

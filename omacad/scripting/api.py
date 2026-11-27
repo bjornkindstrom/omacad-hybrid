@@ -274,8 +274,12 @@ class ScriptContext:
         script_path: Optional[Path] = None,
         params: Optional[Dict[str, Any]] = None,
         group_id: Optional[str] = None,
+        changed: Optional[str] = None,
     ):
         self._doc = doc
+        self.changed = changed        # the value the person changed last in the panel (None when unknown)
+        self.adjusted: Dict[str, Any] = {}   # values the script changed itself with adjust()
+        self.notes: List[str] = []    # why it changed them, for the person
         self._log_fn = log
         self.messages: List[str] = []
         self.checking = checking      # True while Omacad test-runs the script on an empty model
@@ -306,6 +310,17 @@ class ScriptContext:
         self.messages.append(text)
         if self._log_fn:
             self._log_fn(text)
+
+    def adjust(self, name: str, value: Any, why: str = "") -> Any:
+        """Change one of the script's own values because the others need it (e.g. a bigger sphere for a wider top).
+        Omacad puts the new value in the panel and shows `why` to the person. Returns the value."""
+        self.adjusted[str(name)] = value
+        if self._params is not None and name in self._params:
+            self._params[name] = value
+        note = str(why).strip() or f"{name} set to {value}"
+        self.notes.append(note)
+        self.log(f"Adjusted: {note}")
+        return value
 
     # ---- reading the model --------------------------------------------------------------------------------------
     @property

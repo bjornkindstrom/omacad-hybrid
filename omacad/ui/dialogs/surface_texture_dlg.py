@@ -3,7 +3,7 @@ Wavy Slices on a whole body. The types stay separate steps in the history, so sa
 
 from typing import Any, Dict, Tuple
 from pathlib import Path
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import QCheckBox, QComboBox, QFileDialog, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 from omacad.model.document import Document
 from omacad.model.features.cell_patterns import HOLE_SHAPES, MAX_RELAXATION, VORONOI_STYLES
@@ -49,6 +49,9 @@ def preview_texture(kind: str, manifold, faces, params: Dict[str, Any]) -> Tuple
                       params["offset"]), ""
 
 
+TYPING_DELAY_MS = 700   # a number being typed is previewed after this pause: "15" must not stop to cut 1 mm cells
+
+
 class _Page(QWidget):
     """The settings of one texture: expression fields in `spins`, read and loaded by key."""
 
@@ -57,6 +60,9 @@ class _Page(QWidget):
     def __init__(self):
         super().__init__()
         self.spins: Dict[str, ExprDoubleSpinBox] = {}
+        self.typing = QTimer(self)
+        self.typing.setSingleShot(True)
+        self.typing.timeout.connect(self.changed)
         self.form = QFormLayout()
         self.form.setContentsMargins(0, 0, 0, 0)
         layout = QVBoxLayout(self)
@@ -70,10 +76,18 @@ class _Page(QWidget):
         spin.setSuffix(suffix)
         spin.setValue(default)
         spin.setToolTip(tip)
-        spin.valueChanged.connect(lambda *_: self.changed.emit())
+        spin.valueChanged.connect(lambda *_: self.typing.start(0))
+        spin.lineEdit().textEdited.connect(lambda *_: self.typing.isActive() and self.typing.start(TYPING_DELAY_MS))  # comes after valueChanged
+        spin.editingFinished.connect(self._typing_done)
         self.form.addRow(label, spin)
         self.spins[key] = spin
         return spin
+
+    def _typing_done(self):
+        """Enter, Tab or a click elsewhere: show it at once."""
+        if self.typing.isActive():
+            self.typing.stop()
+            self.changed.emit()
 
     def params(self) -> Dict[str, Any]:
         return {key: spin.value() for key, spin in self.spins.items()}
@@ -396,6 +410,7 @@ class SurfaceTextureDialog(FacePickMixin, BaseFeatureDialog):
         self.pages = {"honeycomb": _CellsPage(), "knurl": _KnurlPage(), "japandi": _JapandiPage(), "wavy_slices": _WavyPage()}
         for page in self.pages.values():
             page.changed.connect(self.changed)
+            self.finished.connect(page.typing.stop)     # no preview after OK/Cancel
             self.main_layout.addWidget(page)
 
         self.lbl_info = QLabel("")

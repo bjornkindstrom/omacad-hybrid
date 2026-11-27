@@ -174,3 +174,52 @@ def test_project_takes_the_whole_rim_face():
     assert len(areas) == 6
     assert areas[-1] > 3000.0
     assert areas[-2] == pytest.approx(rim.area, rel=2e-3)
+
+
+# ==============================================================================
+# Sphere Shell & Arbitrary Cut / Split Tests
+# ==============================================================================
+
+def test_shell_sphere_inside_outside_both_and_split():
+    doc = Document()
+    s = doc.add_sphere(25.0)
+    v25 = CadKernel.create_sphere(25.0).volume()
+    v23 = CadKernel.create_sphere(23.0).volume()
+    v26 = CadKernel.create_sphere(26.0).volume()
+    v27 = CadKernel.create_sphere(27.0).volume()
+
+    out = ShellFeature.compute_shell(s.manifold, 2.0, "outside")
+    assert out.volume() == pytest.approx(v27 - v25, rel=1e-5)
+    both = ShellFeature.compute_shell(s.manifold, 2.0, "both", thickness2=1.0)
+    assert both.volume() == pytest.approx(v26 - v23, rel=1e-5)
+
+    doc.add_shell(s.body_id, 2.0, direction="inside")
+    assert doc.bodies[s.body_id].manifold.volume() == pytest.approx(v25 - v23, rel=1e-5)
+
+    # Split at an arbitrary angled plane
+    cp_id = doc.add_construction_plane(doc.origin_planes["XY"], 5.0, name="Angled", angle=30.0)
+    feat = doc.split_body(s.body_id, cp_id)
+    assert feat is not None
+    assert len(doc.bodies) == 2
+    total_vol = sum(b.manifold.volume() for b in doc.bodies.values())
+    assert total_vol == pytest.approx(v25 - v23, rel=1e-4)
+
+    # Split the remaining half again with XY + lip joint
+    half_id = s.body_id
+    feat2 = doc.split_body(
+        half_id, "XY",
+        lip={"style": "inner", "height": 3.0, "width": 0.0, "clearance": 0.2, "lip_on": "back", "snap_fit": False},
+    )
+    assert feat2 is not None
+    assert all(b.manifold.volume() > 100.0 for b in doc.bodies.values())
+
+
+def test_split_sphere_then_shell_with_open_face():
+    doc = Document()
+    s = doc.add_sphere(25.0)
+    doc.split_body(s.body_id, "XY")
+    top_id = next(bid for bid, b in doc.bodies.items() if b.manifold.bounding_box()[2] >= -1e-4)
+    doc.add_shell(top_id, 2.0, open_faces=[{"normal": [0, 0, -1], "origin": [0, 0, 0]}])
+    bowl = doc.bodies[top_id].manifold
+    assert bowl.volume() > 1000.0
+    assert bowl.slice(1.0).area() < CadKernel.create_sphere(25.0).slice(1.0).area()

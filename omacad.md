@@ -1,9 +1,58 @@
+## Checkpoints efter markören och uppvärmd första bildruta — 2026-11-27 (0.9.9.80.224)
+
+- `Timeline._recompute` raderar inte längre checkpoints `> limit`, bara index utanför tidslinjen; valideringen i ordning (fingerprint + excluded) rensar från första ändrade steg. Output-cachen gör att oberoende primitiver inte körs om ens när ett tidigare steg ändrats. Test: `tests/test_timeline_rollforward_cache.py`.
+- `analyse_bodies` kör, bara när `busy.in_worker()` (appens busy-tråd; aldrig i tester), `RenderMesh.prepare_display(tangent)` (= `display_arrays(drawn_edges(tangent))`) och `_warm_picking` (`faces_hit_tests.face_stack`, utbruten ur `ray_hit_faces`, och `viewport_accel.mesh_index`, utbruten ur `mesh_hit`). Under busy är vyn låst (`setUpdatesEnabled(False)`), så cacharna skrivs inte samtidigt som de läses. Test: `test_lazy_body_analysis.py::test_rebuild_in_the_busy_thread_warms_what_the_first_paint_draws`.
+
+## Lat ytanalys, kvalitetsspärr och snyggare vy — 2026-11-27 (0.9.9.80.223)
+
+- `Body.update_render_mesh` räknar inget längre: `_LazyAnalysis` (manifold + body_id + relief fångas vid anropet) räknar `render_mesh`/`faces`/`edges` vid första läsning via `Body.__getattr__` (klassattributet `render_mesh` är borttaget, annars nås aldrig `__getattr__`). `copy.copy` delar holdern, så checkpoint-kopior räknar inte om. `analyse_bodies(doc)` sist i `Timeline._recompute` och i `@undoable` (efter `_finish_object_operation`) räknar slutkropparna på busy-tråden. Fälla: Manifold-booleaner är lata (CSG-träd); utan att läsa nätet slogs mellanresultat ihop i djupare träd och gav annan triangulering (samma volym/kanter) i `thread_follows_cylinder` och `lada_med_gangjarn`; `self.manifold.num_tri()` i `update_render_mesh` evaluerar billigt och ger bitidentiskt resultat.
+- `tools/golden_check.py --record/--check [-k namn]`: varje dokument i egen process, signatur per kropp (volym, area, genus, mesh-hash, ytor/kanter-signaturer, render/sharp/tangent-hash), baslinje i `.state/golden/baseline.json`. Kör `--check` efter varje prestandaändring; 0 diff krävs. `feature_speed.py` sätter nu `fast_view` av (annars blev det 72 segment, assert föll) och har `--eager`.
+- `kernel._ramps` = vektoriserad `np.linspace`-konkatenering i `weld_to` (bitidentisk, testad mot linspace); `faces_surfaces` `find` = `roots.tolist().__getitem__`; `curve_edges` filtrerar kandidatpar med numpy, loopen bara över kandidater (samma ordning).
+- Vy: `render_backdrop` (+ `Palette.canvas_gradient01`), `prog_grid` (fade mot rutnätets kant, `GRID_MINOR_FADE_PX`), ny ljussättning i `FRAGMENT_SHADER_SOLID` (testet kräver `u_eye_dir`, `spec`, `dot(n, v) < 0.0`), `selected_body_rgb` (`SELECTED_TINT`), body-kanter via `_draw_cached_thick_edges` (quads cachade per mesh i GPU-cachen, `u_depth_bias` i thick-shadern), förhandsvisningar med `prog_solid` + platta normaler (inga mjuka: `test_preview_mesh_skips_smooth_normals`).
+- `ui/viewport/camera_ease.py`: kamerastaten sätts direkt, bara ritkameran (`get_matrices`, ViewCube) glider; `set_view`/`zoom_to_points`/`frame_face`/`zoom_fit` (overlay_mixin) och `align_to_plane` är omslag kring `_..._now`. Inställning `camera_animation`; `tests/conftest.py` slår av den. Tester: `test_lazy_body_analysis.py`, `test_camera_ease.py`.
+- Skärmbilder headless: xvfb + `QT_XCB_GL_INTEGRATION=xcb_egl PYOPENGL_PLATFORM=egl`, `vp.grabFramebuffer()`; nollställ `hover_face` före grab.
+
+## Rundade rullningslister — 2026-11-27 (0.9.9.80.222)
+
+- Handtaget var 10 px (16 − 2·ram − 2·marginal 2) med `border-radius: 6px`; Qt ritar fyrkantiga hörn när radien > halva sidan. `scrollbar_stylesheet` räknar nu radierna (`SCROLLBAR_PX // 2`, `scrollbar_handle_px() // 2`, `SCROLLBAR_HANDLE_MARGIN`). Test: `tests/test_scrollbars.py::test_scroll_bar_track_and_handle_are_round_at_both_ends` (pixel i handtagets hörn). Fälla: offscreen kan handtaget visas i hover-färg.
+
+## Stjärnkulans topp gick inte att göra smalare — 2026-11-27 (rapport 20261127-164530)
+
+- Bara användarskriptet `~/.config/omacad/scripts/stjarnkula.py` (backup `.bak-hatt`), ingen appkod. `top_width` hade `min` 70 i PARAMS (`Param.coerce` klämmer) och `WIDTH_MIN` 70, och T-krokens fäste var `BOSS_R = 24` (Ø48) fast foten bara behöver ~Ø31. Nu `BOSS_R = hypot(FOOT/2+PLAY, THICK/2+PLAY) + 3` (≈18,65), min/`WIDTH_MIN` 30; `fit` höjer till verkligt minimum med notis (57,5 mm med T-krok på rapportens klot, smalare utan krok).
+
 ## Linjer på rund vägg långt från origo — 2026-11-27 (0.9.9.80.221, rapport 20261127-161058)
 
 - Stjärnkulans topp (utskriftslayout, x ≈ 540 mm) fick tangentlinjer längs enskilda fasetter på den rundade väggen. `CadKernel.extract_render_mesh` läste kanterna ur `to_mesh()` (float32); ~3e-5 mm brus så långt ut lyfte de smala väggfasetterna ur sitt plan (`_coplanar`, tol 1e-6·storlek), så en fasett blev "plan yta" med `tangent_edge_mask`-linje på båda sidor. Nu `to_mesh64()` för analysen (GPU-buffertarna är kvar float32); `ctx.solid` sparar `to_mesh64()`, `ImportMeshFeature.execute` bygger med `Mesh64`, och oberoende kopia av kropp utan steg använder `to_mesh64()`. Kontroll: samma kropp gav 0 långa linjer i float64, 3/7/13 i float32 vid x = 538/1000 mm.
 - Halsens streckade rektangel var användarskriptets gängslut (`coil` i `~/.config/omacad/scripts/stjarnkula.py`): ändarna plattades till ett 0,036 mm högt steg vars kontur z-fightade med väggen. Nu sjunker hela profilen in i väggen (utlopp), och flankernas fötter ligger 0,05 mm innanför cylindern i stället för exakt på dess cirkel.
 - Test: `tests/test_far_part_tangent_lines.py` (syntetisk tagg-kopp, ingen fixtur behövs).
 - Fälla: skärmbild headless kräver `QT_XCB_GL_INTEGRATION=xcb_egl PYOPENGL_PLATFORM=egl` under xvfb, annars ingen GL-kontext; ladda dokumentet med `window.attach_document(doc)`.
+
+## Script justerar sina egna värden — 2026-11-27 (0.9.9.80.220)
+
+- `ScriptContext.adjust(name, value, why)` → `ctx.adjusted`/`ctx.notes` (+ `_params` så gruppens sparade värden blir de justerade); `ctx.changed` = senast ändrade fältet. `RunResult.adjusted/notes`, `values` uppdateras. `runner.preview_run` (= `preview_solid` + resultat). Panelen: `ScriptParamsDialog.last_changed`, `set_values` (blockSignals → ingen ny preview), `lbl_note`/`show_notes`; `_script_preview` skickar `changed` och lägger in värdena. `check_report`: raden "Adjusted by the script: …" efter RESULT.
+- Första användaren: `~/.config/omacad/scripts/stjarnkula.py` (`measure`/`fit`, en notis per värde).
+- Test: `tests/test_script_adjust.py`. Fälla: `test_script_manage::test_render_script_images_for_own_scripts` faller även under Xvfb (ingen giltig GL-kontext), orelaterat.
+
+## Inställningar omsorterade — 2026-11-26 (0.9.9.80.219)
+
+- `SettingsDialog`: kontrollerna byggs som förut per gammal flik, sedan plockas allt ur de fyra layouterna och `pages` (lista sida → sektioner → rader) lägger dem i fem sidor: Appearance, Interface, Modelling, 3D View, General. `row(widget)` hittar raden för `_width_row`-fält. Saknas/dubbleras en kontroll → RuntimeError (ny inställning måste läggas in i `pages`). Sparbindningar orörda.
+- Fälla: `_group_page` delar kryssrutetext vid första " (" → beskrivning; parentes mitt i texten gav "M" och "experimental): …".
+- Test: `tests/test_settings_dialog.py::test_settings_are_grouped_where_they_belong_and_the_token_survives_save`.
+- Rullningslister: en enda stil på appnivå (`theme.scrollbar_stylesheet`, via `app_stylesheet` i `refresh` och `MainWindow.apply_theme_font`). Lägg aldrig QScrollBar-regler i en widgets stilmall – de vinner över appens (`test_scrollbars.py` kräver att bara `theme.py` nämner QScrollBar).
+
+## Snabb Surface Texture-preview med många celler — 2026-11-25 (0.9.9.80.218)
+
+- `set_preview` bygger nätet med `smooth=False`: previewen ritas med `prog_flat`, så normalerna (3–4 s vid 100k trianglar) syntes aldrig. Gäller alla previews.
+- `_Rays.hit` (`honeycomb.py`) använder `Manifold.ray_cast`; `region_cross_section` lägger ihop alla konturer i ett anrop (var kvadratisk); `star_cells` bygger polygonerna vektoriserat; `_surface_patch` snabbare; `_cached_wall` minns väggen för samma manifold + yta.
+- `_Page.typing` (`surface_texture_dlg.py`): inskrivna tal väntar 0,7 s (`TYPING_DELAY_MS`), Enter/Tab/fokusbyte visar direkt; pilarna väntar inte. Test: `tests/test_surface_texture_ui.py::test_typed_number_is_previewed_when_complete`.
+- `create_thread`: en påbyggd gänga förtunnad med Offset Face följer med ner i den krympta kärnan (satt 0,1 mm löst). Test: `tests/test_offset_face.py::test_attached_thread_stays_on_its_core_when_made_thinner`.
+- Test: `tests/test_honeycomb.py::test_many_cells_region_and_cached_wall`, `::test_preview_mesh_skips_smooth_normals`.
+
+## Lithophane-primitiv — 2026-11-24 (0.9.9.80.217)
+
+- `LithophaneFeature` bygger ett slutet skal direkt från två punktnät (`skin`), utan booleans. Bilden lagras som gråskale-PNG i base64 i steget. `MAX_CELLS` begränsar nätet; `PREVIEW_CELLS` i interactive mode.
+- `Body.relief`: `update_render_mesh` hoppar över kant-/kurvanalysen (20–37 s vid 490k trianglar) och behåller bara stora plana ytor för picking.
+- Test: `tests/test_lithophane.py`.
 
 ## Cut Thread genom flera kroppar — 2026-11-24 (0.9.9.80.216, rapport 20261124-191726)
 

@@ -558,9 +558,15 @@ class SphereDialog(BaseFeatureDialog):
     """Dialog for creating a primitive sphere."""
 
     changed = Signal()
+    pick_face_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__("Create Sphere", parent)
+        self.plane_origin = None
+        self.plane_normal = None
+        self.plane_u = None
+        self.plane_v = None
+
         form = QFormLayout()
 
         self.spn_radius = ExprDoubleSpinBox()
@@ -570,12 +576,100 @@ class SphereDialog(BaseFeatureDialog):
         self.spn_radius.valueChanged.connect(lambda _: self.changed.emit())
         form.addRow("Radius:", self.spn_radius)
 
+        self.cmb_placement = QComboBox()
+        _add_placements(self.cmb_placement, (
+            ("Centred on origin", "center", "Centred in X, Y and Z"),
+            ("Bottom on origin", "bottom_center", "Centred in X and Y, sitting on Z 0"),
+            ("On a face…", "on_face", "Sitting on a face or plane you pick in the 3D view")))
+        self.cmb_placement.currentIndexChanged.connect(self._on_placement_changed)
+        form.addRow("Placement:", self.cmb_placement)
+
+        self.btn_face = QPushButton("Pick face…")
+        self.btn_face.setToolTip("Click the face or plane in the 3D view where the sphere should sit.")
+        self.btn_face.setAutoDefault(False)
+        self.btn_face.clicked.connect(self.pick_face_requested)
+        self.lbl_face = QLabel("Default: XY ground plane")
+        self.lbl_face.setWordWrap(True)
+        self.lbl_face.setStyleSheet("color: #9AA0A6; font-size: 11px;")
+
+        face_row = QHBoxLayout()
+        face_row.setContentsMargins(0, 0, 0, 0)
+        face_row.addWidget(self.btn_face)
+        face_row.addWidget(self.lbl_face, 1)
+        form.addRow("Target Face:", face_row)
+
+        self.spn_wall = ExprDoubleSpinBox()
+        self.spn_wall.setRange(0.0, 5000.0)
+        self.spn_wall.setValue(0.0)
+        self.spn_wall.setSingleStep(0.5)
+        self.spn_wall.setSuffix(" mm")
+        self.spn_wall.setToolTip("Shell wall thickness (0 = solid sphere; > 0 creates a hollow sphere).")
+        self.spn_wall.valueChanged.connect(lambda _: self.changed.emit())
+        form.addRow("Shell Wall:", self.spn_wall)
+
         self.main_layout.addLayout(form)
+        self.lbl_problem = QLabel("")
+        self.lbl_problem.setWordWrap(True)
+        self.main_layout.addWidget(self.lbl_problem)
         self.add_buttons()
+        self._update_face_row_visibility()
+
+    def _on_placement_changed(self):
+        self._update_face_row_visibility()
+        if self.cmb_placement.currentData() == "on_face" and self.plane_normal is None:
+            self.pick_face_requested.emit()
+        self.changed.emit()
+
+    def _update_face_row_visibility(self):
+        is_on_face = self.cmb_placement.currentData() == "on_face"
+        self.btn_face.setVisible(is_on_face)
+        self.lbl_face.setVisible(is_on_face)
+
+    def set_target_plane(self, plane):
+        self.plane_origin = list(map(float, plane.origin))
+        self.plane_normal = list(map(float, plane.normal))
+        self.plane_u = list(map(float, plane.u_axis)) if hasattr(plane, "u_axis") else None
+        self.plane_v = list(map(float, plane.v_axis)) if hasattr(plane, "v_axis") else None
+        p_name = getattr(plane, "name", "Selected Face")
+        n = self.plane_normal
+        desc = "Horisontell" if abs(n[2]) > 0.8 else ("Vertikal" if abs(n[2]) < 0.2 else "Vinklad")
+        self.lbl_face.setText(f"{p_name} ({desc})")
+        if self.cmb_placement.currentData() != "on_face":
+            idx = self.cmb_placement.findData("on_face")
+            if idx >= 0:
+                self.cmb_placement.blockSignals(True)
+                self.cmb_placement.setCurrentIndex(idx)
+                self.cmb_placement.blockSignals(False)
+                self._update_face_row_visibility()
+        self.changed.emit()
+
+    def accept(self):
+        from omacad.model.features.primitives import SphereFeature
+        try:
+            SphereFeature("validate", "Validate", self.spn_radius.value(), **self.get_placement_params()).build_solid()
+        except ValueError as exc:
+            self.lbl_problem.setText(str(exc))
+            return
+        BaseFeatureDialog.accept(self)
 
     def get_expressions(self) -> dict:
-        out = {"radius": self.spn_radius.expression()}
+        out = {
+            "radius": self.spn_radius.expression(),
+            "wall_thickness": self.spn_wall.expression(),
+        }
         return {k: v for k, v in out.items() if v}
+
+    def get_placement_params(self) -> dict:
+        mode = self.cmb_placement.currentData()
+        use_plane = (mode == "on_face" and self.plane_origin is not None)
+        return {
+            "center": mode,
+            "plane_origin": self.plane_origin if use_plane else None,
+            "plane_normal": self.plane_normal if use_plane else None,
+            "plane_u": self.plane_u if use_plane else None,
+            "plane_v": self.plane_v if use_plane else None,
+            "wall_thickness": self.spn_wall.value(),
+        }
 
     def get_values(self):
         return self.spn_radius.value()

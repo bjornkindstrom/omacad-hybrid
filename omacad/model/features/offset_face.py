@@ -204,20 +204,25 @@ def face_to_ref(face, body=None) -> Optional[Dict[str, Any]]:
 def _surface_patch(verts, tris, tri_normals, seed: int, max_angle_deg: float = 35.0) -> np.ndarray:
     """Triangle indices of the smooth surface around `seed` (neighbours join while their normals differ by less
     than max_angle_deg): a thread flank, a whole round thread, a fillet..."""
-    by_vertex: Dict[int, List[int]] = {}
-    for t, row in enumerate(tris):
-        for x in row:
-            by_vertex.setdefault(int(x), []).append(t)
+    # triangles round each vertex: by_vertex[first[x]:first[x + 1]]
+    by_vertex = np.argsort(tris.ravel(), kind="stable") // 3
+    first = np.concatenate(([0], np.cumsum(np.bincount(tris.ravel(), minlength=len(verts))))).tolist()
     cos_min = float(np.cos(np.radians(max_angle_deg)))
-    seen, stack = {seed}, [seed]
+    seen = np.zeros(len(tris), dtype=bool)
+    seen[seed] = True
+    stack = [int(seed)]
+    rows = tris.tolist()
     while stack:
         t = stack.pop()
-        for x in tris[t]:
-            for nb in by_vertex[int(x)]:
-                if nb not in seen and float(tri_normals[t] @ tri_normals[nb]) >= cos_min:
-                    seen.add(nb)
-                    stack.append(nb)
-    return np.array(sorted(seen))
+        a, b, c = rows[t]
+        near = np.concatenate((by_vertex[first[a]:first[a + 1]], by_vertex[first[b]:first[b + 1]],
+                               by_vertex[first[c]:first[c + 1]]))
+        near = near[~seen[near]]
+        if len(near):
+            new = near[tri_normals[near] @ tri_normals[t] >= cos_min]
+            seen[new] = True
+            stack.extend(set(new.tolist()))
+    return np.flatnonzero(seen)
 
 
 def _move_without_folds(verts, tris, mv, step, tries: int = 12) -> None:

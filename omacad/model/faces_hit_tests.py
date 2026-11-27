@@ -35,10 +35,8 @@ def ray_hit_face(face: PlanarFace, ray_origin: np.ndarray, ray_dir: np.ndarray,
     t = _ray_triangles(face.tris, ray_origin, ray_dir, bary_tol)
     return float(t.min()) if len(t) and np.isfinite(t.min()) else None
 
-def ray_hit_faces(faces, ray_origin: np.ndarray, ray_dir: np.ndarray, bary_tol: float = 1e-9) -> np.ndarray:
-    """Nearest hit distance per face (inf = missed), all triangles of all faces in one go. The triangles
-    are stacked once per face list (a body's list is replaced when it is rebuilt): hovering a body with
-    thousands of faces stays fast."""
+def face_stack(faces):
+    """(faces, stacked triangles, owner per triangle, native BVH) for a face list, built once per list (LRU)."""
     hit = _FACE_STACKS.get(id(faces))
     if hit is None or hit[0] is not faces:
         tris = [np.asarray(f.tris, dtype=np.float64).reshape(-1, 3, 3) for f in faces]
@@ -53,6 +51,14 @@ def ray_hit_faces(faces, ray_origin: np.ndarray, ray_dir: np.ndarray, bary_tol: 
     else:
         _FACE_STACKS.pop(id(faces))
         _FACE_STACKS[id(faces)] = hit  # least-recently-used order
+    return hit
+
+
+def ray_hit_faces(faces, ray_origin: np.ndarray, ray_dir: np.ndarray, bary_tol: float = 1e-9) -> np.ndarray:
+    """Nearest hit distance per face (inf = missed), all triangles of all faces in one go. The triangles
+    are stacked once per face list (a body's list is replaced when it is rebuilt): hovering a body with
+    thousands of faces stays fast."""
+    hit = face_stack(faces)
     _, tris, owner, native = hit
     if native is not None:
         return viewport_accel.face_hits(native, ray_origin, ray_dir, bary_tol)

@@ -16,6 +16,7 @@ def isolated_settings(tmp_path, monkeypatch):
         yield
         return
     monkeypatch.setattr(settings_mod, "_instance", settings_mod.SettingsManager(tmp_path / "settings.json"))
+    settings_mod._instance.set("camera_animation", False)   # tests read the camera right after a view change
     from omacad.model import quality
     quality.set_fast_view(False)    # exact volumes in tests: the model is built at the full curve smoothness
     yield

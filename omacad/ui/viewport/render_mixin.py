@@ -94,25 +94,31 @@ class RenderGLMixin:
             "join": (0.30, 0.78, 0.50), "new_body": (0.30, 0.65, 0.95),
         }
         r, g, b = colors.get(op, colors["new_body"])
-        GL.glUseProgram(self.prog_flat)
-        loc_mvp = GL.glGetUniformLocation(self.prog_flat, "u_mvp")
-        loc_col = GL.glGetUniformLocation(self.prog_flat, "u_color")
-        loc_pos = GL.glGetAttribLocation(self.prog_flat, "in_pos")
-        GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
-        GL.glDepthMask(GL.GL_FALSE)
         inside = op in ("cut", "intersect")   # these sit inside the body: show them through its surface
+        lit = self.prog_solid is not None and len(getattr(mesh, "normals", ())) == len(mesh.vertices)
+        prog = self.prog_solid if lit else self.prog_flat
+        GL.glUseProgram(prog)
+        GL.glUniformMatrix4fv(GL.glGetUniformLocation(prog, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
+        loc_col = GL.glGetUniformLocation(prog, "u_color")
+        loc_pos = GL.glGetAttribLocation(prog, "in_pos")
+        GL.glDepthMask(GL.GL_FALSE)
         if inside:
             GL.glDisable(GL.GL_DEPTH_TEST)
-        GL.glUniform4f(loc_col, r, g, b, 0.50 if inside else 0.38)
-        self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, mesh.vertices)
+        GL.glUniform4f(loc_col, r, g, b, 0.50 if inside else 0.42)
+        if lit:      # shaded like a body (tinted, see-through), so the preview reads as a solid, not a flat blob
+            az, el = math.radians(getattr(self, "azimuth", 0.0)), math.radians(getattr(self, "elevation", 0.0))
+            GL.glUniform3f(GL.glGetUniformLocation(prog, "u_eye_dir"),
+                           math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el))
+            self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, mesh.vertices,
+                                    GL.glGetAttribLocation(prog, "in_normal"), mesh.normals)
+        else:
+            self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, mesh.vertices)
         GL.glDepthMask(GL.GL_TRUE)
+        GL.glUseProgram(0)
         if len(mesh.sharp_lines) > 0:
-            GL.glUniform4f(loc_col, r, g, b, 1.0)
-            self.set_line_width(2.0)
-            self.draw_buffer_arrays(GL.GL_LINES, loc_pos, mesh.sharp_lines)
+            self.draw_thick_lines(mvp, mesh.sharp_lines, (r * 0.8, g * 0.8, b * 0.8, 1.0), 2.0, halo=False)
         if inside:
             GL.glEnable(GL.GL_DEPTH_TEST)
-        GL.glUseProgram(0)
 
 
 
@@ -296,6 +302,7 @@ class RenderGLMixin:
             half = max(half, float(np.abs(ref).max()) * 1.2 if len(ref) else 50.0)
         n_lines = min(400, int(math.ceil(half / step)))
         ext = n_lines * step
+        self._grid_info = (step, ext, (cu, cv), step * h / max(visible, 1e-9))
         minor, majors = [], []
         for i in range(-n_lines, n_lines + 1):
             dst = majors if i % 5 == 0 else minor
@@ -303,19 +310,70 @@ class RenderGLMixin:
             dst.append(((cu + i * step, cv - ext), (cu + i * step, cv + ext)))
         return (o, u, v, n), minor, majors
 
+    SELECTED_TINT = 0.72    # share of the highlight colour mixed into a selected body (the rest keeps its own)
+
+    def selected_body_rgb(self, color) -> tuple:
+        """A selected body keeps a trace of its own colour under the highlight, so shading and material still read."""
+        hi = (0.43, 0.67, 0.92)
+        t = self.SELECTED_TINT
+        return tuple(float(c) * (1.0 - t) + h * t for c, h in zip(color[:3], hi))
+
+    def render_backdrop(self):
+        """A soft vertical gradient behind everything (theme.Palette.canvas_gradient01), drawn without depth."""
+        prog = getattr(self, "prog_backdrop", None)
+        if not prog or getattr(self, "vbo_backdrop", None) is None:
+            return
+        top, bottom = theme.palette().canvas_gradient01()
+        quad = np.array([-1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1], dtype=np.float32)
+        GL.glUseProgram(prog)
+        GL.glUniform3f(GL.glGetUniformLocation(prog, "u_top"), *top)
+        GL.glUniform3f(GL.glGetUniformLocation(prog, "u_bottom"), *bottom)
+        loc = GL.glGetAttribLocation(prog, "in_xy")
+        GL.glDisable(GL.GL_DEPTH_TEST)
+        GL.glDepthMask(GL.GL_FALSE)
+        GL.glBindVertexArray(self.vao)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo_backdrop)
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, quad.nbytes, quad, GL.GL_STATIC_DRAW)
+        GL.glEnableVertexAttribArray(loc)
+        GL.glVertexAttribPointer(loc, 2, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+        GL.glDisableVertexAttribArray(loc)
+        GL.glBindVertexArray(0)
+        GL.glDepthMask(GL.GL_TRUE)
+        GL.glEnable(GL.GL_DEPTH_TEST)
+        GL.glUseProgram(0)
+
+    GRID_MINOR_FADE_PX = (7.0, 22.0)    # minor lines fade in between these spacings, so the 5x zoom steps do not pop
+    GRID_FADE_START = 0.35              # fraction of the grid's half size where lines start to fade out
+
     def _render_grid(self, mvp: np.ndarray, plane=None, lift: float = 0.0):
         if not self.prog_flat:
             return
         (o, u, v, n), minor, majors = self.grid_lines(plane)
         off = o + n * lift
-        GL.glUseProgram(self.prog_flat)
-        GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.prog_flat, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
-        loc_col = GL.glGetUniformLocation(self.prog_flat, "u_color")
-        loc_pos = GL.glGetAttribLocation(self.prog_flat, "in_pos")
+        step, ext, (cu, cv), step_px = getattr(self, "_grid_info", (1.0, 0.0, (0.0, 0.0), 30.0))
+        prog = getattr(self, "prog_grid", None) or self.prog_flat
+        GL.glUseProgram(prog)
+        GL.glUniformMatrix4fv(GL.glGetUniformLocation(prog, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
+        loc_col = GL.glGetUniformLocation(prog, "u_color")
+        loc_pos = GL.glGetAttribLocation(prog, "in_pos")
+        lo, hi = self.GRID_MINOR_FADE_PX
+        grow = max(0.0, min(1.0, (step_px - lo) / (hi - lo)))
+        grow = grow * grow * (3.0 - 2.0 * grow)
+        minor_alpha, major_alpha = 0.45 * grow, 0.45 + 0.40 * grow
+        if prog is not self.prog_flat:
+            centre = off + cu * u + cv * v
+            GL.glUniform3f(GL.glGetUniformLocation(prog, "u_center"), *(float(c) for c in centre))
+            GL.glUniform1f(GL.glGetUniformLocation(prog, "u_fade_start"), float(ext * self.GRID_FADE_START))
+            GL.glUniform1f(GL.glGetUniformLocation(prog, "u_fade_end"), float(max(ext, 1e-6)))
+        else:
+            minor_alpha, major_alpha = 0.45, 0.85
         self.set_line_width(1.0)
         # The grid is a backdrop. It must not reject body fragments when the camera is below it.
         GL.glDepthMask(GL.GL_FALSE)
-        for segs, alpha in ((minor, 0.45), (majors, 0.85)):
+        for segs, alpha in ((minor, minor_alpha), (majors, major_alpha)):
+            if alpha <= 0.003:
+                continue
             if not segs:
                 continue
             uv = np.asarray(segs, dtype=np.float64).reshape(-1, 2)
@@ -371,8 +429,59 @@ class RenderGLMixin:
                 GL.glDeleteVertexArrays(1, [old["vao_lines"]])
             if old.get("vbo_lines") is not None:
                 GL.glDeleteBuffers(1, [old["vbo_lines"]])
+            if old.get("vao_thick") is not None:
+                GL.glDeleteVertexArrays(1, [old["vao_thick"]])
+                GL.glDeleteBuffers(1, [old["vbo_thick"]])
         except Exception:
             pass
+
+    EDGE_WIDTH_PX = 1.5          # body edges, drawn as screen-space quads (Core GL caps glLineWidth at 1 px)
+    SELECTED_EDGE_WIDTH_PX = 2.4
+    EDGE_DEPTH_BIAS = 2e-5
+
+    @staticmethod
+    def thick_line_data(edge_lines) -> np.ndarray:
+        """The quad corners `draw_thick_lines` builds for flat line pairs: (pos, other end, side) per vertex."""
+        segs = np.asarray(edge_lines, dtype=np.float32).reshape(-1, 2, 3)
+        a, b = segs[:, 0], segs[:, 1]
+        n = len(segs)
+        pos = np.stack([a, a, b, a, b, b], axis=1)
+        oth = np.stack([b, b, a, b, a, a], axis=1)
+        side = np.tile(np.array([-1, 1, 1, 1, -1, 1], dtype=np.float32), (n, 1))[..., None]
+        return np.ascontiguousarray(np.concatenate([pos, oth, side], axis=2).reshape(-1, 7), dtype=np.float32)
+
+    def _draw_cached_thick_edges(self, mvp, entry: dict, edge_lines, rgba, width_px: float) -> bool:
+        """Body edges at a real pixel width from a buffer built once per mesh. False: fall back to GL_LINES."""
+        prog = self.prog_thick
+        if prog is None or not len(edge_lines):
+            return False
+        if entry.get("vao_thick") is None:
+            data = self.thick_line_data(edge_lines)
+            vao, vbo = GL.glGenVertexArrays(1), GL.glGenBuffers(1)
+            GL.glBindVertexArray(vao)
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo)
+            GL.glBufferData(GL.GL_ARRAY_BUFFER, data.nbytes, data, GL.GL_STATIC_DRAW)
+            for name, size, off in (("in_pos", 3, 0), ("in_other", 3, 12), ("in_side", 1, 24)):
+                loc = GL.glGetAttribLocation(prog, name)
+                if loc >= 0:
+                    GL.glEnableVertexAttribArray(loc)
+                    GL.glVertexAttribPointer(loc, size, GL.GL_FLOAT, GL.GL_FALSE, 28, ctypes.c_void_p(off))
+            GL.glBindVertexArray(0)
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+            entry.update(vao_thick=vao, vbo_thick=vbo, thick_count=len(data))
+        GL.glUseProgram(prog)
+        dpr = self.devicePixelRatioF()
+        GL.glUniformMatrix4fv(GL.glGetUniformLocation(prog, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
+        GL.glUniform2f(GL.glGetUniformLocation(prog, "u_viewport"), self.width() * dpr, self.height() * dpr)
+        GL.glUniform4f(GL.glGetUniformLocation(prog, "u_color"), *rgba)
+        GL.glUniform1f(GL.glGetUniformLocation(prog, "u_width"), float(width_px) * dpr)
+        GL.glUniform1f(GL.glGetUniformLocation(prog, "u_depth_bias"), self.EDGE_DEPTH_BIAS)
+        GL.glBindVertexArray(entry["vao_thick"])
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, entry["thick_count"])
+        GL.glBindVertexArray(0)
+        GL.glUniform1f(GL.glGetUniformLocation(prog, "u_depth_bias"), 0.0)
+        GL.glUseProgram(0)
+        return True
 
     def render_bodies(self, mvp: np.ndarray):
         """Renders shaded CAD bodies with sharp silhouette edges."""
@@ -389,10 +498,11 @@ class RenderGLMixin:
         tangent = bool(get_settings().get("show_tangent_edges", True))
 
         # construction bodies last: see-through helpers drawn over what is solid
-        for body in sorted(self.doc.bodies.values(), key=lambda b: b.construction):
+        for body in sorted(self.doc.bodies.values(), key=lambda b: b.construction or b.body_id in self.cut_tool_ids):
             if not body.visible or not body.render_mesh:
                 continue
-            helper = body.construction
+            cutting = body.body_id in self.cut_tool_ids
+            helper = body.construction and not cutting
 
             mesh = body.render_mesh
             override = getattr(self, "display_override", None)
@@ -486,13 +596,16 @@ class RenderGLMixin:
                     GL.glUniform3f(loc_eye, math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el))
 
                 # Color: SolidCraft blue if selected, else body color
-                if helper:
+                if cutting:
+                    GL.glDepthMask(GL.GL_FALSE)
+                    GL.glUniform4f(loc_col, 0.92, 0.25, 0.20, 0.45)
+                elif helper:
                     GL.glDepthMask(GL.GL_FALSE)    # never hides anything, whatever the camera angle
                     grey = 0.55 * (body.color[0] + body.color[1] + body.color[2]) / 3.0
                     mix = [0.5 * c + 0.5 * grey for c in body.color[:3]]   # duller than a real body
                     GL.glUniform4f(loc_col, mix[0], mix[1], mix[2], 0.3)
                 elif is_selected:
-                    GL.glUniform4f(loc_col, 0.43, 0.67, 0.92, 1.0)
+                    GL.glUniform4f(loc_col, *self.selected_body_rgb(body.color), 1.0)
                 else:
                     c = body.color
                     GL.glUniform4f(loc_col, c[0], c[1], c[2], c[3])
@@ -522,17 +635,20 @@ class RenderGLMixin:
 
                 GL.glUniformMatrix4fv(loc_mvp, 1, GL.GL_TRUE, mvp.flatten())
 
-                if is_selected:
-                    GL.glUniform4f(loc_col, 0.0, 0.48, 1.0, 1.0)  # SolidCraft sel_edge #007aff
-                    self.set_line_width(2.2)
+                if cutting:
+                    rgba, width = (0.75, 0.15, 0.12, 1.0), self.EDGE_WIDTH_PX
+                elif is_selected:
+                    rgba, width = (0.0, 0.48, 1.0, 1.0), self.SELECTED_EDGE_WIDTH_PX  # SolidCraft sel_edge #007aff
                 elif helper:
-                    GL.glUniform4f(loc_col, 0.45, 0.47, 0.5, 0.45)  # faint edge on a helper body
-                    self.set_line_width(1.0)
+                    rgba, width = (0.45, 0.47, 0.5, 0.45), 1.0       # faint edge on a helper body
                 else:
-                    GL.glUniform4f(loc_col, 0.157, 0.173, 0.204, 1.0)  # SolidCraft dark charcoal edge Rgb(40, 44, 52)
-                    self.set_line_width(1.4)
+                    rgba, width = (0.157, 0.173, 0.204, 1.0), self.EDGE_WIDTH_PX  # SolidCraft charcoal Rgb(40, 44, 52)
+                GL.glUniform4f(loc_col, *rgba)
+                self.set_line_width(width)
 
-                if cache_entry and cache_entry.get("vao_lines"):
+                if cache_entry and not helper and self._draw_cached_thick_edges(mvp, cache_entry, edge_lines, rgba, width):
+                    pass
+                elif cache_entry and cache_entry.get("vao_lines"):
                     GL.glBindVertexArray(cache_entry["vao_lines"])
                     GL.glDrawArrays(GL.GL_LINES, 0, cache_entry["line_count"])
                     GL.glBindVertexArray(0)

@@ -46,6 +46,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "arrow_gap": 2.0,                   # mm the arrow is drawn off the surface, in its direction
     "view_projection": "perspective",    # perspective or orthographic
     "view_fov": 30.0,
+    "camera_animation": True,           # view presets, Fit and Find glide to the new view instead of jumping
     "show_tangent_edges": True,        # draw a line where a flat face runs smoothly into a curved one (like Fusion)                   # perspective field of view in degrees; lower = flatter, less distortion
     "share_scripts": True,              # upload new/changed own scripts to the requests repository (scripts/)
     "rfc_name": "",                     # your name on requests for change (Help > Request a change)

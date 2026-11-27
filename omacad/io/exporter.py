@@ -600,7 +600,21 @@ class Exporter:
                 )
                 doc.timeline.add_feature(feat)
             elif ft == "sphere":
-                feat = SphereFeature(fid, fname, f_data["radius"], translation=f_data.get("translation"))
+                feat = SphereFeature(
+                    fid, fname, f_data["radius"],
+                    center=f_data.get("center", "center"),
+                    plane_origin=f_data.get("plane_origin"),
+                    plane_normal=f_data.get("plane_normal"),
+                    plane_u=f_data.get("plane_u"),
+                    plane_v=f_data.get("plane_v"),
+                    wall_thickness=f_data.get("wall_thickness", 0.0),
+                    translation=f_data.get("translation"),
+                )
+                doc.timeline.add_feature(feat)
+            elif ft == "lithophane":
+                from omacad.model.features.lithophane import LithophaneFeature
+                feat = LithophaneFeature(fid, fname, translation=f_data.get("translation"),
+                                         **{k: f_data[k] for k in LithophaneFeature.PARAMS if k in f_data})
                 doc.timeline.add_feature(feat)
             elif ft == "star_bracket":
                 from omacad.model.features.star_bracket import StarBracketFeature

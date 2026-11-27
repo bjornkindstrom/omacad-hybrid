@@ -177,6 +177,10 @@ the script also runs on an empty model during the test).
 
 - `ctx.parameter(name, value, comment="")` – add or change a named user parameter (Modify › Change Parameters).
 - `ctx.log(*parts)` – a line in the run report.
+- `ctx.adjust(name, value, why)` – when the values do not fit together, change another value instead of raising an
+  error (e.g. a bigger sphere for a wider top); also set it in your own `params`. Omacad puts it in the panel and shows
+  `why` to the user. `ctx.changed` – the value the user changed last (`None` when unknown): adjust the others, not that
+  one. Older Omacad lacks both, so use `getattr(ctx, "adjust", None)` / `getattr(ctx, "changed", None)`.
 - `ctx.checking` – `True` while Omacad test-runs the script on an empty model (rarely needed).
 - `ctx.units` – `"mm"`.
 

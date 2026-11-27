@@ -21,6 +21,8 @@ class RunResult:
     line: Optional[int] = None   # line in the script the error came from
     seconds: float = 0.0
     values: Dict[str, Any] = field(default_factory=dict)
+    adjusted: Dict[str, Any] = field(default_factory=dict)   # values the script changed with ctx.adjust()
+    notes: List[str] = field(default_factory=list)           # why it changed them
 
 
 class ScriptRunError(Exception):
@@ -43,7 +45,8 @@ def _describe(exc: BaseException, path: Path) -> (str, str, Optional[int]):
 
 
 def run_script(doc, path, values: Optional[Dict[str, Any]] = None, log: Optional[Callable[[str], None]] = None,
-               checking: bool = False, name: Optional[str] = None, group_id: Optional[str] = None) -> RunResult:
+               checking: bool = False, name: Optional[str] = None, group_id: Optional[str] = None,
+               changed: Optional[str] = None) -> RunResult:
     """Runs the script's run(ctx, params) on `doc` as one undo step "Script: <NAME>". Any error puts the document back
     exactly as it was and raises ScriptRunError (its .result says what and where)."""
     from omacad.model.document import undoable
@@ -64,6 +67,7 @@ def run_script(doc, path, values: Optional[Dict[str, Any]] = None, log: Optional
         script_path=path,
         params=params,
         group_id=group_id,
+        changed=changed,
     )
     start = time.monotonic()
 
@@ -80,6 +84,8 @@ def run_script(doc, path, values: Optional[Dict[str, Any]] = None, log: Optional
         result.seconds = time.monotonic() - start
         raise ScriptRunError(result) from e
     result.ok = True
+    result.adjusted, result.notes = dict(ctx.adjusted), list(ctx.notes)
+    result.values.update(ctx.adjusted)
     result.messages = list(ctx.messages)
     result.seconds = time.monotonic() - start
     return result
@@ -88,14 +94,20 @@ def run_script(doc, path, values: Optional[Dict[str, Any]] = None, log: Optional
 def preview_solid(path, values: Optional[Dict[str, Any]] = None, name: Optional[str] = None):
     """What the script would make with these values, as one solid for the viewport's preview (None: nothing). It runs on
     a private empty document on this thread, so the model is never touched. Raises ScriptRunError like run_script."""
+    return preview_run(path, values, name)[0]
+
+
+def preview_run(path, values: Optional[Dict[str, Any]] = None, name: Optional[str] = None,
+                changed: Optional[str] = None):
+    """preview_solid that also returns the RunResult (the values the script adjusted and why)."""
     import manifold3d as m3d
     from omacad import busy
     from omacad.model.document import Document
     doc = Document()
     with busy.inline():
-        run_script(doc, path, values, name=name)
+        res = run_script(doc, path, values, name=name, changed=changed)
     parts = [b.manifold for b in doc.bodies.values() if b.manifold is not None and not b.manifold.is_empty()]
-    return m3d.Manifold.compose(parts) if parts else None
+    return (m3d.Manifold.compose(parts) if parts else None), res
 
 
 def _line_of(message: str) -> Optional[int]:
@@ -132,6 +144,8 @@ def check_report(path, values: Optional[Dict[str, Any]] = None) -> (bool, str):
     lines += ["RESULT: OK", f"Script name: {res.name}", f"Values used: {res.values}", f"Run time: {res.seconds:.2f} s",
               f"Timeline steps: {len(doc.timeline.features)} ({', '.join(f.name for f in doc.timeline.features)})",
               f"Bodies: {len(bodies)}"]
+    if res.notes:
+        lines.append("Adjusted by the script: " + "; ".join(res.notes))
     objects = [o.name for o in doc.object_history.objects.values() if o.body_ids]
     lines.append(f"Objects (browser names): {', '.join(objects) if objects else '(none)'}")
     for b in bodies:

@@ -26,6 +26,7 @@ EMOJI_TO_TOOL = {
     "🥫": "cylinder",
     "⬢": "hexagon",
     "⚽": "sphere",
+    "🏮": "lithophane",
     "🧮": "parameters",
     "🔩": "thread",
     "🔗": "combine",

@@ -81,6 +81,8 @@ class PrimitiveHandles:
                 entries.append((d.spn_height, 2, h, "Height"))
                 positions.append(np.array([0., 0., h/2 if mode == "center" else h]))
                 factors.append(.5 if mode == "center" else 1.)
+            elif mode != "center":
+                positions = [p + [0, 0, r] for p in positions]
         if self.kind != "sphere" and hasattr(d, "spn_taper"):
             inset = d.spn_height.value()/2 * math.tan(math.radians(d.spn_taper.value()))
             # Side handles stay on the sloping walls; dimensions refer to the base.

@@ -474,6 +474,37 @@ class PrimitivePromptsMixin:
         preview()
 
     @leaves_sketch
+    def prompt_lithophane(self):
+        from omacad.ui.dialogs.lithophane_dlg import LithophaneDialog
+        dlg = LithophaneDialog(self)
+        self._apply_fan_origin(dlg)
+
+        def preview():
+            self.viewport.set_preview(dlg.build_preview(getattr(dlg, "placement_offset", (0, 0, 0))), "new_body")
+            self.viewport.update()
+
+        def finished(result):
+            self.viewport.set_preview(None)
+            self.viewport.update()
+            if not result:
+                return
+            try:
+                body = self.doc.add_lithophane(translation=getattr(dlg, "placement_offset", (0, 0, 0)),
+                                               **dlg.get_params())
+            except ValueError as exc:
+                self.status_label.setText(str(exc))
+                return
+            self.doc.timeline.last_added.exprs = dlg.get_expressions()
+            self.viewport.zoom_fit()
+            self.status_label.setText(f"Created {body.name}.")
+
+        self._connect_debounced_preview(dlg, preview, interval_ms=120)
+        dlg.finished.connect(finished)
+        from omacad.ui.apply_button import add_apply_button, preview_anchor
+        add_apply_button(self.viewport, dlg, lambda: preview_anchor(self.viewport))
+        self.dock(dlg)
+
+    @leaves_sketch
     def prompt_thread(self):
         from omacad.model.features.thread import ThreadFeature
         selected_id = self.doc.selected_body_ids[0] if self.doc.selected_body_ids else None

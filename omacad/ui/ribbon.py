@@ -143,6 +143,8 @@ class Ribbon(QWidget):
     cylinder_clicked = Signal()
     hexagon_clicked = Signal()
     cone_clicked = Signal()
+    sphere_clicked = Signal()
+    lithophane_clicked = Signal()
     sweep_clicked = Signal()
     loft_clicked = Signal()
     pipe_clicked = Signal()
@@ -281,9 +283,6 @@ class Ribbon(QWidget):
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         style(area, """
             QScrollArea { background: transparent; }
-            QScrollBar:horizontal { height: 6px; background: transparent; margin: 0; }
-            QScrollBar::handle:horizontal { background: #484F5A; border-radius: 3px; min-width: 30px; }
-            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
         """, "QScrollArea, QScrollArea > QWidget, QScrollArea > QWidget > QWidget { background: transparent; }")
         return area
 
