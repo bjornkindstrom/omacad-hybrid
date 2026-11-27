@@ -119,6 +119,8 @@ _ALL = [
     _c("smart_circle", "Smart Circle", "⭕", "A circle that snaps to what is around it", "Shift+C",
        "sketch_tool_selected", "SMART_CIRCLE", ("sketch",)),
     _c("arc", "3-Point Arc", "⌒", "An arc through three points", "A", "sketch_tool_selected", "ARC", ("sketch",)),
+    _c("center_arc", "Center Point Arc", "◠", "An arc from its centre: click the centre, the start, then go round to the end",
+       "", "sketch_tool_selected", "CENTER_ARC", ("sketch",)),
     _c("spline", "Spline", "〰️", "A smooth curve through a sequence of points; Enter or right-click finishes",
        signal="sketch_tool_selected", arg="SPLINE", modes=("sketch",)),
     _c("control_spline", "Control Point Spline", "〰️", "A smooth curve shaped by control points; Enter or right-click finishes",

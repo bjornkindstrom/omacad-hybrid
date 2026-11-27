@@ -1,3 +1,8 @@
+## Centrumbåge — 2026-11-28 (0.9.9.80.231, steg 5 del 2)
+
+- Verktyg `CENTER_ARC` (kommando `center_arc`, i Arc-knappens meny via `_command_menu(btn_arc, ["arc", "center_arc"])`): klick 1 centrum (generiskt `sketch_start_uv`), klick 2 start (`sketch_second_uv`, nollställer `_center_arc_sweep`/`_center_arc_last`), musrörelsen ackumulerar svepet med `sketch_entities.sweep_step` (pointer_mixin efter snäpp), klick 3 skapar `add_arc(*center_arc_points(centrum, start, svep))` (begränsat till ±(2π − 1e-3)). Förhandsvisning i render_mixin, etikett R/vinkel i overlay_mixin. `btn_arc` markeras för ARC och CENTER_ARC. Ikon `center_arc.svg` i alla set.
+- Test: `test_sketch_extend_break.py::test_center_point_arc_follows_the_mouse_round_past_180_degrees`.
+
 ## Extend/Break + punkt-på-linje utan glidning — 2026-11-28 (0.9.9.80.230, steg 5 del 1)
 
 - `omacad/model/sketch_extend.py`: `extend_plan`/`apply_extend` (närmaste linjeände, stråle med `sketch_trim._line_hits` mot alla andra element, närmaste träff > 1e-4; LENGTH-måttet får nya längden, POINT_ON_LINE/POINT_ON_CIRCLE läggs till), `break_plan`/`apply_break` (fot eller korsning inom tol, inte vid ändarna; ny linje efter den gamla, relationer/mått på gamla `p2` flyttas — obs `POINT_ON_CIRCLE` har punkten på `refs[1]`; COINCIDENT + PARALLEL mellan bitarna, LENGTH på båda). `Document.extend_line_at`/`break_line_at` via `_sketch_edit` (löser bara om skissen har villkor; misslyckas → återställ).

@@ -722,7 +722,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.btn_rect.setChecked(tool_name in RECT_TOOLS)
         self.ribbon.btn_circle.setChecked(tool_name in ("CIRCLE", "SMART_CIRCLE"))
         self.ribbon.btn_polygon.setChecked(tool_name == "POLYGON")
-        self.ribbon.btn_arc.setChecked(tool_name == "ARC")
+        self.ribbon.btn_arc.setChecked(tool_name in ("ARC", "CENTER_ARC"))
         self.ribbon.btn_spline.setChecked(tool_name == "SPLINE")
         self.ribbon.btn_control_spline.setChecked(tool_name == "CONTROL_SPLINE")
         self.ribbon.btn_slot.setChecked(tool_name == "SLOT")

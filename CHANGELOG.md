@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.231
+
+### Added
+- **Center Point Arc** (sketch plan, step 5), on the Arc button's arrow and in the right-click menu: click the centre, then the start (the radius), then move round to the end and click. The arc follows the mouse round, so it can pass 180°; the preview and the label show the radius and the angle. It is a solved arc with a radius dimension and gets the same relations when drawn as a 3-point arc.
+
 # Hybrid-experiment — 0.9.9.80.230
 
 ### Added

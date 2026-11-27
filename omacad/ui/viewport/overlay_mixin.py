@@ -430,6 +430,12 @@ class OverlayMixin:
             elif self.sketch_tool == "CIRCLE":
                 r_circ = math.hypot(u2 - u1, v2 - v1)
                 dim_text = f"Ø: {2*r_circ:.1f} mm  (R: {r_circ:.1f} mm)"
+            elif self.sketch_tool == "CENTER_ARC":
+                if self.sketch_second_uv is None:
+                    dim_text = f"R: {math.hypot(u2 - u1, v2 - v1):.1f} mm  (pick the start)"
+                else:
+                    r_a = math.hypot(self.sketch_second_uv[0] - u1, self.sketch_second_uv[1] - v1)
+                    dim_text = f"R: {r_a:.1f} mm  ·  {math.degrees(abs(getattr(self, '_center_arc_sweep', 0.0))):.1f}°"
             elif self.sketch_tool == "ARC":
                 if self.sketch_second_uv is None:
                     chord = math.hypot(u2 - u1, v2 - v1)

@@ -370,6 +370,23 @@ class SketchArc(SketchEntity):
         return arc
 
 
+def center_arc_points(center, start, sweep: float):
+    """(start, middle, end) of an arc from its centre and start point, `sweep` radians round (positive =
+    counter-clockwise; may pass 180 degrees, as the mouse goes round)."""
+    cx, cy = center
+    r = math.hypot(start[0] - cx, start[1] - cy)
+    a0 = math.atan2(start[1] - cy, start[0] - cx)
+    at = lambda a: (cx + r * math.cos(a), cy + r * math.sin(a))
+    return tuple(start), at(a0 + sweep / 2.0), at(a0 + sweep)
+
+
+def sweep_step(center, previous, current) -> float:
+    """The angle (radians, -pi..pi) the cursor turned about the centre from `previous` to `current`."""
+    a = math.atan2(previous[1] - center[1], previous[0] - center[0])
+    b = math.atan2(current[1] - center[1], current[0] - center[0])
+    return (b - a + math.pi) % (2 * math.pi) - math.pi
+
+
 SPLINE_SAMPLES = 16             # chords per span of a spline
 SPLINE_MAX_SAMPLES = 256
 SPLINE_CHORD_ERROR = 0.005      # mm a chord may lie from a span with explicit tangents

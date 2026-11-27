@@ -319,6 +319,18 @@ class SketchToolsMixin:
             if r > 0.5:
                 created = sketch.add_circle(p1, r, is_construction=is_const)
             self.sketch_start_uv = None
+        elif self.sketch_tool == "CENTER_ARC":
+            if self.sketch_second_uv is None:
+                self.sketch_second_uv = p2                  # the start: the radius is set
+                self._center_arc_sweep, self._center_arc_last = 0.0, p2
+            else:
+                from omacad.model.sketch_entities import center_arc_points, sweep_step
+                sweep = getattr(self, "_center_arc_sweep", 0.0) + sweep_step(p1, getattr(self, "_center_arc_last", p2), p2)
+                if abs(sweep) > 1e-3 and math.hypot(self.sketch_second_uv[0] - p1[0], self.sketch_second_uv[1] - p1[1]) > 0.05:
+                    sweep = max(-2 * math.pi + 1e-3, min(2 * math.pi - 1e-3, sweep))
+                    created = sketch.add_arc(*center_arc_points(p1, self.sketch_second_uv, sweep), is_construction=is_const)
+                self.sketch_start_uv = None
+                self.sketch_second_uv = None
         elif self.sketch_tool == "ARC":
             if self.sketch_second_uv is None:
                 self.sketch_second_uv = p2

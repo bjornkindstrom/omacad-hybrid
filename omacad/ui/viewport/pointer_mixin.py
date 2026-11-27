@@ -11,7 +11,7 @@ from omacad.model.sketch_snap import SketchSnapper, SnapResult
 from omacad.model.sketch_tangent import snap_tangent_arc
 
 # drawing tools that show SolidWorks-style inference lines from existing points
-_INFER_TOOLS = {"LINE", "ARC", "CIRCLE", "RECT", "CENTER_RECT", "ROUNDED_RECT", "CENTER_ROUNDED_RECT",
+_INFER_TOOLS = {"LINE", "ARC", "CENTER_ARC", "CIRCLE", "RECT", "CENTER_RECT", "ROUNDED_RECT", "CENTER_ROUNDED_RECT",
                 "SLOT", "POLYGON", "SPLINE", "CONTROL_SPLINE", "TEXT"}
 
 
@@ -630,7 +630,7 @@ class PointerMixin:
 
         if hovered or hovered_constraint_cid:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
-        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "TRIM", "EXTEND", "BREAK", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
+        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "CENTER_ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "TRIM", "EXTEND", "BREAK", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
             self.setCursor(Qt.CursorShape.CrossCursor)
         elif not self.doc.active_sketch and not self.edge_pick_mode and not self.plane_pick_mode and self._find_joint_hit(x, y):
             self.setCursor(Qt.CursorShape.OpenHandCursor)
@@ -693,6 +693,12 @@ class PointerMixin:
                     if mid is not None:
                         snap_res = SnapResult(uv=mid, snap_type="TANGENT")
                 self.active_snap = snap_res
+                if (self.sketch_tool == "CENTER_ARC" and self.sketch_start_uv is not None
+                        and self.sketch_second_uv is not None):  # follow the mouse round: an arc past 180 degrees
+                    from omacad.model.sketch_entities import sweep_step
+                    last = getattr(self, "_center_arc_last", self.sketch_second_uv)
+                    self._center_arc_sweep = getattr(self, "_center_arc_sweep", 0.0) + sweep_step(self.sketch_start_uv, last, snap_res.uv)
+                    self._center_arc_last = snap_res.uv
                 if self.sketch_tool == "SMART_CIRCLE":
                     if not self.hasFocus():
                         self.setFocus()

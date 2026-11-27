@@ -7,7 +7,7 @@ from omacad.ui.viewport.sketch_rotate_mixin import INFO as ROTATE_INFO
 from omacad.model.sketch import Sketch
 from omacad.ui.sketch_tools import RECT_TOOLS
 
-ORDINARY_DRAWING_TOOLS = {"LINE", "CIRCLE", "SMART_CIRCLE", "ARC", "POLYGON", "SLOT", "SPLINE", "CONTROL_SPLINE", *RECT_TOOLS}
+ORDINARY_DRAWING_TOOLS = {"LINE", "CIRCLE", "SMART_CIRCLE", "ARC", "CENTER_ARC", "POLYGON", "SLOT", "SPLINE", "CONTROL_SPLINE", *RECT_TOOLS}
 
 
 class SketchOperationMixin:

@@ -923,6 +923,20 @@ class RenderGLMixin:
                     w1 = plane.uv_to_world(u1 + r * math.cos(a1), v1 + r * math.sin(a1))
                     w2 = plane.uv_to_world(u1 + r * math.cos(a2), v1 + r * math.sin(a2))
                     preview_lines.extend([w1[0], w1[1], w1[2], w2[0], w2[1], w2[2]])
+            elif self.sketch_tool == "CENTER_ARC":
+                if self.sketch_second_uv is None:          # the radius line from the centre
+                    w1 = plane.uv_to_world(u1, v1)
+                    w2 = plane.uv_to_world(u2, v2)
+                    preview_lines.extend([w1[0], w1[1], w1[2], w2[0], w2[1], w2[2]])
+                else:
+                    from omacad.model.sketch_entities import center_arc_points
+                    sweep = getattr(self, "_center_arc_sweep", 0.0)
+                    if abs(sweep) > 1e-3:
+                        arc_temp = SketchArc("temp", *center_arc_points(self.sketch_start_uv, self.sketch_second_uv, sweep))
+                        for seg_p1, seg_p2 in arc_temp.to_lines(48):
+                            w1 = plane.uv_to_world(seg_p1[0], seg_p1[1])
+                            w2 = plane.uv_to_world(seg_p2[0], seg_p2[1])
+                            preview_lines.extend([w1[0], w1[1], w1[2], w2[0], w2[1], w2[2]])
             elif self.sketch_tool == "ARC":
                 if self.sketch_second_uv is None:
                     w1 = plane.uv_to_world(u1, v1)

@@ -443,6 +443,11 @@ class Ribbon(QWidget):
                 if item == "rect":
                     self._build_rect_button()
                     row.addWidget(self.btn_rect)
+                elif item == "arc":
+                    self.btn_arc = self._command_button("arc", checkable=True)
+                    self.btn_arc.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+                    self.btn_arc.setMenu(self._command_menu(self.btn_arc, ["arc", "center_arc"]))
+                    row.addWidget(self.btn_arc)
                 elif item == "circle":
                     self.btn_circle = self._command_button("circle", checkable=True)
                     self.btn_circle.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
@@ -580,7 +585,7 @@ class Ribbon(QWidget):
         self.btn_rect.setChecked(tool_name in RECT_TOOLS)
         self.btn_circle.setChecked(tool_name in CIRCLE_TOOLS)
         self.btn_polygon.setChecked(tool_name == "POLYGON")
-        self.btn_arc.setChecked(tool_name == "ARC")
+        self.btn_arc.setChecked(tool_name in ("ARC", "CENTER_ARC"))
         if hasattr(self, "btn_spline"):
             self.btn_spline.setChecked(tool_name == "SPLINE")
         if hasattr(self, "btn_control_spline"):

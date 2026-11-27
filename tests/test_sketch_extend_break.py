@@ -86,3 +86,28 @@ def test_extend_and_break_are_tools_in_the_view_and_the_ribbon():
     vp._extend_or_break_at(*tip)
     assert doc.active_sketch.get_entity(line.entity_id).p2 == pytest.approx((30.0, 5.0), abs=1e-6)
     vp.deleteLater()
+
+
+def test_center_point_arc_follows_the_mouse_round_past_180_degrees():
+    from PySide6.QtWidgets import QApplication
+    QApplication.instance() or QApplication([])
+    from omacad.model.sketch_entities import center_arc_points, sweep_step
+    from omacad.ui.viewport.viewport import Viewport3D
+    s, m, e = center_arc_points((0.0, 0.0), (10.0, 0.0), math.radians(270))
+    assert m == pytest.approx((-7.0710678, 7.0710678)) and e == pytest.approx((0.0, -10.0), abs=1e-9)
+    assert sweep_step((0, 0), (10, 0), (0, 10)) == pytest.approx(math.pi / 2)
+    doc = Document()
+    vp = Viewport3D(doc)
+    sk = doc.start_sketch()
+    vp.set_sketch_tool("CENTER_ARC")
+    vp.sketch_start_uv = (0.0, 0.0)                 # the centre
+    vp._commit_sketch_point((10.0, 0.0))            # the start
+    for p in ((0.0, 10.0), (-10.0, 0.0), (0.0, -10.0)):      # the mouse goes three quarters round
+        vp._center_arc_sweep += sweep_step((0.0, 0.0), vp._center_arc_last, p)
+        vp._center_arc_last = p
+    vp._commit_sketch_point((0.0, -10.0))
+    arc = next(e for e in doc.active_sketch.entities if e.entity_type == "arc")
+    centre, r = arc.get_circle_params()[:2]
+    assert centre == pytest.approx((0.0, 0.0), abs=1e-9) and r == pytest.approx(10.0)
+    assert arc.p_mid == pytest.approx((-7.0710678, 7.0710678))         # the long way round, through the top-left
+    vp.deleteLater()

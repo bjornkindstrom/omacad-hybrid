@@ -14,7 +14,7 @@ from omacad.ui.numeric_slider import add_numeric_sliders
 TITLES = {
     "LINE": "Line", "RECT": "Rectangle", "ROUNDED_RECT": "Rounded Rectangle", "CENTER_RECT": "Center Rectangle",
     "CENTER_ROUNDED_RECT": "Center Rounded Rectangle", "CIRCLE": "Circle", "SMART_CIRCLE": "Smart Circle",
-    "POLYGON": "Polygon", "ARC": "3-Point Arc", "SLOT": "Slot", "TEXT": "Text", "OFFSET": "Offset", "MIRROR": "Mirror",
+    "POLYGON": "Polygon", "ARC": "3-Point Arc", "CENTER_ARC": "Center Point Arc", "SLOT": "Slot", "TEXT": "Text", "OFFSET": "Offset", "MIRROR": "Mirror",
     "FILLET": "Fillet", "TRIM": "Trim", "EXTEND": "Extend", "BREAK": "Break", "MOVE": "Move", "DIMENSION": "Dimension",
 }
 HINTS = {
@@ -27,6 +27,7 @@ HINTS = {
     "SMART_CIRCLE": "Type the diameter, Enter, then the distances to the nearest vertical and horizontal lines.",
     "POLYGON": "Click the centre, then a corner.",
     "ARC": "Click the start, then the end, then a point on the arc. It sticks where it meets a line smoothly.",
+    "CENTER_ARC": "Click the centre, then the start, then move round to the end and click (it can pass 180°).",
     "SLOT": "Click the first centre, then the second, then how wide.",
     "TEXT": "Click where the text goes (two clicks for Text In Box).",
     "TRIM": "Click the piece of a line, circle or arc to remove.",
