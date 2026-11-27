@@ -18,9 +18,12 @@ from omacad.model.features.primitives import CylinderFeature
 
 SHAPES = ("flat", "cylinder", "sphere")
 FITS = ("proportional", "crop", "stretch")
-MAX_PICTURE = 1000        # px, longest side of the stored picture
-MAX_CELLS = 90_000        # picture cells of a finished body; finer detail is coarsened to this
+TONES = ("linear", "light")
+OUTLINES = ("rect", "rounded", "circle", "heart")
+MAX_PICTURE = 1600        # px, longest side of the stored picture
+MAX_CELLS = 160_000       # picture cells of a finished body; finer detail is coarsened to this
 PREVIEW_CELLS = 10_000    # while a panel is open
+LIGHT_K = 1.5             # 1/mm: light through white PLA falls off as exp(-k * thickness) (Beer-Lambert)
 
 
 def encode_picture(source: Any) -> str:
@@ -87,7 +90,12 @@ class LithophaneFeature(Feature):
         "arc": 180.0, "lat_span": 120.0, "opening": 40.0, "upright": True, "min_thickness": 0.8,
         "max_thickness": 3.0, "detail": 0.4, "frame": 3.0, "brightness": 0.0, "contrast": 0.0, "gamma": 1.0,
         "invert": False, "mirror": False,
+        # added later; these defaults build older projects exactly as before (a new panel picks better ones)
+        "tone": "linear", "auto_levels": False, "sharpen": 0.0, "denoise": 0.0,
+        "outline": "rect", "corner_radius": 0.0, "stand": 0.0,
     }
+    # what a new Lithophane starts with in the panel
+    NEW_DEFAULTS: Dict[str, Any] = {"tone": "light", "sharpen": 40.0}
     PARAMS = tuple(DEFAULTS)
 
     def __init__(self, feature_id: str, name: str, translation: Any = None, **params):
@@ -100,8 +108,10 @@ class LithophaneFeature(Feature):
     def _check(self) -> None:
         if not self.image_data:
             raise ValueError("Choose a picture first.")
-        if self.shape not in SHAPES or self.fit not in FITS:
-            raise ValueError("Unknown lithophane shape or fit.")
+        if self.shape not in SHAPES or self.fit not in FITS or self.tone not in TONES or self.outline not in OUTLINES:
+            raise ValueError("Unknown lithophane shape, fit, tone or outline.")
+        if self.sharpen < 0 or self.denoise < 0 or self.corner_radius < 0 or self.stand < 0:
+            raise ValueError("Sharpen, Denoise, Corner radius and Stand can't be negative.")
         if not 0.0 < self.min_thickness < self.max_thickness:
             raise ValueError("Min thickness must be above 0 and below Max thickness.")
         if self.detail <= 0 or self.gamma <= 0 or self.frame < 0:
@@ -149,12 +159,37 @@ class LithophaneFeature(Feature):
             img = img.crop((round((iw - cw) / 2), round((ih - ch) / 2),
                             max(round((iw + cw) / 2), round((iw - cw) / 2) + 1),
                             max(round((ih + ch) / 2), round((ih - ch) / 2) + 1)))
-        lum = np.asarray(img.resize((cols, rows), Image.Resampling.LANCZOS), dtype=float)[::-1] / 255.0
+        if self.denoise > 0:        # smooths sensor noise and JPEG blocks, which a lithophane shows mercilessly
+            from PIL import ImageFilter
+            img = img.filter(ImageFilter.GaussianBlur(self.denoise))
+        small = img.resize((cols, rows), Image.Resampling.LANCZOS)
+        if self.sharpen > 0:        # at the printed resolution: edges and fine detail survive the nozzle
+            from PIL import ImageFilter
+            small = small.filter(ImageFilter.UnsharpMask(radius=1.5, percent=int(round(self.sharpen)), threshold=1))
+        lum = np.asarray(small, dtype=float)[::-1] / 255.0
+        if self.auto_levels and lum.size:       # the picture's own darkest/lightest 1 % become black/white
+            lo, hi = np.percentile(lum, (1.0, 99.0))
+            if hi - lo > 1e-3:
+                lum = (lum - lo) / (hi - lo)
         lum = (lum - 0.5) * (1.0 + self.contrast / 100.0) + 0.5 + self.brightness / 100.0
         lum = np.clip(lum, 0.0, 1.0) ** (1.0 / self.gamma)
         if self.invert:
             lum = 1.0 - lum
-        return self.max_thickness - (self.max_thickness - self.min_thickness) * lum
+        return self.thickness_for(lum)
+
+    def thickness_for(self, lum: np.ndarray) -> np.ndarray:
+        """Wall thickness for picture lightness 0..1. Linear: thickness straight from lightness. Light: the light
+        that comes through (exp(-k t)) follows the lightness, so midtones come out as midtones when lit."""
+        t_min, t_max = self.min_thickness, self.max_thickness
+        if self.tone != "light":
+            return t_max - (t_max - t_min) * lum
+        dark, bright = math.exp(-LIGHT_K * t_max), math.exp(-LIGHT_K * t_min)
+        return -np.log(dark + (bright - dark) * lum) / LIGHT_K
+
+    @staticmethod
+    def transmitted(thickness: np.ndarray, t_min: float) -> np.ndarray:
+        """Brightness of the lit wall, 1 at the thinnest possible wall (what a lamp behind it shows)."""
+        return np.exp(-LIGHT_K * (np.asarray(thickness, dtype=float) - t_min))
 
     def _framed(self, u: np.ndarray, v: np.ndarray, w: float, h: float) -> np.ndarray:
         """Thickness on the grid of distances u, v (mm from the lower left corner); the frame is full thickness."""
@@ -186,7 +221,31 @@ class LithophaneFeature(Feature):
         solid = {"flat": self._flat, "cylinder": self._cylinder, "sphere": self._sphere}[self.shape](nu, nv)
         return CylinderFeature._place(self, solid)
 
+    def _shaped(self) -> bool:
+        return self.shape == "flat" and (self.outline != "rect" or self.corner_radius > 0 or self.stand > 0)
+
+    def outline_polygon(self, w: float, h: float):
+        """The plate's outline in picture coordinates (x 0..w, y 0..h, mm), a shapely polygon."""
+        from shapely.geometry import Polygon, box
+        from shapely import affinity
+        if self.outline == "circle":                    # an ellipse in the plate's box (a circle when square)
+            a = np.linspace(0, 2 * math.pi, 256, endpoint=False)
+            return Polygon(np.column_stack([w / 2 + w / 2 * np.cos(a), h / 2 + h / 2 * np.sin(a)]))
+        if self.outline == "heart":
+            a = np.linspace(0, 2 * math.pi, 400, endpoint=False)
+            x = 16 * np.sin(a) ** 3
+            y = 13 * np.cos(a) - 5 * np.cos(2 * a) - 2 * np.cos(3 * a) - np.cos(4 * a)
+            heart = Polygon(np.column_stack([x, y])).buffer(0)
+            x0, y0, x1, y1 = heart.bounds
+            return affinity.translate(affinity.scale(heart, w / (x1 - x0), h / (y1 - y0), origin=(x0, y0)), -x0, -y0)
+        r = min(self.corner_radius, 0.5 * min(w, h) - 1e-3) if (self.outline == "rounded" or self.corner_radius > 0) else 0
+        if self.outline == "rounded" and r <= 0:
+            r = 0.1 * min(w, h)
+        return box(r, r, w - r, h - r).buffer(r, 32) if r > 0 else box(0, 0, w, h)
+
     def _flat(self, nu: int, nv: int) -> m3d.Manifold:
+        if self._shaped():
+            return self._flat_shaped(nu, nv)
         w, h = self.size()
         u, v = np.linspace(0, w, nu + 1), np.linspace(0, h, nv + 1)
         t = self._framed(u, v, w, h)
@@ -197,6 +256,79 @@ class LithophaneFeature(Feature):
         else:                  # lying on Z 0, seen from above
             outer, inner = np.stack([x, y - h / 2, t], -1), np.stack([x, y - h / 2, zero], -1)
         return skin(outer, inner, False)
+
+    def _shaped_thickness(self, u, v, w, h):
+        """Thickness on the grid with the frame following the outline (`frame` mm inside its edge), and the outline."""
+        import shapely
+        t = self._framed(u, v, w, h)
+        outline = self.outline_polygon(w, h)
+        if self.frame > 0:
+            x, y = np.meshgrid(u, v)
+            near = shapely.distance(outline.exterior, shapely.points(x.ravel(), y.ravel())).reshape(x.shape)
+            t[near < self.frame] = self.max_thickness
+        return t, outline
+
+    def _flat_shaped(self, nu: int, nv: int) -> m3d.Manifold:
+        """A plate with a round, heart or rounded outline and/or a foot: built lying (relief up), cut to the
+        outline, then stood up like the plain plate."""
+        w, h = self.size()
+        u, v = np.linspace(0, w, nu + 1), np.linspace(0, h, nv + 1)
+        t, outline = self._shaped_thickness(u, v, w, h)
+        x, y = np.meshgrid(u, v)
+        plate = skin(np.stack([x, y, t], -1), np.stack([x, y, np.zeros_like(t)], -1), False)
+        if self.outline != "rect" or self.corner_radius > 0:
+            from shapely.geometry.polygon import orient
+            ring = [list(map(float, p)) for p in np.asarray(orient(outline, 1.0).exterior.coords)[:-1]]  # CCW
+            prism = m3d.Manifold.extrude(m3d.CrossSection([ring]), self.max_thickness + 2.0).translate((0, 0, -1.0))
+            plate = plate ^ prism
+        plate = plate.translate((-w / 2, -h / 2, 0.0))
+        if not self.upright:
+            return plate
+        plate = plate.rotate((90.0, 0.0, 0.0)).translate((0.0, 0.0, h / 2))      # = the plain plate's upright pose
+        if self.stand > 0:
+            plate = self._with_stand(plate, w, h)
+        return plate
+
+    STAND_HEIGHT = (3.0, 8.0)       # mm, the foot's height range (6 % of the plate's height in between)
+
+    def _with_stand(self, plate: m3d.Manifold, w: float, h: float) -> m3d.Manifold:
+        """A foot block the upright plate stands in, `stand` mm deep, centred under the wall; the plate sinks into
+        it by the frame (at least 1.5 mm) so a round or heart-shaped bottom is held too."""
+        lo, hi = self.STAND_HEIGHT
+        fh = max(lo, min(hi, 0.06 * h))
+        sink = min(fh, max(1.5, self.frame))
+        fw = w if self.outline in ("rect", "rounded") else 0.5 * w
+        depth = max(self.stand, self.max_thickness + 2.0)
+        foot = m3d.Manifold.cube((fw, depth, fh)).translate((-fw / 2, -self.max_thickness / 2 - depth / 2, 0.0))
+        return plate.translate((0.0, 0.0, fh - sink)) + foot
+
+    def backlit(self, max_px: int = 240):
+        """(brightness 0..1 per picture point, inside mask) of the picture area as it looks with a lamp behind it,
+        row 0 at the top, at most max_px on the longer side. Uses the same thickness the body gets."""
+        if self.shape == "sphere":
+            w, h = self.arc, self.lat_span
+            cols, rows = self._preview_counts(w, h, max_px)
+            t = self._thickness(cols, rows, w / h)
+            inside = np.ones_like(t, dtype=bool)
+        else:
+            w, h = self.size()
+            cols, rows = self._preview_counts(w, h, max_px)
+            u, v = np.linspace(0, w, cols), np.linspace(0, h, rows)
+            if self._shaped():
+                import shapely
+                t, outline = self._shaped_thickness(u, v, w, h)
+                x, y = np.meshgrid(u, v)
+                inside = shapely.contains_xy(outline.buffer(1e-6), x, y)
+            else:
+                t = self._framed(u, v, w, h)
+                inside = np.ones_like(t, dtype=bool)
+        return self.transmitted(t, self.min_thickness)[::-1], inside[::-1]
+
+    @staticmethod
+    def _preview_counts(w: float, h: float, max_px: int) -> Tuple[int, int]:
+        if w >= h:
+            return max_px, max(2, int(round(max_px * h / w)))
+        return max(2, int(round(max_px * w / h))), max_px
 
     def _cylinder(self, nu: int, nv: int) -> m3d.Manifold:
         w, h = self.size()

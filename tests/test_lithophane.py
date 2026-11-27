@@ -166,3 +166,115 @@ def test_edit_from_the_timeline(monkeypatch):
     finally:
         win.doc.modified = False
         win.deleteLater()
+
+
+# ---- tone curve, picture clean-up, outlines, stand and the lit preview (0.9.9.80.225)
+
+def _gray(level, size=(40, 30)):
+    out = io.BytesIO()
+    Image.new("L", size, level).save(out, "PNG")
+    return encode_picture(out.getvalue())
+
+
+def test_light_tone_makes_the_light_through_the_wall_follow_the_picture():
+    feat = LithophaneFeature("f", "f", image_data=_gray(128), tone="light", min_thickness=0.8, max_thickness=3.0)
+    lum = np.linspace(0, 1, 11)
+    lit = feat.transmitted(feat.thickness_for(lum), feat.min_thickness)
+    dark = feat.transmitted(np.array([3.0]), 0.8)[0]
+    assert np.allclose(lit, dark + (1 - dark) * lum)                 # linear in the light, not in the plastic
+    assert np.isclose(feat.thickness_for(np.array([0.0]))[0], 3.0) and np.isclose(feat.thickness_for(np.array([1.0]))[0], 0.8)
+    linear = LithophaneFeature("f", "f", image_data=_gray(128))      # older projects: thickness straight from lightness
+    assert np.allclose(linear.thickness_for(lum), 3.0 - 2.2 * lum)
+
+
+def test_older_projects_build_exactly_as_before():
+    old = LithophaneFeature("f", "f", image_data=picture(), detail=1.0)
+    explicit = LithophaneFeature("f", "f", image_data=picture(), detail=1.0, tone="linear", auto_levels=False,
+                                 sharpen=0.0, denoise=0.0, outline="rect", corner_radius=0.0, stand=0.0)
+    a, b = old.build_solid().to_mesh(), explicit.build_solid().to_mesh()
+    assert np.array_equal(a.vert_properties, b.vert_properties) and np.array_equal(a.tri_verts, b.tri_verts)
+
+
+def test_auto_levels_spreads_a_flat_picture_over_the_whole_range():
+    img = Image.new("L", (40, 30), 110)
+    img.paste(150, (20, 0, 40, 30))
+    out = io.BytesIO()
+    img.save(out, "PNG")
+    feat = LithophaneFeature("f", "f", image_data=encode_picture(out.getvalue()), auto_levels=True)
+    t = feat._thickness(40, 30, 40 / 30)
+    assert np.isclose(t.max(), feat.max_thickness) and np.isclose(t.min(), feat.min_thickness)
+
+
+def test_sharpen_adds_and_denoise_removes_detail():
+    rng = np.random.default_rng(3)
+    out = io.BytesIO()
+    Image.fromarray(rng.integers(60, 200, (60, 80)).astype(np.uint8), "L").save(out, "PNG")
+    data = encode_picture(out.getvalue())
+    spread = lambda **kw: LithophaneFeature("f", "f", image_data=data, **kw)._thickness(80, 60, 80 / 60).std()
+    plain = spread()
+    assert spread(sharpen=100.0) > plain > spread(denoise=2.0)
+
+
+@pytest.mark.parametrize("outline", ["rounded", "circle", "heart"])
+def test_shaped_plates_are_one_closed_solid_inside_their_box(outline):
+    plain = build(frame=3.0)
+    solid = build(frame=3.0, outline=outline, corner_radius=8.0)
+    assert solid.status() == m3d.Error.NoError and len(solid.decompose()) == 1
+    assert 0 < solid.volume() < plain.volume()
+    assert np.allclose(solid.bounding_box(), plain.bounding_box(), atol=0.05)   # the outline fills the same box
+
+
+def test_frame_follows_a_round_outline():
+    feat = LithophaneFeature("f", "f", image_data=_gray(255), outline="circle", frame=4.0, width=60.0,
+                             fit="stretch", height=60.0, detail=0.5)
+    u = v = np.linspace(0, 60, 121)
+    t, _ = feat._shaped_thickness(u, v, 60, 60)
+    assert np.isclose(t[60, 60], feat.min_thickness)            # white middle: thinnest
+    assert np.isclose(t[60, 2], feat.max_thickness)             # 1 mm inside the circle's edge: frame
+    assert np.isclose(t[60, 12], feat.min_thickness)            # 6 mm in: picture again
+
+
+def test_stand_holds_the_upright_plate_and_rests_on_the_floor():
+    plain = build(frame=3.0)
+    for outline in ("rect", "heart"):
+        solid = build(frame=3.0, outline=outline, stand=20.0)
+        lo, hi = np.array(solid.bounding_box()[:3]), np.array(solid.bounding_box()[3:])
+        assert len(solid.decompose()) == 1 and abs(lo[2]) < 1e-6
+        assert hi[1] - lo[1] >= 20.0 - 1e-6                     # the foot is as deep as asked
+        assert hi[2] > plain.bounding_box()[5]                  # the plate stands on top of it
+
+
+def test_backlit_preview_matches_the_body_thickness():
+    feat = LithophaneFeature("f", "f", image_data=picture(), tone="light", detail=1.0)
+    lit, inside = feat.backlit(120)
+    assert lit.shape == inside.shape and lit.shape[1] == 120 and inside.all()
+    assert lit.max() <= 1.0 + 1e-9 and lit.min() >= feat.transmitted(np.array([feat.max_thickness]), feat.min_thickness)[0] - 1e-9
+    assert lit[lit.shape[0] // 2, 10] < lit[lit.shape[0] // 2, -10]    # black left half is dark, white right is lit
+    heart, inside = LithophaneFeature("f", "f", image_data=picture(), outline="heart").backlit(80)
+    assert not inside.all() and inside[inside.shape[0] // 2].any()
+
+
+def test_panel_new_options_lit_preview_and_old_steps_kept(tmp_path):
+    QApplication.instance() or QApplication([])
+    from omacad.ui.dialogs.lithophane_dlg import LithophaneDialog
+    d = LithophaneDialog()
+    assert d.get_params()["tone"] == "light" and d.get_params()["sharpen"] == 40.0     # a new one starts better
+    d.set_image(picture())
+    d.spins["detail"].setValue(1.0)
+    assert d.build_preview() is not None and d.lbl_lit.pixmap() is not None and not d.lbl_lit.pixmap().isNull()
+    d.cmb_outline.setCurrentIndex(d.cmb_outline.findData("rounded"))
+    assert d.spins["corner_radius"].isVisibleTo(d) and d.spins["stand"].isVisibleTo(d)
+    d.spins["stand"].setValue(15.0)
+    d.spins["corner_radius"].setValue(6.0)
+    assert d.build_preview() is not None
+    p = d.get_params()
+    assert p["outline"] == "rounded" and p["stand"] == 15.0 and p["corner_radius"] == 6.0
+    d.checks["upright"].setChecked(False)
+    assert not d.spins["stand"].isVisibleTo(d) and d.get_params()["stand"] == 0.0      # no foot when lying
+    d.cmb_shape.setCurrentIndex(1)
+    assert not d.cmb_outline.isVisibleTo(d) and d.get_params()["outline"] == "rect"
+    old = LithophaneFeature("f", "f", image_data=picture()).to_dict()
+    old.pop("tone")                                         # a step saved before tones existed
+    e = LithophaneDialog()
+    e.set_params(old)
+    assert e.get_params()["tone"] == "linear" and e.get_params()["sharpen"] == 0.0

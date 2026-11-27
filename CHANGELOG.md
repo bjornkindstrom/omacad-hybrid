@@ -1,3 +1,16 @@
+# Hybrid-experiment — 0.9.9.80.225
+
+### Added
+- **Better lithophanes**:
+  - *Lit from behind* preview in the panel: the picture as the print will look with a lamp behind it, computed from the same thickness the body gets (warm light through the wall, outside the outline dark).
+  - *Tone: Light-correct* (new default): the light that comes through the wall (fading as exp(-k·t) in plastic) follows the picture's lightness, so midtones come out as midtones instead of too dark. *Linear* is the old mapping, and older projects keep it.
+  - *Auto levels* (the picture's darkest/lightest 1 % become black/white), *Sharpen* (unsharp mask at the printed resolution, 40 % by default) and *Denoise* (smooths grain and JPEG blocks).
+  - Flat lithophanes can have *rounded corners*, be a *circle/oval* or a *heart*; the frame follows the outline. A *Stand* gives an upright plate a foot to stand in.
+  - Finer detail on large lithophanes (160 000 picture cells instead of 90 000) and sharper stored pictures (1600 px).
+
+### Changed
+- **Faster face/edge analysis, same results**: circular edges, loop edges, curve edges and wrapped contours test all adjacent triangle pairs in bulk and loop only over the few that pass (same order, same arithmetic); the wrapped-contour union-find uses a plain list. Over the 135 project documents the total rebuild time went from 824 s to 575 s with zero differences (the voronoi pot 64 s -> 33 s on its own).
+
 # Hybrid-experiment — 0.9.9.80.224
 
 ### Changed

@@ -91,11 +91,15 @@ def curve_edges(v, f, tm, find, planar, claimed_planar=None) -> list:
                               & ~np.isin(rb_all, skip_ids) & (area[adj[:, 0]] > min_area) & (area[adj[:, 1]] > min_area))
     else:
         cand = np.zeros(0, dtype=np.int64)
-    for i in cand:
+    # cross products and edge vectors in bulk (np.cross per pair was most of the time); same element-wise
+    # arithmetic, and the dot product stays per pair, so every decision is exactly the one made before
+    crosses = np.cross(face_normals[adj[cand, 0]], face_normals[adj[cand, 1]]) if len(cand) else np.zeros((0, 3))
+    spans = v[edge_ids[cand, 1]] - v[edge_ids[cand, 0]] if len(cand) else np.zeros((0, 3))
+    for j, i in enumerate(cand):
         (a, b), (e0, e1) = adj[i], edge_ids[i]
         if True:
             na, nb = face_normals[a], face_normals[b]
-            if float(np.cross(na, nb) @ (v[e1] - v[e0])) < 0:
+            if float(crosses[j] @ spans[j]) < 0:
                 na, nb = nb, na
                 third_b = v[[k for k in f[a] if k not in (e0, e1)][0]]
             else:

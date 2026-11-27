@@ -45,10 +45,16 @@ def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar, claimed=Non
     by_face: dict = {}
     diag = float(np.linalg.norm(np.ptp(v, axis=0))) or 1.0
     tri_area = 0.5 * np.linalg.norm(np.cross(v[f[:, 1]] - v[f[:, 0]], v[f[:, 2]] - v[f[:, 0]]), axis=1)
-    for (a_idx, b_idx), (e0, e1), ang in zip(adj, adj_edges, angles):
-        ra, rb = find(int(a_idx)), find(int(b_idx))
-        if ra == rb or ang < np.radians(1.0):
-            continue
+    # only pairs across two groups, at an angle, with a flat face on a side go through the loop (same order)
+    adj_a = np.asarray(adj)
+    roots = np.fromiter((find(i) for i in range(len(f))), dtype=np.int64, count=len(f))
+    ra_all, rb_all = (roots[adj_a[:, 0]], roots[adj_a[:, 1]]) if len(adj_a) else (np.zeros(0, np.int64),) * 2
+    planar_ids = np.fromiter(planar, dtype=np.int64)
+    wanted = (ra_all != rb_all) & ~(np.asarray(angles) < np.radians(1.0)) \
+        & (np.isin(ra_all, planar_ids) | np.isin(rb_all, planar_ids))
+    for k in np.flatnonzero(wanted):
+        (a_idx, b_idx), (e0, e1) = adj_a[k], adj_edges[k]
+        ra, rb = int(ra_all[k]), int(rb_all[k])
         for pl_tri, nb_tri, pr, nr in ((a_idx, b_idx, ra, rb), (b_idx, a_idx, rb, ra)):
             if pr not in planar:
                 continue
@@ -303,18 +309,28 @@ def _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, plan
             x = cl[x]
         return x
 
-    for (a_idx, b_idx), ang in zip(adj, angles):
-        ra, rb = find(int(a_idx)), find(int(b_idx))
-        if ra != rb and ra in curved and rb in curved and ang < np.radians(25.0):
+    # the per-pair tests in bulk; the loops below visit only the pairs that pass, in the same order as before
+    adj = np.asarray(adj)
+    angles = np.asarray(angles)
+    roots = np.fromiter((find(i) for i in range(len(f))), dtype=np.int64, count=len(f))
+    ra_all, rb_all = (roots[adj[:, 0]], roots[adj[:, 1]]) if len(adj) else (np.zeros(0, np.int64),) * 2
+    curved_ids, planar_ids = np.fromiter(curved, dtype=np.int64), np.fromiter(planar, dtype=np.int64)
+    cu_a, cu_b = np.isin(ra_all, curved_ids), np.isin(rb_all, curved_ids)
+    pl_a, pl_b = np.isin(ra_all, planar_ids), np.isin(rb_all, planar_ids)
+    shallow = angles < np.radians(25.0)
+    differ = ra_all != rb_all
+
+    for k in np.flatnonzero(differ & cu_a & cu_b & shallow):
+        ra, rb = int(ra_all[k]), int(rb_all[k])
+        if True:
             ca, cb = cfind(ra), cfind(rb)
             if ca != cb:
                 cl[cb] = ca
 
     buckets: dict = {}
-    for (a_idx, b_idx), (e0, e1), ang in zip(adj, adj_edges, angles):
-        ra, rb = find(int(a_idx)), find(int(b_idx))
-        if ra == rb or ang < np.radians(25.0):
-            continue
+    for k in np.flatnonzero(differ & ~shallow & ((pl_a & cu_b) | (pl_b & cu_a))):
+        (a_idx, b_idx), (e0, e1) = adj[k], adj_edges[k]
+        ra, rb = int(ra_all[k]), int(rb_all[k])
         if ra in planar and rb in curved:
             pl_tri, cu_tri, pr, cr = a_idx, b_idx, ra, rb
         elif rb in planar and ra in curved:

@@ -58,7 +58,7 @@ def cylindrical_contours(v, f, tm):
     """Find sharp closed boundaries of smooth patches, retaining only cylinder-wrapped ones."""
     from omacad.model.faces import PlanarFace
 
-    parents = np.arange(len(f))
+    parents = list(range(len(f)))      # a plain list: the same union-find, without a numpy scalar per step
     def root(a):
         while parents[a] != a:
             parents[a] = parents[parents[a]]
@@ -66,17 +66,19 @@ def cylindrical_contours(v, f, tm):
         return int(a)
 
     adj, angles = tm.face_adjacency, tm.face_adjacency_angles
-    for (a, b), angle in zip(adj, angles):
-        if angle < math.radians(25):
-            parents[root(a)] = root(b)
-    labels = np.array([root(i) for i in range(len(f))])
+    for a, b in adj[np.asarray(angles) < math.radians(25)].tolist():
+        parents[root(a)] = root(b)
+    labels = np.array([root(i) for i in range(len(f))], dtype=np.int64)
     parts, boundaries = defaultdict(list), defaultdict(list)
-    for i, label in enumerate(labels):
-        parts[int(label)].append(i)
-    for i, ((a, b), edge) in enumerate(zip(adj, tm.face_adjacency_edges)):
-        ra, rb = int(labels[a]), int(labels[b])
-        if ra != rb:
-            boundaries[tuple(sorted((ra, rb)))].append((edge, int(a), int(b), bool(tm.face_adjacency_convex[i])))
+    for i, label in enumerate(labels.tolist()):
+        parts[label].append(i)
+    if len(adj):
+        across = np.flatnonzero(labels[adj[:, 0]] != labels[adj[:, 1]])
+        edges, convex = tm.face_adjacency_edges, tm.face_adjacency_convex
+        for i in across.tolist():
+            a, b = int(adj[i, 0]), int(adj[i, 1])
+            ra, rb = int(labels[a]), int(labels[b])
+            boundaries[tuple(sorted((ra, rb)))].append((edges[i], a, b, bool(convex[i])))
 
     candidates = []
     for pair, segments in boundaries.items():

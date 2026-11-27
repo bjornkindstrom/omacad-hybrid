@@ -72,8 +72,12 @@ MORE = {
     "sphere": ("Radius, placement (centred, bottom on origin, or on a face) and optional Shell Wall to hollow it.",
                "ball globe sphere hollow"),
     "lithophane": ("Choose a picture and a shape: Flat, Cylinder / arc or Sphere (with a lamp opening). Dark areas become "
-                   "thick, light areas thin. The picture is stored in the project.",
-                   "lithophane photo picture image lamp relief"),
+                   "thick, light areas thin. The panel shows the print as it looks lit from behind. Tone Light-correct "
+                   "makes the light through the wall follow the picture (midtones stay midtones); Auto levels, Sharpen "
+                   "and Denoise clean up the picture. A flat one can be a rectangle, have rounded corners, be a "
+                   "circle/oval or a heart, with the frame following the outline, and get a Stand to stand in. The "
+                   "picture is stored in the project.",
+                   "lithophane photo picture image lamp relief heart stand foot backlit tone sharpen"),
     "emboss": ("Text or any profile in a sketch on a face: positive depth raises it, negative presses it in. Wraps "
                "round cylinders.", "deboss engrave text letters"),
     "pattern": ("Pick the steps to copy in the timeline or the list (a rib and its fillets together), then the kind: "
