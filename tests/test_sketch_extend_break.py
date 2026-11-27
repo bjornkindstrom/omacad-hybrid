@@ -111,3 +111,16 @@ def test_center_point_arc_follows_the_mouse_round_past_180_degrees():
     assert centre == pytest.approx((0.0, 0.0), abs=1e-9) and r == pytest.approx(10.0)
     assert arc.p_mid == pytest.approx((-7.0710678, 7.0710678))         # the long way round, through the top-left
     vp.deleteLater()
+
+
+def test_sketch_chamfer_cuts_a_corner_of_two_lines():
+    doc = Document()
+    sk = doc.start_sketch()
+    a = sk.add_line((0.0, 0.0), (20.0, 0.0))
+    b = sk.add_line((20.0, 0.0), (20.0, 10.0))
+    doc.add_constraints(sk.sketch_id, [("COINCIDENT", [a.entity_id, b.entity_id], ["p2", "p1"])])
+    assert doc.chamfer_sketch_corner(sk.sketch_id, (20.0, 0.0), a.entity_id, b.entity_id, 3.0)
+    sk = doc.active_sketch
+    a, b = sk.get_entity(a.entity_id), sk.get_entity(b.entity_id)
+    assert a.p2 == pytest.approx((17.0, 0.0), abs=1e-6) and b.p1 == pytest.approx((20.0, 3.0), abs=1e-6)
+    assert not doc.chamfer_sketch_corner(sk.sketch_id, (0.0, 0.0), a.entity_id, b.entity_id, 3.0)

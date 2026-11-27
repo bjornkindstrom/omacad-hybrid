@@ -125,3 +125,42 @@ def apply_break(sketch, plan) -> SketchLine:
     sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), "COINCIDENT", [lid, pid], ["p2", "p1"]))
     sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), "PARALLEL", [lid, pid], []))
     return piece
+
+
+def chamfer_plan(sketch, corner, line_a_id: str, line_b_id: str, distance: float):
+    """(line a, its corner end, line b, its corner end, new end a, new end b) for an equal-distance chamfer of the
+    corner where two lines meet, or None (not two lines meeting there, or the chamfer longer than a line)."""
+    la, lb = sketch.get_entity(line_a_id), sketch.get_entity(line_b_id)
+    if not (isinstance(la, SketchLine) and isinstance(lb, SketchLine)) or distance <= 1e-6:
+        return None
+    ends = []
+    for ln in (la, lb):
+        end = min(("p1", "p2"), key=lambda n: math.dist(getattr(ln, n), corner))
+        if math.dist(getattr(ln, end), corner) > 1e-3:
+            return None
+        tip, far = getattr(ln, end), getattr(ln, "p2" if end == "p1" else "p1")
+        L = math.dist(tip, far)
+        if distance >= L - 1e-3:
+            return None
+        ends.append((end, (tip[0] + (far[0] - tip[0]) / L * distance, tip[1] + (far[1] - tip[1]) / L * distance)))
+    return la, ends[0][0], lb, ends[1][0], ends[0][1], ends[1][1]
+
+
+def apply_chamfer(sketch, plan) -> SketchLine:
+    """Cuts the corner off with a straight line: both lines end where it starts, joined to it, and their length
+    dimensions follow; the corner's own join is dropped (the lines no longer meet)."""
+    from omacad.model.sketch_types import SketchConstraint
+    la, ea, lb, eb, pa, pb = plan
+    a_id, b_id = la.entity_id, lb.entity_id
+    sketch.constraints = [c for c in sketch.constraints
+                          if not (c.ctype == "COINCIDENT" and set(c.refs) == {a_id, b_id})]
+    setattr(la, ea, (float(pa[0]), float(pa[1])))
+    setattr(lb, eb, (float(pb[0]), float(pb[1])))
+    for ln in (la, lb):
+        for d in sketch.dimensions:
+            if d.target_entity_id == ln.entity_id and d.dim_type == "LENGTH":
+                d.value, d.expr = math.dist(ln.p1, ln.p2), None
+    cut = sketch.add_line(getattr(la, ea), getattr(lb, eb), is_construction=la.is_construction and lb.is_construction)
+    sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), "COINCIDENT", [a_id, cut.entity_id], [ea, "p1"]))
+    sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), "COINCIDENT", [b_id, cut.entity_id], [eb, "p2"]))
+    return cut

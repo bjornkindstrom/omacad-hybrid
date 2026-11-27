@@ -3651,6 +3651,12 @@ class Document:
         return self._sketch_edit(sketch_id, lambda sk: break_plan(sk, u, v, tol), apply_break,
                                  "Break: click a line where it should be cut (not at its ends).")
 
+    def chamfer_sketch_corner(self, sketch_id: str, corner, line_a_id: str, line_b_id: str, distance: float) -> bool:
+        """Sketch Chamfer: cuts the corner of two lines off at `distance` along each (one undo step)."""
+        from omacad.model.sketch_extend import apply_chamfer, chamfer_plan
+        return self._sketch_edit(sketch_id, lambda sk: chamfer_plan(sk, corner, line_a_id, line_b_id, distance),
+                                 apply_chamfer, "Chamfer: pick a corner of two lines, with a distance shorter than both.")
+
     def _sketch_edit(self, sketch_id, plan_fn, apply_fn, miss: str) -> bool:
         sketch = self.sketches.get(sketch_id)
         plan = plan_fn(sketch) if sketch else None
