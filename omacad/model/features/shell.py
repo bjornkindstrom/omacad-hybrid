@@ -108,7 +108,9 @@ class ShellFeature(Feature):
                 out = out.trim_by_plane(tuple(-n), -(d + t))   # keeps the side where n.x <= d + t
             if not out.is_empty():
                 return out
-        return m.minkowski_sum(m3d.Manifold.sphere(t, 12))
+        from omacad.model import solid_cache
+        return solid_cache.cached("minkowski_sum_sphere12", m, (float(t),),
+                                  lambda: m.minkowski_sum(m3d.Manifold.sphere(t, 12)))
 
     @classmethod
     def _shrink(cls, m, t):
@@ -125,7 +127,9 @@ class ShellFeature(Feature):
             cav = cls._trimmed(m, *planes, t)
             if not cav.is_empty() and cav.volume() > 1e-6:
                 return cav
-        return m.minkowski_difference(m3d.Manifold.sphere(t, 12))
+        from omacad.model import solid_cache      # over a minute on a non-convex body: kept for undo and reopening
+        return solid_cache.cached("minkowski_difference_sphere12", m, (float(t),),
+                                  lambda: m.minkowski_difference(m3d.Manifold.sphere(t, 12)))
 
     @staticmethod
     def _trimmed(m, normals, offsets, t):

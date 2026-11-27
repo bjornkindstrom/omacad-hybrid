@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.226
+
+### Changed
+- **Shell on non-convex bodies is computed once**: the Minkowski erosion (over a minute on a threaded jar) is kept in memory for the session (undo, redo and reloading rebuild the timeline from scratch) and on disk (`.state/data/solid_cache`, up to 400 MB, oldest dropped first), keyed by the input mesh and the wall thickness. The screw jar project opens in 12 s instead of 2 minutes the second time. A cached result carries every mesh field, the kernel's tolerance and replays the kernel's id numbering, so faces, edges, volume and edge lines match a fresh computation; only the diagonal of a few triangles inside flat areas can differ (10 of 315 000 in the screw jar).
+
 # Hybrid-experiment — 0.9.9.80.225
 
 ### Added
