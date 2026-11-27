@@ -25,7 +25,7 @@ from omacad.model.timeline import (
 )
 from omacad.model.features.knurl import apply_knurl
 from omacad.model.features.japandi import apply_japandi
-from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint, SketchCircle
+from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint, SketchCircle, SketchLine
 from omacad.model.sketch_solver import solve_sketch, solve_keeping_arcs, SolveResult
 from omacad.model import expr as exprlib
 from omacad.model.faces import in_plane_edges
@@ -182,6 +182,7 @@ class Document:
         self.step_breps: dict = {}           # B-rep bodies' shapes before each step (Pattern copies them exactly)
         self.last_message: str = ""  # feedback from the last constraint/dimension operation
         self.last_conflicts = None  # (sketch id, clashing element ids, time) after a constraint was refused
+        self.conflict_offer = None  # what could be replaced so a refused relation/dimension fits (_conflict_offer)
         # Undo / redo: ("sketch", sketch_id, snapshot) for edits inside a sketch, ("doc", label, snapshot) for everything else
         self.undo_stack: List[tuple] = []
         self.redo_stack: List[tuple] = []
@@ -298,6 +299,7 @@ class Document:
         Pushes an undo step only if something actually changed."""
         if before == sketch.to_dict():
             return False
+        self.conflict_offer = None          # the sketch changed: an earlier offer no longer fits it
         self.undo_stack.append(("sketch", sketch.sketch_id, before))
         del self.undo_stack[:-(self.UNDO_LIMIT + self.DOC_UNDO_LIMIT)]
         self.redo_stack.clear()
@@ -3598,6 +3600,8 @@ class Document:
         for ctype, refs, pts in specs:
             sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), ctype, list(refs), list(pts)))
         res = solve_keeping_arcs(sketch, {r for _, refs, _ in specs for r in refs})
+        if not res.ok and self._seed_relations(sketch, specs):     # e.g. Vertical on a line drawn level
+            res = solve_keeping_arcs(sketch, {r for _, refs, _ in specs for r in refs})
         released = 0
         if not res.ok:
             involved = {r for _, refs, _ in specs for r in refs}
@@ -3610,6 +3614,7 @@ class Document:
         if not res.ok:
             sketch.restore_from_dict(before)
             self._note_conflicts(sketch, res)
+            self.conflict_offer = self._conflict_offer(sketch, ("constraints", [(c, list(r), list(p)) for c, r, p in specs]), res)
             self.last_message = self._over_defined_text(res) + res.message + " - constraint not added."
             return False
         self.record_sketch_change(sketch, before)
@@ -3676,13 +3681,133 @@ class Document:
         self.last_conflicts = (sketch.sketch_id, ids, time.monotonic()) if ids else None
 
     @staticmethod
+    def _seed_relations(sketch, specs) -> bool:
+        """Turns a line about its middle (same length) to the direction a Horizontal/Vertical asks for, so the
+        solver starts near the answer: from a level line, the smallest change that makes it vertical is to shrink
+        it to a point. True when something was turned."""
+        turned = False
+        for ctype, refs, _pts in specs:
+            if ctype not in ("HORIZONTAL", "VERTICAL") or not refs:
+                continue
+            line = sketch.get_entity(refs[0])
+            if not isinstance(line, SketchLine):
+                continue
+            (x1, y1), (x2, y2) = line.p1, line.p2
+            half = math.hypot(x2 - x1, y2 - y1) / 2.0
+            mx, my = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+            if ctype == "HORIZONTAL":
+                s_ = 1.0 if x2 >= x1 else -1.0
+                line.p1, line.p2 = (mx - s_ * half, my), (mx + s_ * half, my)
+            else:
+                s_ = 1.0 if y2 >= y1 else -1.0
+                line.p1, line.p2 = (mx, my - s_ * half), (mx, my + s_ * half)
+            turned = True
+        return turned
+
+    CONFLICT_CANDIDATES = 16
+
+    def _apply_request(self, sketch, request) -> "SolveResult":
+        """Puts a refused relation or dimension into the sketch and solves (no undo step, no notification)."""
+        kind, payload = request
+        if kind == "constraints":
+            for ctype, refs, pts in payload:
+                sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), ctype, list(refs), list(pts)))
+            involved = {r for _, refs, _ in payload for r in refs}
+            res = solve_keeping_arcs(sketch, involved)
+            if not res.ok and self._seed_relations(sketch, payload):
+                res = solve_keeping_arcs(sketch, involved)
+            if not res.ok:          # as add_constraints: the elements' own sizes are released once
+                keep = [d for d in sketch.dimensions
+                        if not (d.target_entity_id in involved and d.dim_type in self.DRIVING_DIMS)]
+                if len(keep) < len(sketch.dimensions):
+                    sketch.dimensions = keep
+                    res = solve_sketch(sketch)
+            return res
+        p = payload
+        for ctype, refs, pts in p["extra_constraints"]:
+            sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), ctype, list(refs), list(pts)))
+        sketch.add_dimension(p["dim_type"], p["target"], p["value"], offset_distance=p["offset"],
+                             refs=list(p["refs"]), pts=list(p["pts"]))
+        dim = sketch.dimensions[-1]
+        dim.expr, dim.moving_entity_id = p["expr"], p["moving_entity_id"]
+        return self._solve_anchored(sketch, dim)
+
+    def _conflict_offer(self, sketch, request, res) -> Optional[dict]:
+        """The existing relations/dimensions on the clashing elements that, taken away, let the refused one in
+        (tried one by one on the sketch, which is put back each time): what the view offers to replace."""
+        kind, payload = request
+        new_refs = ({r for _, refs, _ in payload for r in refs} if kind == "constraints"
+                    else {payload["target"], *payload["refs"]})
+        involved = set(getattr(res, "conflicts", ()) or ()) | new_refs
+        cands = [("constraint", c.cid, c) for c in sketch.constraints if set(c.refs) & involved]
+        cands += [("dimension", d.dim_id, d) for d in sketch.dimensions
+                  if ({d.target_entity_id, *d.refs} & involved)]
+        choices = []
+        snapshot = sketch.to_dict()
+        for item_kind, item_id, item in cands[:self.CONFLICT_CANDIDATES]:
+            try:
+                self._remove_sketch_item(sketch, item_kind, item_id)
+                if self._apply_request(sketch, request).ok:
+                    choices.append({"kind": item_kind, "id": item_id, "label": self._item_label(sketch, item_kind, item)})
+            except Exception:           # a trial only: whatever it hits, the sketch is put back below
+                pass
+            finally:
+                sketch.restore_from_dict(snapshot)
+        return {"sketch_id": sketch.sketch_id, "request": request, "choices": choices} if choices else None
+
+    @staticmethod
+    def _remove_sketch_item(sketch, kind: str, item_id: str) -> None:
+        if kind == "constraint":
+            sketch.constraints = [c for c in sketch.constraints if c.cid != item_id]
+        else:
+            sketch.dimensions = [d for d in sketch.dimensions if d.dim_id != item_id]
+
+    @staticmethod
+    def _item_label(sketch, kind: str, item) -> str:
+        def name(eid):
+            ent = sketch.get_entity(eid)
+            return f"{ent.entity_type} {eid.rsplit('_', 1)[-1]}" if ent is not None else eid
+        if kind == "constraint":
+            what = item.ctype.replace("_", " ").title()
+            return f"{what} on " + " and ".join(name(r) for r in item.refs[:2])
+        what = {"LENGTH": "Length", "DIAMETER": "Diameter", "RADIUS": "Radius", "ANGLE": "Angle",
+                "DISTANCE": "Distance", "HORIZ_DIST": "Horizontal distance", "VERT_DIST": "Vertical distance",
+                "PT_LINE_DIST": "Distance"}.get(item.dim_type, item.dim_type.title())
+        unit = "°" if item.dim_type == "ANGLE" else " mm"
+        return f"{what} {item.value:g}{unit} on {name(item.target_entity_id)}"
+
+    def replace_conflict(self, index: int) -> bool:
+        """Takes away the chosen clashing relation/dimension and adds the refused one, as one undo step."""
+        offer = self.conflict_offer
+        if not offer or not 0 <= index < len(offer["choices"]):
+            return False
+        sketch = self.sketches.get(offer["sketch_id"])
+        if sketch is None:
+            return False
+        choice = offer["choices"][index]
+        before = sketch.to_dict()
+        self._remove_sketch_item(sketch, choice["kind"], choice["id"])
+        res = self._apply_request(sketch, offer["request"])
+        if not res.ok:
+            sketch.restore_from_dict(before)
+            self.last_message = res.message + " - nothing changed."
+            self.notify_changed()
+            return False
+        self.record_sketch_change(sketch, before)
+        self.last_conflicts = None
+        self.last_message = f"Replaced {choice['label']}. " + self.sketch_status(sketch)
+        self.timeline.recompute(self)
+        self.notify_changed()
+        return True
+
+    @staticmethod
     def _over_defined_text(res) -> str:
         n = len(getattr(res, "conflicts", ()) or ())
         return f"Over defined: {n} element(s) shown in yellow clash. " if n else ""
 
     @staticmethod
     def sketch_status(sketch: Sketch) -> str:
-        if sketch.dof is None:
+        if sketch.dof is None or not sketch.entities:
             return ""
         return "Fully defined" if sketch.dof == 0 else f"Under defined ({sketch.dof} DOF)"
 
@@ -3715,6 +3840,9 @@ class Document:
         if not res.ok:
             sketch.restore_from_dict(before)
             self._note_conflicts(sketch, res)
+            self.conflict_offer = self._conflict_offer(sketch, ("dimension", dict(
+                dim_type=dim_type, target=target, value=value, refs=list(refs), pts=list(pts), offset=offset,
+                expr=expr, moving_entity_id=moving_entity_id, extra_constraints=list(extra_constraints))), res)
             self.last_message = self._over_defined_text(res) + res.message + " - dimension not added."
             self.notify_changed()
             return False

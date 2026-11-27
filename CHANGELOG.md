@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.228
+
+### Added
+- **Sketch status at a glance** (sketch plan, step 2): a chip at the top of the view says *✓ Fully defined* (green), *Under defined · N DOF · M elements can move* (blue) or *⚠ Over defined* (amber). The freedom is worked out a moment after each change without moving anything (`sketch_freedom`), also for a sketch with no relations yet, so the status bar text and the black/blue colours of the elements are always current.
+- **Replace what clashes**: when a relation or dimension is refused, Omacad tries which existing relations/dimensions on the clashing elements could make room; click the amber chip to pick one, and it is replaced by the new one in one undo step (the clash stays shown for 12 s while there is a choice).
+
+### Changed
+- Horizontal/Vertical on a line drawn the other way turns the line about its middle (same length) before solving, instead of being refused ("would collapse a line to a point").
+- A cut/intersect preview seen through the body stays one clear flat colour; only added solids are lit.
+
 # Hybrid-experiment — 0.9.9.80.227
 
 ### Added

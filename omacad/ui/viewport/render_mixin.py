@@ -95,7 +95,9 @@ class RenderGLMixin:
         }
         r, g, b = colors.get(op, colors["new_body"])
         inside = op in ("cut", "intersect")   # these sit inside the body: show them through its surface
-        lit = self.prog_solid is not None and len(getattr(mesh, "normals", ())) == len(mesh.vertices)
+        # a solid that is added is lit like a body; a cut, seen through the body, stays one clear flat colour
+        lit = (not inside and self.prog_solid is not None
+               and len(getattr(mesh, "normals", ())) == len(mesh.vertices))
         prog = self.prog_solid if lit else self.prog_flat
         GL.glUseProgram(prog)
         GL.glUniformMatrix4fv(GL.glGetUniformLocation(prog, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
@@ -665,6 +667,7 @@ class RenderGLMixin:
         return dash_lines(flat_segments, self.world_to_screen, dash_px, gap_px)
 
     CONFLICT_SHOW_S = 3.0
+    CONFLICT_OFFER_S = 12.0     # long enough to click the chip and pick what to replace
 
     def _recent_conflicts(self, sketch) -> set:
         """Elements of a constraint/dimension just refused as over defining, for a few seconds."""
@@ -672,7 +675,9 @@ class RenderGLMixin:
         info = getattr(self.doc, "last_conflicts", None)
         if not info or info[0] != sketch.sketch_id:
             return set()
-        left = self.CONFLICT_SHOW_S - (time.monotonic() - info[2])
+        offer = getattr(self.doc, "conflict_offer", None)
+        shown = self.CONFLICT_OFFER_S if offer and offer["sketch_id"] == sketch.sketch_id else self.CONFLICT_SHOW_S
+        left = shown - (time.monotonic() - info[2])
         if left <= 0:
             return set()
         if not getattr(self, "_conflict_timer_armed", False):

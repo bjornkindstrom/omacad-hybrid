@@ -31,6 +31,11 @@ class PointerMixin:
         if getattr(self, "fan_menu", None) is not None and self.fan_menu.is_open:
             self.fan_menu.handle_mouse_move(x, y)
             return
+        chip = getattr(self, "_status_chip_rect", None)
+        if (event.button() == Qt.MouseButton.LeftButton and chip is not None and chip.contains(x, y)
+                and self.conflict_choices):
+            self.show_conflict_menu(event.globalPosition().toPoint())
+            return
         if self._constraint_guide is not None:
             if event.button() == Qt.MouseButton.RightButton:
                 self.constraint_help.dismiss()

@@ -532,6 +532,8 @@ class OverlayMixin:
                 painter.setPen(QPen(qcolor(245, 250, 255)))
                 painter.drawText(b_rect, Qt.AlignmentFlag.AlignCenter, badge_text)
 
+        self._draw_sketch_status_chip(painter, w)
+
         # 6. Bottom HUD Navigation Bar
         has_lids = self.doc.has_lids() if hasattr(self.doc, "has_lids") else False
         hud_w = 325 if has_lids else 260
@@ -573,6 +575,79 @@ class OverlayMixin:
         if hasattr(self, "fan_menu") and self.fan_menu and self.fan_menu.is_open:
             self.fan_menu.draw(painter, w, h)
 
+
+    @property
+    def conflict_choices(self) -> list:
+        """What can be taken away so a just refused relation/dimension fits (Document.conflict_offer), while the
+        clash is still shown in the active sketch."""
+        offer = getattr(self.doc, "conflict_offer", None)
+        sk = self.doc.active_sketch
+        if not offer or sk is None or offer["sketch_id"] != sk.sketch_id or not self._recent_conflicts(sk):
+            return []
+        return offer["choices"]
+
+    def show_conflict_menu(self, global_pos) -> None:
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu(self)
+        menu.setToolTipsVisible(True)
+        title = menu.addAction("Replace to make room for the new one:")
+        title.setEnabled(False)
+        actions = {}
+        for i, choice in enumerate(self.conflict_choices):
+            a = menu.addAction(f"✕ {choice['label']}")
+            a.setToolTip("Removes this and adds the one that was refused (one undo step).")
+            actions[a] = i
+        chosen = menu.exec(global_pos)
+        if chosen in actions:
+            self.choose_conflict_replacement(actions[chosen])
+
+    def choose_conflict_replacement(self, index: int) -> bool:
+        ok = self.doc.replace_conflict(index)
+        self.status_message.emit(self.doc.last_message)
+        self.update()
+        return ok
+
+    def sketch_status_chip(self):
+        """(text, (r, g, b)) of the chip at the top of the view in sketch mode, or None: fully defined (green), under
+        defined with its degrees of freedom and free elements (blue), or the elements that just clashed (amber)."""
+        sk = self.doc.active_sketch
+        if sk is None or not sk.entities:
+            return None
+        clash = self._recent_conflicts(sk) if hasattr(self, "_recent_conflicts") else set()
+        if clash:
+            n = len(clash)
+            return (f"⚠ Over defined: {n} element{'s' if n != 1 else ''} clash" +
+                    (" — click to choose what to replace" if getattr(self, "conflict_choices", None) else ""),
+                    (217, 160, 20))
+        if sk.dof is None:
+            return None
+        if sk.dof == 0:
+            return "✓ Fully defined", (46, 160, 90)
+        free = len(getattr(sk, "free_ids", None) or ())
+        tail = f" · {free} element{'s' if free != 1 else ''} can move" if free else ""
+        return f"Under defined · {sk.dof} DOF{tail}", (40, 110, 220)
+
+    def _draw_sketch_status_chip(self, painter: QPainter, w: int) -> None:
+        chip = self.sketch_status_chip()
+        self._status_chip_rect = None
+        if chip is None:
+            return
+        text, (r, g, b) = chip
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        font = QFont(theme.font_family(), 10, QFont.Weight.DemiBold)
+        painter.setFont(font)
+        fm = painter.fontMetrics()
+        cw, ch = fm.horizontalAdvance(text) + 28, fm.height() + 12
+        rect = QRectF((w - cw) / 2.0, 12, cw, ch)
+        painter.setPen(QPen(qcolor(r, g, b), 1.4))
+        painter.setBrush(QBrush(qcolor(r, g, b, 38)))
+        painter.drawRoundedRect(rect, ch / 2.0, ch / 2.0)
+        painter.setPen(QPen(qcolor(max(0, r - 40), max(0, g - 40), max(0, b - 40))
+                            if sum(theme.palette().canvas_rgb01()) / 3 > 0.5 else qcolor(min(255, r + 70), min(255, g + 70), min(255, b + 70))))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
+        painter.restore()
+        self._status_chip_rect = rect
 
     def _draw_status_text(self, painter: QPainter, w: int, h: int):
         """The status message above the camera line (lower left) and the sketch status / units at the lower right."""

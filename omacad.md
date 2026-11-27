@@ -1,3 +1,12 @@
+## Skissstatus och krocklösning — 2026-11-28 (0.9.9.80.228, skissplan steg 2)
+
+- `sketch_solver.sketch_freedom(sketch)` = `solve_sketch(..., dry=True)`: samma system men inget skrivs tillbaka; sätter `dof`/`free_ids`/`solved_ids`, även utan villkor (annars tidig retur). Inga lösarentiteter → `dof None`. `MainWindow.sync_sketch_status` startar en 120 ms-timer (`_refresh_sketch_status`, hoppar över skisser > 600 element); `Document.sketch_status` tom för tom skiss.
+- Vyns bricka: `OverlayMixin.sketch_status_chip()` → (text, färg), `_draw_sketch_status_chip` (överst i mitten, `_status_chip_rect`). Klick (pointer_mixin, först i mousePressEvent) → `show_conflict_menu` → `choose_conflict_replacement` → `Document.replace_conflict(i)`.
+- `Document.conflict_offer` sätts när `add_constraints`/`add_dimension_constraint` nekar: `_conflict_offer` provar för varje villkor/mått på krockande element (högst 16) att ta bort det och lägga in det nya (`_apply_request`, skissen återställs efter varje prov). `replace_conflict` = ett ångra-steg. `record_sketch_change` nollar erbjudandet. Krocken visas `CONFLICT_OFFER_S` (12 s) när det finns val, annars 3 s.
+- `_seed_relations`: H/V vrider linjen kring mitten med samma längd innan nytt försök (SolveSpace tar minsta ändring = kollaps). Används i `add_constraints` och `_apply_request`; `_apply_request` släpper också elementens egna storleksmått en gång som `add_constraints`.
+- Känt, inte åtgärdat: ett villkor på ett helt låst (FIX) element hoppas över i lösaren och godtas utan att gälla. `test_preview_over_section_cap` failar under xvfb även på 5eebe1d (kräver riktig skärm).
+- Test: `tests/test_sketch_status_and_conflicts.py`.
+
 ## Bågar och slots i skisslösaren — 2026-11-28 (0.9.9.80.227, skissplan steg 1)
 
 - `sketch_solver.solver_arc(ent)`: ritad båge (inte `fillet_info`, inte rak) blir `add_arc(normal, centrum, start, slut)`; SolveSpace går moturs, så en medurs båge byggs med start/slut bytta men `pts` nycklas med bågens egna namn (`p_start`/`p_end`/`center`). `_write_arc` sätter tillbaka ändarna och räknar `p_mid` halvvägs i bågens egen riktning; orörd båge skrivs inte (annars 6e-16-brus i p_mid). Projicerade bågar läggs i `fixed`. Punkt på båge: bindningen saknar point-on-arc (TypeError "unsupported entities") → `on_arc_circle` = `equal(linje centrum→punkt, linje centrum→start)`. `round_()` = cirkel eller löst båge (EQUAL, CONCENTRIC, POINT_ON_CIRCLE, RADIUS/DIAMETER). `_tangent` ser en båge som sin cirkel (`_as_round`).

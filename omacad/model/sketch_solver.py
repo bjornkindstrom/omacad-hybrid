@@ -42,7 +42,15 @@ class SolveResult:
     conflicts: set = field(default_factory=set)   # elements of the constraints that clash (over defined)
 
 
-def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable[Tuple[str, str]] = ()) -> SolveResult:
+def sketch_freedom(sketch: Sketch) -> SolveResult:
+    """The sketch's degrees of freedom and which elements can still move, without moving anything: the same system
+    as a solve, but nothing is written back (sketch.dof / free_ids / solved_ids are set). Also for a sketch with no
+    relations yet, where a solve does nothing (every element is then free)."""
+    return solve_sketch(sketch, dry=True)
+
+
+def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable[Tuple[str, str]] = (),
+                 dry: bool = False) -> SolveResult:
     """Enforces the sketch's constraints in place. Geometry is only modified on success.
 
     fixed_ids: entities held exactly where they are (e.g. just moved by the user); the
@@ -52,7 +60,11 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
     """
     _measure_from_walls(sketch)
     ents = _solver_entities(sketch)
-    if not sketch.constraints and not any(d.dim_type in SOLVER_DIM_TYPES for d in sketch.dimensions):
+    if dry and not ents:                    # nothing the solver handles: no freedom to tell
+        sketch.dof = None
+        sketch.free_ids = sketch.solved_ids = None
+        return SolveResult(True, None, "")
+    if not dry and not sketch.constraints and not any(d.dim_type in SOLVER_DIM_TYPES for d in sketch.dimensions):
         sketch.dof = None
         sketch.free_ids = sketch.solved_ids = None
         return SolveResult(True, None, "")
@@ -90,6 +102,9 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
     sketch.conflict_ids = set()
     sketch.free_ids = values.pop("#free", None)
     sketch.solved_ids = set(ents)
+    if dry:
+        sketch.dof = dof
+        return SolveResult(True, dof, "")
     for eid, ent in ents.items():
         if isinstance(ent, SketchLine):
             ent.p1, ent.p2 = values[eid]

@@ -801,8 +801,34 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
             f"Bodies: {num_bodies}\nSketches: {num_sketches}\nParametric Features: {num_features}\nUnits: mm"
         )
 
+    SKETCH_STATUS_DELAY_MS = 120
+    SKETCH_STATUS_MAX_ELEMENTS = 600      # a huge sketch (an exploded text) is not re-analysed on every change
+
     def sync_sketch_status(self):
-        """Sketch name, plane and solve status ("Under defined (2 DOF)") at the right of the status bar."""
+        """Sketch name, plane and solve status ("Under defined (2 DOF)") at the right of the status bar, and the
+        status chip in the view. The freedom is worked out a moment after the last change (a drag sends many)."""
+        timer = getattr(self, "_sketch_status_timer", None)
+        if timer is None:
+            from PySide6.QtCore import QTimer
+            timer = self._sketch_status_timer = QTimer(self)
+            timer.setSingleShot(True)
+            timer.timeout.connect(self._refresh_sketch_status)
+        timer.start(self.SKETCH_STATUS_DELAY_MS)
+        self._show_sketch_status()
+
+    def _refresh_sketch_status(self):
+        sk = self.doc.active_sketch
+        if sk is not None and len(sk.entities) <= self.SKETCH_STATUS_MAX_ELEMENTS:
+            from omacad.model.sketch_solver import sketch_freedom
+            try:
+                sketch_freedom(sk)
+            except Exception as e:       # the status is a help, never a reason for a failure
+                from omacad import applog
+                applog.log("WARN", f"sketch status: {e!r}")
+        self._show_sketch_status()
+        self.viewport.update()
+
+    def _show_sketch_status(self):
         sk = self.doc.active_sketch
         text = ""
         has_text = False
