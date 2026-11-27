@@ -8,6 +8,9 @@ from omacad.model.features.base import Feature
 from omacad.model.kernel import CadKernel
 
 
+MAX_FACET_PLANES = 1024     # a 360-segment cylinder has 362 planes; spheres take their own exact route
+
+
 class ShellFeature(Feature):
     """Hollows out a 3D solid body, optionally opening selected faces. direction: "inside" (wall grows inward by
     `thickness`), "outside" (wall grows outward by `thickness`) or "both" (`thickness` inward and `thickness2` outward)."""
@@ -64,7 +67,7 @@ class ShellFeature(Feature):
         n = n[ok] / ln[ok, None]
         d = np.einsum("ij,ij->i", n, v[ok, 0])
         _, keep = np.unique(np.round(np.column_stack((n, d)), 4), axis=0, return_index=True)
-        if len(keep) > 200:
+        if len(keep) > MAX_FACET_PLANES:     # a finely faceted convex hull: Minkowski instead of thousands of cuts
             return None
         return n[keep], d[keep]
 

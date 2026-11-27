@@ -384,6 +384,14 @@ class SketchDimensionsMixin:
         elif isinstance(ent, SketchArc):
             heading("Arc - set a dimension")
             add("arc_radius", "R Radius…", "Type the radius of the arc.")
+            from omacad.model.sketch_solver import solver_arc
+            if solver_arc(ent) and not getattr(ent, "projected", False):     # a fillet arc follows its lines
+                add("centre", "◎ Distance from the centre to…", "Then click a point, a line or a face edge to measure from the centre.")
+                add("p_start", "↦ Distance from the start to…", "Then click a point, a line or a face edge to measure from the arc's start.")
+                add("p_end", "↤ Distance from the end to…", "Then click a point, a line or a face edge to measure from the arc's end.")
+                menu.addSeparator()
+                heading("Make it")
+                add("fix", "🔒 Fixed in place", "Locks the arc so it can't move or change.")
         elif isinstance(ent, SketchSlot):
             heading("Slot - set a dimension")
             add("slot_length", "📏 Center-to-center length…", "Type the distance between the two slot centres.")
@@ -475,7 +483,7 @@ class SketchDimensionsMixin:
                 self._dim_circle(ent)
             elif key == "angle":
                 self._start_guided_dimension([("ent", ent)], "Angle: click the other line. (Click empty space instead to dimension the length.)")
-            elif key in ("p1", "p2"):
+            elif key in ("p1", "p2", "p_start", "p_end"):
                 self._start_guided_dimension(pt(key), "Distance: click a point, another line or a face edge to measure to.")
             elif key == "centre":
                 self._start_guided_dimension(pt("center"), "Distance from the centre: click a point, a line or a face edge.")

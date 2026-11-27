@@ -1,3 +1,13 @@
+## Bågar och slots i skisslösaren — 2026-11-28 (0.9.9.80.227, skissplan steg 1)
+
+- `sketch_solver.solver_arc(ent)`: ritad båge (inte `fillet_info`, inte rak) blir `add_arc(normal, centrum, start, slut)`; SolveSpace går moturs, så en medurs båge byggs med start/slut bytta men `pts` nycklas med bågens egna namn (`p_start`/`p_end`/`center`). `_write_arc` sätter tillbaka ändarna och räknar `p_mid` halvvägs i bågens egen riktning; orörd båge skrivs inte (annars 6e-16-brus i p_mid). Projicerade bågar läggs i `fixed`. Punkt på båge: bindningen saknar point-on-arc (TypeError "unsupported entities") → `on_arc_circle` = `equal(linje centrum→punkt, linje centrum→start)`. `round_()` = cirkel eller löst båge (EQUAL, CONCENTRIC, POINT_ON_CIRCLE, RADIUS/DIAMETER). `_tangent` ser en båge som sin cirkel (`_as_round`).
+- `solve_keeping_arcs(sketch, ids)` (används av `Document.add_constraints`/`auto_constrain`): håller nya relationens bågar först, sedan vanlig lösning för rätt DOF; annars hade bågen flyttats mot linjen (tester förutsätter gamla beteendet).
+- Slot: två punkter, axellinje i `geo` (så `line()` = linje eller slot), radien på en cirkel kring center1 (`slot_circles`), LENGTH/DIAMETER/RADIUS i lösaren, skrivs tillbaka till `center1/center2/radius`.
+- `point_of`/`point_names`: bågar (`p_start`, `p_end`, `center`; inte fillet-bågar) och slots (`center1`, `center2`) går att välja i mått-verktyget. Högerklick båge: centrum/start/slut-avstånd + Fix.
+- Prövat och borttaget: en extra vanlig lösning efter `_solve_anchored` (för DOF) flyttade referenslinjen 1e-9 och tappade att origo räknas fast (spline-tester). `add_dimension_constraint` lämnar alltså DOF från den förankrade lösningen som förut.
+- Shell: `_facet_planes` gav upp vid > 200 plan (från tidigare ocommittat arbete) → 360-segmentcylinder tog Minkowski och fick remsor; nu `MAX_FACET_PLANES = 1024`. conftest sätter `camera_animation` i minnet (`_data`), inte via `set()` som skrev settings.json i tmp_path och fällde autosave-testet.
+- Laddning/ombyggnad löser aldrig skisser: golden 0 diff. Test: `tests/test_sketch_arc_solver.py`; `test_coincident_line_curve` håller bågen med `fixed_ids` när den ändras direkt (som cirkeltestet). Kvar som fel före sessionen: `test_emboss::test_cylinder_fit_ignores_the_fillet_that_joins_the_wall`, `test_loft::test_232_...`.
+
 ## Shell-cache (Minkowski) — 2026-11-27 (0.9.9.80.226)
 
 - `omacad/model/solid_cache.py`: `cached(op, solid, numbers, compute)` i minne (8) + disk (`DATA_DIR/solid_cache/<blake2b>.npz`, 400 MB, äldst bort först; trasig fil kastas). Används av `ShellFeature._shrink/_grow` för `minkowski_difference/sum`. Nyckel = alla Mesh64-fält utom `run_original_id` (processräknare) + op + tal + manifold-version + `CACHE_VERSION`.

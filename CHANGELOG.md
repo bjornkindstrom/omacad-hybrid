@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.227
+
+### Added
+- **Arcs and slots are part of the sketch solver** (sketch plan, step 1). A drawn arc is solved by its centre, start and end: its radius dimension drives it (it keeps bulging the same way), a line joined to its end or lying on it follows when it changes, and Equal, Tangent, Concentric, Fix and distance dimensions from its centre or ends work. A slot is its two centres, the axis between them and its radius: its length and width dimensions are driving, it takes Horizontal/Vertical/Parallel/Perpendicular like a line, and its centres can be placed with distance dimensions. Right-click an arc for *Distance from the centre / start / end to…* and *Fixed in place*. Fillet arcs keep following their lines and projected arcs (body edges) never move. When a relation is added to an arc, the arc is held first and the other element moves to it, as before. Existing projects are unchanged until a sketch is edited.
+
+### Fixed
+- **Shell on finely faceted convex bodies**: a 360-segment cylinder has 362 facet planes, over the old limit of 200, so Shell fell back to a slow Minkowski erosion that left strips on the wall (`test_extrude_cut_of_lid_plug_at_360_segments_leaves_no_strips`); the limit is now 1024.
+
 # Hybrid-experiment — 0.9.9.80.226
 
 ### Changed

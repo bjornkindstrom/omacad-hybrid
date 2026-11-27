@@ -577,6 +577,14 @@ def point_of(ent, name: str):
         return ent.center
     if isinstance(ent, SketchSpline) and name.startswith("pt") and name[2:].isdigit() and int(name[2:]) < len(ent.points):
         return ent.points[int(name[2:])]
+    if isinstance(ent, SketchSlot) and name in ("center1", "center2"):
+        return getattr(ent, name)
+    if isinstance(ent, SketchArc):
+        if name in ("p_start", "p_mid", "p_end"):
+            return getattr(ent, name)
+        if name == "center":
+            params = ent.get_circle_params()
+            return params[0] if params else None
     return None
 
 
@@ -588,6 +596,10 @@ def point_names(ent):
         return ("center",)
     if isinstance(ent, SketchSpline):
         return tuple(f"pt{i}" for i in range(len(ent.points)))
+    if isinstance(ent, SketchSlot):
+        return ("center1", "center2")
+    if isinstance(ent, SketchArc) and not getattr(ent, "fillet_info", None):   # a fillet arc follows its lines
+        return ("p_start", "p_end", "center") if ent.get_circle_params() is not None else ()
     return ()
 def arm_vector(line: "SketchLine", vertex_end: str):
     """Direction of a line pointing away from the end that sits at the angle's vertex."""

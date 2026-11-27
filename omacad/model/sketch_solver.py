@@ -1,10 +1,12 @@
 """
 Omacad - Sketch constraint solver (SolveSpace)
 
-Translates a Sketch (lines + circles, constraints, and the dimensions that apply to them)
+Translates a Sketch (lines, circles and arcs, constraints, and the dimensions that apply to them)
 into a SolveSpace system, solves it and writes the new coordinates back.
-Rectangles, arcs and slots are not part of the solver yet and keep their coordinates; a fillet arc's
-two lines are solved as the sharp corner it rounds (Sketch.refit_fillets puts the arc back after).
+A drawn arc is a SolveSpace arc (centre, start, end; its radius and ends move with constraints and dimensions).
+A projected arc (a body edge) is held where it is. A slot is its two centres, the axis between them (so it takes
+Horizontal/Vertical/Parallel/... like a line) and its radius. Rectangles are not part of the solver yet; a fillet
+arc's two lines are solved as the sharp corner it rounds (Sketch.refit_fillets puts the arc back after).
 A spline takes part only through the points that a dimension or constraint names (pt0, pt1, ...), so a
 spline without dimensions adds no degrees of freedom.
 """
@@ -15,11 +17,21 @@ from typing import Dict, Iterable, Optional, Tuple
 
 from python_solvespace import SolverSystem
 
-from omacad.model.sketch import (Sketch, SketchArc, SketchLine, SketchCircle, SketchSpline, SOLVER_DIM_TYPES,
+from omacad.model.sketch import (Sketch, SketchArc, SketchLine, SketchCircle, SketchSlot, SketchSpline, SOLVER_DIM_TYPES,
                                  EDGE_PTS, point_of, ref_segment)
 
-SUPPORTED = (SketchLine, SketchCircle)
+SUPPORTED = (SketchLine, SketchCircle, SketchSlot)
 FIXED_GROUP, FREE_GROUP = 1, 2
+
+
+def solver_arc(ent) -> bool:
+    """A drawn arc the solver moves: not a fillet arc (refit from its lines) and not a straight (degenerate) one."""
+    return (isinstance(ent, SketchArc) and not getattr(ent, "fillet_info", None)
+            and ent.get_circle_params() is not None)
+
+
+def _solved_kind(ent) -> bool:
+    return isinstance(ent, SUPPORTED) or solver_arc(ent)
 
 
 @dataclass
@@ -45,6 +57,7 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
         sketch.free_ids = sketch.solved_ids = None
         return SolveResult(True, None, "")
     fixed = {c.refs[0] for c in sketch.constraints if c.ctype == "FIX" and c.refs} | set(fixed_ids)
+    fixed |= {eid for eid, e in ents.items() if isinstance(e, SketchArc) and getattr(e, "projected", False)}
 
     corners = _sharp_corners(sketch, ents)
     sketch.conflict_ids = set()
@@ -83,6 +96,10 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
         elif isinstance(ent, SketchSpline):
             for name, uv in values[eid].items():
                 ent.points[int(name[2:])] = uv
+        elif isinstance(ent, SketchArc):
+            _write_arc(ent, *values[eid])
+        elif isinstance(ent, SketchSlot):
+            ent.center1, ent.center2, ent.radius = values[eid]
         else:
             ent.center = values[eid]
             if f"{eid}#r" in values:
@@ -92,6 +109,18 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
     sketch.refit_spline_offsets()
     sketch.solve_profiles()
     return SolveResult(True, dof, "")
+
+
+def solve_keeping_arcs(sketch: Sketch, ids: Iterable[str]) -> SolveResult:
+    """Solves a sketch after a relation was added on these elements: their arcs are held first (the other element
+    goes to the arc, as before arcs were solved), and only if that cannot work may they move too. The final solve
+    is a plain one, so the degrees of freedom and the defined/free colours are right."""
+    arcs = [i for i in ids if solver_arc(sketch.get_entity(i))]
+    if arcs and solve_sketch(sketch, fixed_ids=arcs).ok:
+        res = solve_sketch(sketch)
+        if res.ok:
+            return res
+    return solve_sketch(sketch)
 
 
 def _spline_points(sketch) -> Dict[str, set]:
@@ -116,7 +145,30 @@ def _spline_points(sketch) -> Dict[str, set]:
 
 def _solver_entities(sketch) -> Dict[str, object]:
     named = _spline_points(sketch)
-    return {e.entity_id: e for e in sketch.entities if isinstance(e, SUPPORTED) or e.entity_id in named}
+    return {e.entity_id: e for e in sketch.entities if _solved_kind(e) or e.entity_id in named}
+
+
+def _arc_ends(arc) -> Tuple[Tuple[float, float], Tuple[float, float], bool]:
+    """(start, end, swapped) as SolveSpace wants them: it runs an arc counter-clockwise from start to end."""
+    ccw = arc.get_circle_params()[4]
+    return (arc.p_start, arc.p_end, False) if ccw else (arc.p_end, arc.p_start, True)
+
+
+def _write_arc(arc, center, start, end) -> None:
+    """Puts a solved arc back (start/end in the arc's own order): the middle point half way round, in the arc's own
+    direction, at the start's radius."""
+    params = arc.get_circle_params()
+    ccw = params[4]
+    if max(math.dist(start, arc.p_start), math.dist(end, arc.p_end), math.dist(center, params[0])) < 1e-12:
+        return                          # did not move: keep the arc exactly as drawn (no round-off in its middle)
+    cx, cy = center
+    r = math.hypot(start[0] - cx, start[1] - cy)
+    a0 = math.atan2(start[1] - cy, start[0] - cx)
+    a1 = math.atan2(end[1] - cy, end[0] - cx)
+    sweep = (a1 - a0) % (2 * math.pi) if ccw else -((a0 - a1) % (2 * math.pi))
+    mid = a0 + sweep / 2.0
+    arc.p_start, arc.p_end = tuple(start), tuple(end)
+    arc.p_mid = (cx + r * math.cos(mid), cy + r * math.sin(mid))
 
 
 def _measure_from_walls(sketch) -> None:
@@ -162,6 +214,11 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
             return v[0] if name == "p1" else v[1]
         if isinstance(ents[eid], SketchSpline):
             return v[name]
+        if isinstance(ents[eid], SketchArc):
+            centre, start, end = v
+            return centre if name == "center" else start if name == "p_start" else end
+        if isinstance(ents[eid], SketchSlot):
+            return v[0] if name == "center1" else v[1]
         return v
 
     def line_vec(eid):
@@ -173,7 +230,17 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
         a = d.target_entity_id
         if a not in ents:
             continue
-        if d.dim_type in ("DIAMETER", "RADIUS") and isinstance(ents[a], SketchCircle):
+        if d.dim_type in ("DIAMETER", "RADIUS") and isinstance(ents[a], SketchArc):
+            centre, start, _end = values[a]
+            want = d.value / 2.0 if d.dim_type == "DIAMETER" else d.value
+            if abs(math.hypot(start[0] - centre[0], start[1] - centre[1]) - want) > tol * max(1.0, want):
+                return False
+        elif isinstance(ents[a], SketchSlot) and d.dim_type in ("DIAMETER", "RADIUS", "LENGTH"):
+            c1, c2, radius = values[a]
+            got = math.dist(c1, c2) if d.dim_type == "LENGTH" else radius * (2.0 if d.dim_type == "DIAMETER" else 1.0)
+            if abs(got - d.value) > tol * max(1.0, d.value):
+                return False
+        elif d.dim_type in ("DIAMETER", "RADIUS") and isinstance(ents[a], SketchCircle):
             radius = values.get(f"{a}#r", ents[a].radius)
             want = d.value / 2.0 if d.dim_type == "DIAMETER" else d.value
             if abs(radius - want) > tol * max(1.0, want):
@@ -222,10 +289,20 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
     pts: Dict[Tuple[str, str], object] = {}
     geo: Dict[str, object] = {}
     radii: Dict[str, object] = {}
+    slot_circles: Dict[str, object] = {}    # a slot's radius lives on a circle round its first centre
     normal = None
     sharp = {}
     for la, ea, lb, eb, corner, _, _ in corners:
         sharp[(la, ea)] = sharp[(lb, eb)] = corner
+
+    def workplane_normal(ent):
+        """The workplane normal as a constant (see the circle branch of build), made once."""
+        nonlocal normal
+        if normal is None:
+            sys_.set_group(FIXED_GROUP)
+            normal = sys_.add_normal_3d(1.0, 0.0, 0.0, 0.0)
+            sys_.set_group(FREE_GROUP if ent.entity_id not in fixed else FIXED_GROUP)
+        return normal
 
     def build(ent):
         nonlocal normal
@@ -240,6 +317,24 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             for name in sorted(spline_points.get(ent.entity_id, ())):
                 uv = point_of(ent, name)
                 pts[(ent.entity_id, name)] = sys_.add_point_2d(uv[0], uv[1], wp)
+        elif isinstance(ent, SketchSlot):
+            a = sys_.add_point_2d(ent.center1[0], ent.center1[1], wp)
+            b = sys_.add_point_2d(ent.center2[0], ent.center2[1], wp)
+            geo[ent.entity_id] = sys_.add_line_2d(a, b, wp)          # the axis: line relations apply to it
+            r = sys_.add_distance(float(ent.radius), wp)
+            slot_circles[ent.entity_id] = sys_.add_circle(workplane_normal(ent), a, r, wp)
+            pts[(ent.entity_id, "center1")], pts[(ent.entity_id, "center2")] = a, b
+            radii[ent.entity_id] = r
+        elif isinstance(ent, SketchArc):
+            centre = ent.get_circle_params()[0]
+            start, end, swapped = _arc_ends(ent)
+            c = sys_.add_point_2d(centre[0], centre[1], wp)
+            a = sys_.add_point_2d(start[0], start[1], wp)
+            b = sys_.add_point_2d(end[0], end[1], wp)
+            geo[ent.entity_id] = sys_.add_arc(workplane_normal(ent), c, a, b, wp)
+            pts[(ent.entity_id, "center")] = c
+            pts[(ent.entity_id, "p_end" if swapped else "p_start")] = a
+            pts[(ent.entity_id, "p_start" if swapped else "p_end")] = b
         else:
             c = sys_.add_point_2d(ent.center[0], ent.center[1], wp)
             if normal is None:
@@ -269,10 +364,20 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             sys_.dragged(handle, wp)
 
     def line(eid):
-        return geo[eid] if isinstance(ents.get(eid), SketchLine) else None
+        return geo[eid] if isinstance(ents.get(eid), (SketchLine, SketchSlot)) else None
 
     def circle(eid):
         return geo[eid] if isinstance(ents.get(eid), SketchCircle) else None
+
+    def on_arc_circle(point, arc_id):
+        """A point on a solved arc's circle (the binding has no point-on-arc): as far from the centre as its start."""
+        centre = pts[(arc_id, "center")]
+        sys_.equal(sys_.add_line_2d(centre, point, wp), sys_.add_line_2d(centre, pts[(arc_id, "p_start")], wp), wp)
+
+    def round_(eid):
+        """A circle or a solved arc (anything with a centre and a radius in the solver)."""
+        e = ents.get(eid)
+        return geo[eid] if isinstance(e, SketchCircle) or (isinstance(e, SketchArc) and eid in geo) else None
 
     def center_handle(line_ids):
         """Create an auxiliary solver point at the midpoint of a four-line loop's diagonal."""
@@ -320,6 +425,13 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
         owners.append((sys_.cons_len(), list(c.refs)))
         if c.ctype in ("POINT_ON_CIRCLE", "ARC_END") and len(c.refs) == 2 and c.pts and any(r in arcs for r in c.refs):
             arc_id, line_id = (c.refs[0], c.refs[1]) if c.ctype == "POINT_ON_CIRCLE" else (c.refs[1], c.refs[0])
+            if arc_id in geo and isinstance(ents.get(line_id), SketchLine) and not (arc_id in fixed and line_id in fixed):
+                point = pts[(line_id, c.pts[0])]           # a solved arc: both may move to meet
+                if c.ctype == "POINT_ON_CIRCLE":
+                    on_arc_circle(point, arc_id)
+                elif len(c.pts) == 2 and c.pts[1] in ("p_start", "p_end"):
+                    sys_.coincident(point, pts[(arc_id, c.pts[1])], wp)
+                continue
             handle = arc_handle(arc_id) if arc_id in arcs else None
             if handle is None or not isinstance(ents.get(line_id), SketchLine) or line_id in fixed:
                 continue
@@ -344,14 +456,17 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             sys_.parallel(geo[a], geo[b], wp)
         elif t == "PERPENDICULAR" and line(a) and line(b):
             sys_.perpendicular(geo[a], geo[b], wp)
-        elif t == "EQUAL" and b and ((line(a) and line(b)) or (circle(a) and circle(b))):
+        elif t == "EQUAL" and b and ((line(a) and line(b)) or (round_(a) and round_(b))):
             sys_.equal(geo[a], geo[b], wp)
-        elif t == "CONCENTRIC" and circle(a) and circle(b):
+        elif t == "CONCENTRIC" and round_(a) and round_(b):
             sys_.coincident(pts[(a, "center")], pts[(b, "center")], wp)
         elif t == "COINCIDENT" and b and len(c.pts) == 2:
             sys_.coincident(pts[(a, c.pts[0])], pts[(b, c.pts[1])], wp)
-        elif t == "POINT_ON_CIRCLE" and circle(a) and b and line(b) and c.pts:
-            sys_.coincident(pts[(b, c.pts[0])], geo[a], wp)
+        elif t == "POINT_ON_CIRCLE" and round_(a) and b and line(b) and c.pts:
+            if circle(a):
+                sys_.coincident(pts[(b, c.pts[0])], geo[a], wp)
+            else:
+                on_arc_circle(pts[(b, c.pts[0])], a)
         elif t == "TANGENT" and b:
             _tangent(sys_, wp, ents, pts, geo, a, b)
         elif t == "POINT_ON_LINE" and b and line(b) and c.pts and (a, c.pts[0]) in pts:
@@ -397,12 +512,17 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             continue
         if ent is None or ent.entity_id in fixed:
             continue
-        if d.dim_type == "LENGTH" and isinstance(ent, SketchLine):
+        if isinstance(ent, SketchSlot) and d.dim_type in ("LENGTH", "DIAMETER", "RADIUS"):
+            if d.dim_type == "LENGTH":
+                sys_.distance(pts[(ent.entity_id, "center1")], pts[(ent.entity_id, "center2")], float(d.value), wp)
+            else:
+                sys_.diameter(slot_circles[ent.entity_id], float(d.value) * (1.0 if d.dim_type == "DIAMETER" else 2.0))
+        elif d.dim_type == "LENGTH" and isinstance(ent, SketchLine):
             sys_.distance(pts[(ent.entity_id, "p1")], pts[(ent.entity_id, "p2")],
                           float(d.value) + add.get(ent.entity_id, 0.0), wp)
-        elif d.dim_type == "DIAMETER" and isinstance(ent, SketchCircle):
+        elif d.dim_type == "DIAMETER" and (isinstance(ent, SketchCircle) or ent.entity_id in geo and isinstance(ent, SketchArc)):
             sys_.diameter(geo[ent.entity_id], float(d.value))
-        elif d.dim_type == "RADIUS" and isinstance(ent, SketchCircle):
+        elif d.dim_type == "RADIUS" and (isinstance(ent, SketchCircle) or ent.entity_id in geo and isinstance(ent, SketchArc)):
             sys_.diameter(geo[ent.entity_id], float(d.value) * 2.0)
 
     flag = sys_.solve()
@@ -427,6 +547,11 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             values[eid] = (_xy(sys_, pts[(eid, "p1")]), _xy(sys_, pts[(eid, "p2")]))
         elif isinstance(ent, SketchSpline):
             values[eid] = {name: _xy(sys_, pts[(eid, name)]) for name in spline_points.get(eid, ())}
+        elif isinstance(ent, SketchArc):
+            values[eid] = (_xy(sys_, pts[(eid, "center")]), _xy(sys_, pts[(eid, "p_start")]), _xy(sys_, pts[(eid, "p_end")]))
+        elif isinstance(ent, SketchSlot):
+            values[eid] = (_xy(sys_, pts[(eid, "center1")]), _xy(sys_, pts[(eid, "center2")]),
+                           float(sys_.params(radii[eid].params)[0]))
         else:
             values[eid] = _xy(sys_, pts[(eid, "center")])
             solved_r = float(sys_.params(radii[eid].params)[0])
@@ -457,7 +582,7 @@ def entity_defined(sketch, ent) -> bool:
     solved = getattr(sketch, "solved_ids", None) or set()
     if free is None or sketch.dof is None:
         return sketch.dof == 0
-    if isinstance(ent, SUPPORTED):     # drawn after the last solve: not known to be defined yet
+    if _solved_kind(ent):     # drawn after the last solve: not known to be defined yet
         return ent.entity_id in solved and ent.entity_id not in free
     if sketch.dof == 0:
         return True
@@ -591,6 +716,7 @@ def _tangent(sys_, wp, ents, pts, geo, a, b):
     """Line-circle: centre-to-line distance = radius. Circle-circle: centre distance = r1 +/- r2
     (the radius is held by the circle's diameter dimension, so the current value is used)."""
     ea, eb = ents[a], ents[b]
+    ea, eb = _as_round(ea), _as_round(eb)            # a solved arc is tangent like its circle
     if isinstance(ea, SketchCircle) and isinstance(eb, SketchLine):
         ea, eb, a, b = eb, ea, b, a
     if isinstance(ea, SketchLine) and isinstance(eb, SketchCircle):
@@ -601,6 +727,14 @@ def _tangent(sys_, wp, ents, pts, geo, a, b):
         inner = d < max(ea.radius, eb.radius) - 1e-6
         value = abs(ea.radius - eb.radius) if inner else ea.radius + eb.radius
         sys_.distance(pts[(a, "center")], pts[(b, "center")], float(value), wp)
+
+
+def _as_round(ent):
+    """A solved arc as the circle it lies on (centre and current radius), for the tangent rules; others as they are."""
+    if solver_arc(ent):
+        centre, r = ent.get_circle_params()[:2]
+        return SketchCircle(ent.entity_id, centre, r)
+    return ent
 
 
 def _foot_inside(p, line) -> Optional[Tuple[float, float]]:

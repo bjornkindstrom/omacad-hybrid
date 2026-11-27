@@ -55,9 +55,9 @@ def test_line_end_goes_onto_an_arc_which_stays_put():
     assert arc.p_start == (10.0, 0.0) and arc.p_mid == (0.0, 10.0) and arc.p_end == (-10.0, 0.0)
     assert math.hypot(*line.p1) == pytest.approx(10.0, abs=1e-6)
 
-    # the arc grows: the line follows on the next solve
+    # the arc grows (held, as an edited element is, like the circle above): the line follows
     arc.p_start, arc.p_mid, arc.p_end = (20.0, 0.0), (0.0, 20.0), (-20.0, 0.0)
-    assert solve_sketch(sk).ok
+    assert solve_sketch(sk, fixed_ids=[arc.entity_id]).ok
     assert math.hypot(*line.p1) == pytest.approx(20.0, abs=1e-6)
 
 

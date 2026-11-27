@@ -26,7 +26,7 @@ from omacad.model.timeline import (
 from omacad.model.features.knurl import apply_knurl
 from omacad.model.features.japandi import apply_japandi
 from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint, SketchCircle
-from omacad.model.sketch_solver import solve_sketch, SolveResult
+from omacad.model.sketch_solver import solve_sketch, solve_keeping_arcs, SolveResult
 from omacad.model import expr as exprlib
 from omacad.model.faces import in_plane_edges
 
@@ -3597,7 +3597,7 @@ class Document:
         before = sketch.to_dict()
         for ctype, refs, pts in specs:
             sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), ctype, list(refs), list(pts)))
-        res = solve_sketch(sketch)
+        res = solve_keeping_arcs(sketch, {r for _, refs, _ in specs for r in refs})
         released = 0
         if not res.ok:
             involved = {r for _, refs, _ in specs for r in refs}
@@ -3626,7 +3626,7 @@ class Document:
             c = SketchConstraint(sketch.new_constraint_id(), ctype, list(refs), list(pts))
             sketch.constraints.append(c)
             snapshot = sketch.to_dict()
-            if solve_sketch(sketch).ok:
+            if solve_keeping_arcs(sketch, refs).ok:
                 added += 1
             else:
                 sketch.constraints.remove(c)
