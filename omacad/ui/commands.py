@@ -142,6 +142,10 @@ _ALL = [
        ("sketch",)),
     _c("trim", "Trim", "✂️", "Remove a curve up to the nearest crossings, or a dangling end", "T",
        "sketch_tool_selected", "TRIM", ("sketch",)),
+    _c("extend_sketch", "Extend", "↦", "Lengthen a line from the end you click to the next curve it points at", "",
+       "sketch_tool_selected", "EXTEND", ("sketch",)),
+    _c("break_sketch", "Break", "⫽", "Cut a line in two where you click (at a crossing when one is near)", "",
+       "sketch_tool_selected", "BREAK", ("sketch",)),
     _c("move_sketch", "Move", "✥", "Move the selected sketch elements (or drag them)", "M", "sketch_tool_selected",
        "MOVE", ("sketch",)),
     _c("rotate_sketch", "Rotate", "↻", "Rotate the selected elements about a centre or a picked point", "Shift+R",
@@ -186,7 +190,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
 SKETCH_GROUPS: List[Tuple[str, list]] = [
     ("CREATE", ["line", "rect", "circle", "arc", "spline", "control_spline", "polygon", "slot", "text", "import_svg", "offset_sketch", "mirror_sketch", "project",
                 "dimension"]),
-    ("MODIFY", ["fillet_sketch", "trim", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
+    ("MODIFY", ["fillet_sketch", "trim", "extend_sketch", "break_sketch", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
     ("CONSTRAINTS", ["constraints"]),
     ("INSPECT", ["measure"]),
 ]

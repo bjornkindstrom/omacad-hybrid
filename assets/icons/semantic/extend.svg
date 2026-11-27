@@ -1,0 +1,7 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- a line growing on to a wall -->
+    <path d="M40 6V42" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M6 24H20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M22 24H36" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="3 3"/>
+    <path d="M31 19L37 24L31 29" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

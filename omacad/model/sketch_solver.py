@@ -384,6 +384,16 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
     def circle(eid):
         return geo[eid] if isinstance(ents.get(eid), SketchCircle) else None
 
+    def on_line(point, uv, line_id):
+        """A point on a line, as a helper line from the line's farther end to the point, parallel to it.
+        SolveSpace's own point-on-line slides a point that already lies on the line 1/64 mm along it (the line
+        too); this cross-product form has no such residue. The farther end keeps the helper from being 0 long."""
+        ent = ents[line_id]
+        names = ("p1", "p2") if isinstance(ent, SketchLine) else ("center1", "center2")
+        ends = [point_of(ent, n) for n in names]
+        far = names[0] if uv is None or math.dist(uv, ends[0]) >= math.dist(uv, ends[1]) else names[1]
+        sys_.parallel(sys_.add_line_2d(pts[(line_id, far)], point, wp), geo[line_id], wp)
+
     def on_arc_circle(point, arc_id):
         """A point on a solved arc's circle (the binding has no point-on-arc): as far from the centre as its start."""
         centre = pts[(arc_id, "center")]
@@ -485,7 +495,7 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
         elif t == "TANGENT" and b:
             _tangent(sys_, wp, ents, pts, geo, a, b)
         elif t == "POINT_ON_LINE" and b and line(b) and c.pts and (a, c.pts[0]) in pts:
-            sys_.coincident(pts[(a, c.pts[0])], geo[b], wp)
+            on_line(pts[(a, c.pts[0])], point_of(ents[a], c.pts[0]), b)
         elif t == "MIDPOINT" and b and line(b) and c.pts and (a, c.pts[0]) in pts:
             sys_.midpoint(pts[(a, c.pts[0])], geo[b], wp)
         elif t == "SYMMETRIC" and len(c.refs) == 3 and len(c.pts) == 2 and line(c.refs[2]) and b \

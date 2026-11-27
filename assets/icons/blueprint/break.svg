@@ -1,0 +1,7 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- one line cut into two at a point -->
+    <path d="M6 30L21 22" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M27 19L42 11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="24" cy="20.5" r="2.6" fill="currentColor"/>
+    <path d="M18 8L30 34" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 3" opacity="0.7"/>
+</svg>

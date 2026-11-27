@@ -26,6 +26,7 @@ from omacad.model.timeline import (
 from omacad.model.features.knurl import apply_knurl
 from omacad.model.features.japandi import apply_japandi
 from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint, SketchCircle, SketchLine
+from omacad.model.sketch_types import SOLVER_DIM_TYPES as SOLVER_DIMS
 from omacad.model.sketch_solver import solve_sketch, solve_keeping_arcs, SolveResult
 from omacad.model import expr as exprlib
 from omacad.model.faces import in_plane_edges
@@ -3637,6 +3638,37 @@ class Document:
                 sketch.constraints.remove(c)
                 sketch.restore_from_dict(snapshot)
         return added
+
+    def extend_line_at(self, sketch_id: str, u: float, v: float, tol: float) -> bool:
+        """Extend: the clicked line's nearest end grows to the first curve it meets (one undo step)."""
+        from omacad.model.sketch_extend import apply_extend, extend_plan
+        return self._sketch_edit(sketch_id, lambda sk: extend_plan(sk, u, v, tol), apply_extend,
+                                 "Extend: click near the end of a line that points at another curve.")
+
+    def break_line_at(self, sketch_id: str, u: float, v: float, tol: float) -> bool:
+        """Break: cuts the clicked line in two there (at a crossing when one is near), one undo step."""
+        from omacad.model.sketch_extend import apply_break, break_plan
+        return self._sketch_edit(sketch_id, lambda sk: break_plan(sk, u, v, tol), apply_break,
+                                 "Break: click a line where it should be cut (not at its ends).")
+
+    def _sketch_edit(self, sketch_id, plan_fn, apply_fn, miss: str) -> bool:
+        sketch = self.sketches.get(sketch_id)
+        plan = plan_fn(sketch) if sketch else None
+        if not plan:
+            self.last_message = miss
+            return False
+        before = sketch.to_dict()
+        apply_fn(sketch, plan)
+        if (sketch.constraints or any(d.dim_type in SOLVER_DIMS for d in sketch.dimensions)) and not solve_sketch(sketch).ok:
+            sketch.restore_from_dict(before)
+            self.last_message = "That would clash with the sketch's relations - nothing changed."
+            return False
+        sketch.solve_profiles()
+        self.record_sketch_change(sketch, before)
+        self.timeline.recompute(self)
+        self.notify_changed()
+        self.last_message = "Done. " + self.sketch_status(sketch)
+        return True
 
     def remove_constraint(self, sketch_id: str, cid: str) -> bool:
         sketch = self.sketches.get(sketch_id)

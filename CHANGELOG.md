@@ -1,3 +1,11 @@
+# Hybrid-experiment — 0.9.9.80.230
+
+### Added
+- **Extend and Break** for sketch lines (sketch plan, step 5), in SKETCH › MODIFY and the right-click menu. *Extend*: click near a line's end and it grows straight on to the first line, circle, arc or spline it points at, keeps that end on it, and its length dimension follows (a preview shows the piece it would grow by). *Break*: click a line and it becomes two joined lines in line with each other, at a crossing when the click is near one; relations and dimensions on the old end point move to the new piece. Both are one undo step.
+
+### Fixed
+- **Point-on-line relations no longer nudge the sketch**: SolveSpace's own point-on-line slid a point that already lay on a line 1/64 mm along it (and the line with it) on every solve. The relation is now a helper line from the line's far end to the point, kept parallel to the line, which holds exactly.
+
 # Hybrid-experiment — 0.9.9.80.229
 
 ### Added

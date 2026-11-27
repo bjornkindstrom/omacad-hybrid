@@ -38,6 +38,8 @@ SKETCH_TOOLS = [
     _entry("DIMENSION", "dimension", "Create"),
     _entry("FILLET", "fillet_sketch", "Modify"),
     _entry("TRIM", "trim", "Modify"),
+    _entry("EXTEND", "extend_sketch", "Modify"),
+    _entry("BREAK", "break_sketch", "Modify"),
     _entry("MOVE", "move_sketch", "Modify"),
     _entry("ROTATE", "rotate_sketch", "Modify"),
     _entry("SCALE", "scale_sketch", "Modify"),

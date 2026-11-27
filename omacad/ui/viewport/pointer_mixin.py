@@ -236,6 +236,15 @@ class PointerMixin:
                 self._move_next()
             return
 
+        # Extend / Break: one click on a line
+        if self.doc.active_sketch and self.sketch_tool in ("EXTEND", "BREAK"):
+            if event.button() == Qt.MouseButton.RightButton:
+                self.set_sketch_tool("NONE")
+                return
+            if event.button() == Qt.MouseButton.LeftButton:
+                self._extend_or_break_at(x, y)
+                return
+
         # Handle Trim Tool Click
         if self.doc.active_sketch and self.sketch_tool == "TRIM":
             if event.button() == Qt.MouseButton.RightButton:
@@ -621,7 +630,7 @@ class PointerMixin:
 
         if hovered or hovered_constraint_cid:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
-        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "TRIM", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
+        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "TRIM", "EXTEND", "BREAK", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
             self.setCursor(Qt.CursorShape.CrossCursor)
         elif not self.doc.active_sketch and not self.edge_pick_mode and not self.plane_pick_mode and self._find_joint_hit(x, y):
             self.setCursor(Qt.CursorShape.OpenHandCursor)
@@ -635,6 +644,8 @@ class PointerMixin:
             self._text_hover(x, y)
         if self.doc.active_sketch and self.sketch_tool == "TRIM":
             self._trim_hover(x, y)
+        if self.doc.active_sketch and self.sketch_tool in ("EXTEND", "BREAK"):
+            self._extend_or_break_hover(x, y)
         if self.doc.active_sketch and self.sketch_tool == "MIRROR":
             self._mirror_hover(x, y)
 

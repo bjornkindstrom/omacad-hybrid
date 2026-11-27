@@ -80,6 +80,10 @@ class SketchOperationMixin:
             self._offset_status()
         if tool_name == "MIRROR":
             self._mirror_status()
+        if tool_name == "EXTEND":
+            self.status_message.emit("Extend: click near the end of a line; it grows to the next curve it points at.")
+        if tool_name == "BREAK":
+            self.status_message.emit("Break: click a line where it should be cut in two (it snaps to a crossing nearby).")
         if tool_name == "TRIM":
             self.status_message.emit("Trim: click the piece of a line, circle or arc to remove (up to the nearest crossings or the free end).")
         if tool_name == "FILLET":
@@ -201,6 +205,47 @@ class SketchOperationMixin:
         if (arr is None) != (self.fillet_preview is None) or arr is not None:
             self.fillet_preview = arr
             self.update()
+
+    def _extend_or_break_plan(self, x, y):
+        uv = self.get_sketch_plane_uv(x, y)
+        if uv is None:
+            return None
+        from omacad.model.sketch_extend import break_plan, extend_plan
+        fn = extend_plan if self.sketch_tool == "EXTEND" else break_plan
+        return fn(self.doc.active_sketch, uv[0], uv[1], self._entity_tolerance())
+
+    def _extend_or_break_hover(self, x, y):
+        """Extend shows the piece the line would grow by; Break a short tick across the line where it is cut."""
+        plan = self._extend_or_break_plan(x, y)
+        segs = []
+        if plan:
+            sk = self.doc.active_sketch
+            if self.sketch_tool == "EXTEND":
+                line, end, point, _other = plan
+                ends = [getattr(line, end), point]
+            else:
+                line, point = plan
+                dx, dy = line.p2[0] - line.p1[0], line.p2[1] - line.p1[1]
+                n = math.hypot(dx, dy) or 1.0
+                k = 3.0 * self._entity_tolerance()
+                ends = [(point[0] - dy / n * k, point[1] + dx / n * k), (point[0] + dy / n * k, point[1] - dx / n * k)]
+            a, b = (sk.plane.uv_to_world(*p) for p in ends)
+            segs = [*a, *b]
+        arr = np.array(segs, dtype=np.float32) if segs else None
+        if (arr is None) != (self.fillet_preview is None) or arr is not None:
+            self.fillet_preview = arr
+            self.update()
+
+    def _extend_or_break_at(self, x, y):
+        uv = self.get_sketch_plane_uv(x, y)
+        sk = self.doc.active_sketch
+        if uv is None or sk is None:
+            return
+        tol = self._entity_tolerance()
+        ok = (self.doc.extend_line_at if self.sketch_tool == "EXTEND" else self.doc.break_line_at)(sk.sketch_id, uv[0], uv[1], tol)
+        self.fillet_preview = None
+        self.status_message.emit(self.doc.last_message + (" Click more, or Esc / right-click to finish." if ok else ""))
+        self.update()
 
     def _trim_at(self, x, y):
         plan = self._trim_plan_at(x, y)

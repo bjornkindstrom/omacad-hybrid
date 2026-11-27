@@ -1,3 +1,10 @@
+## Extend/Break + punkt-på-linje utan glidning — 2026-11-28 (0.9.9.80.230, steg 5 del 1)
+
+- `omacad/model/sketch_extend.py`: `extend_plan`/`apply_extend` (närmaste linjeände, stråle med `sketch_trim._line_hits` mot alla andra element, närmaste träff > 1e-4; LENGTH-måttet får nya längden, POINT_ON_LINE/POINT_ON_CIRCLE läggs till), `break_plan`/`apply_break` (fot eller korsning inom tol, inte vid ändarna; ny linje efter den gamla, relationer/mått på gamla `p2` flyttas — obs `POINT_ON_CIRCLE` har punkten på `refs[1]`; COINCIDENT + PARALLEL mellan bitarna, LENGTH på båda). `Document.extend_line_at`/`break_line_at` via `_sketch_edit` (löser bara om skissen har villkor; misslyckas → återställ).
+- UI: kommandon `extend_sketch`/`break_sketch` (SKETCH_GROUPS MODIFY efter trim, `btn_extend_sk`/`btn_break_sk`, synk i main_window och ribbon), `sketch_tools` EXTEND/BREAK, ikoner `extend.svg`/`break.svg` i alla set, `sketch_tool_panel` titlar/tips, `pointer_mixin` tryck/hovring → `_extend_or_break_at`/`_extend_or_break_hover` (förhandsvisning i `fillet_preview`).
+- SolveSpace-fälla: `coincident(punkt, linje)` och `distance(punkt, linje, 0)` flyttar en punkt som redan ligger på linjen 1/64 mm längs den (linjen följer med), även i ett minimalt system. `POINT_ON_LINE` = `parallel(hjälplinje(linjens bortre ände → punkt), linjen)` (`on_line` i `_attempt`). Punkt på cirkel och mittpunkt glider inte.
+- Test: `tests/test_sketch_extend_break.py`.
+
 ## Smart Dimension på bågar + auto-relationer för bågar/cirklar — 2026-11-28 (0.9.9.80.229, steg 3–4)
 
 - Steg 3 fanns redan till största delen (linje: placering ger längd/H/V, linje+linje vinkel, punkt+punkt med placering, inline-ruta). Nytt: `handle_dimension_tool_click` lägger en löst båge i `_dim_pending` (som cirkeln); nästa klick: linje → `_dim_pt_line(("pt", arc, "center"), …)`, kant → `_dim_pt_ref`, punkt → `_dim_place`, annars `_dim_arc` (radien). Fillet/projicerade bågar: radien direkt.

@@ -71,6 +71,10 @@ MORE = {
              "frustum taper point funnel"),
     "sphere": ("Radius, placement (centred, bottom on origin, or on a face) and optional Shell Wall to hollow it.",
                "ball globe sphere hollow"),
+    "extend_sketch": ("Click near the end of a line: it grows straight on to the first line, circle, arc or spline it "
+                      "points at, stays on it, and its length dimension follows.", "extend lengthen longer reach"),
+    "break_sketch": ("Click a line where it should be cut: it becomes two joined lines in line with each other (at a "
+                     "crossing when the click is near one); relations on its ends move with them.", "break split cut divide"),
     "lithophane": ("Choose a picture and a shape: Flat, Cylinder / arc or Sphere (with a lamp opening). Dark areas become "
                    "thick, light areas thin. The panel shows the print as it looks lit from behind. Tone Light-correct "
                    "makes the light through the wall follow the picture (midtones stay midtones); Auto levels, Sharpen "

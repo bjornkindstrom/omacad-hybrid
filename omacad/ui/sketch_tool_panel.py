@@ -15,7 +15,7 @@ TITLES = {
     "LINE": "Line", "RECT": "Rectangle", "ROUNDED_RECT": "Rounded Rectangle", "CENTER_RECT": "Center Rectangle",
     "CENTER_ROUNDED_RECT": "Center Rounded Rectangle", "CIRCLE": "Circle", "SMART_CIRCLE": "Smart Circle",
     "POLYGON": "Polygon", "ARC": "3-Point Arc", "SLOT": "Slot", "TEXT": "Text", "OFFSET": "Offset", "MIRROR": "Mirror",
-    "FILLET": "Fillet", "TRIM": "Trim", "MOVE": "Move", "DIMENSION": "Dimension",
+    "FILLET": "Fillet", "TRIM": "Trim", "EXTEND": "Extend", "BREAK": "Break", "MOVE": "Move", "DIMENSION": "Dimension",
 }
 HINTS = {
     "LINE": "Click the start, then the end. Lines chain on; right-click or Esc ends the chain.",
@@ -30,6 +30,8 @@ HINTS = {
     "SLOT": "Click the first centre, then the second, then how wide.",
     "TEXT": "Click where the text goes (two clicks for Text In Box).",
     "TRIM": "Click the piece of a line, circle or arc to remove.",
+    "EXTEND": "Click near the end of a line: it grows to the next curve it points at.",
+    "BREAK": "Click a line where it should be cut in two (snaps to a crossing nearby).",
     "DIMENSION": "Click a line, circle, two points or two lines, then where the dimension goes.",
     "MOVE": "Click the elements, Enter, then the base point and where it goes. Or type X / Y here.",
 }

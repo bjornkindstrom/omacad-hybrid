@@ -429,7 +429,7 @@ class Ribbon(QWidget):
         sketch_buttons = {        # the names the main window and tests use for the sketch buttons
             "line": "btn_line", "polygon": "btn_polygon", "arc": "btn_arc", "spline": "btn_spline", "control_spline": "btn_control_spline", "slot": "btn_slot", "text": "btn_text",
             "offset_sketch": "btn_offset_sk", "mirror_sketch": "btn_mirror_sk", "project": "btn_project_sk",
-            "dimension": "btn_dim", "fillet_sketch": "btn_fillet_sk", "trim": "btn_trim_sk", "move_sketch": "btn_move",
+            "dimension": "btn_dim", "fillet_sketch": "btn_fillet_sk", "trim": "btn_trim_sk", "extend_sketch": "btn_extend_sk", "break_sketch": "btn_break_sk", "move_sketch": "btn_move",
             "rotate_sketch": "btn_rotate_sk", "scale_sketch": "btn_scale_sk", "pattern_sketch": "btn_pattern_sketch",
             "construction": "btn_construct",
         }
@@ -595,6 +595,9 @@ class Ribbon(QWidget):
             self.btn_mirror_sk.setChecked(tool_name == "MIRROR")
         if hasattr(self, "btn_trim_sk"):
             self.btn_trim_sk.setChecked(tool_name == "TRIM")
+        for name, tool in (("btn_extend_sk", "EXTEND"), ("btn_break_sk", "BREAK")):
+            if hasattr(self, name):
+                getattr(self, name).setChecked(tool_name == tool)
         self.btn_dim.setChecked(tool_name == "DIMENSION")
         self.btn_move.setChecked(tool_name == "MOVE")
         self.btn_rotate_sk.setChecked(tool_name == "ROTATE")
@@ -655,7 +658,8 @@ class Ribbon(QWidget):
                 self.btn_line, self.btn_rect, self.btn_circle, self.btn_arc,
                 getattr(self, "btn_spline", None), getattr(self, "btn_control_spline", None),
                 self.btn_slot, self.btn_polygon, self.btn_text, self.btn_fillet_sk,
-                self.btn_trim_sk, self.btn_mirror_sk, self.btn_offset_sk,
+                self.btn_trim_sk, getattr(self, "btn_extend_sk", None), getattr(self, "btn_break_sk", None),
+                self.btn_mirror_sk, self.btn_offset_sk,
                 self.btn_dim, self.btn_move, self.btn_rotate_sk, getattr(self, "btn_scale_sk", None),
                 getattr(self, "btn_pattern_sketch", None), getattr(self, "btn_construct", None),
             ):
