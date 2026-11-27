@@ -1,3 +1,10 @@
+## Smart Dimension på bågar + auto-relationer för bågar/cirklar — 2026-11-28 (0.9.9.80.229, steg 3–4)
+
+- Steg 3 fanns redan till största delen (linje: placering ger längd/H/V, linje+linje vinkel, punkt+punkt med placering, inline-ruta). Nytt: `handle_dimension_tool_click` lägger en löst båge i `_dim_pending` (som cirkeln); nästa klick: linje → `_dim_pt_line(("pt", arc, "center"), …)`, kant → `_dim_pt_ref`, punkt → `_dim_place`, annars `_dim_arc` (radien). Fillet/projicerade bågar: radien direkt.
+- Steg 4: `sketch_solver.curve_auto_relations(sketch, curve)` (ARC_END + TANGENT när bågens radie är vinkelrät mot linjen vid änden, `TANGENT_SIN_TOL`; båge–båge COINCIDENT; centrum på linjeände COINCIDENT; på annat centrum CONCENTRIC). Kopplad efter ritning i `sketch_tools_mixin` (ARC sätter nu `created`); Ctrl (`_ctrl_held`) och palettens *Auto constraints* gäller som för linjer. Relationsikoner + klick-ta-bort fanns redan.
+- `cut_thread.svg` i alla fyra ikonset + `COMMAND_ICONS["cut_thread"]` (studio-testet failade redan på 5eebe1d).
+- Test: `test_sketch_arc_solver.py` (auto-relationer), `test_smart_dimension_line.py` (bågar).
+
 ## Skissstatus och krocklösning — 2026-11-28 (0.9.9.80.228, skissplan steg 2)
 
 - `sketch_solver.sketch_freedom(sketch)` = `solve_sketch(..., dry=True)`: samma system men inget skrivs tillbaka; sätter `dof`/`free_ids`/`solved_ids`, även utan villkor (annars tidig retur). Inga lösarentiteter → `dof None`. `MainWindow.sync_sketch_status` startar en 120 ms-timer (`_refresh_sketch_status`, hoppar över skisser > 600 element); `Document.sketch_status` tom för tom skiss.

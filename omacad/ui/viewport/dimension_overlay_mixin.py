@@ -803,7 +803,14 @@ class DimensionOverlayMixin:
                     "Dimension: click away for the diameter, or click an edge/line to measure to the circle's edge "
                     "(click the centre point instead to measure from the centre).")
             elif pick[0] == "ent" and isinstance(pick[1], SketchArc):
-                self._dim_arc(pick[1])
+                from omacad.model.sketch_solver import solver_arc
+                if solver_arc(pick[1]) and not getattr(pick[1], "projected", False):
+                    pend.append(pick)           # like a circle: away = radius, a line/edge/point = from its centre
+                    self.status_message.emit(
+                        "Dimension: click away for the radius, or click a line, an edge or a point to measure from "
+                        "the arc's centre.")
+                else:
+                    self._dim_arc(pick[1])      # a fillet arc: its radius only
             elif pick[0] == "ent" and isinstance(pick[1], SketchSlot):
                 slot = pick[1]
                 # Clicking near the rounded ends edits width/diameter; clicking along the middle edits center-to-center length
@@ -836,7 +843,20 @@ class DimensionOverlayMixin:
         first = pend[0]
         self._dim_pending = []
         circle_pick = lambda p_: p_ and p_[0] == "ent" and isinstance(p_[1], SketchCircle)
-        if first[0] == "ent" and isinstance(first[1], SketchCircle):  # a circle is waiting
+        if first[0] == "ent" and isinstance(first[1], SketchArc):    # an arc is waiting
+            arc = first[1]
+            centre = ("pt", arc, "center")
+            if pick and pick[0] == "ref":
+                self._dim_pt_ref(centre, pick[1])
+            elif pick and pick[0] == "ent" and isinstance(pick[1], SketchLine):
+                self._dim_pt_line(centre, pick[1])
+            elif pick and pick[0] == "pt" and pick[1] is not arc:
+                self._dim_place = {"a": centre, "b": pick}
+                self._show_dim_box()
+                self.status_message.emit("Dimension: click where to place it (above/below = horizontal, beside = vertical, diagonal = aligned).")
+            else:
+                self._dim_arc(arc)
+        elif first[0] == "ent" and isinstance(first[1], SketchCircle):  # a circle is waiting
             if pick and (pick[0] == "ref" or (pick[0] == "ent" and isinstance(pick[1], SketchLine))):
                 self._dim_edge_to_circle(pick, first[1], u, v)
             else:

@@ -1,3 +1,10 @@
+# Hybrid-experiment — 0.9.9.80.229
+
+### Added
+- **Smart Dimension on arcs** (sketch plan, step 3): clicking an arc waits like a circle: click away for its radius, or click a line, a face edge or a point to measure from the arc's centre. Fillet arcs still give their radius at once.
+- **Arcs and circles get relations when drawn** (step 4), like lines already did: an arc started or ended on a line's end is joined to it (and tangent when it leaves the line smoothly), an arc end on another arc's end is joined, a circle/arc centre snapped onto a line end is coincident and onto another centre concentric. Ctrl while drawing still adds none.
+- **Cut Thread** has its own icon in every icon set.
+
 # Hybrid-experiment — 0.9.9.80.228
 
 ### Added

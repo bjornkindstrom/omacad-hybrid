@@ -6,7 +6,7 @@ import numpy as np
 from PySide6.QtCore import Qt, QEvent, QRectF, QPointF
 from PySide6.QtGui import QPainter, QPen, QBrush, QFont, QPolygonF
 from omacad.model.hover_info import describe_entity
-from omacad.model.sketch_solver import curve_relation, solve_sketch
+from omacad.model.sketch_solver import curve_auto_relations, curve_relation, solve_sketch
 from omacad.model.sketch import Sketch, SketchLine, SketchSpline, ref_id
 from omacad.model import expr as expr_lib
 from omacad.ui import dyn_input, smart_circle, theme
@@ -323,7 +323,7 @@ class SketchToolsMixin:
             if self.sketch_second_uv is None:
                 self.sketch_second_uv = p2
             else:
-                sketch.add_arc(p1, p2, self.sketch_second_uv, is_construction=is_const)
+                created = sketch.add_arc(p1, p2, self.sketch_second_uv, is_construction=is_const)
                 self.sketch_start_uv = None
                 self.sketch_second_uv = None
         elif self.sketch_tool == "SLOT":
@@ -345,9 +345,14 @@ class SketchToolsMixin:
         if isinstance(created, list):
             solve_sketch(sketch)  # rectangle: refresh the degrees-of-freedom status
         from omacad.ui.viewport.pointer_mixin import _ctrl_held
-        if (created is not None and isinstance(created, SketchLine) and self.sketch_palette.chk_auto_constraints.isChecked()
+        if (created is not None and not isinstance(created, list) and self.sketch_palette.chk_auto_constraints.isChecked()
                 and not _ctrl_held()):             # SolidWorks: Ctrl while drawing adds no relations
-            self._auto_constrain_line(sketch, created)
+            if isinstance(created, SketchLine):
+                self._auto_constrain_line(sketch, created)
+            else:
+                specs = curve_auto_relations(sketch, created)
+                if specs:
+                    self.doc.auto_constrain(sketch, specs)
         self.doc.record_sketch_change(sketch, before)
         self.dyn.reset()
         self.dyn_live = {}

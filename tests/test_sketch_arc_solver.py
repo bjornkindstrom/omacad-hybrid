@@ -159,3 +159,39 @@ def test_slot_centre_is_placed_by_a_distance_dimension():
     slot, wall = sk.get_entity(slot.entity_id), sk.get_entity(wall.entity_id)
     assert abs(slot.center1[1] - wall.p1[1]) == pytest.approx(9.0, abs=1e-6)
     assert slot.radius == pytest.approx(4.0, abs=1e-6)
+
+
+# ---- relations an arc or circle gets when it is drawn (sketch plan step 4)
+
+def test_an_arc_drawn_from_a_line_end_is_joined_and_tangent_and_stays_so():
+    from omacad.model.sketch_solver import curve_auto_relations
+    doc = Document()
+    sk = doc.start_sketch()
+    line = sk.add_line((-20.0, 0.0), (0.0, 0.0))
+    arc = sk.add_arc((0.0, 0.0), (10.0, 10.0), (20.0, 0.0))       # starts at the line's end, not tangent
+    specs = curve_auto_relations(sk, arc)
+    assert ("ARC_END", [line.entity_id, arc.entity_id], ["p2", "p_start"]) in specs
+    tangent_arc = sk.add_arc((0.0, 0.0), (7.07106781, 2.92893219), (10.0, 10.0))   # centre (0, 10): tangent to the line
+    specs = curve_auto_relations(sk, tangent_arc)
+    assert ("TANGENT", [line.entity_id, tangent_arc.entity_id], []) in specs
+    assert doc.auto_constrain(sk, specs) == len(specs)
+    assert doc.update_dimension(sk.sketch_id, _radius_dim(sk, tangent_arc).dim_id, 6.0)
+    sk = doc.active_sketch
+    line, t = sk.get_entity(line.entity_id), sk.get_entity(tangent_arc.entity_id)
+    (cx, cy), r = t.get_circle_params()[:2]
+    assert r == pytest.approx(6.0, abs=1e-6) and t.p_start == pytest.approx(line.p2, abs=1e-6)
+    (x1, y1), (x2, y2) = line.p1, line.p2
+    to_line = abs((cx - x1) * (y2 - y1) - (cy - y1) * (x2 - x1)) / math.dist(line.p1, line.p2)
+    assert to_line == pytest.approx(6.0, abs=1e-5)                 # still tangent at the joined end
+
+
+def test_a_circle_centred_on_a_point_or_a_centre_keeps_it():
+    from omacad.model.sketch_solver import curve_auto_relations
+    doc = Document()
+    sk = doc.start_sketch()
+    line = sk.add_line((0.0, 0.0), (20.0, 0.0))
+    ring = sk.add_circle((20.0, 0.0), 5.0)
+    assert curve_auto_relations(sk, ring) == [("COINCIDENT", [line.entity_id, ring.entity_id], ["p2", "center"])]
+    inner = sk.add_circle((20.0, 0.0), 2.0)
+    assert ("CONCENTRIC", [inner.entity_id, ring.entity_id], []) in curve_auto_relations(sk, inner) or \
+        curve_auto_relations(sk, inner)[0][0] == "COINCIDENT"

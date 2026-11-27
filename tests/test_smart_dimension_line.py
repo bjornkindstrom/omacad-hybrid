@@ -62,3 +62,35 @@ def test_clicking_another_line_while_placing_gives_an_angle(view):
     view.handle_dimension_tool_click(20.0, 0.0)
     assert not view._dim_place
     assert [d.dim_type for d in sk.dimensions] == ["ANGLE"]
+
+
+def _arc_and_wall(view):
+    sk = view.doc.start_sketch("XY")
+    arc = sk.add_arc((10.0, 0.0), (0.0, 10.0), (-10.0, 0.0))
+    wall = sk.add_line((-30.0, -20.0), (30.0, -20.0))
+    view.align_to_plane(sk.plane)
+    view.set_sketch_tool("DIMENSION")
+    assert view.handle_dimension_tool_click(7.07, 7.07)       # on the arc: it waits like a circle
+    assert view._dim_pending and view._dim_pending[0][1] is arc
+    return sk, arc, wall
+
+
+def test_arc_then_a_line_gives_the_distance_from_its_centre(view, monkeypatch):
+    monkeypatch.setattr(type(view), "prompt_dimension_value", lambda self, *a, **k: (25.0, None))
+    sk, arc, wall = _arc_and_wall(view)
+    view.handle_dimension_tool_click(20.0, -20.0)              # on the wall
+    sk = view.doc.active_sketch
+    d = sk.dimensions[-1]
+    assert (d.dim_type, d.target_entity_id, d.refs, d.pts) == ("PT_LINE_DIST", arc.entity_id, [wall.entity_id], ["center"])
+    arc, wall = sk.get_entity(arc.entity_id), sk.get_entity(wall.entity_id)
+    centre = arc.get_circle_params()[0]
+    dist = abs(centre[1] - wall.p1[1]) if abs(wall.p1[1] - wall.p2[1]) < 1e-9 else None
+    assert dist is None or dist == pytest.approx(25.0, abs=1e-6)
+
+
+def test_arc_then_empty_space_edits_its_radius(view, monkeypatch):
+    seen = []
+    monkeypatch.setattr(type(view), "prompt_edit_dimension", lambda self, sid, did, value: seen.append(value))
+    sk, arc, wall = _arc_and_wall(view)
+    view.handle_dimension_tool_click(40.0, 40.0)               # away from everything
+    assert seen == [pytest.approx(10.0)]                       # the arc's own radius dimension

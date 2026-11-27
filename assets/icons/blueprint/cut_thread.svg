@@ -1,0 +1,8 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- a block cut through, with a threaded hole in section -->
+    <path d="M6 12H18V40H6Z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M30 12H42V40H30Z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M18 16L22 19L18 22L22 25L18 28L22 31L18 34L22 37" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M30 16L26 19L30 22L26 25L30 28L26 31L30 34L26 37" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M24 4V44" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.7"/>
+</svg>

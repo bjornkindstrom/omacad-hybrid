@@ -915,3 +915,58 @@ def symmetric_spec(lines, circles, axis_id=None):
                  key=lambda t: math.hypot(getattr(b, t[0])[0] - getattr(c, t[1])[0],
                                           getattr(b, t[0])[1] - getattr(c, t[1])[1]))
     return ("SYMMETRIC", [b.entity_id, c.entity_id, axis.entity_id], [pa, pb])
+
+
+CURVE_JOIN_TOL = 1e-6        # mm: a snapped end/centre lies exactly on what it was snapped to
+TANGENT_SIN_TOL = 1e-3       # sin of the angle under which an arc leaving a line's end counts as tangent
+
+
+def curve_auto_relations(sketch, curve) -> list:
+    """Relations for an arc or circle just drawn, like those a line gets (SolidWorks/Fusion inference):
+    an arc end on a line end -> ARC_END (+ TANGENT when it leaves the line smoothly), an arc end on another arc's
+    end -> COINCIDENT, a centre on a line end -> COINCIDENT, a centre on another circle's/arc's centre ->
+    CONCENTRIC. Only solved arcs (not fillet or projected ones) take part."""
+    specs = []
+    cid = curve.entity_id
+    near = lambda a, b: a is not None and b is not None and math.hypot(a[0] - b[0], a[1] - b[1]) < CURVE_JOIN_TOL
+    others = [e for e in sketch.entities if e is not curve]
+    if isinstance(curve, SketchArc):
+        if not solver_arc(curve):
+            return []
+        centre = curve.get_circle_params()[0]
+        tangent_done = set()
+        for end in ("p_start", "p_end"):
+            p = getattr(curve, end)
+            for other in others:
+                if isinstance(other, SketchLine):
+                    hit = next((n for n in ("p1", "p2") if near(p, getattr(other, n))), None)
+                    if hit is None:
+                        continue
+                    specs.append(("ARC_END", [other.entity_id, cid], [hit, end]))
+                    far = other.p2 if hit == "p1" else other.p1
+                    radial = (p[0] - centre[0], p[1] - centre[1])
+                    along = (p[0] - far[0], p[1] - far[1])
+                    lr, la = math.hypot(*radial), math.hypot(*along)
+                    if (lr > 1e-9 and la > 1e-9 and other.entity_id not in tangent_done
+                            and abs(radial[0] * along[0] + radial[1] * along[1]) / (lr * la) < TANGENT_SIN_TOL):
+                        specs.append(("TANGENT", [other.entity_id, cid], []))
+                        tangent_done.add(other.entity_id)
+                    break
+                if solver_arc(other):
+                    hit = next((n for n in ("p_start", "p_end") if near(p, getattr(other, n))), None)
+                    if hit is not None:
+                        specs.append(("COINCIDENT", [cid, other.entity_id], [end, hit]))
+                        break
+    else:
+        centre = getattr(curve, "center", None)
+    for other in others:
+        if isinstance(other, SketchLine):
+            hit = next((n for n in ("p1", "p2") if near(centre, getattr(other, n))), None)
+            if hit is not None:
+                specs.append(("COINCIDENT", [other.entity_id, cid], [hit, "center"]))
+                break
+        elif isinstance(other, SketchCircle) or solver_arc(other):
+            if near(centre, point_of(other, "center")):
+                specs.append(("CONCENTRIC", [cid, other.entity_id], []))
+                break
+    return specs
