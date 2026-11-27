@@ -614,7 +614,7 @@ class ScriptContext:
             raise ScriptError(f"ctx.solid needs a manifold3d.Manifold, got {type(shape).__name__}.")
         if shape.is_empty() or shape.volume() <= 1e-9:
             raise ScriptError("ctx.solid got an empty shape (no volume): check the booleans that built it.")
-        mesh = shape.to_mesh()
+        mesh = shape.to_mesh64()    # float32 tips thin facets off their plane far from the origin (lines on a wall)
         verts = np.asarray(mesh.vert_properties, dtype=float)[:, :3].tolist()
         tris = np.asarray(mesh.tri_verts, dtype=int).tolist()
         label = str(name).strip() if name else self.name

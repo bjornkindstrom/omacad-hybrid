@@ -191,9 +191,11 @@ class ImportMeshFeature(Feature):
         self.created_body_id = created_body_id or f"body_{feature_id}"
 
     def execute(self, doc: Any) -> None:
-        verts = np.asarray(self.vertices, dtype=np.float32)
-        tris = np.asarray(self.triangles, dtype=np.int32)
-        mesh = m3d.Mesh(vert_properties=verts, tri_verts=tris)
+        # float64: in float32 a part placed ~500 mm out gets ~3e-5 mm noise, enough to split the facets of a
+        # tessellated wall into separate "flat faces" with tangent lines down their sides
+        verts = np.ascontiguousarray(self.vertices, dtype=np.float64).reshape(-1, 3)
+        tris = np.ascontiguousarray(self.triangles, dtype=np.uint64).reshape(-1, 3)
+        mesh = m3d.Mesh64(vert_properties=verts, tri_verts=tris)
         solid = m3d.Manifold(mesh)
         body = Body(body_id=self.created_body_id, name=self.name, manifold=solid)
         body.update_render_mesh()

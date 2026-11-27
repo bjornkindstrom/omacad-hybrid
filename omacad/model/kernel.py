@@ -1354,9 +1354,11 @@ class CadKernel:
         Extract triangle buffers and sharp CAD feature edges for OpenGL rendering. With `min_thickness`,
         material thinner than that is left out (see `thin_triangles`).
         """
-        mesh = manifold.to_mesh()
-        v = mesh.vert_properties[:, :3]
-        f = mesh.tri_verts
+        # float64 for the edge analysis: float32 noise on a part ~500 mm out tips the thin facets of a tessellated
+        # wall off their plane, so single facets became "flat faces" with tangent lines down both sides
+        mesh = manifold.to_mesh64()
+        v = np.asarray(mesh.vert_properties[:, :3], dtype=np.float64)
+        f = np.asarray(mesh.tri_verts, dtype=np.int64)
         keep = ~CadKernel.thin_triangles(manifold, v, f, min_thickness) if min_thickness > 0 and len(f) else None
 
         if len(f) == 0:

@@ -1175,7 +1175,7 @@ class Document:
             if copied is not None:
                 self.move_body(copied, dx=offset)
                 return self.bodies.get(copied)
-            mesh = source.translate((offset, 0.0, 0.0)).to_mesh()   # a plain body: nothing to rebuild it from
+            mesh = source.translate((offset, 0.0, 0.0)).to_mesh64()   # a plain body: nothing to rebuild it from
             feature = ImportMeshFeature(fid, name, mesh.vert_properties[:, :3].tolist(), mesh.tri_verts.tolist())
         self.timeline.marker_index = len(self.timeline.features)
         self.timeline.add_feature(feature)

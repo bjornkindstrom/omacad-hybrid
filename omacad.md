@@ -1,3 +1,10 @@
+## Linjer på rund vägg långt från origo — 2026-11-27 (0.9.9.80.221, rapport 20261127-161058)
+
+- Stjärnkulans topp (utskriftslayout, x ≈ 540 mm) fick tangentlinjer längs enskilda fasetter på den rundade väggen. `CadKernel.extract_render_mesh` läste kanterna ur `to_mesh()` (float32); ~3e-5 mm brus så långt ut lyfte de smala väggfasetterna ur sitt plan (`_coplanar`, tol 1e-6·storlek), så en fasett blev "plan yta" med `tangent_edge_mask`-linje på båda sidor. Nu `to_mesh64()` för analysen (GPU-buffertarna är kvar float32); `ctx.solid` sparar `to_mesh64()`, `ImportMeshFeature.execute` bygger med `Mesh64`, och oberoende kopia av kropp utan steg använder `to_mesh64()`. Kontroll: samma kropp gav 0 långa linjer i float64, 3/7/13 i float32 vid x = 538/1000 mm.
+- Halsens streckade rektangel var användarskriptets gängslut (`coil` i `~/.config/omacad/scripts/stjarnkula.py`): ändarna plattades till ett 0,036 mm högt steg vars kontur z-fightade med väggen. Nu sjunker hela profilen in i väggen (utlopp), och flankernas fötter ligger 0,05 mm innanför cylindern i stället för exakt på dess cirkel.
+- Test: `tests/test_far_part_tangent_lines.py` (syntetisk tagg-kopp, ingen fixtur behövs).
+- Fälla: skärmbild headless kräver `QT_XCB_GL_INTEGRATION=xcb_egl PYOPENGL_PLATFORM=egl` under xvfb, annars ingen GL-kontext; ladda dokumentet med `window.attach_document(doc)`.
+
 ## Cut Thread genom flera kroppar — 2026-11-24 (0.9.9.80.216, rapport 20261124-191726)
 
 - `CutThreadDialog` (`omacad/ui/dialogs/thread_dlg.py`) ersätter den enskilda `Target Body`-dropdownen med en krysslista (`lst_targets`) som automatiskt markerar alla icke-pinnkroppar vars bounding box överlappar pinnen (eller markerade kroppar).

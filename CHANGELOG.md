@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.221
+
+### Fixed
+- **Lines down a round wall far from the origin** (report 20261127-161058): a script's parts laid out for printing (~500 mm out) showed tangent lines down single facets of the scalloped top's wall. The render mesh read its edges from the float32 mesh, and float32 noise that far out tipped the thin facets off their plane, so one facet became a "flat face" with a line on each side. Edges are now found on the float64 mesh, and scripted/imported bodies are stored and rebuilt in float64 (`ctx.solid`, `ImportMeshFeature`).
+
 # Hybrid-experiment — 0.9.9.80.216
 
 ### Added
