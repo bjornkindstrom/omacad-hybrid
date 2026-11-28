@@ -1,3 +1,9 @@
+## Dra med lösaren + rättningar efter hela sviten — 2026-11-28 (0.9.9.80.234, steg 6)
+
+- `SketchMoveMixin._live_solve`: `_endpoint_drag_move` löser med `pinned=[(id, punkt)]` (SolveSpace `dragged`) vid varje musrörelse när skissen har villkor/mått (≤ `LIVE_SOLVE_MAX` 400, inte spline-index). `_endpoint_drag_release` löser en gång till (pinned) och återställer dragningen om det misslyckas — förut löste släppet aldrig, så hopkopplade linjer stod kvar. Test: `tests/test_sketch_live_drag.py`.
+- Hela sviten (xvfb, -n 10) hittade fel som smugit sig in: `feature_edit` sfärgrenen anropade `_set_primitive_placement`/`_set_expressions` som inte fanns (från det tidigare ocommittade arbetet) → skrivna; `document.py` saknade `Union, Sequence` i typing-importen (CI på 3.12); kameraomslagen i overlay_mixin anropar nu `OverlayMixin._x_now(self, …)` och tål en vy utan `camera_ease` (test_viewcube använder SimpleNamespace).
+- Kvar i hela sviten (fanns före sessionen / kräver riktig skärm): `test_emboss::test_cylinder_fit…`, `test_loft::test_232…`, `test_preview_over_section_cap`.
+
 ## Skisspunkt — 2026-11-28 (0.9.9.80.233, steg 5 del 4)
 
 - `SketchPoint` (`entity_type "point"`, fältet `p`, standard konstruktion, `to_lines() = []`): `point_of/point_names` ("p"), `move/rotate/scale_entity`, `entity_key_points`, spegling i `sketch_editing`, `Sketch.add_point`, `from_dict`, `hit_test` (avstånd till punkten), snäpp (endpoints + inferensankare). Lösare: i `SUPPORTED`, en 2D-punkt `pts[(id, "p")]`; `POINT_ON_CIRCLE` tar nu vilken punkt som helst som andra referens. `point_auto_relations` (COINCIDENT på namngiven punkt, annars POINT_ON_LINE/POINT_ON_CIRCLE).

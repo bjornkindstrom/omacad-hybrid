@@ -155,6 +155,27 @@ def edit_feature(win, doc, index: int) -> bool:
             doc.notify_changed()
 
 
+def _set_primitive_placement(dlg, feat) -> None:
+    """Puts a primitive step's placement into its dialog: on its face/plane, centred, or bottom on the origin."""
+    if getattr(feat, "plane_origin", None) is not None:
+        dlg.plane_origin, dlg.plane_normal = feat.plane_origin, feat.plane_normal
+        dlg.plane_u, dlg.plane_v = feat.plane_u, feat.plane_v
+        mode = "on_face"
+    else:
+        centre = getattr(feat, "center", "center")
+        mode = "center" if centre is True or centre == "center" else (centre if isinstance(centre, str) else "bottom_center")
+    idx = dlg.cmb_placement.findData(mode)
+    if idx >= 0:
+        dlg.cmb_placement.setCurrentIndex(idx)
+
+
+def _set_expressions(dlg, feat, spins: dict) -> None:
+    """Fields that hold a formula in the step show the formula again (key -> spin box)."""
+    for key, spin in spins.items():
+        if feat.exprs.get(key):
+            spin.set_expression(feat.exprs[key])
+
+
 def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
     feat = doc.timeline.features[index]
     t = feat.feature_type

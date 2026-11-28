@@ -278,3 +278,25 @@ def test_panel_new_options_lit_preview_and_old_steps_kept(tmp_path):
     e = LithophaneDialog()
     e.set_params(old)
     assert e.get_params()["tone"] == "linear" and e.get_params()["sharpen"] == 0.0
+
+
+def test_a_sphere_step_can_be_edited_from_the_timeline(monkeypatch):
+    """The sphere editor called two helpers that did not exist (NameError as soon as it opened)."""
+    QApplication.instance() or QApplication([])
+    from omacad.ui.dialogs.primitives_dlg import SphereDialog
+    from omacad.ui.feature_edit import edit_feature
+    from omacad.ui.main_window import MainWindow
+    win = MainWindow()
+    try:
+        win.doc.add_sphere(10.0)
+
+        def bigger(dlg):
+            assert dlg.cmb_placement.currentData() == "center"
+            dlg.spn_radius.setValue(12.0)
+            return 1
+        monkeypatch.setattr(SphereDialog, "exec", bigger)
+        assert edit_feature(win, win.doc, 0)
+        assert win.doc.timeline.features[0].radius == pytest.approx(12.0)
+    finally:
+        win.doc.modified = False
+        win.deleteLater()

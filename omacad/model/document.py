@@ -4,7 +4,7 @@ Holds active bodies, sketches, origin reference geometry, and timeline.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional, List, Callable, Tuple, Any
+from typing import Dict, Optional, List, Callable, Tuple, Any, Sequence, Union
 from omacad.model.sketch_linked_clearance import follower_walls, link_clearances, push_value
 from omacad.model import quality
 import copy

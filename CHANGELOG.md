@@ -1,3 +1,13 @@
+# Hybrid-experiment — 0.9.9.80.234
+
+### Added
+- **Drag with the solver** (sketch plan, step 6): dragging a point of a line or arc solves the sketch as the mouse moves, so what is joined to it follows (drag a rectangle's corner and its sides come along), and the release solves once more; a release that cannot fit the relations is undone with the reason in the status bar. Before, the joined lines stayed behind until the next solve.
+
+### Fixed
+- **Editing a sphere from the timeline** opened a panel that called two helpers which did not exist (NameError); they now set the placement and the formulas like the other primitives.
+- `Document.cut_thread`'s type hints named `Union`/`Sequence` without importing them (fails on Python 3.12, as in CI).
+- The view presets' camera glide no longer breaks code that calls them on a stand-in view (the ViewCube test).
+
 # Hybrid-experiment — 0.9.9.80.233
 
 ### Added

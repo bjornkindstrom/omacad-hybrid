@@ -758,9 +758,11 @@ class OverlayMixin:
         self.update()
 
     def set_view(self, *args, **kwargs):
-        before = camera_ease.state(self)
-        result = self._set_view_now(*args, **kwargs)
-        self.camera_ease.start(self, before)
+        ease = getattr(self, "camera_ease", None)       # a stand-in view (tests) has no glide
+        before = camera_ease.state(self) if ease is not None else None
+        result = OverlayMixin._set_view_now(self, *args, **kwargs)   # works for a stand-in view too
+        if ease is not None:
+            ease.start(self, before)
         return result
 
     def _set_view_now(self, view_name: str):
@@ -799,9 +801,11 @@ class OverlayMixin:
         self.update()
 
     def zoom_to_points(self, *args, **kwargs):
-        before = camera_ease.state(self)
-        result = self._zoom_to_points_now(*args, **kwargs)
-        self.camera_ease.start(self, before)
+        ease = getattr(self, "camera_ease", None)       # a stand-in view (tests) has no glide
+        before = camera_ease.state(self) if ease is not None else None
+        result = OverlayMixin._zoom_to_points_now(self, *args, **kwargs)   # works for a stand-in view too
+        if ease is not None:
+            ease.start(self, before)
         return result
 
     def _zoom_to_points_now(self, pts) -> None:
@@ -816,9 +820,11 @@ class OverlayMixin:
         self.update()
 
     def frame_face(self, *args, **kwargs):
-        before = camera_ease.state(self)
-        result = self._frame_face_now(*args, **kwargs)
-        self.camera_ease.start(self, before)
+        ease = getattr(self, "camera_ease", None)       # a stand-in view (tests) has no glide
+        before = camera_ease.state(self) if ease is not None else None
+        result = OverlayMixin._frame_face_now(self, *args, **kwargs)   # works for a stand-in view too
+        if ease is not None:
+            ease.start(self, before)
         return result
 
     def _frame_face_now(self, plane, tris, fill: float = 0.8) -> None:
@@ -867,9 +873,11 @@ class OverlayMixin:
             self.zoom_to_points(list(pts))
 
     def zoom_fit(self, *args, **kwargs):
-        before = camera_ease.state(self)
-        result = self._zoom_fit_now(*args, **kwargs)
-        self.camera_ease.start(self, before)
+        ease = getattr(self, "camera_ease", None)       # a stand-in view (tests) has no glide
+        before = camera_ease.state(self) if ease is not None else None
+        result = OverlayMixin._zoom_fit_now(self, *args, **kwargs)   # works for a stand-in view too
+        if ease is not None:
+            ease.start(self, before)
         return result
 
     def _zoom_fit_now(self):

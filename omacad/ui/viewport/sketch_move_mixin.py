@@ -281,8 +281,23 @@ class SketchMoveMixin:
         elif getattr(ent, "entity_type", "") == "spline":
             ent.points[pname] = (float(target_uv[0]), float(target_uv[1]))
 
+        self._live_solve(sk, ent, pname)
         sk.solve_profiles()
         self.update()
+
+    LIVE_SOLVE_MAX = 400       # relations + dimensions; a bigger sketch is solved on release only
+
+    def _live_solve(self, sk, ent, pname) -> bool:
+        """While a point is dragged, what is joined to it follows (rubber band): the sketch is solved with the
+        dragged point held where the mouse is. A drag that cannot fit leaves things as they are until release."""
+        if isinstance(pname, int) or not (sk.constraints or sk.dimensions):
+            return False
+        if len(sk.constraints) + len(sk.dimensions) > self.LIVE_SOLVE_MAX:
+            return False
+        try:
+            return solve_sketch(sk, pinned=[(ent.entity_id, pname)]).ok
+        except Exception:          # a live preview only: the release solves again and says what is wrong
+            return False
 
     @staticmethod
     def _drop_end_on_line(sk, ent, pname, tol) -> bool:
@@ -360,6 +375,15 @@ class SketchMoveMixin:
                                 break
                 if len(sk.constraints) == n_before and pname in ("p1", "p2") and getattr(ent, "entity_type", "") == "line":
                     self._drop_end_on_line(sk, ent, pname, tol)
+                if (sk.constraints or any(dm.dim_type in ("ANGLE", "DISTANCE", "HORIZ_DIST", "VERT_DIST", "PT_LINE_DIST")
+                                          for dm in sk.dimensions)) and not isinstance(pname, int):
+                    res = solve_sketch(sk, pinned=[(ent.entity_id, pname)])   # everything joined to it follows
+                    if not res.ok:
+                        sk.restore_from_dict(d["before"])
+                        self.status_message.emit(res.message + " - drag undone.")
+                        self.doc.notify_changed()
+                        self.update()
+                        return
             sk.solve_profiles()
             if self.doc.record_sketch_change(sk, d["before"]):
                 self.doc.timeline.recompute(self.doc)
