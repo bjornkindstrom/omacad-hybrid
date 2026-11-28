@@ -223,3 +223,41 @@ def test_split_sphere_then_shell_with_open_face():
     bowl = doc.bodies[top_id].manifold
     assert bowl.volume() > 1000.0
     assert bowl.slice(1.0).area() < CadKernel.create_sphere(25.0).slice(1.0).area()
+
+
+def test_shell_chamfered_brep_cylinder_keeps_smooth_inner_wall():
+    import numpy as np
+    from omacad.model import brep
+
+    if not brep.available():
+        pytest.skip("OpenCascade not available")
+    was = brep._enabled
+    brep._enabled = True
+    try:
+        doc = Document()
+        cyl = doc.add_cylinder(20.0, 40.0)
+        edges = [
+            ["circle", [0.0, 0.0, 40.0], [0.0, 0.0, 1.0], 20.0],
+            ["circle", [0.0, 0.0, 0.0], [0.0, 0.0, -1.0], 20.0],
+        ]
+        doc.add_fillet(edges, 2.0, kind="chamfer")
+        before = doc.bodies[cyl.body_id].manifold
+        assert ShellFeature._facet_planes(before) is not None
+
+        doc.add_shell(cyl.body_id, 4.0, open_faces=[{"normal": [0, 0, 1], "origin": [0, 0, 40], "body_id": cyl.body_id}])
+        rm = doc.bodies[cyl.body_id].render_mesh
+        tv = rm.vertices.reshape(-1, 3, 3)
+        tn = rm.normals.reshape(-1, 3, 3)
+        c = tv.mean(axis=1)
+        r = np.hypot(c[:, 0], c[:, 1])
+        inner = (r > 15.5) & (r < 16.5) & (c[:, 2] > 4.01) & (c[:, 2] < 39.99)
+        assert inner.any()
+        assert float(r[inner].max() - r[inner].min()) < 0.01
+        flat = (np.linalg.norm(tn[:, 0] - tn[:, 1], axis=1) < 1e-4) & (
+            np.linalg.norm(tn[:, 0] - tn[:, 2], axis=1) < 1e-4
+        )
+        areas = 0.5 * np.linalg.norm(np.cross(tv[:, 1] - tv[:, 0], tv[:, 2] - tv[:, 0]), axis=1)
+        assert not (inner & (areas > 0.1) & flat).any()
+    finally:
+        brep._enabled = was
+

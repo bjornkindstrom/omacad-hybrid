@@ -1,3 +1,8 @@
+## Ojämn insida på shell efter B-rep-fasning — 2026-11-28 (0.9.9.80.256, rapport 20261128-102426)
+
+- Orsak: när OpenCascade (`brep.shell`) inte kunde skala en 2 mm fasad cylinder 4 mm inåt föll `ShellFeature.execute` tillbaka till mesh-skalet. B-rep-tesselleringen hade ~1 861 distinkta plan (> `MAX_FACET_PLANES = 1024`) och ~`1,37e-5` relativ volymavvikelse mot konvexa höljet från kordasagg längs faskanten (> `1e-6`), så `_facet_planes` gav upp och `_shrink` tog `minkowski_difference(sphere(4, 12))` — vilket gav en 12-kantig bucklig insida med platt-skuggade vertikala ränder.
+- Fix: `ShellFeature._facet_planes` (`omacad/model/features/shell.py`) tillåter `1e-4` relativ hölje-volymavvikelse och `MAX_FACET_PLANES = 4096`, så konvexa B-rep-kroppar skärs exakt med `_trimmed` och får slät insida. Test: `tests/test_shell.py::test_shell_chamfered_brep_cylinder_keeps_smooth_inner_wall`.
+
 ## Cirkel syntes kvar efter extrude med join — 2026-11-28 (0.9.9.80.255, rapport 20261128-095911)
 
 - Orsak: när en inneryta (`Face to Sketch`) extruderades med `join` upp till samma höjd som en omgivande fläns (`Extrude 3`) flyttade `CadKernel.weld_to` verktygets hörn exakt *till* målkroppens vägg (noll överlapp). Med minimal skissavvikelse / `set_precision(1e-4)`-skift lämnade Manifolds boolean kvar hårfina hålrum/hinnor längs fogen, vilket ritade en svart cirkel på den plana ovansidan.

@@ -8,7 +8,7 @@ from omacad.model.features.base import Feature
 from omacad.model.kernel import CadKernel
 
 
-MAX_FACET_PLANES = 1024     # a 360-segment cylinder has 362 planes; spheres take their own exact route
+MAX_FACET_PLANES = 4096     # a 360-segment or B-rep-tessellated convex body; spheres take their own exact route
 
 
 class ShellFeature(Feature):
@@ -57,7 +57,7 @@ class ShellFeature(Feature):
             hull = m.hull()
         except Exception:
             return None
-        if hull.is_empty() or abs(hull.volume() - m.volume()) >= 1e-6 * max(1.0, m.volume()):
+        if hull.is_empty() or abs(hull.volume() - m.volume()) >= 1e-4 * max(1.0, m.volume()):
             return None
         mesh = m.to_mesh()
         v = np.asarray(mesh.vert_properties, dtype=float)[:, :3][np.asarray(mesh.tri_verts)]

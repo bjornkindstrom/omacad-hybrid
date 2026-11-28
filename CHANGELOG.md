@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.255
+# Hybrid-experiment — 0.9.9.80.256
+
+## 0.9.9.80.256 - 2026-11-28
+
+### Fixed
+- **Smooth inside wall on shelled chamfered B-rep cylinders**: when OpenCascade cannot shell a chamfered body inward and falls back to the mesh shell, `ShellFeature._facet_planes` now accepts the B-rep tessellation's chordal tolerance and plane count (`MAX_FACET_PLANES = 4096`) instead of falling back to a 12-segment Minkowski sphere that left faceted vertical bands on the inside wall.
 
 ## 0.9.9.80.255 - 2026-11-28
 
