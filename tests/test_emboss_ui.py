@@ -26,9 +26,9 @@ def _volume(w):
 
 
 def test_emboss_button_and_menu_entry_exist(win):
-    from omacad.ui.ribbon import RibbonButton
-    assert any(b.raw_text.strip() == "Emboss" for b in win.ribbon.solid_tab.findChildren(RibbonButton))
     from PySide6.QtGui import QAction
+    # in the Shell button's dropdown (with Offset Face and Surface Texture)
+    assert any(a.text().startswith("Emboss") for a in win.ribbon.solid_tab.findChildren(QAction))
     assert any(a.text().startswith("Emboss") for a in win.menuBar().findChildren(QAction))
 
 

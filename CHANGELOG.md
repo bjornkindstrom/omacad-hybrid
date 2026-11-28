@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.257
+# Hybrid-experiment — 0.9.9.80.258
+
+## 0.9.9.80.258 - 2026-11-28
+
+### Fixed
+- Tests follow the reorganised ribbon from 0.9.9.80.257: Emboss is found in the Shell dropdown, Text in the sketch Shapes dropdown, Box in a Row under Built-in Scripts, Joint inside the Body dropdown (no separate Assemble group on the ribbon), and the 3-point arc panel has its Radius field. The work-in-progress snapshot is now complete.
 
 ## 0.9.9.80.257 - 2026-11-28
 

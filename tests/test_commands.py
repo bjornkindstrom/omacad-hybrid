@@ -44,8 +44,8 @@ def test_menu_and_ribbon_use_the_registry_names(win):
 def test_solid_tab_groups_in_fusion_order(win):
     from PySide6.QtWidgets import QWidget
     names = [w.objectName() for w in win.ribbon.solid_tab.findChildren(QWidget) if w.objectName().startswith("RibbonGroup_")]
-    assert names == ["RibbonGroup_CREATE", "RibbonGroup_MODIFY", "RibbonGroup_ASSEMBLE", "RibbonGroup_INSPECT",
-                     "RibbonGroup_SCRIPTS", "RibbonGroup_EXPORT"]     # ASSEMBLE = Joint (#231), as in Fusion
+    assert names == ["RibbonGroup_CREATE", "RibbonGroup_MODIFY", "RibbonGroup_INSPECT",
+                     "RibbonGroup_SCRIPTS", "RibbonGroup_EXPORT"]     # Joint (#231) is in MODIFY's Body dropdown
     menus = [a.text() for a in win.menuBar().actions()]
     assert menus == ["File", "Edit", "Create", "Modify", "Assemble", "Inspect", "Scripts", "View", "Help"]
 

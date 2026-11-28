@@ -1,3 +1,7 @@
+## Ribbon-omorganiseringen klar — 2026-11-28 (0.9.9.80.258)
+
+- De fem UI-tester som förväntade gamla layouten (se 0.9.9.80.257) följer nu den nya: `test_emboss_ui` (Emboss som QAction i Shell-rullgardinen, `solid_tab.findChildren(QAction)`), `test_commands` (ingen RibbonGroup_ASSEMBLE; menyraden har kvar Assemble), `test_requests_157_158_168` (`box_row` i `builtin_scripts`), `test_sketch_tool_panel` (ARC: `["Radius"]`), `test_text_tool` (Text-posten i Shapes triggas; `btn_text` finns inte längre). `test_sketch_keys_ui` gick redan igenom.
+
 ## Ribbon-omorganisering, cirkelns vinkelpunkter, bågradie — 2026-11-28 (0.9.9.80.257, PÅGÅENDE)
 
 - Ögonblicksbild av en annan sessions ocommittade arbete, committad på Björns begäran ("committa ALLT").

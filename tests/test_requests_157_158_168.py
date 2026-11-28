@@ -14,7 +14,9 @@ def test_primitives_is_a_submenu_in_the_create_menu():
     create = dict(commands.MENUS)["Create"]
     subs = [e for e in create if isinstance(e, tuple)]
     assert subs and subs[0][0] == "primitives"
-    assert "box" not in create and "box_row" in subs[0][4]
+    assert "box" not in create and "box" in subs[0][4]
+    scripts = next(e for e in subs if e[0] == "builtin_scripts")       # Box in a Row is a built-in script now
+    assert "box_row" in scripts[4] and "box_row" not in subs[0][4]
 
 
 def _bounds(doc, bid):

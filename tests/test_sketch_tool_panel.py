@@ -35,7 +35,7 @@ def _mouse(v, kind, pos):
 
 
 @pytest.mark.parametrize("tool, fields", [("LINE", ["Length", "Angle"]), ("RECT", ["Width", "Height"]),
-                                          ("POLYGON", ["Side", "Sides"]), ("CIRCLE", ["Diameter"]), ("ARC", []),
+                                          ("POLYGON", ["Side", "Sides"]), ("CIRCLE", ["Diameter"]), ("ARC", ["Radius"]),
                                           ("TRIM", [])])
 def test_each_tool_shows_its_fields_with_sliders(vp, tool, fields):
     vp.set_sketch_tool(tool)

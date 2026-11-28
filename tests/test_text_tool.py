@@ -20,8 +20,10 @@ def _texts(w):
 
 
 def test_text_button_exists_and_starts_the_tool(win):
-    assert win.ribbon.btn_text.text().strip() == "Text"
-    win.ribbon.btn_text.click()
+    from PySide6.QtGui import QAction
+    text = [a for a in win.ribbon.findChildren(QAction) if a.text().replace("&", "").startswith("Text")]
+    assert text                                                      # in the sketch Shapes dropdown
+    text[0].trigger()
     assert win.viewport.sketch_tool == "TEXT" and win._text_session is not None
     assert win.inspector.current_tool_dlg is win._text_session.dlg
     assert win.viewport.text_draft is not None                       # the ghost that follows the cursor
