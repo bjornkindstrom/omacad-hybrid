@@ -1106,7 +1106,11 @@ class CadKernel:
         # coplanar patches by label propagation (vectorised union-find)
         join = adj[angles < np.radians(coplanar_deg)]
         label = np.arange(n_f)
-        if len(join):
+        from omacad import viewport_accel
+        native = viewport_accel.min_labels(n_f, join) if len(join) else None   # the same fixed point, in Rust
+        if native is not None:
+            label = native
+        elif len(join):
             while True:
                 low = np.minimum(label[join[:, 0]], label[join[:, 1]])
                 new = label.copy()
@@ -1210,6 +1214,10 @@ class CadKernel:
             pairs.append(np.c_[np.arange(n), first[cell]])
         pairs = np.concatenate(pairs)
         pairs = pairs[pairs[:, 0] != pairs[:, 1]]
+        from omacad import viewport_accel
+        native = viewport_accel.min_labels(n, pairs) if len(pairs) else None    # the same fixed point, in Rust
+        if native is not None:
+            label, pairs = native, pairs[:0]
         while len(pairs):
             low = np.minimum(label[pairs[:, 0]], label[pairs[:, 1]])
             new = label.copy()

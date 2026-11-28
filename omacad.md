@@ -1,3 +1,12 @@
+## P3: etikettsökning i Rust + delad rotlista — 2026-11-28 (0.9.9.80.252)
+
+- Mätt oprofilerat på Jar-kropparna (`compute_planar_faces_and_edges` + `extract_render_mesh`, 63 918 + 41 690 trianglar): 4,0 s → 2,2 s. cProfile överdriver Pythonloopar flera gånger; mät med `time.perf_counter` per del.
+- `CadKernel._patches` (och `_weld`): etikettspridningen behövde ~1 500 NumPy-varv (graf-diametern längs gängans plana kedjor), 0,35–0,47 s per anrop. Fixpunkten är komponentens minsta index → `_viewport_native.min_labels(count, pairs)` (union-find där minsta index blir rot). Render 2,72 → 1,27 s.
+- `wrapped_edges.cylindrical_contours`: `_viewport_native.union_labels` kör exakt samma union-find (`parents[root(a)] = root(b)`, etikett = roten som ordningen lämnar) → samma etiketter och nyckelordning.
+- Nya Rust-funktioner utan att höja `API_VERSION` (3): Python använder dem via `getattr(_NATIVE, ...)`, så ett äldre bygge faller tillbaka på Python-vägen i stället för att stänga av allt native.
+- `faces_topology.roots_array(find, n)`: `find` är `roots.tolist().__getitem__` → listan läses direkt i `_loop_edges`, `_circular_edges`, `curve_edges` (var `np.fromiter(find(i) ...)` tre gånger per kropp). Plana kantparens filter i `compute_planar_faces_and_edges` vektoriserat (samma ordning).
+- Kvar: `manifold.calculate_normals` (~0,6 s, C++), resten små Pythonloopar (< 0,3 s var). Test: `tests/test_native_union_labels.py` (Rust = Python för etiketter, `_patches`, `_weld`, `cylindrical_contours`). Bygg om med `./tools/build_native.sh`.
+
 ## Hastighet: weld_to, skisslinjer, OCP-uppvärmning — 2026-11-28 (0.9.9.80.251, P2→P7/P8)
 
 - **P2 mätt och ersatt**: delad MeshInfo skulle spara ~1,2 s av 71 s profilerad Jar (trimesh-grannskap, 20 byggen) — inte värt det. Profilen visade i stället `CadKernel.weld_to`: 20 `np.unique(..., axis=0)` på heltalspar = 9,6 s (numpy sorterar rader som strukturerade poster). `kernel._unique_pairs(a, b)` (lexsort + grannjämförelse) ger exakt samma rader i samma ordning, 3–4× snabbare; används för kantlistan, (cell, kant)-paren och (punkt, kant)-paren. Jar 24,25 → 20,36 s, samma mesh-sha256. Golden: ny baslinje från 4961cef, `--check` "no differences".

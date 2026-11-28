@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from omacad.model.faces_topology import roots_array
+
 CREASE_DEG = 20.0
 MIN_LENGTH = 0.15          # of the body's diagonal: shorter chains are tessellation detail (threads, letters)
 
@@ -82,7 +84,7 @@ def curve_edges(v, f, tm, find, planar, claimed_planar=None) -> list:
     segs = []
     # the cheap tests for every adjacent pair at once; only the few sharp candidates go through the loop below
     if len(adj):
-        roots = np.fromiter((find(int(i)) for i in range(len(area))), dtype=np.int64, count=len(area))
+        roots = roots_array(find, len(area))
         ra_all, rb_all = roots[adj[:, 0]], roots[adj[:, 1]]
         planar_ids, skip_ids = np.fromiter(planar, dtype=np.int64), np.fromiter(skip, dtype=np.int64)
         in_planar_a, in_planar_b = np.isin(ra_all, planar_ids), np.isin(rb_all, planar_ids)

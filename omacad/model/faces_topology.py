@@ -151,6 +151,15 @@ def _curved_roots(v, f, tm, find, groups, adj, angles, sliver=None) -> set:
     return curved
 
 
+def roots_array(find, n: int) -> np.ndarray:
+    """`[find(i) for i in range(n)]` as int64. When `find` is a list's own lookup (`roots.tolist().__getitem__`,
+    as compute_planar_faces_and_edges passes it) the list is read at once instead of one call per triangle."""
+    owner = getattr(find, "__self__", None)
+    if isinstance(owner, list) and len(owner) == n and getattr(find, "__name__", "") == "__getitem__":
+        return np.asarray(owner, dtype=np.int64)
+    return np.fromiter((int(find(i)) for i in range(n)), dtype=np.int64, count=n)
+
+
 def _groups_of_roots(roots) -> dict:
     """root -> its triangle ids, ascending, roots in the order of their first triangle: the same dict a loop over the
     triangles builds, for the 100 000s of triangles of a patterned body."""

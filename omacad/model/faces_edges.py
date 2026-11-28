@@ -6,7 +6,7 @@ import numpy as np
 import manifold3d as m3d
 import trimesh
 from omacad.model.faces_types import PlanarEdge, CircularEdge, LoopEdge
-from omacad.model.faces_topology import _classified_roots, _groups_of_roots, _coplanar, _curved_roots, _sliver_roots
+from omacad.model.faces_topology import roots_array, _classified_roots, _groups_of_roots, _coplanar, _curved_roots, _sliver_roots
 
 
 def tangent_chain(edge, edges) -> list:
@@ -47,7 +47,7 @@ def _loop_edges(v, f, normals, find, adj, adj_edges, angles, planar, claimed=Non
     tri_area = 0.5 * np.linalg.norm(np.cross(v[f[:, 1]] - v[f[:, 0]], v[f[:, 2]] - v[f[:, 0]]), axis=1)
     # only pairs across two groups, at an angle, with a flat face on a side go through the loop (same order)
     adj_a = np.asarray(adj)
-    roots = np.fromiter((find(i) for i in range(len(f))), dtype=np.int64, count=len(f))
+    roots = roots_array(find, len(f))
     ra_all, rb_all = (roots[adj_a[:, 0]], roots[adj_a[:, 1]]) if len(adj_a) else (np.zeros(0, np.int64),) * 2
     planar_ids = np.fromiter(planar, dtype=np.int64)
     wanted = (ra_all != rb_all) & ~(np.asarray(angles) < np.radians(1.0)) \
@@ -312,7 +312,7 @@ def _circular_edges(v, f, tm, find, groups, adj, adj_edges, angles, curved, plan
     # the per-pair tests in bulk; the loops below visit only the pairs that pass, in the same order as before
     adj = np.asarray(adj)
     angles = np.asarray(angles)
-    roots = np.fromiter((find(i) for i in range(len(f))), dtype=np.int64, count=len(f))
+    roots = roots_array(find, len(f))
     ra_all, rb_all = (roots[adj[:, 0]], roots[adj[:, 1]]) if len(adj) else (np.zeros(0, np.int64),) * 2
     curved_ids, planar_ids = np.fromiter(curved, dtype=np.int64), np.fromiter(planar, dtype=np.int64)
     cu_a, cu_b = np.isin(ra_all, curved_ids), np.isin(rb_all, curved_ids)

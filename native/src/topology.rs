@@ -578,3 +578,43 @@ mod tests {
         assert!((group_min_width(&strip) - 0.5).abs() < 1e-9);
     }
 }
+
+/// Component labels of `count` items joined pair by pair, exactly as the Python loop
+/// `parents[root(a)] = root(b)` followed by `[root(i) for i in range(count)]` gives them (the label of a
+/// component is the root that union order leaves; path halving never changes which item is a root).
+#[pyfunction]
+pub fn union_labels<'py>(py: Python<'py>, count: usize, joined: &[u8]) -> PyResult<Bound<'py, PyBytes>> {
+    let joined = pairs(joined, count)?;
+    let labels = py.detach(move || {
+        let mut parent: Vec<usize> = (0..count).collect();
+        for [a, b] in joined {
+            let rb = root(&mut parent, b);
+            let ra = root(&mut parent, a);
+            parent[ra] = rb;
+        }
+        (0..count).map(|i| root(&mut parent, i) as u64).collect::<Vec<u64>>()
+    });
+    let bytes: Vec<u8> = labels.iter().flat_map(|v| v.to_le_bytes()).collect();
+    Ok(PyBytes::new(py, &bytes))
+}
+
+/// For every item the smallest index in its component: the fixed point `CadKernel._patches`' label
+/// propagation reaches (labels only ever fall to an index of the same component, and stop when every
+/// joined pair agrees), in one union-find pass instead of one NumPy sweep per step of the longest chain.
+#[pyfunction]
+pub fn min_labels<'py>(py: Python<'py>, count: usize, joined: &[u8]) -> PyResult<Bound<'py, PyBytes>> {
+    let joined = pairs(joined, count)?;
+    let labels = py.detach(move || {
+        let mut parent: Vec<usize> = (0..count).collect();
+        for [a, b] in joined {
+            let ra = root(&mut parent, a);
+            let rb = root(&mut parent, b);
+            if ra != rb {
+                parent[ra.max(rb)] = ra.min(rb);  // the smaller index stays the root
+            }
+        }
+        (0..count).map(|i| root(&mut parent, i) as u64).collect::<Vec<u64>>()
+    });
+    let bytes: Vec<u8> = labels.iter().flat_map(|v| v.to_le_bytes()).collect();
+    Ok(PyBytes::new(py, &bytes))
+}

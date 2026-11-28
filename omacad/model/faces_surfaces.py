@@ -405,10 +405,15 @@ def compute_planar_faces_and_edges(manifold: m3d.Manifold, body_id: str = "") ->
 
     adj_edges = tm.face_adjacency_edges
     buckets: dict = {}
-    for (a_idx, b_idx), (e0, e1), ang in zip(adj, adj_edges, angles):
-        ra, rb = find(int(a_idx)), find(int(b_idx))
-        if ra == rb or ra not in planar or rb not in planar or ang < np.radians(1.0):
-            continue
+    # the per-pair tests in bulk; only the pairs between two flat faces at an angle are visited, in the same order
+    roots_a = np.asarray(roots, dtype=np.int64)
+    ra_all, rb_all = roots_a[adj[:, 0]], roots_a[adj[:, 1]]
+    planar_ids = np.fromiter(planar, dtype=np.int64)
+    between = np.flatnonzero((ra_all != rb_all) & np.isin(ra_all, planar_ids) & np.isin(rb_all, planar_ids)
+                             & ~(np.asarray(angles) < np.radians(1.0)))
+    for k in between:
+        (a_idx, b_idx), (e0, e1) = adj[k], adj_edges[k]
+        ra, rb = int(ra_all[k]), int(rb_all[k])
         key = (min(ra, rb), max(ra, rb))
         third_a = v[[i for i in f[a_idx] if i not in (e0, e1)][0]]
         third_b = v[[i for i in f[b_idx] if i not in (e0, e1)][0]]

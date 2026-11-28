@@ -105,6 +105,26 @@ def classify_face_groups(v, f, normals, areas, roots, adjacency, angles, sliver_
     return set(np.flatnonzero(classes & 1).tolist()), set(np.flatnonzero(classes & 2).tolist())
 
 
+def union_labels(count, joined):
+    """Component labels (int64) of `count` items joined pair by pair, the same labels the Python union-find loop
+    `parents[root(a)] = root(b)` gives; None when the native module is missing or older than this function."""
+    fn = getattr(_NATIVE, "union_labels", None)
+    if fn is None:
+        return None
+    data = fn(int(count), np.ascontiguousarray(np.asarray(joined).reshape(-1, 2), dtype="<u8").tobytes())
+    return np.frombuffer(data, dtype="<u8").astype(np.int64)
+
+
+def min_labels(count, joined):
+    """Per item the smallest index in its component (int64), the fixed point of the label propagation in
+    `CadKernel._patches`; None when the native module is missing or older than this function."""
+    fn = getattr(_NATIVE, "min_labels", None)
+    if fn is None:
+        return None
+    data = fn(int(count), np.ascontiguousarray(np.asarray(joined).reshape(-1, 2), dtype="<u8").tobytes())
+    return np.frombuffer(data, dtype="<u8").astype(np.int64)
+
+
 def snap_and_clean_segments(v, segments, snap_tol):
     """Native snap-vertex pass: returns (cleaned_segments, original_indices)."""
     if _NATIVE is None:

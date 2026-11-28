@@ -87,5 +87,7 @@ fn _viewport_native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(topology::coplanar_roots, module)?)?;
     module.add_function(wrap_pyfunction!(topology::snap_and_clean_segments, module)?)?;
     module.add_function(wrap_pyfunction!(topology::classify_face_groups, module)?)?;
+    module.add_function(wrap_pyfunction!(topology::union_labels, module)?)?;
+    module.add_function(wrap_pyfunction!(topology::min_labels, module)?)?;
     Ok(())
 }

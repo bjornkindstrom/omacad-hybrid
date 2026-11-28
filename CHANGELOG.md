@@ -1,4 +1,14 @@
-# Hybrid-experiment — 0.9.9.80.251
+# Hybrid-experiment — 0.9.9.80.252
+
+## 0.9.9.80.252 - 2026-11-28
+
+### Changed
+- **Faster face, edge and shading analysis, identical results**: working out a finished body's faces, edges and smooth shading takes about half as long (Jar with Lid's two bodies: 4.0 s to 2.2 s). The steps that grouped triangles one step of a long chain at a time now run in the native Rust module in a single pass, and the edge passes no longer look up every triangle's face group one by one. Every project document rebuilds with zero differences. Without the native module (an older build) the program uses the Python path, as before.
+
+## 0.9.9.80.252 - 2026-11-28
+
+### Added
+- **Circle 45° snap and corner-to-corner dimensions**: in sketches, the cursor now snaps to every 45° point around a circle (0°, 45°, 90°, ..., 315° from the sketch plane's horizontal axis). The Dimension tool can pick those points directly to measure and drive horizontal, vertical or aligned distances between a point on one circle and a point on another.
 
 ## 0.9.9.80.251 - 2026-11-28
 

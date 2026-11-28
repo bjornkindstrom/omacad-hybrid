@@ -66,9 +66,13 @@ def cylindrical_contours(v, f, tm):
         return int(a)
 
     adj, angles = tm.face_adjacency, tm.face_adjacency_angles
-    for a, b in adj[np.asarray(angles) < math.radians(25)].tolist():
-        parents[root(a)] = root(b)
-    labels = np.array([root(i) for i in range(len(f))], dtype=np.int64)
+    smooth = adj[np.asarray(angles) < math.radians(25)]
+    from omacad import viewport_accel
+    labels = viewport_accel.union_labels(len(f), smooth) if len(f) else None   # the same labels, in Rust
+    if labels is None:
+        for a, b in smooth.tolist():
+            parents[root(a)] = root(b)
+        labels = np.array([root(i) for i in range(len(f))], dtype=np.int64)
     parts, boundaries = defaultdict(list), defaultdict(list)
     for i, label in enumerate(labels.tolist()):
         parts[label].append(i)
