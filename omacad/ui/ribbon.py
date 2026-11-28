@@ -16,6 +16,7 @@ from omacad.ui import script_menus
 CIRCLE_TOOLS = ('CIRCLE', 'SMART_CIRCLE', 'ELLIPSE')
 from omacad.ui import theme
 from omacad.ui.theme import style
+from omacad.ui.ui_motion import HoverFade
 from omacad.model.document import Document
 
 
@@ -52,11 +53,12 @@ _STUDIO_BUTTON = """
 """
 
 
-class RibbonButton(QToolButton):
+class RibbonButton(HoverFade, QToolButton):
     """Large Fusion 360 style ribbon tool button with vertical icon and label."""
 
     def __init__(self, text: str, icon_symbol: str, parent: Optional[QWidget] = None, command: str = ""):
         super().__init__(parent)
+        self._hover_init()                  # the hover look fades in and out (ui_motion)
         self.raw_text = text
         self.icon_symbol = icon_symbol
         self.icon_command = command         # a command id: lets the Studio icons give it its own icon

@@ -47,6 +47,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "view_projection": "perspective",    # perspective or orthographic
     "view_fov": 30.0,
     "camera_animation": True,
+    "ui_animations": True,           # tool panels glide in, ribbon buttons fade on hover
     "display_style": "shaded_edges",
     "ground_shadow": True,              # a soft contact shadow under a model resting on the ground    # shaded_edges, shaded, wireframe, hidden_line (View > Display Style)           # view presets, Fit and Find glide to the new view instead of jumping
     "show_tangent_edges": True,        # draw a line where a flat face runs smoothly into a curved one (like Fusion)                   # perspective field of view in degrees; lower = flatter, less distortion

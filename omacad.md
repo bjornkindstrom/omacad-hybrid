@@ -1,3 +1,9 @@
+## UI-animationer — 2026-11-28 (0.9.9.80.250, A10)
+
+- `omacad/ui/ui_motion.py`: `glide_in(widget, layout)` (QGraphicsOpacityEffect 0→1 + layoutens toppmarginal +10 px → 0, 170 ms OutCubic; effekten tas bort och marginalen återställs när den är klar, RuntimeError-skydd om widgeten försvinner). Anropas i `InspectorPanel.dock_tool` efter `dlg.show()`.
+- `HoverFade`-mixin på `RibbonButton`: `_hover_t` animeras (in 110 ms, ut 200 ms, skalat efter kvarvarande sträcka); `paintEvent` ritar knappen utan `State_MouseOver` och sedan med, i opacitet `_hover_t` (QStylePainter + `CC_ToolButton`, så QSS-regeln `:hover` används). Vid 0/1, nedtryckt eller ikryssad: vanlig `paintEvent`.
+- Inställning `ui_animations` (standard på), kryssruta i Settings › Display; `conftest` slår av den. Test: `tests/test_ui_motion.py`.
+
 ## Ellips i lösaren — 2026-11-28 (0.9.9.80.249)
 
 - `sketch_solver`: `SketchEllipse` i `SUPPORTED`. Byggs som en slot: punkterna `center` och `major_end`, axeln som `add_line_2d` (så `line()` ger Horizontal/Vertical/Parallel/Perpendicular, `on_line` använder center/major_end) och lillradien som `add_distance` på en hjälpcirkel runt centrum (`slot_circles`, `radii` → med i `_free_entities`). Mått: `LENGTH` = hela storaxeln (avstånd center–major_end = värde/2), `DIAMETER`/`RADIUS` = lillaxeln. Concentric godtar ellipsens centrum. Kollapskontroll om axel eller lillradie < 1e-3. `_dims_hold` och återskrivning (`center`, `major_end`, `minor`).

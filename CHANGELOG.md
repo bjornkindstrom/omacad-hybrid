@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.249
+# Hybrid-experiment — 0.9.9.80.250
+
+## 0.9.9.80.250 - 2026-11-28
+
+### Added
+- **Softer interface motion**: a tool panel now fades in and glides up into place when it opens in the side panel, and ribbon buttons fade their hover highlight in and out instead of switching at once, so a sweep across the ribbon leaves a soft trail. Settings › 3D View › Display › "Animated panels and buttons" turns it off.
 
 ## 0.9.9.80.249 - 2026-11-28
 

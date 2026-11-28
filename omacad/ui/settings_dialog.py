@@ -415,6 +415,9 @@ class SettingsDialog(QDialog):
         self.chk_camera_animation = QCheckBox("Smooth camera moves (view presets, Fit and Find glide to the new view)")
         self.chk_camera_animation.setChecked(bool(self.settings.get("camera_animation", True)))
         lay_sketch.addWidget(self.chk_camera_animation)
+        self.chk_ui_animations = QCheckBox("Animated panels and buttons (tool panels glide in, ribbon buttons fade on hover)")
+        self.chk_ui_animations.setChecked(bool(self.settings.get("ui_animations", True)))
+        lay_sketch.addWidget(self.chk_ui_animations)
         self.chk_ground_shadow = QCheckBox("Soft shadow under the model (a body resting on the ground)")
         self.chk_ground_shadow.setChecked(bool(self.settings.get("ground_shadow", True)))
         lay_sketch.addWidget(self.chk_ground_shadow)
@@ -732,7 +735,7 @@ class SettingsDialog(QDialog):
             (lay_view, [
                 ("Navigation", [self.chk_invert_zoom]),
                 ("Camera", [proj_row, fov_row]),
-                ("Display", [self.chk_tangent_edges, self.chk_camera_animation, self.chk_ground_shadow])]),
+                ("Display", [self.chk_tangent_edges, self.chk_camera_animation, self.chk_ui_animations, self.chk_ground_shadow])]),
             (lay_general, [
                 ("Change requests & problem reports", [rfc_row, tok_row, agent_row]),
                 ("Scripts", [folder_row, self.chk_share_scripts]),
@@ -904,6 +907,7 @@ class SettingsDialog(QDialog):
         self.chk_invert_zoom.setChecked(False)
         self.chk_tangent_edges.setChecked(False)
         self.chk_camera_animation.setChecked(True)
+        self.chk_ui_animations.setChecked(True)
         self.chk_ground_shadow.setChecked(True)
         self.cmb_primitive_decimals.setCurrentIndex(0)
         self.spn_guide_gap.setValue(6.0)
@@ -975,6 +979,7 @@ class SettingsDialog(QDialog):
             "invert_zoom": self.chk_invert_zoom.isChecked(),
             "show_tangent_edges": self.chk_tangent_edges.isChecked(),
             "camera_animation": self.chk_camera_animation.isChecked(),
+            "ui_animations": self.chk_ui_animations.isChecked(),
             "ground_shadow": self.chk_ground_shadow.isChecked(),
             "primitive_drag_decimals": self.cmb_primitive_decimals.currentData(),
             "guide_line_gap": self.spn_guide_gap.value(),

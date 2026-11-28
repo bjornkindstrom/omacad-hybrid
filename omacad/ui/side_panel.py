@@ -164,6 +164,8 @@ class InspectorPanel(QWidget):
         self.tool_container.show()
         self.lbl_title.setText(dlg.windowTitle().upper() if theme.palette().studio else f"🛠️ {dlg.windowTitle().upper()}")
         dlg.show()
+        from omacad.ui import ui_motion
+        ui_motion.glide_in(dlg, self.tool_layout)       # fades in from a little below (off in Settings)
 
         # Hide background info when tool is active for clean focused UI
         self.info_container.hide()

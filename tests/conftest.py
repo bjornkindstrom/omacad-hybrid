@@ -17,6 +17,7 @@ def isolated_settings(tmp_path, monkeypatch):
         return
     monkeypatch.setattr(settings_mod, "_instance", settings_mod.SettingsManager(tmp_path / "settings.json"))
     settings_mod._instance._data["camera_animation"] = False   # tests read the camera at once (not saved to disk)
+    settings_mod._instance._data["ui_animations"] = False      # and panels/buttons in their final state
     from omacad.model import solid_cache
     solid_cache.set_disk_dir(tmp_path / "solid_cache")         # never the user's cache, nothing kept between tests
     solid_cache.clear_memory()
