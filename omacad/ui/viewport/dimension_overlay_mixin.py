@@ -502,9 +502,12 @@ class DimensionOverlayMixin:
         on_drag = (lambda v: spin.setValue(round(v, 2))) if handle_drag else None
         if on_drag is not None:
             self.extrude_handle_dragged.connect(on_drag)
+        self.value_prompt = dlg        # a tool may finish or cancel the box from the view (Enter, Esc, the green tick)
         try:
             accepted = run_docked(dlg) == QDialog.DialogCode.Accepted
         finally:
+            if getattr(self, "value_prompt", None) is dlg:
+                self.value_prompt = None
             if on_drag is not None:
                 try:
                     self.extrude_handle_dragged.disconnect(on_drag)

@@ -275,25 +275,10 @@ class PointerMixin:
                 return
             if event.button() == Qt.MouseButton.LeftButton:
                 if self.fillet_hover_corner:
+                    # every click on a corner picks it (or drops it again); the first one opens the radius box, and while
+                    # it is open more clicks add corners to the same fillet, all shown live (Shift is not needed)
                     pt, la, lb = self.fillet_hover_corner
-                    item = (pt, la.entity_id, lb.entity_id)
-                    here = next((c for c in self.fillet_picked if math.hypot(c[0][0] - pt[0], c[0][1] - pt[1]) < 1e-3), None)
-                    if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
-                        # Shift+click collects corners; Enter (or a plain click on one more corner) rounds them all
-                        if here is not None:
-                            self.fillet_picked.remove(here)
-                        else:
-                            self.fillet_picked.append(item)
-                        n = len(self.fillet_picked)
-                        self.status_message.emit(f"Fillet: {n} corner(s) picked. Shift+click more, then press Enter (or click one more corner) to set the radius.")
-                        self.update()
-                        return
-                    if self.fillet_picked:
-                        if here is None:
-                            self.fillet_picked.append(item)
-                        self._fillet_apply_picked()
-                        return
-                    self.prompt_fillet_radius(la, lb, pt)
+                    self._fillet_toggle_corner(pt, la.entity_id, lb.entity_id, self.fillet_hover_signs)
                     return
                 ent = self._pick_entity(x, y)
                 from omacad.model.sketch import SketchArc, SketchLine
@@ -676,8 +661,20 @@ class PointerMixin:
                     if d < best_d:
                         best_d = d
                         best_c = (pt, la, lb)
-            if best_c != self.fillet_hover_corner:
+            signs = None
+            if self.sketch_tool == "FILLET":        # inner corners where two lines cross (overlapping shapes)
+                from omacad.model.sketch_extend import crossing_signs
+                uv_now = self.get_sketch_plane_uv(x, y)
+                for pt, la, lb in self._sketch_crossings(sk):
+                    scr = self.world_to_screen(sk.plane.uv_to_world(*pt))
+                    if scr and uv_now is not None:
+                        d = math.hypot(x - scr[0], y - scr[1])
+                        if d < best_d:
+                            best_d, best_c = d, (pt, la, lb)
+                            signs = crossing_signs(la, lb, pt, uv_now)
+            if best_c != self.fillet_hover_corner or signs != self.fillet_hover_signs:
                 self.fillet_hover_corner = best_c
+                self.fillet_hover_signs = signs
                 self.update()
 
         # Active sketch snapping and preview tracking

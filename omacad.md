@@ -1,3 +1,9 @@
+## Skissfillet: flera hörn utan Shift + innerhörn i korsningar — 2026-11-28 (0.9.9.80.245, Björn)
+
+- `SketchOperationMixin._fillet_toggle_corner` (klick, även utan Shift) lägger till/tar bort hörnet; första klicket öppnar `_fillet_apply_picked` = radierutan (dockad, blockerar inte vyn), `_fillet_session` = förhandsvisningsfunktionen som läser `fillet_picked` live, så klick medan rutan är öppen syns direkt. `prompt_dimension_value` sätter `self.value_prompt` (dialogen) så Enter/gröna bocken i vyn gör `accept()` och Esc `reject()` (events_mixin). Dragfönster lägger till i samma session.
+- Korsningar: `sketch_extend.line_crossings` (X och T, inte vanliga hörn), `crossing_signs` (vilken arm per linje: fjärdedelen mot musen), `fillet_crossing` (Break på båda linjerna via `apply_break`, rundar de två armarna; `_line_through` hittar rätt bit om en tidigare korsning redan delat linjen). Pick-tupeln får `(signs, dir_a, dir_b)` efter de tre fälten; `fillet_hover_signs` sätts vid hovring (cache `_sketch_crossings` per profil-lista), pilen i hörnet pekar in i fjärdedelen. L av två rektanglar: kvadraten (100) + resten med rundat hörn (400 + r² − πr²/4).
+- Test: `tests/test_sketch_fillet_multi_click.py`.
+
 ## Förhandsvisning i bakgrunden — 2026-11-28 (0.9.9.80.244, P6)
 
 - Mätt: manifold-booleanen håller GIL hela tiden (647 ms utan tick på huvudtråden), men `extract_render_mesh` (numpy) släpper den (värsta glapp 9 ms). `set_preview` evaluerar därför booleanen på GUI-tråden (`num_tri`) och lämnar nätläsningen till `_PreviewWorker` (en tråd, väntande jobb ersätts = senaste vinner) när `ASYNC_PREVIEW` och > `ASYNC_PREVIEW_TRIANGLES` (30 000). Resultatet kommer via `_PreviewRelay.done` (köad signal) och installeras bara om `_preview_generation` är oförändrad (ny preview eller rensning gör gamla jobb inaktuella). Gamla previewn står kvar under tiden.

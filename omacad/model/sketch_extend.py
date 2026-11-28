@@ -164,3 +164,96 @@ def apply_chamfer(sketch, plan) -> SketchLine:
     sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), "COINCIDENT", [a_id, cut.entity_id], [ea, "p1"]))
     sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), "COINCIDENT", [b_id, cut.entity_id], [eb, "p2"]))
     return cut
+
+
+# -- Fillet where two lines cross ---------------------------------------------------------------------------------
+# Two overlapping rectangles meet in crossings, not at line ends, so their inner corners are no corners to the plain
+# fillet. A crossing has four quadrants; the one that faces the mouse is rounded: both lines are broken at the
+# crossing and the two arms bounding that quadrant get the arc. The arms on the far side stay, so the shapes keep
+# their closed profiles (the overlap and the rest).
+
+def _unit(a, b):
+    L = math.dist(a, b)
+    return ((b[0] - a[0]) / L, (b[1] - a[1]) / L) if L > EPS else None
+
+
+def _along(line: SketchLine, pt) -> float:
+    d = _unit(line.p1, line.p2)
+    return (pt[0] - line.p1[0]) * d[0] + (pt[1] - line.p1[1]) * d[1]
+
+
+def line_crossings(sketch, tol: float = 1e-4):
+    """(point, line a, line b) where two drawn lines cross inside at least one of them (an X or a T); where both
+    end at the point it is an ordinary corner and left out."""
+    lines = [e for e in sketch.entities if isinstance(e, SketchLine) and not e.is_construction
+             and math.dist(e.p1, e.p2) > EPS]
+    out = []
+    for i, la in enumerate(lines):
+        da = _unit(la.p1, la.p2)
+        La = math.dist(la.p1, la.p2)
+        for lb in lines[i + 1:]:
+            db = _unit(lb.p1, lb.p2)
+            cross = da[0] * db[1] - da[1] * db[0]
+            if abs(cross) < 1e-6:
+                continue                                           # parallel: no corner
+            wx, wy = lb.p1[0] - la.p1[0], lb.p1[1] - la.p1[1]
+            ta = (wx * db[1] - wy * db[0]) / cross
+            tb = (wx * da[1] - wy * da[0]) / cross
+            Lb = math.dist(lb.p1, lb.p2)
+            if not (-tol <= ta <= La + tol and -tol <= tb <= Lb + tol):
+                continue
+            inside_a, inside_b = tol < ta < La - tol, tol < tb < Lb - tol
+            if inside_a or inside_b:
+                out.append(((la.p1[0] + da[0] * ta, la.p1[1] + da[1] * ta), la, lb))
+    return out
+
+
+def crossing_signs(la: SketchLine, lb: SketchLine, pt, toward) -> Tuple[int, int]:
+    """Which arm of each line bounds the quadrant facing `toward` (+1 = towards the line's p2, -1 = towards p1).
+    A line that ends at the crossing has only one arm."""
+    signs = []
+    for line in (la, lb):
+        t, L = _along(line, pt), math.dist(line.p1, line.p2)
+        if t <= 1e-4:
+            signs.append(1)
+        elif t >= L - 1e-4:
+            signs.append(-1)
+        else:
+            d = _unit(line.p1, line.p2)
+            signs.append(1 if (toward[0] - pt[0]) * d[0] + (toward[1] - pt[1]) * d[1] >= 0 else -1)
+    return signs[0], signs[1]
+
+
+def _line_through(sketch, line_id: str, direction, pt) -> Optional[SketchLine]:
+    """The line `line_id`, or (after an earlier break moved the crossing onto a new piece) the collinear piece of it
+    that passes through pt."""
+    def through(line):
+        d = _unit(line.p1, line.p2)
+        if d is None or abs(d[0] * direction[1] - d[1] * direction[0]) > 1e-6:
+            return False
+        t = _along(line, pt)
+        foot = (line.p1[0] + d[0] * t, line.p1[1] + d[1] * t)
+        return math.dist(foot, pt) < 1e-6 and -1e-6 <= t <= math.dist(line.p1, line.p2) + 1e-6
+    first = sketch.get_entity(line_id)
+    if isinstance(first, SketchLine) and through(first):
+        return first
+    return next((e for e in sketch.entities if isinstance(e, SketchLine) and not e.is_construction and through(e)), None)
+
+
+def _arm(sketch, line: SketchLine, pt, sign: int) -> SketchLine:
+    """The piece of the line that runs from pt in direction `sign`, breaking the line at pt when pt is inside it."""
+    t, L = _along(line, pt), math.dist(line.p1, line.p2)
+    if 1e-6 < t < L - 1e-6:
+        piece = apply_break(sketch, (line, pt))           # line keeps p1..pt, piece takes pt..p2
+        return piece if sign > 0 else line
+    return line
+
+
+def fillet_crossing(sketch, pt, id_a: str, dir_a, id_b: str, dir_b, signs, radius: float):
+    """Rounds one quadrant of the crossing at pt (see crossing_signs) with an arc of `radius`: (arc, message)."""
+    la, lb = _line_through(sketch, id_a, dir_a, pt), _line_through(sketch, id_b, dir_b, pt)
+    if la is None or lb is None:
+        return None, "The lines no longer cross there."
+    arm_a = _arm(sketch, la, pt, signs[0])
+    arm_b = _arm(sketch, lb, pt, signs[1])
+    return sketch.fillet_corner(arm_a, arm_b, radius, pt)

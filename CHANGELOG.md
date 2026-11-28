@@ -1,4 +1,12 @@
-# Hybrid-experiment — 0.9.9.80.244
+# Hybrid-experiment — 0.9.9.80.245
+
+## 0.9.9.80.245 - 2026-11-28
+
+### Changed
+- **Sketch Fillet on several corners without Shift**: clicking a corner opens the radius box with a live preview, and while it is open every further click on a corner adds it (or drops it again), shown at once. Enter, OK or the green tick rounds them all in one undo step; Esc cancels. Dragging a box adds corners the same way.
+
+### Added
+- **Fillet where lines cross**: the inner corners of overlapping shapes (two rectangles drawn across each other) can now be rounded. The quadrant under the mouse is the one rounded; both lines are split there and the shapes keep their closed profiles.
 
 ## 0.9.9.80.244 - 2026-11-28
 

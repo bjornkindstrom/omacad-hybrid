@@ -213,6 +213,9 @@ class ViewportEventsMixin:
                 self._fillet_apply_picked()
                 return
             if event.key() == Qt.Key.Key_Escape:
+                box = getattr(self, "value_prompt", None) if getattr(self, "_fillet_session", None) else None
+                if box is not None:
+                    box.reject()                      # the radius box was open: cancel the whole fillet
                 self.fillet_picked = []
                 self.status_message.emit("Fillet: picked corners cleared.")
                 self.update()

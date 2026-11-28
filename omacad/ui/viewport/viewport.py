@@ -296,7 +296,8 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self.fillet_first_line = None
         self.fillet_hover_corner = None
         self.fillet_preview = None
-        self.fillet_picked = []   # corners picked with Shift: (point, line_a id, line_b id)
+        self.fillet_picked = []   # corners of the fillet being made: (point, line_a id, line_b id[, crossing quadrant…])
+        self.fillet_hover_signs = None   # quadrant of the hovered crossing (sketch_extend.crossing_signs), else None
         self._rubber = None       # box selection in the sketch: dict(p0, p1, additive)
 
         from omacad.ui.settings import get_settings

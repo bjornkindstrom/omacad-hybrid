@@ -26,6 +26,7 @@ class SketchOperationMixin:
         self.picked_dim_entities = (None, set())
         self.fillet_first_line = None
         self.fillet_hover_corner = None
+        self.fillet_hover_signs = None
         self.fillet_preview = None
         self.fillet_picked = []
         self._mirror_phase = "axis" if (tool_name == "MIRROR" and self.selected_entities) else "pick"
@@ -417,8 +418,10 @@ class SketchOperationMixin:
                         math.hypot(c[0][0] - pt[0], c[0][1] - pt[1]) < 1e-3 for c in self.fillet_picked):
                     self.fillet_picked.append((pt, la.entity_id, lb.entity_id))
                     added += 1
-            self.status_message.emit(f"Fillet: {len(self.fillet_picked)} corner(s) picked ({added} new). Press Enter to set the radius, "
-                                     "or drag/Shift+click for more.")
+            if getattr(self, "_fillet_session", None) is not None:
+                self._fillet_session()                 # the open radius box takes the boxed corners too
+            elif added:
+                self._fillet_apply_picked()
             self.update()
             return
         found = {e.entity_id for e in sk.entities if hit(e)}
@@ -444,56 +447,111 @@ class SketchOperationMixin:
             return True
         return bool(self._drag and self._drag.get("moved"))
 
+    def _sketch_crossings(self, sk):
+        """Crossings of the active sketch's lines (sketch_extend.line_crossings), kept while its profiles are the same
+        objects (a new list whenever the geometry changes)."""
+        from omacad.model.sketch_extend import line_crossings
+        cached = getattr(self, "_crossings_cache", None)
+        if cached is not None and cached[0] is sk and cached[1] is sk.profiles and cached[2] == len(sk.entities):
+            return cached[3]
+        found = line_crossings(sk) if len(sk.entities) <= 400 else []
+        self._crossings_cache = (sk, sk.profiles, len(sk.entities), found)
+        return found
+
+    def _fillet_toggle_corner(self, pt, id_a: str, id_b: str, signs=None) -> None:
+        """Adds a corner to the fillet being made, or drops it if it is already in; opens the radius box at the first.
+        `signs` picks the quadrant of a crossing (sketch_extend.crossing_signs); None for an ordinary corner."""
+        signs = tuple(signs) if signs else None
+        here = next((c for c in self.fillet_picked if math.hypot(c[0][0] - pt[0], c[0][1] - pt[1]) < 1e-3
+                     and (c[3] if len(c) > 3 else None) == signs), None)
+        if here is not None:
+            self.fillet_picked.remove(here)
+        elif signs is None:
+            self.fillet_picked.append((pt, id_a, id_b))
+        else:
+            sk = self.doc.active_sketch
+            from omacad.model.sketch_extend import _unit
+            la, lb = sk.get_entity(id_a), sk.get_entity(id_b)
+            self.fillet_picked.append((pt, id_a, id_b, signs, _unit(la.p1, la.p2), _unit(lb.p1, lb.p2)))
+        if getattr(self, "_fillet_session", None) is not None:
+            self._fillet_session()                     # the open radius box shows the new set at once
+        elif self.fillet_picked:
+            self._fillet_apply_picked()
+        self.update()
+
     def _fillet_apply_picked(self):
-        """One radius for all corners picked with Shift (live preview, one undo step)."""
+        """One radius for all picked corners: a radius box with a live preview, one undo step. While the box is open,
+        clicks in the view add or drop corners; Enter (or the green tick) in the view finishes it like OK."""
         sk = self.doc.active_sketch
-        picks = list(self.fillet_picked)
-        if not sk or not picks:
+        if not sk or not self.fillet_picked:
+            return
+        if getattr(self, "_fillet_session", None) is not None:
+            box = getattr(self, "value_prompt", None)
+            if box is not None:
+                box.accept()
             return
         from omacad.model.sketch import Sketch
         from omacad.ui.settings import get_settings
         default_r = float(get_settings().get("fillet_default_radius", 2.0))
 
-        def run(target, radius):
+        from omacad.model.sketch_extend import fillet_crossing
+
+        def run(target, radius, picks):
             arcs = []
-            for pt, ida, idb in picks:
-                la, lb = target.get_entity(ida), target.get_entity(idb)
-                if la is None or lb is None:
-                    continue
+            for pick in picks:
+                pt, ida, idb = pick[:3]
                 try:
-                    arc, _ = target.fillet_corner(la, lb, radius, pt)
+                    if len(pick) > 3:                  # one quadrant of a crossing: break the lines, round two arms
+                        arc, _ = fillet_crossing(target, pt, ida, pick[4], idb, pick[5], pick[3], radius)
+                    else:
+                        la, lb = target.get_entity(ida), target.get_entity(idb)
+                        if la is None or lb is None:
+                            continue
+                        arc, _ = target.fillet_corner(la, lb, radius, pt)
                 except Exception:
                     arc = None
                 if arc:
                     arcs.append(arc)
             return arcs
 
-        def preview(radius):
+        radius_now = [default_r]
+
+        def preview(radius=None):
+            if radius is not None:
+                radius_now[0] = radius
             segs = []
-            if radius > 0.05:
+            if radius_now[0] > 0.05 and self.fillet_picked:
                 tmp = Sketch.from_dict(sk.to_dict())
-                for arc in run(tmp, radius):
+                for arc in run(tmp, radius_now[0], list(self.fillet_picked)):
                     for a, b in arc.to_lines(24):
                         segs += [*sk.plane.uv_to_world(*a), *sk.plane.uv_to_world(*b)]
             self.fillet_preview = np.array(segs, dtype=np.float32) if segs else None
+            n = len(self.fillet_picked)
+            self.status_message.emit(f"Fillet: {n} corner(s), radius {radius_now[0]:g} mm. Click more corners to add or "
+                                     "drop them, Enter to round them all, Esc to cancel.")
             self.update()
 
+        self._fillet_session = preview
         try:
-            res = self.prompt_dimension_value("Fillet", f"Radius for {len(picks)} corner(s):", default_r, lo=0.1, hi=2000.0, on_change=preview)
+            res = self.prompt_dimension_value("Fillet", "Radius (click more corners to add them):", default_r,
+                                              lo=0.1, hi=2000.0, on_change=preview)
         finally:
+            self._fillet_session = None
             self.fillet_preview = None
-        if res is None or res[0] <= 0.001:
+        picks = list(self.fillet_picked)
+        if res is None or res[0] <= 0.001 or not picks:
+            self.fillet_picked = []
             self.update()
             return
         before = sk.to_dict()
-        arcs = run(sk, res[0])
+        arcs = run(sk, res[0], picks)
+        self.fillet_picked = []
         if not arcs:
             self.status_message.emit("Fillet: none of the corners could be rounded with that radius.")
             self.update()
             return
         get_settings().set("fillet_default_radius", res[0])
         self.doc.record_sketch_change(sk, before)
-        self.fillet_picked = []
         self.selected_entities = {a.entity_id for a in arcs}
         self.selection_changed.emit()
         self.doc.timeline.recompute(self.doc)

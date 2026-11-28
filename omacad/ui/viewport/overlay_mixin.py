@@ -202,7 +202,8 @@ class OverlayMixin:
             self.primitive_handles.draw(painter)
 
         if self.doc.active_sketch and self.sketch_tool == "FILLET" and self.fillet_picked:
-            for pt, _a, _b in self.fillet_picked:
+            for pick in self.fillet_picked:
+                pt = pick[0]
                 scr = self.world_to_screen(self.doc.active_sketch.plane.uv_to_world(*pt))
                 if scr:
                     painter.setPen(QPen(QColor(255, 255, 255), 2))
@@ -229,8 +230,14 @@ class OverlayMixin:
                         d = end_tangent(ent, end, pt)
                         return d if d is not None else np.array([1.0, 0.0])
 
-                    da = line_dir(la)
-                    db = line_dir(lb)
+                    signs = getattr(self, "fillet_hover_signs", None)
+                    if signs:                       # a crossing: the arms of the quadrant under the mouse
+                        unit = lambda e: np.array(e.p2) - np.array(e.p1)
+                        da, db = (signs[0] * unit(la), signs[1] * unit(lb))
+                        da, db = da / np.linalg.norm(da), db / np.linalg.norm(db)
+                    else:
+                        da = line_dir(la)
+                        db = line_dir(lb)
                     bisect = da + db
                     b_norm = float(np.linalg.norm(bisect))
                     if b_norm > 1e-6:
@@ -539,7 +546,7 @@ class OverlayMixin:
             painter.setBrush(Qt.BrushStyle.NoBrush)
         if self.doc.active_sketch and self.sketch_tool in ("MIRROR", "TRIM", "OFFSET", "FILLET"):
             hint = {"TRIM": "TRIM: click the piece to remove",
-                    "FILLET": f"FILLET: click a corner, or Shift+click / drag a box for several ({len(self.fillet_picked)} picked), then Enter",
+                    "FILLET": f"FILLET: click corners or drag a box ({len(self.fillet_picked)} picked), type the radius, Enter",
                     "OFFSET": f"OFFSET: click curves ({len(self.selected_entities)} picked), then Enter",
                     "MIRROR": ("MIRROR 1/2: click shapes, then Enter" if self._mirror_phase == "pick"
                                else "MIRROR 2/2: click the mirror line / an axis")}[self.sketch_tool]
