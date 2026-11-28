@@ -474,7 +474,7 @@ class PickerMixin:
             GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
             GL.glPolygonOffset(-2.0, -2.0)
             # SolidCraft sel_face: Color32::from_rgb(102, 155, 214) -> [0.40, 0.61, 0.84, 0.45]
-            GL.glUniform4f(loc_col, 0.40, 0.61, 0.84, 0.45)
+            GL.glUniform4f(loc_col, *theme.palette().selection_face01(), 0.45)
             all_selected_edge_lines = []
             for item in self.selected_faces:
                 body_id = item[0] if isinstance(item, tuple) else getattr(item, "body_id", "")
@@ -508,12 +508,12 @@ class PickerMixin:
             if all_selected_edge_lines:
                 # Dimmed hidden outline through the body (hidden_face_outline)
                 GL.glDisable(GL.GL_DEPTH_TEST)
-                self.draw_thick_lines(mvp, all_selected_edge_lines, (0.0, 0.48, 1.0, 0.30), 1.4, halo=False)
+                self.draw_thick_lines(mvp, all_selected_edge_lines, (*theme.palette().selection_edge01(), 0.30), 1.4, halo=False)
                 # Crisp vivid sel_edge on top (#007aff)
                 GL.glEnable(GL.GL_DEPTH_TEST)
                 GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
                 GL.glPolygonOffset(-3.0, -3.0)
-                self.draw_thick_lines(mvp, all_selected_edge_lines, (0.0, 0.48, 1.0, 1.0), 2.2, halo=False)
+                self.draw_thick_lines(mvp, all_selected_edge_lines, (*theme.palette().selection_edge01(), 1.0), 2.2, halo=False)
                 GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
 
         if self.prog_thick is None:

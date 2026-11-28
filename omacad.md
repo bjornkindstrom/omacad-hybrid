@@ -1,3 +1,9 @@
+## Markering i temats färg — 2026-11-28 (0.9.9.80.243, A9)
+
+- `Palette.selection_edge01/selection_face01/selected_body01`: SolidCrafts blå (exakt de gamla talen) när temat saknas eller har blå highlight (hue 0,5–0,75, mättnad ≥ 0,3), annars highlight (kant), +20 % vitt (yta), +30 % vitt (kropp). Används i `render_mixin` (`selected_body_rgb`, markerade kroppens kanter) och `picker_mixin` (valda ytor + konturer). Studio-skärmbild oförändrad (skillnaden mot förut = samma brus som mellan två körningar, kameraglidningen).
+- `RenderGLMixin.live_fill_alpha()`: 0,08 på ljus canvas, `LIVE_FILL_ALPHA_DARK` 0,16 på mörk.
+- Test: `tests/test_theme_selection_colours.py`.
+
 ## Skissen visar vad som är slutet — 2026-11-28 (0.9.9.80.241, skissplan steg 7)
 
 - `RenderGLMixin.render_profile_fills` i öppen skiss → `_render_live_profile_fills`: alla slutna profiler tonade (`highlight01(0.45)`, `LIVE_FILL_ALPHA` 0,08). `live_profile_fill()` cachar trianglarna så länge `sketch.profiles` innehåller samma objekt (lösaren ger nya profilobjekt när geometrin ändras; listan hålls så id:n inte återanvänds).

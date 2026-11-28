@@ -1,4 +1,10 @@
-# Hybrid-experiment — 0.9.9.80.241
+# Hybrid-experiment — 0.9.9.80.243
+
+## 0.9.9.80.243 - 2026-11-28
+
+### Changed
+- **Selection follows the theme**: a selected body, its edges and selected faces now use the theme's highlight colour, so in Graphite they turn amber like the browser's selection. Themes with a blue highlight (the default and Studio) keep exactly the blues they had.
+- The tint on closed profiles in an open sketch is stronger on a dark canvas, where the light-theme strength hardly showed.
 
 ## 0.9.9.80.241 - 2026-11-28
 

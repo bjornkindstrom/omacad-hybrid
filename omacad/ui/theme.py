@@ -188,6 +188,30 @@ class Palette:
         c = _mix(tuple(v * 255 for v in self.canvas_rgb01()), self.foreground, 0.16)
         return tuple(v / 255.0 for v in c)  # type: ignore[return-value]
 
+    # Selection in the 3D view: SolidCraft's blues when the theme's highlight is blue (or there is no theme), so
+    # those themes look exactly as before; any other highlight (Graphite's amber, ...) is used instead.
+    SEL_EDGE = (0.0, 0.48 * 255, 255.0)       # sel_edge #007aff
+    SEL_FACE = (0.40 * 255, 0.61 * 255, 0.84 * 255)     # sel_face
+    SEL_BODY = (0.43 * 255, 0.67 * 255, 0.92 * 255)     # mixed into a selected body
+
+    def _own_selection(self) -> bool:
+        if not self.loaded:
+            return False
+        h, s, _v = colorsys.rgb_to_hsv(*(c / 255.0 for c in self.highlight))
+        return not (0.5 <= h <= 0.75 and s >= 0.3)
+
+    def selection_edge01(self) -> Tuple[float, float, float]:
+        c = self.highlight if self._own_selection() else self.SEL_EDGE
+        return tuple(v / 255.0 for v in c)  # type: ignore[return-value]
+
+    def selection_face01(self) -> Tuple[float, float, float]:
+        c = _mix(self.highlight, (255, 255, 255), 0.2) if self._own_selection() else self.SEL_FACE
+        return tuple(v / 255.0 for v in c)  # type: ignore[return-value]
+
+    def selected_body01(self) -> Tuple[float, float, float]:
+        c = _mix(self.highlight, (255, 255, 255), 0.3) if self._own_selection() else self.SEL_BODY
+        return tuple(v / 255.0 for v in c)  # type: ignore[return-value]
+
     def highlight01(self, lighten: float = 0.0) -> Tuple[float, float, float]:
         c = _mix(self.highlight, (255, 255, 255), lighten)
         return tuple(v / 255.0 for v in c)  # type: ignore[return-value]

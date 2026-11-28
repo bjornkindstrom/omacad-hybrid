@@ -85,6 +85,7 @@ class RenderGLMixin:
         GL.glUseProgram(0)
 
     LIVE_FILL_ALPHA = 0.08            # closed profiles of the open sketch: a tint, the lines stay what you look at
+    LIVE_FILL_ALPHA_DARK = 0.16       # the same tint needs about twice the cover to show on a dark canvas
 
     def live_profile_fill(self) -> Optional[np.ndarray]:
         """World triangles of every closed profile of the active sketch, rebuilt only when the profiles change (the
@@ -110,6 +111,10 @@ class RenderGLMixin:
         self._live_fill = (sketch, profiles, tris)      # holding the profiles keeps their ids from being reused
         return tris
 
+    def live_fill_alpha(self) -> float:
+        r, g, b = theme.palette().canvas_rgb01()
+        return self.LIVE_FILL_ALPHA if 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.5 else self.LIVE_FILL_ALPHA_DARK
+
     def _render_live_profile_fills(self, mvp: np.ndarray):
         tris = self.live_profile_fill()
         if tris is None:
@@ -117,7 +122,7 @@ class RenderGLMixin:
         GL.glUseProgram(self.prog_flat)
         GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.prog_flat, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
         GL.glUniform4f(GL.glGetUniformLocation(self.prog_flat, "u_color"),
-                       *theme.palette().highlight01(0.45), self.LIVE_FILL_ALPHA)
+                       *theme.palette().highlight01(0.45), self.live_fill_alpha())
         GL.glDepthMask(GL.GL_FALSE)
         GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
         GL.glPolygonOffset(-1.0, -1.0)
@@ -363,7 +368,7 @@ class RenderGLMixin:
 
     def selected_body_rgb(self, color) -> tuple:
         """A selected body keeps a trace of its own colour under the highlight, so shading and material still read."""
-        hi = (0.43, 0.67, 0.92)
+        hi = theme.palette().selected_body01()
         t = self.SELECTED_TINT
         return tuple(float(c) * (1.0 - t) + h * t for c, h in zip(color[:3], hi))
 
@@ -803,7 +808,7 @@ class RenderGLMixin:
                 if cutting:
                     rgba, width = (0.75, 0.15, 0.12, 1.0), self.EDGE_WIDTH_PX
                 elif is_selected:
-                    rgba, width = (0.0, 0.48, 1.0, 1.0), self.SELECTED_EDGE_WIDTH_PX  # SolidCraft sel_edge #007aff
+                    rgba, width = (*theme.palette().selection_edge01(), 1.0), self.SELECTED_EDGE_WIDTH_PX
                 elif helper:
                     rgba, width = (0.45, 0.47, 0.5, 0.45), 1.0       # faint edge on a helper body
                 else:
