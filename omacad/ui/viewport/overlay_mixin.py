@@ -44,6 +44,37 @@ class OverlayMixin:
             painter.setBrush(QBrush(qcolor(255, 255, 255, 235)))
             painter.drawEllipse(QPointF(*scr), 3.2, 3.2)
         painter.setBrush(Qt.BrushStyle.NoBrush)
+
+    OPEN_END_MAX_ENTITIES = 400       # beyond this the gap search is skipped (it compares every end with every curve)
+
+    def sketch_open_ends(self, sketch):
+        """Loose ends of the open sketch's almost-closed chains (`sketch_gaps.open_ends`), recomputed when the
+        sketch re-solves its profiles (a new list each time its geometry changes) or gains or loses elements."""
+        from omacad.model.sketch_gaps import open_ends
+        if len(sketch.entities) > self.OPEN_END_MAX_ENTITIES:
+            return []
+        key = (sketch, sketch.profiles, len(sketch.entities))
+        cached = getattr(self, "_open_ends_cache", None)
+        if cached is not None and cached[0][0] is key[0] and cached[0][1] is key[1] and cached[0][2] == key[2]:
+            return cached[1]
+        ends = open_ends(sketch)
+        self._open_ends_cache = (key, ends)
+        return ends
+
+    def _draw_open_ends(self, painter, sketch):
+        """A red ring on every loose end of a chain that almost closes: that gap keeps the profile from forming."""
+        ends = self.sketch_open_ends(sketch)
+        if not ends:
+            return
+        plane = sketch.plane
+        painter.setBrush(QBrush(qcolor(239, 68, 68, 60)))
+        painter.setPen(QPen(qcolor(239, 68, 68, 235), 1.6))
+        for u, v in ends:
+            scr = self.world_to_screen(plane.uv_to_world(float(u), float(v)))
+            if scr:
+                painter.drawEllipse(QPointF(*scr), 5.0, 5.0)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+
     def _draw_link_badges(self, painter: QPainter):
         """A small chain-link chip above every linked object's body: blue when it follows its original, grey when it
         is frozen at an older step of it."""
@@ -314,6 +345,7 @@ class OverlayMixin:
         # 2d. Centre points of circles and arcs (Fusion shows a small hollow dot, #225)
         if self.doc.active_sketch:
             self._draw_curve_centres(painter, self.doc.active_sketch)
+            self._draw_open_ends(painter, self.doc.active_sketch)
 
         self.draw_constraint_badges(painter)
         self.draw_dim_picks(painter)

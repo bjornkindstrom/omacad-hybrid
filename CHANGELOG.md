@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.238
+# Hybrid-experiment — 0.9.9.80.241
+
+## 0.9.9.80.241 - 2026-11-28
+
+### Added
+- **Sketch shows what is closed**: while a sketch is open, every closed profile gets a faint tint, so you can see at a glance what an extrude could take. A chain of curves that almost closes gets a red ring on each loose end, marking the gap that keeps it from forming a profile (a lone line is left alone).
 
 ### Added
 - **Soft contact shadow**: each body resting on the ground casts a soft shadow under itself, so the model sits on something instead of floating (not in a sketch, not seen from below, not for a body lifted off the ground). Settings › 3D View › Display can turn it off.

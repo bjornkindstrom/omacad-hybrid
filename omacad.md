@@ -1,3 +1,9 @@
+## Skissen visar vad som är slutet — 2026-11-28 (0.9.9.80.241, skissplan steg 7)
+
+- `RenderGLMixin.render_profile_fills` i öppen skiss → `_render_live_profile_fills`: alla slutna profiler tonade (`highlight01(0.45)`, `LIVE_FILL_ALPHA` 0,08). `live_profile_fill()` cachar trianglarna så länge `sketch.profiles` innehåller samma objekt (lösaren ger nya profilobjekt när geometrin ändras; listan hålls så id:n inte återanvänds).
+- `omacad/model/sketch_gaps.open_ends(sketch)`: ände på kurva som inte rör någon annan kurva (inte konstruktion, tol 1e-4, även T-korsning räknas som ansluten) medan kurvans andra ände gör det. Ensam linje och slutna kurvor ger inget. Ritas som röd ring i `OverlayMixin._draw_open_ends` (cache per profil-lista + antal element, hoppas över > 400 element).
+- Snäppsymboler och måttbrickor fanns redan (brickorna följer temat via `qcolor`). Test: `tests/test_sketch_profile_tint.py`.
+
 ## Kontaktskugga — 2026-11-28 (0.9.9.80.238, A8)
 
 - `RenderMixin.contact_shadow_quad()` (en ellips per synlig kropp vars botten ligger inom `SHADOW_MAX_LIFT` av marken, `SHADOW_SPREAD` 1,6 × fotavtrycket, inte i skiss, inte från under marken, inställning `ground_shadow`) + `render_contact_shadow` (shader `VERTEX/FRAGMENT_SHADER_SHADOW`, alfa jämn till 0,62 och mjuk ut). Ritas efter rutnät/axlar och före kropparna **utan djuptest** — origoplanen vid z = 0 skrev djup och dolde skuggan strax under (z − 0,02). `test_grid` stänger av skuggan (den hör till kroppens "avtryck" annars). Test: `test_display_style.py`.

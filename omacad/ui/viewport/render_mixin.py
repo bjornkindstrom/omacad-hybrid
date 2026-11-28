@@ -4,6 +4,7 @@ import ctypes
 import math
 from typing import Optional, List, Dict
 import numpy as np
+import manifold3d as m3d
 from PySide6.QtCore import Qt, QTimer
 from OpenGL import GL
 from omacad.ui import theme
@@ -44,8 +45,12 @@ def dash_lines(flat_segments, project, dash_px: float = 9.0, gap_px: float = 6.0
 class RenderGLMixin:
     """Mixin providing 3D OpenGL drawing methods for Viewport3D."""
     def render_profile_fills(self, mvp: np.ndarray):
-        """Translucent fills for the hovered and selected sketch profiles."""
-        if not self.prog_flat or self.doc.active_sketch:
+        """Translucent fills for the hovered and selected sketch profiles; in an open sketch, a faint tint on every
+        closed profile so it shows what an extrude could take (sketch plan step 7)."""
+        if not self.prog_flat:
+            return
+        if self.doc.active_sketch:
+            self._render_live_profile_fills(mvp)
             return
         entries = []
         if self.hover_profile and self.hover_profile != self.doc.selected_profile:
@@ -75,6 +80,48 @@ class RenderGLMixin:
             if tris is not None:
                 GL.glUniform4f(loc_col, *col)
                 self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, tris)
+        GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+        GL.glDepthMask(GL.GL_TRUE)
+        GL.glUseProgram(0)
+
+    LIVE_FILL_ALPHA = 0.08            # closed profiles of the open sketch: a tint, the lines stay what you look at
+
+    def live_profile_fill(self) -> Optional[np.ndarray]:
+        """World triangles of every closed profile of the active sketch, rebuilt only when the profiles change (the
+        solver hands out new profile objects whenever the geometry moves)."""
+        sketch = self.doc.active_sketch
+        if sketch is None or not sketch.profiles:
+            return None
+        profiles = list(sketch.profiles)
+        cached = getattr(self, "_live_fill", None)
+        if cached is not None and cached[0] is sketch and len(cached[1]) == len(profiles) \
+                and all(a is b for a, b in zip(cached[1], profiles)):
+            return cached[2]
+        parts = []
+        for prof in profiles:
+            try:
+                solid = m3d.Manifold.extrude(profile_cross_section(prof), height=0.02)
+            except Exception:
+                continue
+            mesh = solid.transform(sketch.plane.get_transform_matrix_3x4()).to_mesh()
+            if len(mesh.tri_verts):
+                parts.append(mesh.vert_properties[:, :3][mesh.tri_verts].reshape(-1, 3))
+        tris = np.concatenate(parts).astype(np.float32) if parts else None
+        self._live_fill = (sketch, profiles, tris)      # holding the profiles keeps their ids from being reused
+        return tris
+
+    def _render_live_profile_fills(self, mvp: np.ndarray):
+        tris = self.live_profile_fill()
+        if tris is None:
+            return
+        GL.glUseProgram(self.prog_flat)
+        GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.prog_flat, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
+        GL.glUniform4f(GL.glGetUniformLocation(self.prog_flat, "u_color"),
+                       *theme.palette().highlight01(0.45), self.LIVE_FILL_ALPHA)
+        GL.glDepthMask(GL.GL_FALSE)
+        GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+        GL.glPolygonOffset(-1.0, -1.0)
+        self.draw_buffer_arrays(GL.GL_TRIANGLES, GL.glGetAttribLocation(self.prog_flat, "in_pos"), tris)
         GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
         GL.glDepthMask(GL.GL_TRUE)
         GL.glUseProgram(0)
