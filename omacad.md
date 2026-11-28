@@ -1,3 +1,8 @@
+## Visningsstil — 2026-11-28 (0.9.9.80.236, A11)
+
+- `RenderMixin.display_style` (property, `DISPLAY_STYLES`) sätter `wireframe_only`/`show_edges`; `render_bodies` kör vid `hidden_line` två pass via `_render_bodies_once` med `_body_pass`: "paper" (ljus färg, större polygon offset 2/4, skarpa kanter), sedan "silhouette" (baksidor som linjer: `glCullFace(GL_FRONT)` + `glPolygonMode(GL_LINE)`; syns bara vid konturen). Meny View › Display Style (`menu_setup`, QActionGroup, `_style_actions`), `MainWindow.set_display_style` sparar `display_style`; läses vid start. Fälla: loopvariabeln fick inte heta `style` i `setup_menu_bar` (skuggar `theme.style()`).
+- Test: `tests/test_display_style.py`.
+
 ## Normaler mot ritade trianglar + cylinder bredvid rundning — 2026-11-28 (0.9.9.80.235)
 
 - `CadKernel._facing_drawn(drawn, normals)` sist i `_shaded_triangles`: hörnnormal med negativ prickprodukt mot den *ritade* (float32) triangelns normal ersätts med den. Kontrollen före `_strip_normals` görs i float64 och missade nålar som vänder vid avrundning. Golden: 58 dokument skiljer bara i `render` (baslinjen omgjord).

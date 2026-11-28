@@ -123,6 +123,18 @@ class MenuSetupMixin:
         act_fit.setShortcuts([QKeySequence("F"), QKeySequence("Home")])
         menu_view.addAction("Toggle Ground Grid", self.toggle_grid)
         menu_view.addAction("Toggle Feature Edges", self.toggle_edges)
+        from PySide6.QtGui import QActionGroup
+        menu_style = menu_view.addMenu("Display Style")
+        group = QActionGroup(menu_style)
+        self._style_actions = {}
+        for look, label in (("shaded_edges", "Shaded with Edges"), ("shaded", "Shaded"),
+                            ("wireframe", "Wireframe"), ("hidden_line", "Hidden Line")):
+            act = menu_style.addAction(label)
+            act.setCheckable(True)
+            act.setChecked(look == self.viewport.display_style)
+            act.triggered.connect(lambda _=False, s=look: self.set_display_style(s))
+            group.addAction(act)
+            self._style_actions[look] = act
         self._origin_actions = {}
         menu_origin = menu_view.addMenu("Origin")
         for kind, name, label in (("all", "", "Show Origin"), ("axis", "X", "X Axis"), ("axis", "Y", "Y Axis"),

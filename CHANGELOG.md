@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.236
+
+### Added
+- **View › Display Style**: *Shaded with Edges* (as before), *Shaded*, *Wireframe* (every edge, see-through) and *Hidden Line* (paper-white bodies with their edges and silhouettes, hidden edges gone; round bodies get their outline too). Remembered in Settings.
+
 # Hybrid-experiment — 0.9.9.80.235
 
 ### Fixed

@@ -485,10 +485,49 @@ class RenderGLMixin:
         GL.glUseProgram(0)
         return True
 
+    DISPLAY_STYLES = {               # style -> (solids drawn, edges drawn)
+        "shaded_edges": ("shaded", True), "shaded": ("shaded", False),
+        "wireframe": ("none", True), "hidden_line": ("paper", True),
+    }
+
+    @property
+    def display_style(self) -> str:
+        return getattr(self, "_display_style", "shaded_edges")
+
+    @display_style.setter
+    def display_style(self, style: str) -> None:
+        """Shaded with edges, shaded, wireframe (every edge, see-through) or hidden line (edges, hidden ones gone)."""
+        if style not in self.DISPLAY_STYLES:
+            raise ValueError(f"unknown display style {style!r}")
+        self._display_style = style
+        solids, edges = self.DISPLAY_STYLES[style]
+        self.wireframe_only = solids != "shaded"
+        self.show_edges = edges
+        self.update()
+
     def render_bodies(self, mvp: np.ndarray):
-        """Renders shaded CAD bodies with sharp silhouette edges."""
+        """Renders shaded CAD bodies with sharp silhouette edges. Hidden line: the bodies are drawn into the depth
+        buffer only (all of them first, so one body hides another's edges too), then their edges."""
         if not self.prog_solid or not self.prog_flat:
             return
+        if self.display_style != "hidden_line":
+            self._render_bodies_once(mvp)
+            return
+        # Hidden line: paper-white bodies with their sharp edges, then the silhouettes: the back faces drawn as
+        # lines, which only show round the rim of the front faces (the fill is pushed back by the polygon offset)
+        saved = (self.wireframe_only, self.show_edges)
+        try:
+            self.wireframe_only, self.show_edges = False, True
+            self._body_pass = "paper"
+            self._render_bodies_once(mvp)
+            self.show_edges = False
+            self._body_pass = "silhouette"
+            self._render_bodies_once(mvp)
+        finally:
+            self._body_pass = None
+            self.wireframe_only, self.show_edges = saved
+
+    def _render_bodies_once(self, mvp: np.ndarray):
 
         gpu_cache = getattr(self, "_body_gpu_cache", None)
         if gpu_cache is not None:
@@ -611,10 +650,23 @@ class RenderGLMixin:
                 else:
                     c = body.color
                     GL.glUniform4f(loc_col, c[0], c[1], c[2], c[3])
+                body_pass = getattr(self, "_body_pass", None)
+                if body_pass == "paper" and not (cutting or helper):
+                    GL.glUniform4f(loc_col, *((0.80, 0.86, 0.98) if is_selected else (0.97, 0.97, 0.96)), 1.0)
+                silhouette = body_pass == "silhouette" and not (cutting or helper)
+                if silhouette:
+                    GL.glUniform4f(loc_col, 0.05, 0.06, 0.08, 1.0)
+                    GL.glEnable(GL.GL_CULL_FACE)
+                    GL.glCullFace(GL.GL_FRONT)
+                    GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE)
+                elif body_pass == "silhouette":
+                    GL.glUseProgram(0)
+                    continue
 
-                # Push depth back slightly so crisp edges render cleanly on top
+                # Push depth back slightly so crisp edges render cleanly on top (further for the hidden-line paper,
+                # so no back-face line pokes through a flat face as a speck)
                 GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
-                GL.glPolygonOffset(1.0, 1.0)
+                GL.glPolygonOffset(*((2.0, 4.0) if body_pass == "paper" else (1.0, 1.0)))
 
                 if cache_entry and cache_entry.get("vao_solid"):
                     GL.glBindVertexArray(cache_entry["vao_solid"])
@@ -626,6 +678,9 @@ class RenderGLMixin:
                     self.draw_buffer_arrays(GL.GL_TRIANGLES, loc_pos, draw_verts, loc_norm, draw_normals)
 
                 GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+                if silhouette:
+                    GL.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL)
+                    GL.glDisable(GL.GL_CULL_FACE)
                 GL.glDepthMask(GL.GL_TRUE)
                 GL.glUseProgram(0)
 

@@ -128,6 +128,9 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
 
         # 2. 3D Viewport (spans full central width, overlays float on top like Fusion 360)
         self.viewport = Viewport3D(self.doc, self)
+        from omacad.ui.settings import get_settings as _settings
+        if _settings().get("display_style", "shaded_edges") in self.viewport.DISPLAY_STYLES:
+            self.viewport.display_style = _settings().get("display_style", "shaded_edges")
         central_layout.addWidget(self.viewport, stretch=1)
 
         from omacad.ui import dialogs as _dialogs
@@ -859,6 +862,15 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
     def toggle_edges(self):
         self.viewport.show_edges = not self.viewport.show_edges
         self.viewport.update()
+
+    def set_display_style(self, style: str) -> None:
+        """View > Display Style; remembered in Settings."""
+        self.viewport.display_style = style
+        from omacad.ui.settings import get_settings
+        get_settings().set("display_style", style)
+        act = getattr(self, "_style_actions", {}).get(style)
+        if act is not None and not act.isChecked():
+            act.setChecked(True)
 
 
 
