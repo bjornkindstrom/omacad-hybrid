@@ -85,3 +85,16 @@ def test_status_chip_says_what_state_the_sketch_is_in():
     text, _ = vp.sketch_status_chip()
     assert text.startswith("⚠ Over defined") and "click to choose" in text and vp.conflict_choices
     vp.deleteLater()
+
+
+def test_a_relation_between_fixed_elements_that_is_not_true_is_refused():
+    """The solver skips relations whose elements are all fixed: Vertical on a fixed level line was accepted."""
+    doc = Document()
+    sk = doc.start_sketch()
+    line = sk.add_line((0.0, 0.0), (20.0, 1.0))
+    assert doc.add_constraints(sk.sketch_id, [("FIX", [line.entity_id], [])])
+    assert not doc.add_constraints(doc.active_sketch.sketch_id, [("VERTICAL", [line.entity_id], [])])
+    assert "fixed" in doc.last_message
+    assert [c.ctype for c in doc.active_sketch.constraints] == ["FIX"]
+    offer = doc.conflict_offer
+    assert offer and any(c["label"].startswith("Fix") for c in offer["choices"])     # unfix it to make room

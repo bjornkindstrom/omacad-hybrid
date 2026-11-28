@@ -1006,3 +1006,47 @@ def point_auto_relations(sketch, point) -> list:
         if isinstance(other, SketchCircle) and abs(math.hypot(p[0] - other.center[0], p[1] - other.center[1]) - other.radius) < 1e-5:
             return [("POINT_ON_CIRCLE", [other.entity_id, pid], ["p"])]
     return []
+
+
+HOLD_TOL = 1e-5
+
+
+def relation_holds(sketch, ctype: str, refs, pts) -> bool:
+    """Does a relation actually hold in the sketch as it stands? The solver skips relations whose elements are
+    all held (Fix), so one added between fixed elements was accepted without being true. Unknown kinds: True."""
+    ents = [sketch.get_entity(r) for r in refs]
+    if any(e is None for e in ents):
+        return True
+
+    def vec(line):
+        return line.p2[0] - line.p1[0], line.p2[1] - line.p1[1]
+
+    def unit(v):
+        n = math.hypot(*v)
+        return (v[0] / n, v[1] / n) if n > 1e-12 else (0.0, 0.0)
+
+    a = ents[0]
+    b = ents[1] if len(ents) > 1 else None
+    if ctype in ("HORIZONTAL", "VERTICAL") and isinstance(a, SketchLine):
+        dx, dy = unit(vec(a))
+        return abs(dy if ctype == "HORIZONTAL" else dx) < HOLD_TOL
+    if ctype in ("PARALLEL", "PERPENDICULAR") and isinstance(a, SketchLine) and isinstance(b, SketchLine):
+        ua, ub = unit(vec(a)), unit(vec(b))
+        cross, dot = ua[0] * ub[1] - ua[1] * ub[0], ua[0] * ub[0] + ua[1] * ub[1]
+        return abs(cross if ctype == "PARALLEL" else dot) < HOLD_TOL
+    if ctype == "COINCIDENT" and b is not None and len(pts) == 2:
+        pa, pb = point_of(a, pts[0]), point_of(b, pts[1])
+        return pa is None or pb is None or math.dist(pa, pb) < HOLD_TOL * 10
+    if ctype == "EQUAL" and b is not None:
+        if isinstance(a, SketchLine) and isinstance(b, SketchLine):
+            return abs(math.hypot(*vec(a)) - math.hypot(*vec(b))) < HOLD_TOL * 10
+        if isinstance(a, SketchCircle) and isinstance(b, SketchCircle):
+            return abs(a.radius - b.radius) < HOLD_TOL * 10
+    if ctype == "POINT_ON_LINE" and isinstance(b, SketchLine) and pts:
+        p = point_of(a, pts[0])
+        if p is None:
+            return True
+        (x1, y1), (x2, y2) = b.p1, b.p2
+        L = math.hypot(x2 - x1, y2 - y1)
+        return L < 1e-12 or abs((p[0] - x1) * (y2 - y1) - (p[1] - y1) * (x2 - x1)) / L < HOLD_TOL * 10
+    return True

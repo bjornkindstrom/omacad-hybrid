@@ -27,7 +27,7 @@ from omacad.model.features.knurl import apply_knurl
 from omacad.model.features.japandi import apply_japandi
 from omacad.model.sketch import Sketch, SketchPlane, SketchConstraint, SketchCircle, SketchLine
 from omacad.model.sketch_types import SOLVER_DIM_TYPES as SOLVER_DIMS
-from omacad.model.sketch_solver import solve_sketch, solve_keeping_arcs, SolveResult
+from omacad.model.sketch_solver import solve_sketch, solve_keeping_arcs, relation_holds, SolveResult
 from omacad.model import expr as exprlib
 from omacad.model.faces import in_plane_edges
 
@@ -3604,6 +3604,10 @@ class Document:
         if not res.ok and self._seed_relations(sketch, specs):     # e.g. Vertical on a line drawn level
             res = solve_keeping_arcs(sketch, {r for _, refs, _ in specs for r in refs})
         released = 0
+        if res.ok and not all(relation_holds(sketch, c, r, p) for c, r, p in specs):
+            # held (fixed) elements are skipped by the solver: a relation between them must already be true
+            res = SolveResult(False, None, "The elements are fixed and do not meet this relation",
+                              {r for _, refs, _ in specs for r in refs})
         if not res.ok:
             involved = {r for _, refs, _ in specs for r in refs}
             keep = [d for d in sketch.dimensions
@@ -3612,6 +3616,8 @@ class Document:
             if released:
                 sketch.dimensions = keep
                 res = solve_sketch(sketch)
+                if res.ok and not all(relation_holds(sketch, c, r, p) for c, r, p in specs):
+                    res = SolveResult(False, None, "The elements are fixed and do not meet this relation", involved)
         if not res.ok:
             sketch.restore_from_dict(before)
             self._note_conflicts(sketch, res)
@@ -3752,6 +3758,8 @@ class Document:
                 sketch.constraints.append(SketchConstraint(sketch.new_constraint_id(), ctype, list(refs), list(pts)))
             involved = {r for _, refs, _ in payload for r in refs}
             res = solve_keeping_arcs(sketch, involved)
+            if res.ok and not all(relation_holds(sketch, c, r, p) for c, r, p in payload):
+                res = SolveResult(False, None, "fixed elements do not meet it", involved)
             if not res.ok and self._seed_relations(sketch, payload):
                 res = solve_keeping_arcs(sketch, involved)
             if not res.ok:          # as add_constraints: the elements' own sizes are released once

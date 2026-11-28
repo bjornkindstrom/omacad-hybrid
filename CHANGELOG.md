@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.237
+
+### Fixed
+- **A relation between fixed elements that is not true is refused**: the solver skips relations whose elements are all fixed, so e.g. Vertical on a fixed level line was accepted without being true. It is now checked against the geometry (Horizontal, Vertical, Parallel, Perpendicular, Coincident, Equal, point on line) and refused as a clash, with *Fix* offered for replacing.
+
 # Hybrid-experiment — 0.9.9.80.236
 
 ### Added

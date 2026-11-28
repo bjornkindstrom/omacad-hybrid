@@ -1,3 +1,7 @@
+## Villkor mellan låsta element — 2026-11-28 (0.9.9.80.237)
+
+- `sketch_solver.relation_holds(sketch, ctype, refs, pts)`: geometrisk kontroll (H/V/PARALLEL/PERPENDICULAR/COINCIDENT/EQUAL/POINT_ON_LINE; okända → True). `add_constraints` (efter första lösningen och efter omförsöket med släppta mått) och `_apply_request` gör ett ok-resultat till en krock om något nytt villkor inte gäller — lösaren hoppar över villkor där alla element är fixerade. Test: `test_sketch_status_and_conflicts.py::test_a_relation_between_fixed_elements_that_is_not_true_is_refused`.
+
 ## Visningsstil — 2026-11-28 (0.9.9.80.236, A11)
 
 - `RenderMixin.display_style` (property, `DISPLAY_STYLES`) sätter `wireframe_only`/`show_edges`; `render_bodies` kör vid `hidden_line` två pass via `_render_bodies_once` med `_body_pass`: "paper" (ljus färg, större polygon offset 2/4, skarpa kanter), sedan "silhouette" (baksidor som linjer: `glCullFace(GL_FRONT)` + `glPolygonMode(GL_LINE)`; syns bara vid konturen). Meny View › Display Style (`menu_setup`, QActionGroup, `_style_actions`), `MainWindow.set_display_style` sparar `display_style`; läses vid start. Fälla: loopvariabeln fick inte heta `style` i `setup_menu_bar` (skuggar `theme.style()`).
