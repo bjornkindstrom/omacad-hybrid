@@ -320,6 +320,67 @@ class RenderGLMixin:
         t = self.SELECTED_TINT
         return tuple(float(c) * (1.0 - t) + h * t for c, h in zip(color[:3], hi))
 
+    SHADOW_SPREAD = 1.6         # each shadow reaches this much past its body's footprint
+    SHADOW_STRENGTH = 0.30
+    SHADOW_MAX_LIFT = 0.15      # a body casts one only when resting on the ground (bottom within this share of its size)
+
+    def contact_shadow_quad(self):
+        """(corners, uvs) of the shadows under the visible bodies that rest on the ground (one soft ellipse each),
+        or None (in a sketch, the setting off, or nothing resting on the ground)."""
+        from omacad.ui.settings import get_settings
+        if (self.doc.active_sketch is not None or not get_settings().get("ground_shadow", True)
+                or float(getattr(self, "elevation", 30.0)) < 0.0):        # seen from below the ground: none
+            return None
+        corners, uvs = [], []
+        unit = np.array([[-1, -1], [1, -1], [1, 1], [-1, -1], [1, 1], [-1, 1]], dtype=np.float32)
+        for body in self.doc.bodies.values():
+            rm = body.render_mesh
+            if not getattr(body, "visible", True) or getattr(body, "construction", False) or rm is None or not len(rm.vertices):
+                continue
+            lo, hi = np.asarray(rm.bounds_min, float), np.asarray(rm.bounds_max, float)
+            size = max(float(np.max(hi - lo)), 1e-6)
+            if abs(lo[2]) > self.SHADOW_MAX_LIFT * size + 1e-6:
+                continue
+            cx, cy = (lo[0] + hi[0]) / 2.0, (lo[1] + hi[1]) / 2.0
+            rx = max((hi[0] - lo[0]) / 2.0, 0.5) * self.SHADOW_SPREAD
+            ry = max((hi[1] - lo[1]) / 2.0, 0.5) * self.SHADOW_SPREAD
+            z = lo[2] - 0.02
+            corners += [[cx + u * rx, cy + v * ry, z] for u, v in unit]
+            uvs.append(unit)
+        if not corners:
+            return None
+        return np.asarray(corners, dtype=np.float32), np.concatenate(uvs).astype(np.float32)
+
+    def render_contact_shadow(self, mvp: np.ndarray):
+        """A soft shadow on the ground under the model, so it sits on something instead of floating."""
+        prog = getattr(self, "prog_shadow", None)
+        quad = self.contact_shadow_quad() if prog else None
+        if quad is None:
+            return
+        corners, uvs = quad
+        GL.glUseProgram(prog)
+        GL.glUniformMatrix4fv(GL.glGetUniformLocation(prog, "u_mvp"), 1, GL.GL_TRUE, mvp.flatten())
+        GL.glUniform1f(GL.glGetUniformLocation(prog, "u_strength"), self.SHADOW_STRENGTH)
+        GL.glDepthMask(GL.GL_FALSE)
+        GL.glDisable(GL.GL_DEPTH_TEST)    # drawn before the bodies (they cover it); origin planes at z 0 must not hide it
+        loc_pos, loc_uv = GL.glGetAttribLocation(prog, "in_pos"), GL.glGetAttribLocation(prog, "in_uv")
+        GL.glBindVertexArray(self.vao)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo_pos)
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, corners.nbytes, corners, GL.GL_DYNAMIC_DRAW)
+        GL.glEnableVertexAttribArray(loc_pos)
+        GL.glVertexAttribPointer(loc_pos, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo_norm)
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, uvs.nbytes, uvs, GL.GL_DYNAMIC_DRAW)
+        GL.glEnableVertexAttribArray(loc_uv)
+        GL.glVertexAttribPointer(loc_uv, 2, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, len(corners))
+        GL.glDisableVertexAttribArray(loc_pos)
+        GL.glDisableVertexAttribArray(loc_uv)
+        GL.glBindVertexArray(0)
+        GL.glEnable(GL.GL_DEPTH_TEST)
+        GL.glDepthMask(GL.GL_TRUE)
+        GL.glUseProgram(0)
+
     def render_backdrop(self):
         """A soft vertical gradient behind everything (theme.Palette.canvas_gradient01), drawn without depth."""
         prog = getattr(self, "prog_backdrop", None)

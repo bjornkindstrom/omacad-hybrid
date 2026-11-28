@@ -2,7 +2,7 @@ from omacad.ui.viewport.shaders import (
     VERTEX_SHADER_SOLID, FRAGMENT_SHADER_SOLID, VERTEX_SHADER_FLAT,
     FRAGMENT_SHADER_FLAT, VERTEX_SHADER_TEXTURE, FRAGMENT_SHADER_TEXTURE,
     VERTEX_SHADER_THICK, SKETCH_GROUP_ICONS, VERTEX_SHADER_BACKDROP, FRAGMENT_SHADER_BACKDROP,
-    VERTEX_SHADER_GRID, FRAGMENT_SHADER_GRID
+    VERTEX_SHADER_GRID, FRAGMENT_SHADER_GRID, VERTEX_SHADER_SHADOW, FRAGMENT_SHADER_SHADOW
 )
 from omacad.ui.viewport.render_mixin import RenderGLMixin
 from omacad.ui.viewport.gizmo_mixin import GizmoMixin
@@ -311,6 +311,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
         self.camera_ease = CameraEase()   # view presets, Fit and Find glide instead of jumping
         self.prog_backdrop = None      # gradient behind the scene (render_backdrop)
         self.prog_grid = None          # grid lines fading out towards the grid's edge
+        self.prog_shadow = None        # soft contact shadow under the model
         self.vbo_backdrop = None
         self._canvas_textures = {}
         self.vbo_thick = None
@@ -653,9 +654,12 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
             self.prog_grid = shaders.compileProgram(
                 shaders.compileShader(VERTEX_SHADER_GRID, GL.GL_VERTEX_SHADER),
                 shaders.compileShader(FRAGMENT_SHADER_GRID, GL.GL_FRAGMENT_SHADER))
+            self.prog_shadow = shaders.compileProgram(
+                shaders.compileShader(VERTEX_SHADER_SHADOW, GL.GL_VERTEX_SHADER),
+                shaders.compileShader(FRAGMENT_SHADER_SHADOW, GL.GL_FRAGMENT_SHADER))
         except Exception as e:
             print(f"Backdrop/grid shaders unavailable, using the plain look: {e}")
-            self.prog_backdrop = self.prog_grid = None
+            self.prog_backdrop = self.prog_grid = self.prog_shadow = None
 
     def draw_buffer_arrays(self, mode, pos_loc, pos_data: np.ndarray, norm_loc=None, norm_data=None):
         """Safely draws arrays using bound VAO and VBO buffers for modern OpenGL."""
@@ -746,6 +750,7 @@ class Viewport3D(DimensionOverlayMixin, ViewportEventsMixin, MeasureMixin, Conte
                 self.render_ground_grid(mvp)
 
         self.render_origin_axes(mvp)
+        self.render_contact_shadow(mvp)
 
         # 3. Draw 3D Solid Bodies
         self.render_bodies(mvp)

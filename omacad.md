@@ -1,3 +1,7 @@
+## Kontaktskugga — 2026-11-28 (0.9.9.80.238, A8)
+
+- `RenderMixin.contact_shadow_quad()` (en ellips per synlig kropp vars botten ligger inom `SHADOW_MAX_LIFT` av marken, `SHADOW_SPREAD` 1,6 × fotavtrycket, inte i skiss, inte från under marken, inställning `ground_shadow`) + `render_contact_shadow` (shader `VERTEX/FRAGMENT_SHADER_SHADOW`, alfa jämn till 0,62 och mjuk ut). Ritas efter rutnät/axlar och före kropparna **utan djuptest** — origoplanen vid z = 0 skrev djup och dolde skuggan strax under (z − 0,02). `test_grid` stänger av skuggan (den hör till kroppens "avtryck" annars). Test: `test_display_style.py`.
+
 ## Villkor mellan låsta element — 2026-11-28 (0.9.9.80.237)
 
 - `sketch_solver.relation_holds(sketch, ctype, refs, pts)`: geometrisk kontroll (H/V/PARALLEL/PERPENDICULAR/COINCIDENT/EQUAL/POINT_ON_LINE; okända → True). `add_constraints` (efter första lösningen och efter omförsöket med släppta mått) och `_apply_request` gör ett ok-resultat till en krock om något nytt villkor inte gäller — lösaren hoppar över villkor där alla element är fixerade. Test: `test_sketch_status_and_conflicts.py::test_a_relation_between_fixed_elements_that_is_not_true_is_refused`.

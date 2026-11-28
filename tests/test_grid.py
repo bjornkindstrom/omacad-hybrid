@@ -76,6 +76,7 @@ def test_ground_grid_does_not_cover_the_body(elevation):
         vp.azimuth, vp.elevation, vp.distance = 210.0, float(elevation), 240.0
         vp.target = np.array([25.0, 20.0, 15.0])
         vp.render_origin_axes = lambda mvp: None
+        vp.render_contact_shadow = lambda mvp: None       # it goes with the body: not part of its footprint
         vp.draw_painter_overlays = lambda painter: None
         vp.show_grid = False
         plain = _pixels(vp)

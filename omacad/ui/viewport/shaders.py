@@ -167,3 +167,28 @@ void main() {
     frag_color = vec4(u_color.rgb, u_color.a * fade);
 }
 """
+
+# Contact shadow: a soft dark ellipse on the ground under the model (uv -1..1 across it)
+VERTEX_SHADER_SHADOW = """
+#version 330 core
+in vec3 in_pos;
+in vec2 in_uv;
+uniform mat4 u_mvp;
+out vec2 v_uv;
+void main() {
+    v_uv = in_uv;
+    gl_Position = u_mvp * vec4(in_pos, 1.0);
+}
+"""
+
+FRAGMENT_SHADER_SHADOW = """
+#version 330 core
+in vec2 v_uv;
+uniform float u_strength;
+out vec4 frag_color;
+void main() {
+    float d = length(v_uv);
+    float a = u_strength * (1.0 - smoothstep(0.62, 1.0, d));   // even under the body, soft past its edge
+    frag_color = vec4(0.0, 0.0, 0.0, a);
+}
+"""

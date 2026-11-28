@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.238
+
+### Added
+- **Soft contact shadow**: each body resting on the ground casts a soft shadow under itself, so the model sits on something instead of floating (not in a sketch, not seen from below, not for a body lifted off the ground). Settings › 3D View › Display can turn it off.
+
 # Hybrid-experiment — 0.9.9.80.237
 
 ### Fixed
