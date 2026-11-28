@@ -1,3 +1,9 @@
+# Hybrid-experiment — 0.9.9.80.235
+
+### Fixed
+- **Black specks on needle-thin triangles**: a sliver triangle can flip when its corners are rounded to float32 for drawing, and its smooth normal then faced away from it. Normals are now checked against the triangles exactly as drawn and turned where needed (only render normals change; geometry, faces and edges are identical in all 135 project documents). `test_232_loft_no_inverted_normals…` passes again.
+- **Emboss / Surface Texture on a cylinder wall joined by a fillet** was refused: the wall's tall facets have their centres at only two heights, which a sphere fits, so the wall was taken for a sphere. A patch now only counts as a sphere when the clicked triangle's corners lie on it too. `test_cylinder_fit_ignores_the_fillet_that_joins_the_wall` passes again.
+
 # Hybrid-experiment — 0.9.9.80.234
 
 ### Added

@@ -1,3 +1,9 @@
+## Normaler mot ritade trianglar + cylinder bredvid rundning — 2026-11-28 (0.9.9.80.235)
+
+- `CadKernel._facing_drawn(drawn, normals)` sist i `_shaded_triangles`: hörnnormal med negativ prickprodukt mot den *ritade* (float32) triangelns normal ersätts med den. Kontrollen före `_strip_normals` görs i float64 och missade nålar som vänder vid avrundning. Golden: 58 dokument skiljer bara i `render` (baslinjen omgjord).
+- `faces_hit_tests._on_sphere`: `detect_cylinder_surface` avvisar som sfär bara om den klickade triangelns centrum, normal **och hörn** ligger på den inpassade sfären (cylinderväggens höga fasetter har centrum på två höjder → passar en sfär runt mitten).
+- Hela sviten är nu grön utom `test_preview_over_section_cap` (kräver riktig skärm).
+
 ## Dra med lösaren + rättningar efter hela sviten — 2026-11-28 (0.9.9.80.234, steg 6)
 
 - `SketchMoveMixin._live_solve`: `_endpoint_drag_move` löser med `pinned=[(id, punkt)]` (SolveSpace `dragged`) vid varje musrörelse när skissen har villkor/mått (≤ `LIVE_SOLVE_MAX` 400, inte spline-index). `_endpoint_drag_release` löser en gång till (pinned) och återställer dragningen om det misslyckas — förut löste släppet aldrig, så hopkopplade linjer stod kvar. Test: `tests/test_sketch_live_drag.py`.

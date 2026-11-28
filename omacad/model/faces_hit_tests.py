@@ -323,6 +323,23 @@ def fit_sphere_patch(pts: np.ndarray, nrms: np.ndarray, weights: np.ndarray):
     return c2, r2, int2, inliers
 
 
+def _on_sphere(mesh, tri_idx: int, sphere) -> bool:
+    """Does triangle tri_idx of the mesh lie on this fitted sphere (as fit_sphere_patch judges its inliers)?"""
+    centre, r, internal = sphere[0], sphere[1], sphere[2]
+    t = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3, 3)[tri_idx]
+    n = np.cross(t[1] - t[0], t[2] - t[0])
+    ln = float(np.linalg.norm(n))
+    if ln < 1e-12:
+        return True
+    c = t.mean(axis=0)
+    rad = float(np.linalg.norm(c - centre))
+    out = (c - centre) / max(rad, 1e-12) * (-1.0 if internal else 1.0)
+    # the corners too: a cylinder wall's tall facets have their centres all at two heights, which a sphere about the
+    # middle fits, but their corners at the wall's ends lie far off it
+    corners_on = bool(np.all(np.abs(np.linalg.norm(t - centre, axis=1) - r) < 0.05 * r + 0.1))
+    return corners_on and abs(rad - r) < 0.05 * r + 0.1 and float(n @ out) / ln > 0.95
+
+
 def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
     """Detect if the smooth patch around tri_idx is a cylindrical surface (pin/bolt or internal hole).
 
@@ -356,8 +373,9 @@ def detect_cylinder_surface(mesh, tri_idx: int) -> Optional[dict]:
     # For a cylindrical surface, face normals are perpendicular to the cylinder axis: nrm @ axis ~ 0
     axis = _normal_axis(nrm)
     if axis is None:
-        if fit_sphere_patch(whole_tri.mean(axis=1), whole_nrm, whole_area) is not None:
-            return None
+        sphere = fit_sphere_patch(whole_tri.mean(axis=1), whole_nrm, whole_area)
+        if sphere is not None and _on_sphere(mesh, tri_idx, sphere):
+            return None         # the clicked triangle is on a sphere (a wall joined to a dome is not)
         # A fillet or round that runs into the wall is smooth enough to join the patch, and its normals spread out
         # of the wall's plane. Keep only the wall: the triangles whose normals are perpendicular to one axis.
         t = np.asarray(mesh.vertices, dtype=np.float64).reshape(-1, 3, 3)[tri_idx]

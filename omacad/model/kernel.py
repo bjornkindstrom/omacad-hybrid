@@ -1349,12 +1349,29 @@ class CadKernel:
                         normals = normals.reshape(-1, 3, 3)
                         normals[flat] = CadKernel._face_normals(v, f)[flat][:, None, :]
                         normals = normals.reshape(-1, 3)
-                    return (props[tris].reshape(-1, props.shape[1])[:, :3].astype(np.float32),
-                            normals.astype(np.float32))
+                    drawn = props[tris].reshape(-1, props.shape[1])[:, :3].astype(np.float32)
+                    return drawn, CadKernel._facing_drawn(drawn, normals).astype(np.float32)
         except Exception as e:      # fall back to flat shading, which is always right, and say why
             from omacad import applog
             applog.log("ERROR", f"smooth normals: {e!r}")
         return CadKernel._flat_shaded(v, f)
+
+    @staticmethod
+    def _facing_drawn(drawn: np.ndarray, normals: np.ndarray) -> np.ndarray:
+        """Vertex normals turned to the triangles as they are drawn (float32): a needle-thin triangle can flip
+        when its corners are rounded to float32, and a normal facing away from it shades it as a black speck.
+        Such a corner takes the drawn triangle's own normal (when that has a direction at all)."""
+        tri = drawn.astype(np.float64).reshape(-1, 3, 3)
+        face = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+        length = np.linalg.norm(face, axis=1, keepdims=True)
+        ok = length[:, 0] > 0.0
+        face = np.where(ok[:, None], face / np.maximum(length, 1e-300), 0.0)
+        n = normals.reshape(-1, 3, 3)
+        away = ((n * face[:, None, :]).sum(axis=2) < 0.0) & ok[:, None]
+        if not away.any():
+            return normals
+        n = np.where(away[..., None], np.broadcast_to(face[:, None, :], n.shape), n)
+        return n.reshape(-1, 3)
 
     @staticmethod
     def _flat_shaded(v, f):
