@@ -2,6 +2,7 @@
 a while. The work can't be stopped halfway, as the document would be left half built, so the box has no Cancel."""
 
 from PySide6.QtCore import QEvent, QEventLoop, QObject, Qt
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication, QDialog, QLabel, QProgressBar, QVBoxLayout
 
 from omacad import busy
@@ -49,9 +50,11 @@ class BusyWindowKeeper(QObject):
         self.window = window
         self.dialog = None
         self.label = ""
+        self._releases = []         # (widget, copy) of mouse releases held back while busy, handed over at the end
 
     def begin(self, label: str) -> None:
         self.label = label
+        self._releases = []
         if self.window is not None:
             self.window.setUpdatesEnabled(False)        # the last picture stays; the window's own windows still paint
         QApplication.instance().installEventFilter(self)
@@ -66,6 +69,13 @@ class BusyWindowKeeper(QObject):
 
     def end(self) -> None:
         QApplication.instance().removeEventFilter(self)
+        # A button let go of while the work ran still has to hear it: a spin box arrow pressed for one step kept
+        # its auto-repeat running and stepped on and on (each step a new preview) while the pointer stayed on it.
+        from shiboken6 import isValid
+        for widget, release in self._releases:
+            if isValid(widget):
+                QApplication.postEvent(widget, release)
+        self._releases = []
         if self.dialog is not None:
             self.dialog.hide()
             self.dialog.deleteLater()
@@ -75,6 +85,10 @@ class BusyWindowKeeper(QObject):
             self.window.update()
 
     def eventFilter(self, watched, event) -> bool:
+        if event.type() == QEvent.Type.MouseButtonRelease and isinstance(event, QMouseEvent):
+            if not any(w is watched for w, _ in self._releases):
+                self._releases.append((watched, event.clone()))
+            return True
         return event.type() in DROPPED
 
 

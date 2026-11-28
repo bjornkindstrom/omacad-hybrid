@@ -1,3 +1,9 @@
+## Spinboxpilar hoppade flera steg — 2026-11-28 (0.9.9.80.253, Björn)
+
+- Orsak: `BusyWindowKeeper.eventFilter` (busy_dialog) släppte bort `MouseButtonRelease` medan `busy.run` arbetade. En förhandsvisning på 0,03–0,5 s (över `QUICK_SECONDS`, under `SHOW_AFTER`) startad av `valueChanged` → släppet på pilen nådde aldrig spinboxen → `QAbstractSpinBox` stod kvar i "nedtryckt" läge och auto-repeat stegade (11, 12, 13, 14, 15 på 1,5 s i testet) så länge pekaren stod på pilen. Längre arbete gömde felet: busy-rutan gör fönstret inaktivt och spinboxen nollställer sig.
+- Fix: släppet kopieras (`event.clone()`, ett per mottagare) och postas till samma widget i `end()` (`shiboken6.isValid`-kontroll). Andra musklick, tangenter, hjul osv. kastas som förut.
+- Fälla vid felsökning offscreen: första händelseloopen ger `ThemeChange`/`StyleChange` som nollställer spinboxen och döljer felet; `QTest.qWait(300)` före klicket. Test: `tests/test_busy_release.py` (faller på gamla koden).
+
 ## Koncentriska cirklar länkades som en kedja i Offset/Move — 2026-11-28 (0.9.9.80.253, rapport 20261128-094650)
 
 - `Sketch.connected_entities` (`omacad/model/sketch.py`) använde `entity_key_points` (gjord för snäpp vid dragning, inkluderar `center` på cirklar, ellipser, slots och center-rektanglar), så koncentriska cirklar runt samma centrum länkades ihop som en enda kedja i Offset/Move/dubbelklick. Nu används `_chain_endpoints` (bara ändpunkter på öppna kurvor: `SketchLine`, `SketchArc`, öppen `SketchSpline`) och `COINCIDENT`-villkor som nämner `"center"`/`"center1"`/`"center2"` hoppas över. Test: `tests/test_sketch_offset.py::test_concentric_circles_are_not_linked_as_one_chain`.

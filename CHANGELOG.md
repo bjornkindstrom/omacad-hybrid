@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.254
+# Hybrid-experiment — 0.9.9.80.253
+
+## 0.9.9.80.253 - 2026-11-28
+
+### Fixed
+- **Number arrows take one step per click**: clicking the up or down arrow of a value (a distance, a thickness) sometimes ran on several steps by itself. While the preview for the new value was being worked out, the program held back mouse input and threw away the moment you let go of the arrow, so the box still thought the arrow was held and kept stepping, each step another preview, until the pointer left it. The release is now delivered as soon as the work is done, which also stops a button from staying pressed down.
 
 ## 0.9.9.80.254 - 2026-11-28
 
