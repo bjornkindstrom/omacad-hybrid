@@ -35,6 +35,23 @@ def available() -> bool:
     return _available
 
 
+def warm_up() -> None:
+    """Loads OpenCascade and makes one small body (plan P8): about 0.7 s, otherwise paid by the first B-rep
+    rebuild. Run on a worker thread after the window is up, only while B-rep bodies are switched on."""
+    try:
+        if available():
+            to_manifold(box(1.0, 1.0, 1.0))
+    except Exception as exc:          # only a head start: the real call reports any problem
+        applog.log("WARNING", f"B-rep warm-up failed: {type(exc).__name__}: {exc}")
+
+
+def warm_up_later(delay_ms: int = 1500) -> None:
+    """`warm_up` on a daemon thread `delay_ms` after the event loop runs (the window paints first)."""
+    import threading
+    from PySide6.QtCore import QTimer
+    QTimer.singleShot(delay_ms, lambda: threading.Thread(target=warm_up, name="brep-warm-up", daemon=True).start())
+
+
 def why_unavailable() -> str:
     available()
     return _why_unavailable

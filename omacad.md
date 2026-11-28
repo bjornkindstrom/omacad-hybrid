@@ -1,3 +1,11 @@
+## Hastighet: weld_to, skisslinjer, OCP-uppvärmning — 2026-11-28 (0.9.9.80.251, P2→P7/P8)
+
+- **P2 mätt och ersatt**: delad MeshInfo skulle spara ~1,2 s av 71 s profilerad Jar (trimesh-grannskap, 20 byggen) — inte värt det. Profilen visade i stället `CadKernel.weld_to`: 20 `np.unique(..., axis=0)` på heltalspar = 9,6 s (numpy sorterar rader som strukturerade poster). `kernel._unique_pairs(a, b)` (lexsort + grannjämförelse) ger exakt samma rader i samma ordning, 3–4× snabbare; används för kantlistan, (cell, kant)-paren och (punkt, kant)-paren. Jar 24,25 → 20,36 s, samma mesh-sha256. Golden: ny baslinje från 4961cef, `--check` "no differences".
+- **P7** `RenderMixin._entity_world_lines(plane, ent)`: världskordor per element cachade på `id(ent)` med nyckel `repr(ent.to_dict())` + `circle_segments()` + interaktivt läge + planets origin/u/v-bytes (rensas vid > 20000). Används i `render_sketches` (inte för Move-med-kopia-originalen). Kroppskanterna var redan cachade (A2).
+- **P8** `brep.warm_up()` / `warm_up_later(1500)`: importerar OCP (~0,67 s, resten < 10 ms) och gör en liten låda på en daemon-tråd efter `window.show()`, bara om `brep_bodies` är på. Lat trimesh-import (~0,1 s) skippad: liten vinst, många modulnivåanvändningar.
+- `_trimmed` i shell (21 s profilerat) kan inte göras snabbare med halfspace-snitt utan annan triangulering → skulle bryta golden; lämnad.
+- `test_ui_motion.py` stegar animationen direkt / väntar med timeout (föll under `-n 8`-last). Test: `tests/test_speed_caches.py`.
+
 ## UI-animationer — 2026-11-28 (0.9.9.80.250, A10)
 
 - `omacad/ui/ui_motion.py`: `glide_in(widget, layout)` (QGraphicsOpacityEffect 0→1 + layoutens toppmarginal +10 px → 0, 170 ms OutCubic; effekten tas bort och marginalen återställs när den är klar, RuntimeError-skydd om widgeten försvinner). Anropas i `InspectorPanel.dock_tool` efter `dlg.show()`.

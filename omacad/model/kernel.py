@@ -177,6 +177,19 @@ class RenderMesh:
         return verts, norms
 
 
+def _unique_pairs(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """`np.unique(np.stack([a, b], axis=1), axis=0)` for two integer columns: the same rows in the same order
+    (sorted by a, then b), 3-4x faster (numpy sorts rows as structured records)."""
+    a = np.asarray(a, dtype=np.int64).reshape(-1)
+    b = np.asarray(b, dtype=np.int64).reshape(-1)
+    if len(a) == 0:
+        return np.empty((0, 2), dtype=np.int64)
+    order = np.lexsort((b, a))
+    a, b = a[order], b[order]
+    keep = np.r_[True, (a[1:] != a[:-1]) | (b[1:] != b[:-1])]
+    return np.stack([a[keep], b[keep]], axis=1)
+
+
 def _ramps(counts: np.ndarray) -> np.ndarray:
     """`np.concatenate([np.linspace(0.0, 1.0, k) for k in counts])` without a Python loop, bit for bit the same
     (linspace computes i * (1 / (k - 1)) and puts exactly 1.0 last); counts are all >= 2."""
@@ -389,7 +402,8 @@ class CadKernel:
         cand = np.flatnonzero(np.all((mv >= lo) & (mv <= hi), axis=1))
         if len(cand) == 0:
             return tool
-        edges = np.unique(np.sort(np.concatenate([tf[:, [0, 1]], tf[:, [1, 2]], tf[:, [2, 0]]]), axis=1), axis=0)
+        ends = np.sort(np.concatenate([tf[:, [0, 1]], tf[:, [1, 2]], tf[:, [2, 0]]]), axis=1)
+        edges = _unique_pairs(ends[:, 0], ends[:, 1])
         a = tv[edges[:, 0]]
         seg = tv[edges[:, 1]] - a
         seg_len = np.linalg.norm(seg, axis=1)
@@ -405,7 +419,7 @@ class CadKernel:
         def keys_of(cells):
             return (cells[:, 0] * M + cells[:, 1]) * M + cells[:, 2]
 
-        pairs = np.unique(np.stack([keys_of(np.floor((samples - lo) / h).astype(np.int64)), rep], axis=1), axis=0)
+        pairs = _unique_pairs(keys_of(np.floor((samples - lo) / h).astype(np.int64)), rep)
         skeys, sedges = pairs[:, 0], pairs[:, 1]
         p = mv[cand]
         c0 = np.floor((p - lo) / h).astype(np.int64)
@@ -423,7 +437,7 @@ class CadKernel:
                     eidx.append(sedges[np.repeat(i0, cnt) + offs])
         if not vidx:
             return tool
-        pairs = np.unique(np.stack([np.concatenate(vidx), np.concatenate(eidx)], axis=1), axis=0)
+        pairs = _unique_pairs(np.concatenate(vidx), np.concatenate(eidx))
         vidx, eidx = pairs[:, 0], pairs[:, 1]
         q, A, S = p[vidx], a[eidx], seg[eidx]
         L = np.maximum(seg_len[eidx], 1e-30)

@@ -910,6 +910,32 @@ class RenderGLMixin:
         GL.glBindVertexArray(0)
         GL.glUseProgram(self.prog_flat)
 
+    def _entity_world_lines(self, plane, ent) -> list:
+        """An element's chords in world space, flat [x1, y1, z1, x2, y2, z2, ...] (plan P7): kept while the
+        element, its plane and the curve smoothness are unchanged, so a frame does not rebuild every circle's
+        720 chords or a text's outlines in Python. The key is the element's saved form, so an edit in place (a
+        drag, a solve) is seen at once."""
+        from omacad.model import quality
+        cache = self.__dict__.setdefault("_sketch_line_cache", {})
+        try:
+            key = (repr(ent.to_dict()), quality.circle_segments(), quality.is_interactive_mode(),
+                   plane.origin.tobytes(), plane.u_axis.tobytes(), plane.v_axis.tobytes())
+        except Exception:
+            key = None
+        hit = cache.get(id(ent))
+        if key is not None and hit is not None and hit[0] == key and hit[1] is ent:
+            return hit[2]
+        flat = []
+        for p1, p2 in ent.to_lines():
+            w1 = plane.uv_to_world(p1[0], p1[1])
+            w2 = plane.uv_to_world(p2[0], p2[1])
+            flat.extend([w1[0], w1[1], w1[2], w2[0], w2[1], w2[2]])
+        if key is not None:
+            if len(cache) > 20000:              # elements long gone (deleted, undone): start over
+                cache.clear()
+            cache[id(ent)] = (key, ent, flat)
+        return flat
+
     def render_sketches(self, mvp: np.ndarray):
         """Renders 2D sketch lines, closed profiles, and sketch planes."""
         if not self.prog_flat:
@@ -970,10 +996,7 @@ class RenderGLMixin:
                         dest = conflict_lines      # SolidWorks: over defined geometry in yellow
                     elif dest is normal_lines and is_active and entity_defined(sketch, ent):
                         dest = defined_lines       # SolidWorks: black when it cannot move any more
-                for p1, p2 in ent.to_lines():
-                    w1 = plane.uv_to_world(p1[0], p1[1])
-                    w2 = plane.uv_to_world(p2[0], p2[1])
-                    dest.extend([w1[0], w1[1], w1[2], w2[0], w2[1], w2[2]])
+                dest.extend(self._entity_world_lines(plane, ent))
 
             # a finished sketch of an object that was moved since is drawn where the object is now
             placed = None if is_active else self.doc.sketch_placement(sketch.sketch_id)

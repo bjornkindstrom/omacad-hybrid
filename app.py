@@ -129,6 +129,10 @@ def main():
     busy_dialog.install(window)     # here, not in MainWindow: tests call the model on the main thread
     window.viewport.ASYNC_PREVIEW = True    # big previews read their mesh on a worker thread (latest one wins)
     window.start_autosave()
+    from omacad.ui.settings import get_settings
+    if get_settings().get("brep_bodies"):
+        from omacad.model import brep
+        brep.warm_up_later()        # OpenCascade loads while nobody waits for it, not on the first rebuild
     file_to_open = next((arg for arg in sys.argv[1:] if arg.endswith(".omacad") and os.path.exists(arg)), None)
     if session.RESUME_FLAG in sys.argv:
         window.restore_session()

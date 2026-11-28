@@ -1,4 +1,11 @@
-# Hybrid-experiment — 0.9.9.80.250
+# Hybrid-experiment — 0.9.9.80.251
+
+## 0.9.9.80.251 - 2026-11-28
+
+### Changed
+- **Faster builds, identical results**: a cut or join from a sketch on a body face spends far less time snapping the new shape onto the body's own corners and edges, so Jar with Lid builds in 20.4 s instead of 24.3 s with exactly the same mesh. Every project document rebuilds with zero differences in geometry, faces, edges and shading.
+- Open sketches redraw faster: the lines of each circle, arc, spline and text are kept between frames until that element, its plane or the curve smoothness changes (50 circles: 40 ms to under 1 ms per frame).
+- With B-rep bodies switched on, OpenCascade loads in the background just after the window opens, so the first exact body no longer waits about 0.7 s for it.
 
 ## 0.9.9.80.250 - 2026-11-28
 
