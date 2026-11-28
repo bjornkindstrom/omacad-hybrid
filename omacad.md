@@ -1,3 +1,7 @@
+## Make a lid färdigställd — 2026-11-28 (0.9.9.80.248, Björn)
+
+- Lock-sessionens ocommittade arbete (.239 Make a lid, .240 eget objekt + kant, .242 Fill Face Pattern-preview) committat. Saknad Studio-ikon: `assets/icons/studio/make_lid.svg` (lock lyft över låda, pil ned), `COMMAND_ICONS["make_lid"] = "make_lid"` i stället för `jar` som `test_every_command_step_and_constraint_has_its_own_studio_icon` underkände.
+
 ## Högerklick väljer kroppen — 2026-11-28 (0.9.9.80.247, Björn)
 
 - Fan-menyns kommandon (`menu_command.emit("shell")` osv.) bär inget mål; `prompt_shell` m.fl. tar `doc.selected_body_ids[0]`, alltså kroppen som var markerad i browsern. `EventsMixin._select_right_clicked_body` körs först i `_dispatch_context_menu` (både klick och håll-gesten går dit): omarkerad kropp under pekaren → `doc.select_body(id)` (ersätter), valda ytor på andra kroppar tas bort. Inte i skiss, inte när `active_tool_title()` (en verktygspanel är öppen); `body_clicked` skickas inte (den matar öppna verktygspaneler).
@@ -26,11 +30,23 @@
 - `RenderGLMixin.live_fill_alpha()`: 0,08 på ljus canvas, `LIVE_FILL_ALPHA_DARK` 0,16 på mörk.
 - Test: `tests/test_theme_selection_colours.py`.
 
+## Fill Face Pattern-panelen — 2026-11-28 (0.9.9.80.242)
+
+`PatternDialog._show_kind`: `setParent(self)` lossar inte en direkt form-widget som redan har dialogen som förälder. `takeRow` + `deleteLater` raderade därför `chk_second` vid byte till Fill; nästa förhandsvisning gav Internal C++ object already deleted. `removeWidget(host)` före omparentning bevarar återanvända fält. Regression: `test_pattern_ui.py`, flera lägesbyten, DeferredDelete, gap/margin/partial/layout och OK.
+
 ## Skissen visar vad som är slutet — 2026-11-28 (0.9.9.80.241, skissplan steg 7)
 
 - `RenderGLMixin.render_profile_fills` i öppen skiss → `_render_live_profile_fills`: alla slutna profiler tonade (`highlight01(0.45)`, `LIVE_FILL_ALPHA` 0,08). `live_profile_fill()` cachar trianglarna så länge `sketch.profiles` innehåller samma objekt (lösaren ger nya profilobjekt när geometrin ändras; listan hålls så id:n inte återanvänds).
 - `omacad/model/sketch_gaps.open_ends(sketch)`: ände på kurva som inte rör någon annan kurva (inte konstruktion, tol 1e-4, även T-korsning räknas som ansluten) medan kurvans andra ände gör det. Ensam linje och slutna kurvor ger inget. Ritas som röd ring i `OverlayMixin._draw_open_ends` (cache per profil-lista + antal element, hoppas över > 400 element).
 - Snäppsymboler och måttbrickor fanns redan (brickorna följer temat via `qcolor`). Test: `tests/test_sketch_profile_tint.py`.
+
+## Lockets objekt och kant — 2026-11-28 (0.9.9.80.240)
+
+`ObjectHistory.sync` ger lid-steg egen ägare även vid omladdning, så body och miniatyrbild blir separata. `LidFeature` lagrar `edge_kind`/`edge_size`; kernelns kantverktyg skär övre ytterkanten, storleken måste understiga taktjockleken. Panel och tidslinje återställer inställningarna. Testar bild, ägarskap, sparning och chamfervolym.
+
+## Make a lid — 2026-11-28 (0.9.9.80.239)
+
+Porterad från Omacad till Hybrid. `features/lid.py`: projicerat överlappningsband, konkava konturer, sex riktningar, separat kropp med `is_lid=True`. Create/ribbon, preview och tidslinjeredigering; tester `test_make_lid.py`, `test_make_lid_ui.py`.
 
 ## Kontaktskugga — 2026-11-28 (0.9.9.80.238, A8)
 

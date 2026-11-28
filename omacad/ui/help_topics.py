@@ -117,6 +117,12 @@ MORE = {
                "finished body; box corners where three fillets meet become a rolling ball.", "round radius edge"),
     "chamfer": ("Pick edges, type the size. Chamfer type: Equal distance, Two distances or Distance and angle "
                 "(Flip swaps the faces). Inside corners get material added.", "bevel edge two distances angle"),
+    "make_lid": ("Select a body and choose the opening direction (+Z by default). Creates a separate slip-over lid "
+                 "from the projected outer outline over the full overlap depth, including concave contours. "
+                 "Set per-side clearance, wall/roof thickness and overlap. The lid has its own object and thumbnail. Choose None, Chamfer or Fillet for the top outer edge; its size must be smaller than the roof thickness. The source is unchanged. "
+                 "Holes in the outline are closed by the roof. Disconnected outlines are rejected. "
+                 "This makes a straight-sided cap, not threads or snap fasteners. Edit its timeline step to adjust the fit.",
+                 "lid cover cap lock clearance fit"),
     "shell": ("Pick the body, the wall thickness, and click faces to leave them open.", "hollow wall thickness"),
     "offset_face": ("Click flat faces, holes or pins and type how far they move: + adds material, − removes it. On a "
                     "thread it changes only the thread, for a looser or tighter fit.", "tolerance fit clearance hole pin"),

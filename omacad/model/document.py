@@ -1422,6 +1422,7 @@ class Document:
                     "mirror_mode", "about", "angle", "rotation_axis", "axis_origin", "axis_direction"),
         "split_body": ("target_body_id", "plane_id", "plane_origin", "plane_normal"),
         "lip_joint": ("style", "height", "width", "clearance", "snap_fit"),
+        "lid": ("clearance", "thickness", "overlap", "direction", "edge_kind", "edge_size"),
         "shell": ("thickness", "direction", "thickness2", "open_faces"),
         "wavy_slices": WavySlicesFeature.PARAMS,
         "lithophane": LithophaneFeature.PARAMS,
@@ -1728,6 +1729,17 @@ class Document:
         self.timeline.add_feature(pocket_feat)
         if history is not None and copy_object:
             history.owners[lip_feat.feature_id if lip_bid == back_id else pocket_feat.feature_id] = copy_object
+
+    @undoable("Make a lid")
+    def add_lid(self, body_id, **parameters):
+        from omacad.model.features.lid import LidFeature
+        if body_id not in self.bodies:
+            raise ValueError("Select a body first.")
+        feat = LidFeature(self._feature_id("lid"), self.bodies[body_id].name + " lid", body_id, **parameters)
+        feat.execute(self)
+        self.timeline.add_feature(feat)
+        self.notify_changed()
+        return feat
 
     @undoable("Shell")
     def add_shell(self, body_id: str, thickness: float, open_faces=None, exprs=None, direction: str = "inside", thickness2: float = 2.0) -> Optional[ShellFeature]:

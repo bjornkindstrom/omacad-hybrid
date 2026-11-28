@@ -107,7 +107,7 @@ class ObjectHistory:
             outputs = self.outputs.get(fid, [])
             if not outputs and getattr(feat, '_last_body_outputs', None):
                 outputs = self.outputs[fid] = list(feat._last_body_outputs)
-            creates = (feat.feature_type in ('box', 'cylinder', 'cone', 'prism', 'sphere', 'import_mesh', 'branch')
+            creates = (feat.feature_type in ('box', 'cylinder', 'cone', 'prism', 'sphere', 'import_mesh', 'branch', 'lid')
                        or (feat.feature_type == 'split_body' and getattr(feat, 'keep', 'both') == 'both')
                        or getattr(feat, 'operation', None) == 'new_body'
                        or (feat.feature_type == 'move' and feat.copy_body))
@@ -120,6 +120,9 @@ class ObjectHistory:
                            and not objects[self.owners[sketches[s]]].body_ids]
             source_ids = getattr(feat, 'source_ids', None) or []
             candidates += [self.owners[s] for s in source_ids if s in self.owners]
+            if feat.feature_type == 'lid':
+                self.owners[fid] = 'object_' + fid
+                candidates = []
             if feat.feature_type == 'branch' or (feat.feature_type == 'move' and feat.copy_body):
                 candidates = []
             owner = self.owners.setdefault(fid, candidates[0] if candidates else 'object_' + fid)

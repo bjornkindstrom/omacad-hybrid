@@ -24,6 +24,43 @@ class BodyPromptsMixin:
     """Body prompt workflows for MainWindow."""
 
     @leaves_sketch
+    def prompt_make_lid(self):
+        from omacad.ui.dialogs.lid_dlg import LidDialog
+        from omacad.model.features.lid import LidFeature
+        if not self.doc.bodies:
+            QMessageBox.information(self, "Make a lid", "Create or import a body first.")
+            return
+        dlg = LidDialog(self.doc, self)
+        self.dock(dlg)
+
+        def preview():
+            bid, params = dlg.values()
+            try:
+                shape = LidFeature("preview", "Lid", bid, **params).build(self.doc.bodies[bid].manifold)
+                self.viewport.set_preview(shape, "new_body")
+                dlg.btn_ok.setEnabled(True)
+                dlg.message.setText("Separate slip-over lid. Clearance is per side. The source stays intact.")
+            except (ValueError, RuntimeError, KeyError) as exc:
+                self.viewport.set_preview(None)
+                dlg.btn_ok.setEnabled(False)
+                dlg.message.setText(str(exc))
+
+        def finished(result):
+            self.viewport.body_clicked.disconnect(dlg.select_body)
+            self.viewport.set_preview(None)
+            self.inspector.undock_tool()
+            if result:
+                bid, params = dlg.values()
+                try:
+                    self.doc.add_lid(bid, **params)
+                except (ValueError, RuntimeError) as exc:
+                    QMessageBox.warning(self, "Make a lid", str(exc))
+        self.viewport.body_clicked.connect(dlg.select_body)
+        dlg.changed.connect(preview)
+        dlg.finished.connect(finished)
+        preview()
+
+    @leaves_sketch
     def prompt_combine(self):
         if len(self.doc.bodies) < 2:
             QMessageBox.information(

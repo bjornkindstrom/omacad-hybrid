@@ -753,6 +753,11 @@ class Exporter:
                     snap_fit=f_data.get("snap_fit", False),
                 )
                 doc.timeline.add_feature(feat)
+            elif ft == "lid":
+                from omacad.model.features.lid import LidFeature
+                feat = LidFeature(fid, fname, f_data["target_body_id"],
+                                  **{k: f_data[k] for k in LidFeature.PARAMS if k in f_data})
+                doc.timeline.add_feature(feat)
             elif ft == "shell":
                 feat = ShellFeature(
                     fid, fname, f_data["target_body_id"], f_data.get("thickness", 2.0),

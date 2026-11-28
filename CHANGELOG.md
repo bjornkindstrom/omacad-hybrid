@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.247
+# Hybrid-experiment — 0.9.9.80.248
+
+## 0.9.9.80.248 - 2026-11-28
+
+### Fixed
+- **Make a lid has its own icon** in the Studio icon set, a lid lifted off a box, instead of borrowing the one for Jar with Lid.
 
 ## 0.9.9.80.247 - 2026-11-28
 
@@ -29,10 +34,25 @@
 - **Selection follows the theme**: a selected body, its edges and selected faces now use the theme's highlight colour, so in Graphite they turn amber like the browser's selection. Themes with a blue highlight (the default and Studio) keep exactly the blues they had.
 - The tint on closed profiles in an open sketch is stronger on a dark canvas, where the light-theme strength hardly showed.
 
+## 0.9.9.80.242 - 2026-11-28
+
+### Fixed
+- Fill Face Pattern preview no longer disappears after changing gap, margin, layout or partial-copy settings. Switching pattern modes now detaches reusable fields before deleting old row containers, preserving hidden controls needed by the preview.
+
 ## 0.9.9.80.241 - 2026-11-28
 
 ### Added
 - **Sketch shows what is closed**: while a sketch is open, every closed profile gets a faint tint, so you can see at a glance what an extrude could take. A chain of curves that almost closes gets a red ring on each loose end, marking the gap that keeps it from forming a profile (a lone line is left alone).
+
+## 0.9.9.80.239 - 2026-11-28
+
+### Added
+- Make a lid in Hybrid: Create command and ribbon button, fitted slip-over cap, adjustable clearance, wall thickness, overlap and direction, preview, timeline editing and save/load. Lid visibility toggle supported.
+
+## 0.9.9.80.240 - 2026-11-28
+
+### Added
+- Make a lid now owns a separate object and thumbnail, including existing lid steps on reload. Top outer edge settings support None, Chamfer and Fillet with an editable size/radius smaller than roof thickness. The mating skirt remains unchanged.
 
 ### Added
 - **Soft contact shadow**: each body resting on the ground casts a soft shadow under itself, so the model sits on something instead of floating (not in a sketch, not seen from below, not for a body lifted off the ground). Settings › 3D View › Display can turn it off.

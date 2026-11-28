@@ -1,5 +1,7 @@
 # Omacad Hybrid — Python/Qt + Rust i viewporten
 
+**Make a lid** (0.9.9.80.239): välj en kropp och använd Create → Make a lid. Justera spel, tjocklek, överlapp och öppningsriktning; ett separat konturanpassat lock skapas. Locket har eget objekt med miniatyrbild och valbar Chamfer/Fillet på övre ytterkanten (0.9.9.80.240).
+
 Ett separat testrepo för att behålla **hela Omacads befintliga gränssnitt och
 CAD-arbetsflöde** och flytta en tung viewportberäkning till Rust.
 

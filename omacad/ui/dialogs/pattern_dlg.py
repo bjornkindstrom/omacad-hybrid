@@ -131,6 +131,9 @@ class PatternDialog(BaseFeatureDialog):
             parent = w_.parentWidget()
             host = parent if getattr(parent, "field", None) is w_ else w_
             host.setVisible(False)
+            # Reparenting to the same dialog does not remove a direct form field.
+            # Detach it explicitly before disposing of labels and paired-row hosts.
+            self._kind_form.removeWidget(host)
             host.setParent(self)
             w_.setVisible(False)
         while self._kind_form.rowCount():

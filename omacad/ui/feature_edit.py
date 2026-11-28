@@ -23,7 +23,7 @@ OPERATIONS = ["auto", "new_body", "join", "cut", "intersect"]  # same order as t
 def can_edit(feature) -> bool:
     return feature.feature_type in (
         "box", "cylinder", "prism", "sphere", "lithophane", "extrude", "emboss", "revolve", "loft",
-        "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "wavy_slices", "knurl", "japandi", "combine", "split_body", "joint"
+        "sketch", "fillet", "hole", "pattern", "move", "thread", "offset_face", "honeycomb", "shell", "lid", "wavy_slices", "knurl", "japandi", "combine", "split_body", "joint"
     )
 
 
@@ -699,6 +699,32 @@ def _edit_feature(win, doc, index: int, states: dict, commit) -> bool:
         if not _exec_with_preview(win, doc, dlg, _preview_texture, [feat.target_body_id]):
             return False
         return commit(**dlg.params(), exprs=dlg.get_expressions())
+
+    if t == "lid":
+        from omacad.ui.dialogs.lid_dlg import LidDialog
+        from omacad.model.features.lid import LidFeature
+        dlg = LidDialog(doc, win)
+        dlg.select_body(feat.target_body_id)
+        dlg.body.setEnabled(False)
+        dlg.direction.setCurrentText(feat.direction)
+        dlg.edge_kind.setCurrentIndex(dlg.edge_kind.findData(feat.edge_kind))
+        for key, field in dlg.fields.items():
+            field.setValue(getattr(feat, key))
+
+        def preview_lid():
+            try:
+                bid, params = dlg.values()
+                shape = LidFeature("preview", "Lid", bid, **params).build(state_before[bid])
+                vp.set_preview(shape, "new_body")
+                dlg.btn_ok.setEnabled(True)
+                dlg.message.setText("Separate slip-over lid. Clearance is per side.")
+            except (ValueError, RuntimeError, KeyError) as exc:
+                vp.set_preview(None)
+                dlg.btn_ok.setEnabled(False)
+                dlg.message.setText(str(exc))
+        if not _exec_with_preview(win, doc, dlg, preview_lid, ["body_" + feat.feature_id]):
+            return False
+        return commit(**dlg.values()[1])
 
     if t == "shell":
         from omacad.model.timeline import ShellFeature

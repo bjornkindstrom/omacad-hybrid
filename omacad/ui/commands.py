@@ -57,6 +57,7 @@ _ALL = [
        signal="thread_pin_clicked"),
     _c("cut_thread", "Cut Thread", "🔩", "Thread a placed pin, cut it into a body, and apply 3D-print clearance and lead-in chamfer",
        signal="cut_thread_clicked"),
+    _c("make_lid", "Make a lid", "🫙", "Create a fitted slip-over lid from a body, with clearance, thickness and overlap", signal="make_lid_clicked"),
     _c("jar", "Jar with Lid", "🫙", "A threaded jar and its screw lid, with thread tolerance, ready to print",
        signal="jar_clicked"),
     _c("pattern", "Pattern", "🔁", "Copy features (a rib and its fillets together): linear, circular, mirrored or "
@@ -187,7 +188,7 @@ EXPORT = ("export", "Export", "📤", "Screenshot, Copy Image, Rotating Video of
 PATTERNS = ["pattern_linear", "pattern_circular", "mirror", "pattern_fill"]   # the Pattern button's arrow
 
 SOLID_GROUPS: List[Tuple[str, list]] = [
-    ("CREATE", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", PRIMITIVES, "pattern", "offset_plane",
+    ("CREATE", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", "make_lid", PRIMITIVES, "pattern", "offset_plane",
                 INSERT]),
     ("MODIFY", ["fillet", "chamfer", "shell", "surface_texture", MODIFY_BODY, "parameters", "delete"]),
     ("ASSEMBLE", ["joint"]),
@@ -205,7 +206,7 @@ SKETCH_GROUPS: List[Tuple[str, list]] = [
 
 # Menu bar, in the ribbon's order (None = separator). File, Edit, View and Help are built in menu_setup.
 MENUS: List[Tuple[str, list]] = [
-    ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", None, PRIMITIVES,       # a tuple is a submenu that opens to the right (saves vertical space)
+    ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", "make_lid", None, PRIMITIVES,       # a tuple is a submenu that opens to the right (saves vertical space)
                 None, "pattern_linear", "pattern_circular", "mirror", "pattern_fill", None,
                 "offset_plane", "canvas"]),
     ("Modify", ["fillet", "chamfer", "shell", "surface_texture", "offset_face", None, "combine", "cut_thread", "split_body", "move", "joint", None,

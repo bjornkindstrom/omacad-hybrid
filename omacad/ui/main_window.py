@@ -231,6 +231,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.viewport.text_place_requested.connect(self.on_text_place)
         self.viewport.text_edit_requested.connect(self.prompt_text_edit)
         self.viewport.split_plane_requested.connect(lambda pid: self.prompt_split_body(plane_id=pid))
+        self.ribbon.make_lid_clicked.connect(self.prompt_make_lid)
         self.ribbon.shell_clicked.connect(self.prompt_shell)
         self.ribbon.surface_texture_clicked.connect(self.prompt_surface_texture)
         self.ribbon.offset_face_clicked.connect(lambda: self.prompt_offset_face())

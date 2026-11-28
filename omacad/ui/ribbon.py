@@ -152,6 +152,7 @@ class Ribbon(QWidget):
     combine_clicked = Signal()
     delete_clicked = Signal()
     split_body_clicked = Signal()
+    make_lid_clicked = Signal()
     shell_clicked = Signal()
     surface_texture_clicked = Signal()
     offset_face_clicked = Signal()
