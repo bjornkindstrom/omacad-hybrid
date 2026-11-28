@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.252
+# Hybrid-experiment — 0.9.9.80.253
+
+## 0.9.9.80.253 - 2026-11-28
+
+### Fixed
+- **Concentric circles in Offset and Move**: clicking a circle in Offset (or double-clicking / picking a chain in Move) no longer selects other concentric circles or centred shapes around the same centre point, only actual connected curve chains.
 
 ## 0.9.9.80.252 - 2026-11-28
 

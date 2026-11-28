@@ -270,3 +270,17 @@ def test_inward_offset_keeps_the_radius():
     assert sorted(e.entity_type for e in new) == ["arc"] * 4 + ["line"] * 4
     want = 86 * 56 - (4 - 3.141592653589793) * 3 ** 2
     assert any(abs(p.area - want) < 0.5 for p in sk.profiles), sorted(round(p.area, 1) for p in sk.profiles if p.area > 1)
+
+
+def test_concentric_circles_are_not_linked_as_one_chain():
+    """Concentric circles share a centre point, not a chain: picking one in Offset/Move must select only that circle."""
+    sk = Document().start_sketch("XY")
+    inner = sk.add_circle((45.0, 0.0), 7.5)
+    outer = sk.add_circle((45.0, 0.0), 12.5)
+    c_rect = sk.add_center_rect((0.0, 0.0), (10.0, 5.0))
+    c_rect2 = sk.add_center_rect((0.0, 0.0), (15.0, 10.0))
+    assert sk.connected_entities(inner.entity_id) == {inner.entity_id}
+    assert sk.connected_entities(outer.entity_id) == {outer.entity_id}
+    assert sk.connected_entities(c_rect[0].entity_id) == {e.entity_id for e in c_rect}
+    assert sk.connected_entities(c_rect2[0].entity_id) == {e.entity_id for e in c_rect2}
+

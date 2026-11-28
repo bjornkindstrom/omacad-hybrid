@@ -19,7 +19,7 @@ from omacad.model.sketch_editing import SketchEditingMixin
 from omacad.model.sketch_entities import (
     _dist_point_segment, SketchPlane, SketchEntity, SketchLine, SketchRect,
     SketchCenterRect, SketchCircle, SketchArc, SketchSlot, SketchSpline, SketchText, SketchPoint, SketchEllipse,
-    ref_id, ref_segment, point_of, point_names, arm_vector, arm_angle_deg, nearest_ends_to_vertex,
+    ref_id, ref_segment, point_of, point_names, CIRCLE_ANGLE_NAMES, circle_point_angle, arm_vector, arm_angle_deg, nearest_ends_to_vertex,
     rotate_point, scale_point, move_entity, rotate_entity, scale_entity, entity_key_points
 )
 
@@ -30,6 +30,17 @@ SOLVER_DIM_TYPES = ("ANGLE", "DISTANCE", "HORIZ_DIST", "VERT_DIST", "PT_LINE_DIS
 REF_PREFIX = "ref:"
 
 
+
+
+def _chain_endpoints(ent: SketchEntity) -> List[Tuple[float, float]]:
+    """Open-curve endpoints that join a chain; closed curves' centres do not link concentric shapes."""
+    if isinstance(ent, SketchLine):
+        return [ent.p1, ent.p2]
+    if isinstance(ent, SketchArc):
+        return [ent.p_start, ent.p_end]
+    if isinstance(ent, SketchSpline) and not getattr(ent, "closed", False) and len(ent.points) >= 2:
+        return [ent.points[0], ent.points[-1]]
+    return []
 
 
 class Sketch(SketchEditingMixin):
@@ -105,14 +116,16 @@ class Sketch(SketchEditingMixin):
 
     def connected_entities(self, entity_id: str, tol: float = 1e-6) -> set:
         """Entities joined to this one through coincident constraints or shared end points
-        (e.g. all four lines of a rectangle)."""
+        (e.g. all four lines of a rectangle). Closed curves' centres are not chain endpoints."""
         by_id = {e.entity_id: e for e in self.entities}
         links: Dict[str, set] = {eid: set() for eid in by_id}
         for c in self.constraints:
             if c.ctype == "COINCIDENT" and len(c.refs) == 2 and all(r in by_id for r in c.refs):
+                if any(p in ("center", "center1", "center2") for p in (c.pts or ())):
+                    continue
                 links[c.refs[0]].add(c.refs[1])
                 links[c.refs[1]].add(c.refs[0])
-        ends = [(eid, pt) for eid, e in by_id.items() for pt in entity_key_points(e)]
+        ends = [(eid, pt) for eid, e in by_id.items() for pt in _chain_endpoints(e)]
         for i, (ea, pa) in enumerate(ends):
             for eb, pb in ends[i + 1:]:
                 if ea != eb and abs(pa[0] - pb[0]) < tol and abs(pa[1] - pb[1]) < tol:
