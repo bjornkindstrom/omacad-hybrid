@@ -1,3 +1,8 @@
+## Högerklick väljer kroppen — 2026-11-28 (0.9.9.80.247, Björn)
+
+- Fan-menyns kommandon (`menu_command.emit("shell")` osv.) bär inget mål; `prompt_shell` m.fl. tar `doc.selected_body_ids[0]`, alltså kroppen som var markerad i browsern. `EventsMixin._select_right_clicked_body` körs först i `_dispatch_context_menu` (både klick och håll-gesten går dit): omarkerad kropp under pekaren → `doc.select_body(id)` (ersätter), valda ytor på andra kroppar tas bort. Inte i skiss, inte när `active_tool_title()` (en verktygspanel är öppen); `body_clicked` skickas inte (den matar öppna verktygspaneler).
+- Test: `tests/test_right_click_selects_body.py`. `test_fan_menu.py::test_icon_scale…`/`label_choice…` abortar i `SettingsDialog.__init__` under xvfb även på d445f97 (före dagens arbete).
+
 ## Ellips i skiss — 2026-11-28 (0.9.9.80.246)
 
 - `SketchEllipse` (`entity_type "ellipse"`: `center`, `major_end` = storaxelns ände (ger även lutningen), `minor`; `major`/`angle`/`point_at(t)`/`vertices()`; `to_lines` med `circle_segments()` kordor). `Sketch.add_ellipse` (löser profiler), `from_dict`, `point_of`/`point_names` (`center`), move/rotate/scale/`entity_key_points`, spegling i `sketch_editing`, snäpp (centrum + axeländar i både endpoints och inferensankare), centrumprick i `_draw_curve_centres`.

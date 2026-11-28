@@ -380,8 +380,25 @@ class ViewportEventsMixin:
         elif event.key() == Qt.Key.Key_F:
             self.zoom_fit()
 
+    def _select_right_clicked_body(self, x: float, y: float) -> None:
+        """A right-click on a body that is not selected makes it the selection (as in Fusion and file managers), so every
+        command in the menu (Shell, Fillet, Move, Surface Texture ...) works on the body that was clicked, not on one
+        still selected in the browser. A selected body keeps the whole selection; nothing changes while a tool runs."""
+        if self.doc.active_sketch or self.active_tool_title():
+            return
+        body_id = self.pick_body(x, y)
+        if body_id is None or body_id in self.doc.selected_body_ids:
+            return
+        faces = getattr(self, "selected_faces", None)
+        if faces:                                  # faces picked on another body would win over the clicked one
+            keep = [f for f in faces if (f[0] if isinstance(f, tuple) else getattr(f, "body_id", "")) == body_id]
+            faces[:] = keep
+        self.doc.select_body(body_id)              # selection only: body_clicked feeds open tool panels
+        self.update()
+
     def _dispatch_context_menu(self, event):
         """Dispatch right-click to the appropriate context menu or fan menu."""
+        self._select_right_clicked_body(event.position().x(), event.position().y())
         if not self.doc.active_sketch and self.move_gizmo:
             self._show_axis_menu(event)
         elif not self.doc.active_sketch and self.pick_profile(event.position().x(), event.position().y()) is not None:

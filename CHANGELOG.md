@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.246
+# Hybrid-experiment — 0.9.9.80.247
+
+## 0.9.9.80.247 - 2026-11-28
+
+### Fixed
+- **Right-click acts on the body you clicked**: with one body selected in the browser, right-clicking another body and choosing Shell (or Fillet, Move, Surface Texture and the rest) worked on the selected body instead. A right-click on a body that is not selected now makes it the selection first; right-clicking inside an existing selection keeps all of it, and nothing changes while a tool panel is open.
 
 ## 0.9.9.80.246 - 2026-11-28
 
