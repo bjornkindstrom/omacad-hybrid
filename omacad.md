@@ -1,3 +1,9 @@
+## Skisspunkt — 2026-11-28 (0.9.9.80.233, steg 5 del 4)
+
+- `SketchPoint` (`entity_type "point"`, fältet `p`, standard konstruktion, `to_lines() = []`): `point_of/point_names` ("p"), `move/rotate/scale_entity`, `entity_key_points`, spegling i `sketch_editing`, `Sketch.add_point`, `from_dict`, `hit_test` (avstånd till punkten), snäpp (endpoints + inferensankare). Lösare: i `SUPPORTED`, en 2D-punkt `pts[(id, "p")]`; `POINT_ON_CIRCLE` tar nu vilken punkt som helst som andra referens. `point_auto_relations` (COINCIDENT på namngiven punkt, annars POINT_ON_LINE/POINT_ON_CIRCLE).
+- Verktyg `POINT` (ett klick → `_place_sketch_point`), ritas i `OverlayMixin._draw_sketch_points` (QPainter-prick; GL-linjerna har inget att rita). Ikon `sketch_point.svg` — **inte** `point.svg`: det namnet är Thread Pins studio-ikon (skrevs över av misstag och återställdes).
+- Test: `tests/test_sketch_point.py`.
+
 ## Fas i skiss — 2026-11-28 (0.9.9.80.232, steg 5 del 3)
 
 - `sketch_extend.chamfer_plan/apply_chamfer` + `Document.chamfer_sketch_corner` (via `_sketch_edit`): linjernas hörnändar flyttas `distance` in, hörnets COINCIDENT mellan de två tas bort, ny linje (`add_line`, får LENGTH) med COINCIDENT till båda, LENGTH-måtten uppdateras. Bara linje–linje.

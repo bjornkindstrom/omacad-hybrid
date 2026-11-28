@@ -262,6 +262,21 @@ class SketchToolsMixin:
         self.dyn_live = {}
         self.update()
 
+    def _place_sketch_point(self, uv: Tuple[float, float]):
+        """Point tool: a point where clicked, kept on the end, centre or line it was snapped to (unless Ctrl)."""
+        from omacad.model.sketch_solver import point_auto_relations
+        from omacad.ui.viewport.pointer_mixin import _ctrl_held
+        sketch = self.doc.active_sketch
+        before = sketch.to_dict()
+        point = sketch.add_point(uv)
+        if self.sketch_palette.chk_auto_constraints.isChecked() and not _ctrl_held():
+            specs = point_auto_relations(sketch, point)
+            if specs:
+                self.doc.auto_constrain(sketch, specs)
+        self.doc.record_sketch_change(sketch, before)
+        self.doc.notify_changed()
+        self.status_message.emit("Point placed. Click more, or Esc to finish.")
+
     def _commit_sketch_point(self, p2: Tuple[float, float]):
         """Second (or later) click of the active tool: create/advance the shape."""
         sketch = self.doc.active_sketch

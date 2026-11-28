@@ -119,6 +119,8 @@ _ALL = [
     _c("smart_circle", "Smart Circle", "⭕", "A circle that snaps to what is around it", "Shift+C",
        "sketch_tool_selected", "SMART_CIRCLE", ("sketch",)),
     _c("arc", "3-Point Arc", "⌒", "An arc through three points", "A", "sketch_tool_selected", "ARC", ("sketch",)),
+    _c("point", "Point", "•", "A point to measure from, snap to or hold a relation on (never part of a profile)", "",
+       "sketch_tool_selected", "POINT", ("sketch",)),
     _c("center_arc", "Center Point Arc", "◠", "An arc from its centre: click the centre, the start, then go round to the end",
        "", "sketch_tool_selected", "CENTER_ARC", ("sketch",)),
     _c("spline", "Spline", "〰️", "A smooth curve through a sequence of points; Enter or right-click finishes",
@@ -192,7 +194,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
     ("EXPORT", [EXPORT]),                     # Export stays the last group
 ]
 SKETCH_GROUPS: List[Tuple[str, list]] = [
-    ("CREATE", ["line", "rect", "circle", "arc", "spline", "control_spline", "polygon", "slot", "text", "import_svg", "offset_sketch", "mirror_sketch", "project",
+    ("CREATE", ["line", "rect", "circle", "arc", "point", "spline", "control_spline", "polygon", "slot", "text", "import_svg", "offset_sketch", "mirror_sketch", "project",
                 "dimension"]),
     ("MODIFY", ["fillet_sketch", "chamfer_sketch", "trim", "extend_sketch", "break_sketch", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
     ("CONSTRAINTS", ["constraints"]),

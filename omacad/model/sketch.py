@@ -18,7 +18,7 @@ from omacad.model.sketch_editing import SketchEditingMixin
 
 from omacad.model.sketch_entities import (
     _dist_point_segment, SketchPlane, SketchEntity, SketchLine, SketchRect,
-    SketchCenterRect, SketchCircle, SketchArc, SketchSlot, SketchSpline, SketchText,
+    SketchCenterRect, SketchCircle, SketchArc, SketchSlot, SketchSpline, SketchText, SketchPoint,
     ref_id, ref_segment, point_of, point_names, arm_vector, arm_angle_deg, nearest_ends_to_vertex,
     rotate_point, scale_point, move_entity, rotate_entity, scale_entity, entity_key_points
 )
@@ -82,6 +82,11 @@ class Sketch(SketchEditingMixin):
                             break
                     if text_bbox_hit is None and box[0] <= u <= box[2] and box[1] <= v <= box[3]:
                         text_bbox_hit = ent
+            if isinstance(ent, SketchPoint):        # no outline: the point itself
+                d = math.hypot(u - ent.p[0], v - ent.p[1])
+                if d <= best_d:
+                    best, best_d = ent, d
+                continue
             for p1, p2 in ent.to_lines():
                 d = _dist_point_segment((u, v), p1, p2)
                 if d <= best_d:
@@ -249,6 +254,12 @@ class Sketch(SketchEditingMixin):
 
         self.solve_profiles()
         return True
+
+    def add_point(self, p: Tuple[float, float], is_construction: bool = True) -> SketchPoint:
+        """A point to measure from or hold relations on (no outline: never part of a profile)."""
+        point = SketchPoint(self._new_entity_id("point"), p, is_construction=is_construction)
+        self.entities.append(point)
+        return point
 
     def add_line(self, p1: Tuple[float, float], p2: Tuple[float, float], is_construction: bool = False) -> SketchLine:
         ent_id = self._new_entity_id("line")
@@ -488,6 +499,8 @@ class Sketch(SketchEditingMixin):
                 sketch.entities.append(SketchSpline.from_dict(ent_data))
             elif t == "text":
                 sketch.entities.append(SketchText.from_dict(ent_data))
+            elif t == "point":
+                sketch.entities.append(SketchPoint.from_dict(ent_data))
 
         for dim_data in data.get("dimensions", []):
             sketch.dimensions.append(SketchDimension.from_dict(dim_data))

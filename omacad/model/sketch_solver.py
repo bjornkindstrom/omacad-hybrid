@@ -17,10 +17,10 @@ from typing import Dict, Iterable, Optional, Tuple
 
 from python_solvespace import SolverSystem
 
-from omacad.model.sketch import (Sketch, SketchArc, SketchLine, SketchCircle, SketchSlot, SketchSpline, SOLVER_DIM_TYPES,
-                                 EDGE_PTS, point_of, ref_segment)
+from omacad.model.sketch import (Sketch, SketchArc, SketchLine, SketchCircle, SketchSlot, SketchSpline, SketchPoint, SOLVER_DIM_TYPES,
+                                 EDGE_PTS, point_of, point_names, ref_segment)
 
-SUPPORTED = (SketchLine, SketchCircle, SketchSlot)
+SUPPORTED = (SketchLine, SketchCircle, SketchSlot, SketchPoint)
 FIXED_GROUP, FREE_GROUP = 1, 2
 
 
@@ -115,6 +115,8 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
             _write_arc(ent, *values[eid])
         elif isinstance(ent, SketchSlot):
             ent.center1, ent.center2, ent.radius = values[eid]
+        elif isinstance(ent, SketchPoint):
+            ent.p = values[eid]
         else:
             ent.center = values[eid]
             if f"{eid}#r" in values:
@@ -234,7 +236,7 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
             return centre if name == "center" else start if name == "p_start" else end
         if isinstance(ents[eid], SketchSlot):
             return v[0] if name == "center1" else v[1]
-        return v
+        return v                # a circle's centre or a point
 
     def line_vec(eid):
         (x1, y1), (x2, y2) = values[eid]
@@ -332,6 +334,8 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             for name in sorted(spline_points.get(ent.entity_id, ())):
                 uv = point_of(ent, name)
                 pts[(ent.entity_id, name)] = sys_.add_point_2d(uv[0], uv[1], wp)
+        elif isinstance(ent, SketchPoint):
+            pts[(ent.entity_id, "p")] = sys_.add_point_2d(ent.p[0], ent.p[1], wp)
         elif isinstance(ent, SketchSlot):
             a = sys_.add_point_2d(ent.center1[0], ent.center1[1], wp)
             b = sys_.add_point_2d(ent.center2[0], ent.center2[1], wp)
@@ -487,7 +491,7 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             sys_.coincident(pts[(a, "center")], pts[(b, "center")], wp)
         elif t == "COINCIDENT" and b and len(c.pts) == 2:
             sys_.coincident(pts[(a, c.pts[0])], pts[(b, c.pts[1])], wp)
-        elif t == "POINT_ON_CIRCLE" and round_(a) and b and line(b) and c.pts:
+        elif t == "POINT_ON_CIRCLE" and round_(a) and b and c.pts and (b, c.pts[0]) in pts:
             if circle(a):
                 sys_.coincident(pts[(b, c.pts[0])], geo[a], wp)
             else:
@@ -574,6 +578,8 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             values[eid] = {name: _xy(sys_, pts[(eid, name)]) for name in spline_points.get(eid, ())}
         elif isinstance(ent, SketchArc):
             values[eid] = (_xy(sys_, pts[(eid, "center")]), _xy(sys_, pts[(eid, "p_start")]), _xy(sys_, pts[(eid, "p_end")]))
+        elif isinstance(ent, SketchPoint):
+            values[eid] = _xy(sys_, pts[(eid, "p")])
         elif isinstance(ent, SketchSlot):
             values[eid] = (_xy(sys_, pts[(eid, "center1")]), _xy(sys_, pts[(eid, "center2")]),
                            float(sys_.params(radii[eid].params)[0]))
@@ -980,3 +986,23 @@ def curve_auto_relations(sketch, curve) -> list:
                 specs.append(("CONCENTRIC", [cid, other.entity_id], []))
                 break
     return specs
+
+
+def point_auto_relations(sketch, point) -> list:
+    """Relations for a point just placed: on a line end, circle/arc centre or arc end it is joined to it; on the
+    inside of a line it stays on it; on a circle it stays on it."""
+    p = point.p
+    pid = point.entity_id
+    near = lambda q: q is not None and math.hypot(p[0] - q[0], p[1] - q[1]) < CURVE_JOIN_TOL
+    for other in sketch.entities:
+        if other is point:
+            continue
+        for name in point_names(other) if not isinstance(other, SketchPoint) else ():
+            if near(point_of(other, name)):
+                return [("COINCIDENT", [pid, other.entity_id], ["p", name])]
+    for other in sketch.entities:
+        if isinstance(other, SketchLine) and not getattr(other, "projected", False) and point_on_line_at(p, other, 1e-5):
+            return [("POINT_ON_LINE", [pid, other.entity_id], ["p"])]
+        if isinstance(other, SketchCircle) and abs(math.hypot(p[0] - other.center[0], p[1] - other.center[1]) - other.radius) < 1e-5:
+            return [("POINT_ON_CIRCLE", [other.entity_id, pid], ["p"])]
+    return []

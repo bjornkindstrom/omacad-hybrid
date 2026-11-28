@@ -387,6 +387,29 @@ def sweep_step(center, previous, current) -> float:
     return (b - a + math.pi) % (2 * math.pi) - math.pi
 
 
+class SketchPoint(SketchEntity):
+    """A sketch point: something to measure from, snap to or hold a relation on (a hole's centre, a reference).
+    It has no outline, so it never takes part in a profile."""
+
+    def __init__(self, entity_id: str, p: Tuple[float, float], is_construction: bool = True):
+        super().__init__(entity_id=entity_id, entity_type="point", is_construction=is_construction)
+        self.p = (float(p[0]), float(p[1]))
+
+    def to_lines(self, segments: Optional[int] = None):
+        return []
+
+    def get_points(self, segments: Optional[int] = None):
+        return [self.p]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {"entity_id": self.entity_id, "entity_type": "point", "p": list(self.p),
+                "is_construction": self.is_construction}
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SketchPoint":
+        return cls(data["entity_id"], tuple(data["p"]), data.get("is_construction", True))
+
+
 SPLINE_SAMPLES = 16             # chords per span of a spline
 SPLINE_MAX_SAMPLES = 256
 SPLINE_CHORD_ERROR = 0.005      # mm a chord may lie from a span with explicit tangents
@@ -596,6 +619,8 @@ def point_of(ent, name: str):
         return ent.points[int(name[2:])]
     if isinstance(ent, SketchSlot) and name in ("center1", "center2"):
         return getattr(ent, name)
+    if isinstance(ent, SketchPoint) and name == "p":
+        return ent.p
     if isinstance(ent, SketchArc):
         if name in ("p_start", "p_mid", "p_end"):
             return getattr(ent, name)
@@ -615,6 +640,8 @@ def point_names(ent):
         return tuple(f"pt{i}" for i in range(len(ent.points)))
     if isinstance(ent, SketchSlot):
         return ("center1", "center2")
+    if isinstance(ent, SketchPoint):
+        return ("p",)
     if isinstance(ent, SketchArc) and not getattr(ent, "fillet_info", None):   # a fillet arc follows its lines
         return ("p_start", "p_end", "center") if ent.get_circle_params() is not None else ()
     return ()
@@ -768,6 +795,9 @@ def scale_point(pt: Tuple[float, float], scale: float, origin: Tuple[float, floa
 
 def scale_entity(ent: "SketchEntity", scale: float, origin: Tuple[float, float] = (0.0, 0.0)) -> None:
     """Scales an entity in place relative to origin."""
+    if isinstance(ent, SketchPoint):
+        ent.p = scale_point(ent.p, scale, origin)
+        return
     s = float(scale)
     if isinstance(ent, (SketchLine, SketchRect)):
         ent.p1 = scale_point(ent.p1, s, origin)
@@ -813,6 +843,8 @@ def move_entity(ent: "SketchEntity", du: float, dv: float) -> None:
         ent.anchor = _shift(ent.anchor, du, dv)
     elif isinstance(ent, SketchSpline):
         ent.points = [_shift(p, du, dv) for p in ent.points]
+    elif isinstance(ent, SketchPoint):
+        ent.p = _shift(ent.p, du, dv)
 def rotate_entity(ent: "SketchEntity", angle_deg: float, origin: Tuple[float, float]) -> None:
     """Rotates an entity in place around origin by angle_deg degrees."""
     if isinstance(ent, SketchLine):
@@ -840,8 +872,12 @@ def rotate_entity(ent: "SketchEntity", angle_deg: float, origin: Tuple[float, fl
     elif isinstance(ent, SketchSpline):
         ent.points = [rotate_point(p, angle_deg, origin) for p in ent.points]
         ent.tangents = {k: rotate_point(v, angle_deg, (0.0, 0.0)) for k, v in ent.tangents.items()}
+    elif isinstance(ent, SketchPoint):
+        ent.p = rotate_point(ent.p, angle_deg, origin)
 def entity_key_points(ent: "SketchEntity") -> List[Tuple[float, float]]:
     """Points on an entity that are worth snapping when it is dragged (ends, corners, centres)."""
+    if isinstance(ent, SketchPoint):
+        return [ent.p]
     if isinstance(ent, SketchLine):
         return [ent.p1, ent.p2]
     if isinstance(ent, SketchRect):

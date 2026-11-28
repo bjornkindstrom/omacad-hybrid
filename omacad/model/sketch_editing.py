@@ -10,6 +10,7 @@ from shapely.geometry.polygon import orient
 from shapely.ops import polygonize, unary_union, snap
 from omacad.model.sketch_entities import (
     SketchEntity, SketchLine, SketchRect, SketchCenterRect, SketchCircle, SketchArc, SketchSlot, SketchSpline, SketchText,
+    SketchPoint,
     ref_id, ref_segment, point_of, rotate_point, move_entity, rotate_entity, entity_key_points
 )
 from omacad.model.sketch_types import SketchConstraint, SketchDimension
@@ -281,6 +282,8 @@ class SketchEditingMixin:
                                  control_points=ent.control_points)
             elif isinstance(ent, SketchSlot):
                 n = SketchSlot(self._new_entity_id("slot"), mp(ent.center1), mp(ent.center2), ent.radius, is_construction=c)
+            elif isinstance(ent, SketchPoint):
+                n = SketchPoint(self._new_entity_id("point"), mp(ent.p), is_construction=c)
             elif isinstance(ent, SketchText):
                 # a reflection is a turn by 2*phi - angle of the mirrored letters (flip_v): Rot(2phi) Flip_y Rot(a) F = Rot(2phi-a) F[fy toggled]
                 phi = math.degrees(math.atan2(dy, dx))

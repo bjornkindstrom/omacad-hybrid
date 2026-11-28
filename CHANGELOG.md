@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.233
+
+### Added
+- **Sketch Point** (sketch plan, step 5), in SKETCH › CREATE and the right-click menu: one click places a point to measure from, snap to or hold a relation on (a hole's centre, a reference). On a line end, a centre or an arc end it is joined to it, on a line or circle it stays on it (Ctrl adds none). Points take dimensions and relations in the solver, are drawn as dots (black once fully defined), snap and line up like end points, move/rotate/scale/mirror/pattern with the rest, are saved, and are never part of a profile.
+
 # Hybrid-experiment — 0.9.9.80.232
 
 ### Added

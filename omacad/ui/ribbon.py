@@ -427,7 +427,7 @@ class Ribbon(QWidget):
         settings = get_settings()
         group_constraints = bool(settings.get("group_constraints", True))
         sketch_buttons = {        # the names the main window and tests use for the sketch buttons
-            "line": "btn_line", "polygon": "btn_polygon", "arc": "btn_arc", "spline": "btn_spline", "control_spline": "btn_control_spline", "slot": "btn_slot", "text": "btn_text",
+            "line": "btn_line", "point": "btn_point", "polygon": "btn_polygon", "arc": "btn_arc", "spline": "btn_spline", "control_spline": "btn_control_spline", "slot": "btn_slot", "text": "btn_text",
             "offset_sketch": "btn_offset_sk", "mirror_sketch": "btn_mirror_sk", "project": "btn_project_sk",
             "dimension": "btn_dim", "fillet_sketch": "btn_fillet_sk", "trim": "btn_trim_sk", "chamfer_sketch": "btn_chamfer_sk", "extend_sketch": "btn_extend_sk", "break_sketch": "btn_break_sk", "move_sketch": "btn_move",
             "rotate_sketch": "btn_rotate_sk", "scale_sketch": "btn_scale_sk", "pattern_sketch": "btn_pattern_sketch",
@@ -600,7 +600,7 @@ class Ribbon(QWidget):
             self.btn_mirror_sk.setChecked(tool_name == "MIRROR")
         if hasattr(self, "btn_trim_sk"):
             self.btn_trim_sk.setChecked(tool_name == "TRIM")
-        for name, tool in (("btn_chamfer_sk", "CHAMFER"), ("btn_extend_sk", "EXTEND"), ("btn_break_sk", "BREAK")):
+        for name, tool in (("btn_point", "POINT"), ("btn_chamfer_sk", "CHAMFER"), ("btn_extend_sk", "EXTEND"), ("btn_break_sk", "BREAK")):
             if hasattr(self, name):
                 getattr(self, name).setChecked(tool_name == tool)
         self.btn_dim.setChecked(tool_name == "DIMENSION")

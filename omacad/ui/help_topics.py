@@ -71,6 +71,9 @@ MORE = {
              "frustum taper point funnel"),
     "sphere": ("Radius, placement (centred, bottom on origin, or on a face) and optional Shell Wall to hollow it.",
                "ball globe sphere hollow"),
+    "point": ("Click to place a sketch point: something to measure from, snap to or hold a relation on, such as a hole's "
+              "centre. On a line end, a centre or a line it stays there. It is never part of a profile.",
+              "point reference marker centre hole"),
     "center_arc": ("Click the arc's centre, then its start (the radius), then move the mouse round to where it should end "
                    "and click: it follows the mouse, so it can go past 180°.", "arc centre center point radius sweep"),
     "chamfer_sketch": ("Click a corner where two lines meet and type a distance: the corner is cut off straight, that far "

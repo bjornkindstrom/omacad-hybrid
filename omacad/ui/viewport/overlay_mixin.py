@@ -538,6 +538,7 @@ class OverlayMixin:
                 painter.setPen(QPen(qcolor(245, 250, 255)))
                 painter.drawText(b_rect, Qt.AlignmentFlag.AlignCenter, badge_text)
 
+        self._draw_sketch_points(painter)
         self._draw_sketch_status_chip(painter, w)
 
         # 6. Bottom HUD Navigation Bar
@@ -581,6 +582,41 @@ class OverlayMixin:
         if hasattr(self, "fan_menu") and self.fan_menu and self.fan_menu.is_open:
             self.fan_menu.draw(painter, w, h)
 
+
+    def _draw_sketch_points(self, painter: QPainter) -> None:
+        """Sketch points (they have no outline for the GL lines): a dot, black once fully defined, grey in a finished
+        sketch, highlighted when selected or under the mouse."""
+        from omacad.model.sketch_entities import SketchPoint
+        from omacad.model.sketch_solver import entity_defined
+        from omacad.ui.settings import get_settings
+        active = self.doc.active_sketch
+        sketches = [active] if active is not None else []
+        sketches += [s for s in self.doc.sketches.values() if s is not active and getattr(s, "visible", True)
+                     and any(isinstance(e, SketchPoint) for e in s.entities)]
+        if not sketches:
+            return
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        settings = get_settings()
+        for sk in sketches:
+            for ent in sk.entities:
+                if not isinstance(ent, SketchPoint):
+                    continue
+                scr = self.world_to_screen(sk.plane.uv_to_world(*ent.p))
+                if scr is None:
+                    continue
+                if sk is not active:
+                    col = QColor(*(int(c * 255) for c in settings.sketch_finished_color_rgb01()))
+                elif ent.entity_id in getattr(self, "selected_entities", ()) or getattr(self, "hovered_entity_id", None) == ent.entity_id:
+                    col = QColor(*(int(c * 255) for c in theme.palette().highlight01()))
+                elif entity_defined(sk, ent):
+                    col = QColor(*(int(c * 255) for c in settings.sketch_fully_constrained_color_rgb01()))
+                else:
+                    col = QColor(*(int(c * 255) for c in settings.sketch_line_color_rgb01()))
+                painter.setPen(QPen(QColor(20, 24, 30, 200), 1.2))
+                painter.setBrush(col)
+                painter.drawEllipse(QPointF(*scr), 3.6, 3.6)
+        painter.restore()
 
     @property
     def conflict_choices(self) -> list:
