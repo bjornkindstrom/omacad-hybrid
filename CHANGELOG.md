@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.253
+# Hybrid-experiment — 0.9.9.80.255
+
+## 0.9.9.80.255 - 2026-11-28
+
+### Fixed
+- **Extrude join flush with an existing wall**: extruding a face back up to the same height as a surrounding joined flange no longer leaves a sub-micron seam void or visible inner circle edge on the flat top face.
 
 ## 0.9.9.80.253 - 2026-11-28
 

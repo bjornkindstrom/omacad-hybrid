@@ -250,6 +250,96 @@ def clean_cut(target: m3d.Manifold, tool: m3d.Manifold) -> m3d.Manifold:
     return result
 
 
+def _push_mating_faces(target: m3d.Manifold, welded: m3d.Manifold, push: float = 2e-4) -> m3d.Manifold:
+    """Push vertices of `welded` that lie on `target` faces with opposite normals slightly into `target`.
+
+    Without a tiny overlap, two solids that merely touch along a welded wall (e.g. extruding a face
+    back up to flush with a surrounding flange) can be left by the CSG kernel with sub-micron voids
+    along the seam, showing as a dark edge on the joined flat face. Vertices on flush outer walls
+    (where `target` also has a same-direction face) are left untouched so nothing pokes out.
+    """
+    wm, tm = welded.to_mesh64(), target.to_mesh64()
+    wv = np.array(wm.vert_properties[:, :3], dtype=float)
+    wf = np.asarray(wm.tri_verts, dtype=np.int64)
+    tv = np.asarray(tm.vert_properties[:, :3], dtype=float)
+    tf = np.asarray(tm.tri_verts, dtype=np.int64)
+    if len(wf) == 0 or len(tf) == 0:
+        return welded
+
+    w_min, w_max = wv.min(axis=0) - 1e-4, wv.max(axis=0) + 1e-4
+    t_tri_pts = tv[tf]
+    t_min = t_tri_pts.min(axis=1) - 1e-5
+    t_max = t_tri_pts.max(axis=1) + 1e-5
+    keep_t = np.all((t_max >= w_min) & (t_min <= w_max), axis=1)
+    if not keep_t.any():
+        return welded
+
+    tf_sub = tf[keep_t]
+    order = np.argsort(t_min[keep_t, 0])
+    tf_sub = tf_sub[order]
+    t_min = t_min[keep_t][order]
+    t_max = t_max[keep_t][order]
+
+    we1, we2 = wv[wf[:, 1]] - wv[wf[:, 0]], wv[wf[:, 2]] - wv[wf[:, 0]]
+    wfn = np.cross(we1, we2)
+    wfn /= np.maximum(np.linalg.norm(wfn, axis=1, keepdims=True), 1e-12)
+    te1, te2 = tv[tf_sub[:, 1]] - tv[tf_sub[:, 0]], tv[tf_sub[:, 2]] - tv[tf_sub[:, 0]]
+    tfn = np.cross(te1, te2)
+    tfn /= np.maximum(np.linalg.norm(tfn, axis=1, keepdims=True), 1e-12)
+
+    v_faces: List[List[np.ndarray]] = [[] for _ in range(len(wv))]
+    for fi, tri in enumerate(wf):
+        for vi in tri:
+            v_faces[vi].append(wfn[fi])
+
+    tv_sub_pts = tv[tf_sub[:, 0]]
+    t_min_x = t_min[:, 0]
+    changed = False
+    for vi in range(len(wv)):
+        p = wv[vi]
+        hi = int(np.searchsorted(t_min_x, p[0], side="right"))
+        if hi == 0:
+            continue
+        cand_f = np.flatnonzero(np.all((p >= t_min[:hi]) & (p <= t_max[:hi]), axis=1))
+        if not len(cand_f):
+            continue
+        cand_norms = tfn[cand_f]
+        on_plane = np.abs(np.einsum("ij,ij->i", p - tv_sub_pts[cand_f], cand_norms)) <= 1e-5
+        if not on_plane.any():
+            continue
+        near_tn = cand_norms[on_plane]
+        dirs: List[np.ndarray] = []
+        for wn in v_faces[vi]:
+            if np.any(near_tn @ wn < -0.95) and not np.any(near_tn @ wn > 0.95):
+                if not any(np.dot(wn, u) > 0.95 for u in dirs):
+                    dirs.append(wn)
+        if dirs:
+            wv[vi] += push * np.sum(dirs, axis=0)
+            changed = True
+
+    if not changed:
+        return welded
+    pushed = m3d.Manifold(m3d.Mesh64(vert_properties=wv, tri_verts=np.ascontiguousarray(wf, dtype=np.uint64)))
+    return welded if pushed.is_empty() else pushed
+
+
+def clean_join(target: m3d.Manifold, tool: m3d.Manifold) -> m3d.Manifold:
+    """`target` plus `tool`, welding mating walls and overlapping them when touching faces leave seam sheets or voids."""
+    welded = CadKernel.weld_to(tool, target)
+    result = target + welded
+    if not CadKernel.has_sheets(result) and not CadKernel.has_needles(result):
+        return result
+    pushed = _push_mating_faces(target, welded)
+    if pushed is welded:
+        return result
+    better = target + pushed
+    if not better.is_empty() and not CadKernel.has_sheets(better) and (
+        CadKernel.has_sheets(result) or better.genus() > result.genus()
+    ):
+        return better
+    return result
+
+
 def combine_with_bodies(doc: Any, feature_id: str, name: str, operation: str, tool: m3d.Manifold,
                         tool_brep=None) -> None:
     """Shared by Extrude and Revolve: add `tool` as a new body, or join/cut/intersect it with every body it touches.
@@ -310,7 +400,7 @@ def combine_with_bodies(doc: Any, feature_id: str, name: str, operation: str, to
         for other in targets[1:]:
             merged = merged + other.manifold
             doc.bodies.pop(other.body_id, None)
-        targets[0].manifold = merged + CadKernel.weld_to(tool, merged)
+        targets[0].manifold = clean_join(merged, tool)
         targets[0].update_render_mesh()
         return
 

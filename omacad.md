@@ -1,3 +1,8 @@
+## Cirkel syntes kvar efter extrude med join — 2026-11-28 (0.9.9.80.255, rapport 20261128-095911)
+
+- Orsak: när en inneryta (`Face to Sketch`) extruderades med `join` upp till samma höjd som en omgivande fläns (`Extrude 3`) flyttade `CadKernel.weld_to` verktygets hörn exakt *till* målkroppens vägg (noll överlapp). Med minimal skissavvikelse / `set_precision(1e-4)`-skift lämnade Manifolds boolean kvar hårfina hålrum/hinnor längs fogen, vilket ritade en svart cirkel på den plana ovansidan.
+- Fix: `clean_join` i `omacad/model/features/base.py` (används i `combine_with_bodies` för `join`). Snabbväg: vanlig `target + weld_to(tool, target)` när den saknar `has_sheets`/`has_needles`; annars trycker `_push_mating_faces` in `welded`-hörn som ligger på mål-trianglar med motsatt normal (`2e-4` mm, och aldrig längs sidor där målkroppen också har en likriktad yta så inget sticker ut i luften) och väljer det resultatet om det tar bort hinnor eller höjer `genus`. Test: `tests/test_extrude.py::test_extrude_join_inner_face_flush_with_ring_leaves_no_top_circle`.
+
 ## Spinboxpilar hoppade flera steg — 2026-11-28 (0.9.9.80.253, Björn)
 
 - Orsak: `BusyWindowKeeper.eventFilter` (busy_dialog) släppte bort `MouseButtonRelease` medan `busy.run` arbetade. En förhandsvisning på 0,03–0,5 s (över `QUICK_SECONDS`, under `SHOW_AFTER`) startad av `valueChanged` → släppet på pilen nådde aldrig spinboxen → `QAbstractSpinBox` stod kvar i "nedtryckt" läge och auto-repeat stegade (11, 12, 13, 14, 15 på 1,5 s i testet) så länge pekaren stod på pilen. Längre arbete gömde felet: busy-rutan gör fönstret inaktivt och spinboxen nollställer sig.

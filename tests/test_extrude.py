@@ -217,3 +217,46 @@ def test_sketch_on_face_ignores_unrelated_coplanar_body_edges():
     extrude_body = doc.bodies.get(f"body_{feat.feature_id}")
     assert extrude_body is not None
     assert 19000.0 < extrude_body.manifold.volume() < 20000.0
+
+
+def test_extrude_join_inner_face_flush_with_ring_leaves_no_top_circle():
+    """Extruding a cylinder's inner top face (Face to Sketch) up to flush with a joined outer ring must
+    merge cleanly without leaving a seam void or inner circle edge on the flat top face."""
+    from omacad.model import quality
+    from omacad.model.faces_surfaces import compute_planar_faces_and_edges
+    from omacad.model.kernel import CadKernel
+    from omacad.model.sketch import SketchPlane
+
+    prev = quality.circle_segments()
+    try:
+        for segs in (72, 96):
+            quality.set_circle_segments(segs)
+            doc = Document()
+            sk1 = doc.start_sketch("XY")
+            sk1.add_circle((0, 0), 7.0)
+            doc.finish_sketch()
+            doc.extrude_profile(sk1.sketch_id, 0, 26.0, "new_body")
+
+            plane = SketchPlane.from_face([0, 0, 1], [0, 0, 26])
+            sk2 = doc.start_sketch_on_plane(plane)
+            sk2.add_circle((0, 0), 7.0)
+            sk2.add_circle((0, 0), 12.5)
+            doc.finish_sketch()
+            ring_idx = max(range(len(sk2.profiles)), key=lambda i: len(sk2.profiles[i].interior_holes))
+            doc.extrude_profile(sk2.sketch_id, ring_idx, 1.0, "join")
+
+            body = next(iter(doc.bodies.values()))
+            faces = compute_planar_faces_and_edges(body.manifold, body.body_id)[0]
+            f26 = next(f for f in faces if abs(f.origin[2] - 26.0) < 0.01 and f.normal[2] > 0.9)
+            sk3, pidx = doc.face_to_sketch(f26)
+            doc.extrude_profile(sk3.sketch_id, pidx, 1.0, "join")
+
+            body = next(iter(doc.bodies.values()))
+            assert body.manifold.genus() == 0
+            assert not CadKernel.has_sheets(body.manifold)
+            sl = body.render_mesh.sharp_lines.reshape(-1, 2, 3)
+            mid = sl.mean(axis=1)
+            top = np.abs(mid[:, 2] - 27.0) < 0.01
+            assert not np.any(np.hypot(mid[top, 0], mid[top, 1]) < 10.0)
+    finally:
+        quality.set_circle_segments(prev)
