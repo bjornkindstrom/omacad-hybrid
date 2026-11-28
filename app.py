@@ -127,6 +127,7 @@ def main():
     from omacad import session
     from omacad.ui import busy_dialog
     busy_dialog.install(window)     # here, not in MainWindow: tests call the model on the main thread
+    window.viewport.ASYNC_PREVIEW = True    # big previews read their mesh on a worker thread (latest one wins)
     window.start_autosave()
     file_to_open = next((arg for arg in sys.argv[1:] if arg.endswith(".omacad") and os.path.exists(arg)), None)
     if session.RESUME_FLAG in sys.argv:

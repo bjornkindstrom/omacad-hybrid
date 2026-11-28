@@ -1,3 +1,8 @@
+## Förhandsvisning i bakgrunden — 2026-11-28 (0.9.9.80.244, P6)
+
+- Mätt: manifold-booleanen håller GIL hela tiden (647 ms utan tick på huvudtråden), men `extract_render_mesh` (numpy) släpper den (värsta glapp 9 ms). `set_preview` evaluerar därför booleanen på GUI-tråden (`num_tri`) och lämnar nätläsningen till `_PreviewWorker` (en tråd, väntande jobb ersätts = senaste vinner) när `ASYNC_PREVIEW` och > `ASYNC_PREVIEW_TRIANGLES` (30 000). Resultatet kommer via `_PreviewRelay.done` (köad signal) och installeras bara om `_preview_generation` är oförändrad (ny preview eller rensning gör gamla jobb inaktuella). Gamla previewn står kvar under tiden.
+- `ASYNC_PREVIEW` slås på i `app.py` (inte i tester: de läser `preview_mesh` direkt). Synkrona vägen sätter fälten direkt (test_honeycomb anropar `set_preview` på en SimpleNamespace). Test: `tests/test_async_preview.py`.
+
 ## Markering i temats färg — 2026-11-28 (0.9.9.80.243, A9)
 
 - `Palette.selection_edge01/selection_face01/selected_body01`: SolidCrafts blå (exakt de gamla talen) när temat saknas eller har blå highlight (hue 0,5–0,75, mättnad ≥ 0,3), annars highlight (kant), +20 % vitt (yta), +30 % vitt (kropp). Används i `render_mixin` (`selected_body_rgb`, markerade kroppens kanter) och `picker_mixin` (valda ytor + konturer). Studio-skärmbild oförändrad (skillnaden mot förut = samma brus som mellan två körningar, kameraglidningen).

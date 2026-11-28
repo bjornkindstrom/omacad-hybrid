@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.243
+# Hybrid-experiment — 0.9.9.80.244
+
+## 0.9.9.80.244 - 2026-11-28
+
+### Changed
+- **Smoother previews of big changes**: a large preview (over 30,000 triangles) has its mesh read on a background thread while the window keeps responding, and only the newest one is shown, so dragging a slider no longer queues up stale previews. The old preview stays until the new one is ready; small previews and the final result are exactly as before.
 
 ## 0.9.9.80.243 - 2026-11-28
 
