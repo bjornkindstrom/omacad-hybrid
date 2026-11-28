@@ -61,9 +61,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "fan_menu_animation": True,         # the soft fan menu looks fade and grow in when opened
     "fan_menu_label_style": "curved",   # curved, readable_curved, horizontal (the classic look)
     "fan_menu_icon_scale": 1.0,       # 0.5..2.0 of the original 22 px fan menu icon size
-    "group_primitives": True,           # group Box/Cylinder/Sphere/Thread into Primitives dropdown
-    "group_modify": False,              # group Combine/Split/Shell/Move into Modify dropdown
-    "group_inspect": True,              # group Measure/Section/Params into Inspect dropdown
+    "group_primitives": True,           # group Box/Cylinder/Cone/Prism/Sphere into Primitives dropdown
+    "group_modify": True,               # group Combine/Split Body/Move/Joint/Delete into Body dropdown
+    "group_inspect": True,              # group Measure/Section/Statistics into Inspect dropdown
     "group_constraints": True,          # constraints as one dropdown menu or separate buttons
     "theme_mode": "omarchy",            # "omarchy" = follow the Omarchy theme live, "fixed" = theme_name
     "theme_name": "studio_soft",        # "studio_soft", "studio", "graphite", "atelier" or "user:<name>" when theme_mode is "fixed"

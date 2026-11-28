@@ -333,10 +333,10 @@ def test_joint_browser_and_viewport_interaction():
 def test_joint_menus_and_ribbon_integration():
     from omacad.ui import commands
 
-    # 1. ASSEMBLE group in ribbon SOLID_GROUPS
+    # 1. Joint in ribbon MODIFY_BODY (grouped under MODIFY)
     solid_groups = dict(commands.SOLID_GROUPS)
-    assert "ASSEMBLE" in solid_groups
-    assert "joint" in solid_groups["ASSEMBLE"]
+    assert "modify_body" in [x[0] for x in solid_groups["MODIFY"] if isinstance(x, tuple)]
+    assert "joint" in commands.MODIFY_BODY[4]
 
     # 2. Menus contain Joint in Modify and Assemble
     menus = dict(commands.MENUS)

@@ -22,7 +22,7 @@ from python_solvespace import SolverSystem
 
 from omacad.model.sketch import (Sketch, SketchArc, SketchLine, SketchCircle, SketchSlot, SketchSpline, SketchPoint, SketchEllipse,
                                  SOLVER_DIM_TYPES,
-                                 EDGE_PTS, point_of, point_names, ref_segment)
+                                 EDGE_PTS, point_of, point_names, circle_point_angle, ref_segment)
 
 SUPPORTED = (SketchLine, SketchCircle, SketchSlot, SketchPoint, SketchEllipse)
 FIXED_GROUP, FREE_GROUP = 1, 2
@@ -146,13 +146,12 @@ def solve_keeping_arcs(sketch: Sketch, ids: Iterable[str]) -> SolveResult:
     return solve_sketch(sketch)
 
 
-def _spline_points(sketch) -> Dict[str, set]:
-    """Spline id -> the point names that dimensions and constraints refer to."""
+def _named_points(sketch, targets: Dict[str, object], accept) -> Dict[str, set]:
+    """Entity id -> the point names that dimensions and constraints refer to."""
     named: Dict[str, set] = {}
-    splines = {e.entity_id: e for e in sketch.entities if isinstance(e, SketchSpline)}
 
     def note(eid, name):
-        if eid in splines and point_of(splines[eid], name) is not None:
+        if eid in targets and accept(targets[eid], name):
             named.setdefault(eid, set()).add(name)
 
     for d in sketch.dimensions:
@@ -164,6 +163,18 @@ def _spline_points(sketch) -> Dict[str, set]:
         for eid, name in zip(c.refs, c.pts):
             note(eid, name)
     return named
+
+
+def _spline_points(sketch) -> Dict[str, set]:
+    """Spline id -> the point names that dimensions and constraints refer to."""
+    splines = {e.entity_id: e for e in sketch.entities if isinstance(e, SketchSpline)}
+    return _named_points(sketch, splines, lambda ent, name: point_of(ent, name) is not None)
+
+
+def _circle_angle_points(sketch) -> Dict[str, set]:
+    """Circle id -> the 45-degree point names that dimensions and constraints refer to."""
+    circles = {e.entity_id: e for e in sketch.entities if isinstance(e, SketchCircle)}
+    return _named_points(sketch, circles, lambda _ent, name: circle_point_angle(name) is not None)
 
 
 def _solver_entities(sketch) -> Dict[str, object]:
@@ -244,6 +255,12 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
             return v[0] if name == "center1" else v[1]
         if isinstance(ents[eid], SketchEllipse):
             return v[0] if name == "center" else v[1]
+        if isinstance(ents[eid], SketchCircle):
+            deg = circle_point_angle(name)
+            if deg is not None:
+                r = values.get(f"{eid}#r", ents[eid].radius)
+                rad = math.radians(deg)
+                return (v[0] + r * math.cos(rad), v[1] + r * math.sin(rad))
         return v                # a circle's centre or a point
 
     def line_vec(eid):
@@ -314,6 +331,7 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
     ents = _solver_entities(sketch)
 
     spline_points = _spline_points(sketch)
+    circle_pts = _circle_angle_points(sketch)
     sys_ = SolverSystem()
     wp = sys_.create_2d_base()
     pts: Dict[Tuple[str, str], object] = {}
@@ -321,6 +339,7 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
     radii: Dict[str, object] = {}
     slot_circles: Dict[str, object] = {}    # a slot's radius lives on a circle round its first centre
     normal = None
+    href = None
     sharp = {}
     for la, ea, lb, eb, corner, _, _ in corners:
         sharp[(la, ea)] = sharp[(lb, eb)] = corner
@@ -333,6 +352,17 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             normal = sys_.add_normal_3d(1.0, 0.0, 0.0, 0.0)
             sys_.set_group(FREE_GROUP if ent.entity_id not in fixed else FIXED_GROUP)
         return normal
+
+    def horiz_ref(ent):
+        """Fixed +U reference line for 45-degree circle angle points, made once."""
+        nonlocal href
+        if href is None:
+            sys_.set_group(FIXED_GROUP)
+            o = sys_.add_point_2d(0.0, 0.0, wp)
+            x1 = sys_.add_point_2d(10.0, 0.0, wp)
+            href = sys_.add_line_2d(o, x1, wp)
+            sys_.set_group(FREE_GROUP if ent.entity_id not in fixed else FIXED_GROUP)
+        return href
 
     def build(ent):
         nonlocal normal
@@ -387,6 +417,20 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             geo[ent.entity_id] = sys_.add_circle(normal, c, r, wp)
             pts[(ent.entity_id, "center")] = c
             radii[ent.entity_id] = r
+            for name in sorted(circle_pts.get(ent.entity_id, ())):
+                pt = point_of(ent, name)
+                q = sys_.add_point_2d(pt[0], pt[1], wp)
+                if ent.entity_id not in fixed:
+                    deg = circle_point_angle(name)
+                    seg = sys_.add_line_2d(c, q, wp)
+                    sys_.coincident(q, geo[ent.entity_id], wp)
+                    if deg in (0, 180):
+                        sys_.horizontal(seg, wp)
+                    elif deg in (90, 270):
+                        sys_.vertical(seg, wp)
+                    else:
+                        sys_.angle(horiz_ref(ent), seg, float(deg if deg <= 180 else 360 - deg), wp)
+                pts[(ent.entity_id, name)] = q
 
     # Fixed entities live in an earlier group so the solver treats them as constants
     sys_.set_group(FIXED_GROUP)

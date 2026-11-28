@@ -1,3 +1,10 @@
+## Ribbon-omorganisering, cirkelns vinkelpunkter, bågradie — 2026-11-28 (0.9.9.80.257, PÅGÅENDE)
+
+- Ögonblicksbild av en annan sessions ocommittade arbete, committad på Björns begäran ("committa ALLT").
+- `commands.py`: `SOLID_SPLITS`/`SKETCH_SPLITS` (delade knappar), nya grupper `BUILTIN_SCRIPTS`, `REVOLVE_SWEEP`, `HOLE_THREAD`, `FILLET_SOLID`, `SHELL_SURFACE`, `SCRIPTS_GROUP`, `SKETCH_SHAPES`, `SKETCH_TOOLS`, `SKETCH_TRIM`, `SKETCH_FILLET`, `SKETCH_TRANSFORM`; `group_modify` på som standard.
+- `sketch_entities.CIRCLE_ANGLE_NAMES`/`circle_point_angle` (deg0…deg315), snäpp i `sketch_snap`, lösaren tar namngivna vinkelpunkter (`_named_points`, `_circle_angle_points`). `dyn_input` ARC: Radius med fasta ändpunkter (`arc_mid_for_radius`). Test: `test_circle_angle_snap.py`, `test_sketch_arc_solver.py`.
+- **Kvar att göra**: 6 UI-tester förväntar sig gamla ribbon-layouten: `test_emboss_ui::test_emboss_button_and_menu_entry_exist`, `test_commands::test_solid_tab_groups_in_fusion_order`, `test_requests_157_158_168::test_primitives_is_a_submenu_in_the_create_menu`, `test_sketch_keys_ui::test_m_opens_move_body_outside_a_sketch`, `test_sketch_tool_panel::…[ARC-fields4]`, `test_text_tool::test_text_button_exists_and_starts_the_tool`.
+
 ## Ojämn insida på shell efter B-rep-fasning — 2026-11-28 (0.9.9.80.256, rapport 20261128-102426)
 
 - Orsak: när OpenCascade (`brep.shell`) inte kunde skala en 2 mm fasad cylinder 4 mm inåt föll `ShellFeature.execute` tillbaka till mesh-skalet. B-rep-tesselleringen hade ~1 861 distinkta plan (> `MAX_FACET_PLANES = 1024`) och ~`1,37e-5` relativ volymavvikelse mot konvexa höljet från kordasagg längs faskanten (> `1e-6`), så `_facet_planes` gav upp och `_shrink` tog `minkowski_difference(sphere(4, 12))` — vilket gav en 12-kantig bucklig insida med platt-skuggade vertikala ränder.

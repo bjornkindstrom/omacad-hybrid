@@ -201,17 +201,17 @@ def test_tool_submenus_list_the_scripts_and_modify(win, folder):
 
 def test_ribbon_dropdown_and_create_menu_have_the_submenus(win, folder):
     titles = lambda m: [a.text() for a in m.actions()]
-    if "primitives" in win.ribbon.command_buttons:
-        prim = win.ribbon.command_buttons["primitives"].menu()
-        subs = {a.text(): a.menu() for a in prim.actions() if a.menu() is not None}
+    if "builtin_scripts" in win.ribbon.command_buttons:
+        builtin = win.ribbon.command_buttons["builtin_scripts"].menu()
+        subs = {a.text(): a.menu() for a in builtin.actions() if a.menu() is not None}
     else:
         subs = {"Jar with Lid": win.ribbon.command_buttons["jar"].menu()}
     jar = subs["Jar with Lid"]
     jar.aboutToShow.emit()
     assert "Jar with Lid (script)" in titles(jar)
     create = next(a.menu() for a in win.menuBar().actions() if a.text() == "Create")
-    prim_menu = next(a.menu() for a in create.actions() if a.menu() is not None and a.text() == "Primitives")
-    names = [a.text() for a in prim_menu.actions() if a.menu() is not None]
+    builtin_menu = next(a.menu() for a in create.actions() if a.menu() is not None and "Built-in" in a.text())
+    names = [a.text() for a in builtin_menu.actions() if a.menu() is not None]
     assert {"Jar with Lid", "Star Brackets", "Box in a Row"} <= set(names)
     # a new copy shows up the next time the menu opens
     (folder / "jar_big.py").write_text("NAME = 'Big jar'\nFAMILY = 'jar'\ndef run(ctx, params): ctx.box(1, 1, 1)\n",

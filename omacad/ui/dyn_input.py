@@ -19,6 +19,7 @@ FIELDS: Dict[str, List[str]] = {
     "CENTER_RECT": ["Width", "Height"],
     "CENTER_ROUNDED_RECT": ["Width", "Height", "Radius"],
     "CIRCLE": ["Diameter"],
+    "ARC": ["Radius"],
     "POLYGON": ["Side", "Sides"],
     "MOVE": ["X", "Y"],
 }
@@ -93,7 +94,7 @@ class DynInput:
                 out[name] = v
         return out
 
-    def resolve(self, start: UV, mouse: UV) -> Tuple[UV, Dict[str, float]]:
+    def resolve(self, start: UV, mouse: UV, second: Optional[UV] = None) -> Tuple[UV, Dict[str, float]]:
         """Returns (end_uv, live_values) combining the mouse with locked fields."""
         lk = self.locked_values()
         u1, v1 = start
@@ -139,5 +140,16 @@ class DynInput:
             d = abs(lk["Diameter"]) if "Diameter" in lk else 2.0 * dist
             ux, uy = (dx / dist, dy / dist) if dist > 1e-9 else (1.0, 0.0)
             return (u1 + ux * d / 2.0, v1 + uy * d / 2.0), {"Diameter": d}
+
+        if self.tool == "ARC" and second is not None:
+            from omacad.model.sketch_entities import SketchArc, arc_mid_for_radius
+            half = math.hypot(second[0] - u1, second[1] - v1) * 0.5
+            if "Radius" in lk:
+                r = max(abs(lk["Radius"]), half)
+                mid = arc_mid_for_radius(start, second, mouse, r)
+                return (mid if mid is not None else mouse), {"Radius": r}
+            params = SketchArc("temp", start, mouse, second).get_circle_params()
+            r_live = params[1] if params else half
+            return mouse, {"Radius": r_live}
 
         return mouse, {}

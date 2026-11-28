@@ -88,7 +88,7 @@ def test_pattern_ribbon_click_expands_collapsed_settings_and_allows_corners(win)
     vp.selected_entities = {circle.entity_id}
     vp.sketch_palette.toggle_collapsed()
     assert vp.sketch_palette.content_widget.isHidden()
-    win.ribbon.command_buttons["pattern_sketch"].click()
+    next(a for a in win.ribbon.command_buttons["sketch_transform"].menu().actions() if a.text() == "Pattern").trigger()
     QTest.qWait(30)
     assert vp.pattern_panel.isVisible()
     assert vp.sketch_palette.btn_toggle.text() == "▼"

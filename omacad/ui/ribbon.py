@@ -358,14 +358,15 @@ class Ribbon(QWidget):
             act.triggered.connect(lambda _=False, cid=cid: self._emit_command(cid))
         return menu
 
-    def _dropdown(self, row, spec, grouped: bool):
+    def _dropdown(self, row, spec, grouped: bool, checkable: bool = False):
         """A ribbon dropdown (Primitives, Insert, ...) or, when not grouped, its commands as separate buttons."""
         did, text, icon, tip, cids = spec
         if not grouped:
             for cid in cids:
-                row.addWidget(self._command_button(cid))
+                row.addWidget(self._command_button(cid, checkable=checkable))
             return
         btn = RibbonButton(f"{text}\n▾", icon, command=did)
+        btn.setCheckable(checkable)
         btn.setToolTip(tip)
         btn.setProperty("command", did)
         btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
@@ -400,10 +401,14 @@ class Ribbon(QWidget):
     def setup_solid_tab(self):
         from omacad.ui.settings import get_settings
         settings = get_settings()
-        grouped = {"primitives": bool(settings.get("group_primitives", True)),
-                   "modify_body": bool(settings.get("group_modify", False)),
-                   "inspect": bool(settings.get("group_inspect", True)),
-                   "insert": True, "export": True}
+        grouped = {
+            "primitives": bool(settings.get("group_primitives", True)),
+            "builtin_scripts": True,
+            "modify_body": bool(settings.get("group_modify", True)),
+            "inspect": bool(settings.get("group_inspect", True)),
+            "insert": True,
+            "export": True,
+        }
         self.command_buttons = {}
         h_layout = QHBoxLayout(self.solid_tab)
         h_layout.setContentsMargins(4, 1, 4, 1)
@@ -412,11 +417,16 @@ class Ribbon(QWidget):
             row = self._group(h_layout, title, first=i == 0)
             for item in items:
                 if isinstance(item, tuple):
-                    self._dropdown(row, item, grouped[item[0]])
+                    self._dropdown(row, item, grouped.get(item[0], True))
                 elif item == "pattern":          # the button patterns as before, its arrow picks the kind
                     btn = self._command_button("pattern")
                     btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
                     btn.setMenu(self._command_menu(btn, commands.PATTERNS))
+                    row.addWidget(btn)
+                elif item in commands.SOLID_SPLITS:
+                    btn = self._command_button(item)
+                    btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+                    btn.setMenu(self._command_menu(btn, commands.SOLID_SPLITS[item][4]))
                     row.addWidget(btn)
                 else:
                     row.addWidget(self._command_button(item))
@@ -443,7 +453,9 @@ class Ribbon(QWidget):
         for i, (title, items) in enumerate(commands.SKETCH_GROUPS):
             row = self._group(h_layout, title, first=i == 0)
             for item in items:
-                if item == "rect":
+                if isinstance(item, tuple):
+                    self._dropdown(row, item, True, checkable=True)
+                elif item == "rect":
                     self._build_rect_button()
                     row.addWidget(self.btn_rect)
                 elif item == "arc":
@@ -456,6 +468,13 @@ class Ribbon(QWidget):
                     self.btn_circle.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
                     self.btn_circle.setMenu(self._command_menu(self.btn_circle, ["circle", "smart_circle", "ellipse"]))
                     row.addWidget(self.btn_circle)
+                elif item in commands.SKETCH_SPLITS:
+                    btn = self._command_button(item, checkable=True)
+                    btn.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+                    btn.setMenu(self._command_menu(btn, commands.SKETCH_SPLITS[item][4]))
+                    if item in sketch_buttons:
+                        setattr(self, sketch_buttons[item], btn)
+                    row.addWidget(btn)
                 elif item == "construction":
                     # the arrow picks what to draw as a helper line straight away (Björn #97)
                     self.btn_construct = self._command_button("construction", checkable=True)
@@ -583,36 +602,37 @@ class Ribbon(QWidget):
         if save:
             get_settings().set("rect_default_tool", tool)
 
-    def select_sketch_tool(self, tool_name: str):
+    def set_checked_sketch_tool(self, tool_name: str):
+        """Update checked state on sketch buttons (including grouped dropdowns and split-buttons)."""
         self.btn_line.setChecked(tool_name == "LINE")
         self.btn_rect.setChecked(tool_name in RECT_TOOLS)
         self.btn_circle.setChecked(tool_name in CIRCLE_TOOLS)
-        self.btn_polygon.setChecked(tool_name == "POLYGON")
         self.btn_arc.setChecked(tool_name in ("ARC", "CENTER_ARC"))
-        if hasattr(self, "btn_spline"):
-            self.btn_spline.setChecked(tool_name == "SPLINE")
-        if hasattr(self, "btn_control_spline"):
-            self.btn_control_spline.setChecked(tool_name == "CONTROL_SPLINE")
-        self.btn_slot.setChecked(tool_name == "SLOT")
-        self.btn_text.setChecked(tool_name == "TEXT")
-        if hasattr(self, "btn_fillet_sk"):
-            self.btn_fillet_sk.setChecked(tool_name == "FILLET")
-        if hasattr(self, "btn_offset_sk"):
-            self.btn_offset_sk.setChecked(tool_name == "OFFSET")
-        if hasattr(self, "btn_mirror_sk"):
-            self.btn_mirror_sk.setChecked(tool_name == "MIRROR")
-        if hasattr(self, "btn_trim_sk"):
-            self.btn_trim_sk.setChecked(tool_name == "TRIM")
-        for name, tool in (("btn_point", "POINT"), ("btn_chamfer_sk", "CHAMFER"), ("btn_extend_sk", "EXTEND"), ("btn_break_sk", "BREAK")):
-            if hasattr(self, name):
-                getattr(self, name).setChecked(tool_name == tool)
         self.btn_dim.setChecked(tool_name == "DIMENSION")
-        self.btn_move.setChecked(tool_name == "MOVE")
-        self.btn_rotate_sk.setChecked(tool_name == "ROTATE")
-        if hasattr(self, "btn_scale_sk"):
-            self.btn_scale_sk.setChecked(tool_name == "SCALE")
-        if hasattr(self, "btn_pattern_sketch"):
-            self.btn_pattern_sketch.setChecked(tool_name == "PATTERN")
+        self.btn_trim_sk.setChecked(tool_name in ("TRIM", "EXTEND", "BREAK"))
+        self.btn_fillet_sk.setChecked(tool_name in ("FILLET", "CHAMFER"))
+        for did, tools in (
+            ("sketch_shapes", ("SPLINE", "CONTROL_SPLINE", "POLYGON", "SLOT", "POINT", "TEXT")),
+            ("sketch_tools", ("OFFSET", "MIRROR")),
+            ("sketch_transform", ("MOVE", "ROTATE", "SCALE", "PATTERN")),
+        ):
+            btn = self.command_buttons.get(did)
+            if btn is not None:
+                btn.setChecked(tool_name in tools)
+        for name, tool in (
+            ("btn_polygon", "POLYGON"), ("btn_spline", "SPLINE"), ("btn_control_spline", "CONTROL_SPLINE"),
+            ("btn_slot", "SLOT"), ("btn_text", "TEXT"), ("btn_point", "POINT"),
+            ("btn_offset_sk", "OFFSET"), ("btn_mirror_sk", "MIRROR"),
+            ("btn_chamfer_sk", "CHAMFER"), ("btn_extend_sk", "EXTEND"), ("btn_break_sk", "BREAK"),
+            ("btn_move", "MOVE"), ("btn_rotate_sk", "ROTATE"), ("btn_scale_sk", "SCALE"),
+            ("btn_pattern_sketch", "PATTERN"),
+        ):
+            btn = getattr(self, name, None)
+            if btn is not None:
+                btn.setChecked(tool_name == tool)
+
+    def select_sketch_tool(self, tool_name: str):
+        self.set_checked_sketch_tool(tool_name)
         self.sketch_tool_selected.emit(tool_name)
 
     def selection_context(self) -> str:
@@ -633,7 +653,11 @@ class Ribbon(QWidget):
     def sync_context(self):
         """Give the buttons that fit the current selection an accent border (a dropdown gets it for its members)."""
         cids = set(commands.CONTEXT.get(self.selection_context(), ()))
-        for spec in (commands.PRIMITIVES, commands.INSERT, commands.MODIFY_BODY, commands.INSPECT):
+        for spec in (
+            commands.PRIMITIVES, commands.BUILTIN_SCRIPTS, commands.REVOLVE_SWEEP,
+            commands.HOLE_THREAD, commands.INSERT, commands.FILLET_SOLID,
+            commands.SHELL_SURFACE, commands.MODIFY_BODY, commands.INSPECT,
+        ):
             if cids & set(spec[4]):
                 cids.add(spec[0])
         if cids == self.suggested:
@@ -662,15 +686,8 @@ class Ribbon(QWidget):
             self.tabs.setCurrentIndex(1)
         else:
             self.tabs.setCurrentIndex(0)
-            for btn in (
-                self.btn_line, self.btn_rect, self.btn_circle, self.btn_arc,
-                getattr(self, "btn_spline", None), getattr(self, "btn_control_spline", None),
-                self.btn_slot, self.btn_polygon, self.btn_text, self.btn_fillet_sk,
-                self.btn_trim_sk, getattr(self, "btn_chamfer_sk", None), getattr(self, "btn_extend_sk", None), getattr(self, "btn_break_sk", None),
-                self.btn_mirror_sk, self.btn_offset_sk,
-                self.btn_dim, self.btn_move, self.btn_rotate_sk, getattr(self, "btn_scale_sk", None),
-                getattr(self, "btn_pattern_sketch", None), getattr(self, "btn_construct", None),
-            ):
-                if btn is not None:
-                    btn.setChecked(False)
+            self.set_checked_sketch_tool("NONE")
+            btn_c = getattr(self, "btn_construct", None)
+            if btn_c is not None:
+                btn_c.setChecked(False)
 

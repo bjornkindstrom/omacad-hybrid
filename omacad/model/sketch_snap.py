@@ -8,7 +8,10 @@ import math
 from dataclasses import dataclass
 from typing import Tuple, Optional, List
 import numpy as np
-from omacad.model.sketch import Sketch, SketchLine, SketchRect, SketchCircle, SketchArc, SketchSpline, SketchPoint
+from omacad.model.sketch import (
+    Sketch, SketchLine, SketchRect, SketchCircle, SketchArc, SketchSpline, SketchPoint,
+    CIRCLE_ANGLE_NAMES, point_of,
+)
 from omacad.model.sketch_entities import SketchEllipse
 
 
@@ -190,6 +193,8 @@ class SketchSnapper:
                     ])
                 elif isinstance(ent, SketchCircle):
                     endpoints.append(ent.center)
+                    for name in CIRCLE_ANGLE_NAMES:
+                        endpoints.append(point_of(ent, name))
                 elif isinstance(ent, SketchArc):
                     endpoints.append(ent.p_start)
                     endpoints.append(ent.p_end)

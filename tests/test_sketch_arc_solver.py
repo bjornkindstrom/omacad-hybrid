@@ -195,3 +195,30 @@ def test_a_circle_centred_on_a_point_or_a_centre_keeps_it():
     inner = sk.add_circle((20.0, 0.0), 2.0)
     assert ("CONCENTRIC", [inner.entity_id, ring.entity_id], []) in curve_auto_relations(sk, inner) or \
         curve_auto_relations(sk, inner)[0][0] == "COINCIDENT"
+
+
+def test_arc_radius_dimension_edit_keeps_endpoints_fixed():
+    doc = Document()
+    sk = doc.start_sketch()
+    arc = sk.add_arc((-10.0, 0.0), (0.0, 5.0), (10.0, 0.0))
+    dim = _radius_dim(sk, arc)
+    assert sk.set_dimension_value(dim.dim_id, 20.0)
+    assert arc.p_start == pytest.approx((-10.0, 0.0), abs=1e-9)
+    assert arc.p_end == pytest.approx((10.0, 0.0), abs=1e-9)
+    assert arc.p_mid[1] > 0.0
+    assert arc.get_circle_params()[1] == pytest.approx(20.0, abs=1e-6)
+
+
+def test_dyn_input_arc_resolves_radius_keeping_endpoints_fixed():
+    from omacad.model.sketch_entities import SketchArc
+    from omacad.ui.dyn_input import DynInput
+
+    dyn = DynInput()
+    assert dyn.start("ARC")
+    for ch in "20":
+        dyn.type_char(ch)
+    mid, live = dyn.resolve((-10.0, 0.0), (0.0, 6.0), second=(10.0, 0.0))
+    assert live["Radius"] == pytest.approx(20.0)
+    assert mid[1] > 0.0
+    arc = SketchArc("a", (-10.0, 0.0), mid, (10.0, 0.0))
+    assert arc.get_circle_params()[1] == pytest.approx(20.0, abs=1e-6)

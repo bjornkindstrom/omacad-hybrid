@@ -373,14 +373,14 @@ class SettingsDialog(QDialog):
         grp_lbl.setStyleSheet("color: #9AA0A6; font-size: 11px; margin-top: 6px;")
         lay_ui.addWidget(grp_lbl)
 
-        self.chk_group_primitives = QCheckBox("Group Primitives into dropdown (Box, Cylinder, Prism, Thread)")
+        self.chk_group_primitives = QCheckBox("Group Primitives into dropdown (Box, Cylinder, Cone, Prism, Sphere)")
         self.chk_group_primitives.setChecked(bool(self.settings.get("group_primitives", True)))
         self.chk_group_primitives.setToolTip("Puts 3D primitive tools into a compact Primitives ▾ dropdown menu.")
         lay_ui.addWidget(self.chk_group_primitives)
 
-        self.chk_group_modify = QCheckBox("Group Modify into dropdown (Combine, Split Body, Shell, Move, Delete)")
-        self.chk_group_modify.setChecked(bool(self.settings.get("group_modify", False)))
-        self.chk_group_modify.setToolTip("Puts solid modification tools into a compact Modify ▾ dropdown menu.")
+        self.chk_group_modify = QCheckBox("Group Body Modify into dropdown (Combine, Split Body, Move, Joint, Delete)")
+        self.chk_group_modify.setChecked(bool(self.settings.get("group_modify", True)))
+        self.chk_group_modify.setToolTip("Puts solid body modification tools into a compact Body ▾ dropdown menu.")
         lay_ui.addWidget(self.chk_group_modify)
 
         self.chk_group_inspect = QCheckBox("Group Inspect into dropdown (Measure, Section View, Parameters)")
@@ -929,7 +929,7 @@ class SettingsDialog(QDialog):
         self.chk_fan_anim.setChecked(True)
         self.spn_fan_icon_scale.setValue(100)
         self.chk_group_primitives.setChecked(True)
-        self.chk_group_modify.setChecked(False)
+        self.chk_group_modify.setChecked(True)
         self.chk_group_inspect.setChecked(True)
         self.chk_group_constraints.setChecked(True)
         idx_ai = self.cmb_ai_agent.findData("omarchy")

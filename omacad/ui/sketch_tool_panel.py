@@ -88,7 +88,7 @@ class SketchToolPanel(QGroupBox):
             spin.setDecimals(0 if name == "Sides" else 2)
             spin.setSingleStep(1.0 if name in ("Sides", "Angle") else 0.5)
             spin.setSuffix(UNITS.get(name, " mm"))
-            spin.setToolTip(f"{lbl}: type or drag to lock it; empty follows the mouse." if name not in DEFAULTS_NOT_LOCKS
+            spin.setToolTip(f"{lbl}: type or drag to lock it; empty follows the mouse." if not self._is_default_field(name)
                             else f"{lbl} for the next shapes.")
             spin.valueChanged.connect(lambda v, n=name: self._edited(n, v))
             self.form.addRow(lbl, spin)
@@ -97,7 +97,7 @@ class SketchToolPanel(QGroupBox):
             self.chk_copy = QCheckBox("Copy (keep the originals)")
             self.chk_copy.setToolTip("Move a copy of the picked elements and leave the originals where they are.")
             self.form.addRow(self.chk_copy)
-        if any(n not in DEFAULTS_NOT_LOCKS for n in self.spins):
+        if any(not self._is_default_field(n) for n in self.spins):
             clear = QPushButton("Follow the mouse")
             clear.setToolTip("Clear the typed values: every field follows the mouse again.")
             clear.setAutoDefault(False)
@@ -106,8 +106,11 @@ class SketchToolPanel(QGroupBox):
         add_numeric_sliders(self)
         self.show()
 
+    def _is_default_field(self, name: str) -> bool:
+        return name == "Sides" or (name == "Radius" and self.tool in ("ROUNDED_RECT", "CENTER_ROUNDED_RECT"))
+
     def _edited(self, name: str, value: float) -> None:
-        if name in DEFAULTS_NOT_LOCKS:
+        if self._is_default_field(name):
             self.default_changed.emit(name, value)
             return
         self.locks[name] = value
@@ -145,7 +148,7 @@ class SketchToolPanel(QGroupBox):
     def lock_from_typing(self, name: str, value: float) -> None:
         """A value typed in the view's Tab field: show it here as locked too."""
         spin = self.spins.get(name)
-        if spin is None or name in DEFAULTS_NOT_LOCKS:
+        if spin is None or self._is_default_field(name):
             return
         self.locks[name] = value
         with QSignalBlocker(spin):

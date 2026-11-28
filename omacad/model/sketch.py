@@ -247,25 +247,35 @@ class Sketch(SketchEditingMixin):
                 k = target_dim.value / 2.0 / ent.major
                 ent.major_end = (ent.center[0] + (ent.major_end[0] - ent.center[0]) * k,
                                  ent.center[1] + (ent.major_end[1] - ent.center[1]) * k)
-        elif target_dim.dim_type == "DIAMETER":
-            if isinstance(ent, SketchEllipse):
-                ent.minor = target_dim.value / 2.0
-            elif isinstance(ent, SketchCircle):
-                ent.radius = target_dim.value / 2.0
-            elif isinstance(ent, SketchSlot):
-                ent.radius = target_dim.value / 2.0
-        elif target_dim.dim_type == "RADIUS":
+        elif target_dim.dim_type in ("RADIUS", "DIAMETER"):
+            want_r = target_dim.value * (0.5 if target_dim.dim_type == "DIAMETER" else 1.0)
             if isinstance(ent, SketchCircle):
-                ent.radius = target_dim.value
+                ent.radius = want_r
             elif isinstance(ent, SketchSlot):
-                ent.radius = target_dim.value
+                ent.radius = want_r
+            elif isinstance(ent, SketchEllipse) and target_dim.dim_type == "DIAMETER":
+                ent.minor = want_r
             elif isinstance(ent, SketchArc):
                 if getattr(ent, "fillet_info", None):
-                    self._update_fillet_arc(ent, target_dim.value)
+                    self._update_fillet_arc(ent, want_r)
                 else:
+                    from omacad.model.sketch_entities import arc_mid_for_radius
                     params = ent.get_circle_params()
-                    if params and params[1] > 1e-5:
-                        scale = target_dim.value / params[1]
+                    is_major = False
+                    if params:
+                        (cx, cy), _r, *_ = params
+                        dx = ent.p_end[0] - ent.p_start[0]
+                        dy = ent.p_end[1] - ent.p_start[1]
+                        mx = (ent.p_start[0] + ent.p_end[0]) * 0.5
+                        my = (ent.p_start[1] + ent.p_end[1]) * 0.5
+                        nx, ny = -dy, dx
+                        is_major = ((ent.p_mid[0] - mx) * nx + (ent.p_mid[1] - my) * ny) * (
+                            (cx - mx) * nx + (cy - my) * ny) > 0.0
+                    new_mid = arc_mid_for_radius(ent.p_start, ent.p_end, ent.p_mid, want_r, is_major=is_major)
+                    if new_mid is not None:
+                        ent.p_mid = new_mid
+                    elif params and params[1] > 1e-5:
+                        scale = want_r / params[1]
                         cx, cy = params[0]
                         ent.p_start = (cx + (ent.p_start[0] - cx) * scale, cy + (ent.p_start[1] - cy) * scale)
                         ent.p_mid = (cx + (ent.p_mid[0] - cx) * scale, cy + (ent.p_mid[1] - cy) * scale)

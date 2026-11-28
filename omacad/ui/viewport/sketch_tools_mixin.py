@@ -504,7 +504,7 @@ class SketchToolsMixin:
         return bool(
             self.doc.active_sketch
             and self.sketch_start_uv is not None
-            and self.sketch_second_uv is None
+            and ((self.sketch_second_uv is None) != (self.sketch_tool == "ARC"))
             and dyn_input.supports(self.sketch_tool)
         )
     def _corner_radius(self) -> float:
@@ -529,7 +529,7 @@ class SketchToolsMixin:
         mouse = self._raw_mouse_uv or self.sketch_start_uv
         self.dyn.default_sides = self.sketch_palette.spn_sides.value()
         self.dyn.default_radius = self.sketch_palette.spn_corner_radius.value()
-        end, live = self.dyn.resolve(self.sketch_start_uv, mouse)
+        end, live = self.dyn.resolve(self.sketch_start_uv, mouse, second=self.sketch_second_uv)
         self.sketch_current_uv = end
         self.dyn_live = live
         self.tool_panel.set_values(live)
@@ -903,6 +903,8 @@ class SketchToolsMixin:
             anchors["Y"] = QPointF(sb.x() + 52, sb.y())
         elif tool == "CIRCLE":
             anchors["Diameter"] = QPointF(sb.x() + 46, sb.y() - 16)
+        elif tool == "ARC":
+            anchors["Radius"] = QPointF(sb.x() + 46, sb.y() - 16)
         elif tool == "POLYGON":
             anchors["Side"] = QPointF(sb.x() + 46, sb.y() - 16)
             anchors["Sides"] = QPointF(sa.x() + 38, sa.y() - 24)

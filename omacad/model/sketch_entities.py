@@ -265,6 +265,33 @@ class SketchCircle(SketchEntity):
             radius=data["radius"],
             is_construction=data.get("is_construction", False),
         )
+def arc_mid_for_radius(
+    p_start: Tuple[float, float],
+    p_end: Tuple[float, float],
+    p_mid_ref: Tuple[float, float],
+    radius: float,
+    is_major: bool = False,
+) -> Optional[Tuple[float, float]]:
+    """Midpoint of an arc through `p_start` and `p_end` with `radius`, keeping both endpoints fixed.
+
+    `p_mid_ref` chooses which side of the chord the arc bulges toward; returns None when the chord
+    is degenerate or `radius` is smaller than half the chord length.
+    """
+    dx = p_end[0] - p_start[0]
+    dy = p_end[1] - p_start[1]
+    d = math.hypot(dx, dy)
+    half = d * 0.5
+    if d < 1e-6 or radius < half - 1e-9:
+        return None
+    mx = (p_start[0] + p_end[0]) * 0.5
+    my = (p_start[1] + p_end[1]) * 0.5
+    nx, ny = -dy / d, dx / d
+    side = 1.0 if ((p_mid_ref[0] - mx) * nx + (p_mid_ref[1] - my) * ny) >= 0.0 else -1.0
+    h = math.sqrt(max(0.0, radius * radius - half * half))
+    sagitta = (radius + h) if is_major else (radius - h)
+    return (mx + side * sagitta * nx, my + side * sagitta * ny)
+
+
 class SketchArc(SketchEntity):
     """3-point circular arc: p_start, p_mid, p_end."""
 
@@ -667,12 +694,31 @@ def ref_segment(ref: str):
     except ValueError:
         return None
     return (x1, y1), (x2, y2)
+CIRCLE_ANGLE_NAMES = tuple(f"deg{deg}" for deg in range(0, 360, 45))
+
+
+def circle_point_angle(name: str) -> Optional[int]:
+    """Angle in degrees (0, 45, ..., 315) for a circle's named angle point, or None."""
+    if name.startswith("deg") and name[3:].isdigit():
+        deg = int(name[3:])
+        if 0 <= deg < 360 and deg % 45 == 0:
+            return deg
+    return None
+
+
 def point_of(ent, name: str):
-    """A named point of an entity: line ends (p1, p2), a circle centre or a spline point (pt0, pt1, ...)."""
+    """A named point of an entity: line ends (p1, p2), a circle centre/angle point or a spline point (pt0, pt1, ...)."""
     if isinstance(ent, SketchLine):
         return ent.p1 if name == "p1" else ent.p2
-    if isinstance(ent, SketchCircle) and name == "center":
-        return ent.center
+    if isinstance(ent, SketchCircle):
+        if name == "center":
+            return ent.center
+        deg = circle_point_angle(name)
+        if deg is not None:
+            rad = math.radians(deg)
+            return (ent.center[0] + ent.radius * math.cos(rad),
+                    ent.center[1] + ent.radius * math.sin(rad))
+        return None
     if isinstance(ent, SketchSpline) and name.startswith("pt") and name[2:].isdigit() and int(name[2:]) < len(ent.points):
         return ent.points[int(name[2:])]
     if isinstance(ent, SketchSlot) and name in ("center1", "center2"):
@@ -695,7 +741,7 @@ def point_names(ent):
     if isinstance(ent, SketchLine):
         return ("p1", "p2")
     if isinstance(ent, SketchCircle):
-        return ("center",)
+        return ("center",) + CIRCLE_ANGLE_NAMES
     if isinstance(ent, SketchSpline):
         return tuple(f"pt{i}" for i in range(len(ent.points)))
     if isinstance(ent, SketchSlot):

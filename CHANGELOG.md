@@ -1,4 +1,12 @@
-# Hybrid-experiment — 0.9.9.80.256
+# Hybrid-experiment — 0.9.9.80.257
+
+## 0.9.9.80.257 - 2026-11-28
+
+### Changed (work in progress)
+- **Tidier ribbon**: the Solid tab gathers related commands under split buttons and dropdowns (Revolve with Sweep, Loft and Pipe; Hole with the thread tools; Fillet with Chamfer; Shell with Offset Face, Surface Texture and Emboss; Body; Insert; a new Built-in Scripts group with Jar with Lid, Make a lid, Box in a Row, Star Brackets and Lithophane), and the Sketch tab likewise (Shapes, Sketch Tools, Trim, Fillet, Transform).
+- **Circle angle points**: a circle snaps at its 45-degree points, and a dimension can be placed between those points.
+- **Arc radius while drawing**: typing a radius for a 3-point arc keeps its two end points where they are.
+- Snapshot of unfinished work, committed on request: six UI tests still expect the old ribbon layout (Emboss, Text, Primitives menu, Solid tab order, M for Move, the Arc panel's fields).
 
 ## 0.9.9.80.256 - 2026-11-28
 

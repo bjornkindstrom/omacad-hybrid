@@ -177,36 +177,74 @@ COMMANDS: Dict[str, Command] = {c.cid: c for c in _ALL}
 
 # A dropdown in the ribbon: (dropdown id, label, icon, tip, [command ids]). With the matching setting off its
 # commands stand as separate buttons instead (Settings > ribbon layout).
-PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Box in a Row, Star Brackets, Cylinder, Cone, Prism, Sphere, Lithophane, Pipe, Thread / Coil, Thread Pin, Jar with Lid (each "
-              "panel can hollow, round and taper)", ["box", "box_row", "star_brackets", "cylinder", "cone", "hexagon", "sphere", "lithophane", "pipe", "thread", "thread_pin", "jar"])
-INSERT = ("insert", "Insert", "🖼️", "Canvas (Image), Import SVG and Import 3MF", ["canvas", "import_svg", "import_3mf"])
-MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Cut Thread, Split Body, Offset Face, Move, Joint",
-               ["combine", "cut_thread", "split_body", "offset_face", "move", "joint"])
+PRIMITIVES = ("primitives", "Primitives", "📦", "Box, Cylinder, Cone, Prism, Sphere (each panel can hollow, round and taper)",
+              ["box", "cylinder", "cone", "hexagon", "sphere"])
+BUILTIN_SCRIPTS = ("builtin_scripts", "Built-in\nScripts", "🧩",
+                   "Built-in parametric generators and script families: Jar with Lid, Make a lid, Box in a Row, Star Brackets, Lithophane",
+                   ["jar", "make_lid", "box_row", "star_brackets", "lithophane"])
+REVOLVE_SWEEP = ("revolve", "Revolve", "🔄", "Revolve, Sweep, Loft, Pipe",
+                 ["revolve", "sweep", "loft", "pipe"])
+HOLE_THREAD = ("hole", "Hole", "🕳️", "Hole, Thread / Coil, Thread Pin, Cut Thread",
+               ["hole", "thread", "thread_pin", "cut_thread"])
+INSERT = ("insert", "Insert", "🖼️", "Offset Plane, Canvas (Image), Import SVG and Import 3MF",
+          ["offset_plane", "canvas", "import_svg", "import_3mf"])
+FILLET_SOLID = ("fillet", "Fillet", "🔘", "Fillet and Chamfer edges",
+                ["fillet", "chamfer"])
+SHELL_SURFACE = ("shell", "Shell", "🐚", "Shell, Offset Face, Surface Texture, Emboss",
+                 ["shell", "offset_face", "surface_texture", "emboss"])
+MODIFY_BODY = ("modify_body", "Body", "🧊", "Combine, Split Body, Move, Joint, Delete",
+               ["combine", "split_body", "move", "joint", "delete"])
 INSPECT = ("inspect", "Inspect", "📏", "Measure, Section View, Document Statistics", ["measure", "section", "statistics"])
+SCRIPTS_GROUP = ("scripts", "Scripts", "📜", "Run Scripts, New Script with AI, Open Scripts Folder",
+                 ["scripts", "new_script_ai", "open_scripts_folder"])
 EXPORT = ("export", "Export", "📤", "Screenshot, Copy Image, Rotating Video of the model as it is shown",
           ["screenshot", "copy_image", "turntable"])
 PATTERNS = ["pattern_linear", "pattern_circular", "mirror", "pattern_fill"]   # the Pattern button's arrow
 
+# Split-buttons in SOLID (primary command on click, variants in dropdown arrow)
+SOLID_SPLITS = {
+    "revolve": REVOLVE_SWEEP,
+    "hole": HOLE_THREAD,
+    "fillet": FILLET_SOLID,
+    "shell": SHELL_SURFACE,
+    "scripts": SCRIPTS_GROUP,
+}
+
 SOLID_GROUPS: List[Tuple[str, list]] = [
-    ("CREATE", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", "make_lid", PRIMITIVES, "pattern", "offset_plane",
-                INSERT]),
-    ("MODIFY", ["fillet", "chamfer", "shell", "surface_texture", MODIFY_BODY, "parameters", "delete"]),
-    ("ASSEMBLE", ["joint"]),
+    ("CREATE", ["create_sketch", "extrude", "revolve", "hole", PRIMITIVES, "pattern", INSERT]),
+    ("MODIFY", ["fillet", "shell", MODIFY_BODY, "parameters"]),
     ("INSPECT", [INSPECT]),
-    ("SCRIPTS", ["scripts", "new_script_ai"]),
+    ("SCRIPTS", [BUILTIN_SCRIPTS, "scripts"]),
     ("EXPORT", [EXPORT]),                     # Export stays the last group
 ]
+
+# Sketch dropdowns and split-buttons
+SKETCH_SHAPES = ("sketch_shapes", "Shapes", "〰️", "Spline, Control Point Spline, Polygon, Slot, Point, Text",
+                 ["spline", "control_spline", "polygon", "slot", "point", "text"])
+SKETCH_TOOLS = ("sketch_tools", "Sketch\nTools", "⧉", "Offset, Mirror, Project, Import SVG",
+                ["offset_sketch", "mirror_sketch", "project", "import_svg"])
+SKETCH_TRIM = ("trim", "Trim", "✂️", "Trim, Extend, Break",
+               ["trim", "extend_sketch", "break_sketch"])
+SKETCH_FILLET = ("fillet_sketch", "Fillet", "╭", "Fillet and Chamfer sketch corners",
+                 ["fillet_sketch", "chamfer_sketch"])
+SKETCH_TRANSFORM = ("sketch_transform", "Transform", "✥", "Move, Rotate, Scale, Pattern",
+                    ["move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch"])
+
+SKETCH_SPLITS = {
+    "trim": SKETCH_TRIM,
+    "fillet_sketch": SKETCH_FILLET,
+}
+
 SKETCH_GROUPS: List[Tuple[str, list]] = [
-    ("CREATE", ["line", "rect", "circle", "arc", "point", "spline", "control_spline", "polygon", "slot", "text", "import_svg", "offset_sketch", "mirror_sketch", "project",
-                "dimension"]),
-    ("MODIFY", ["fillet_sketch", "chamfer_sketch", "trim", "extend_sketch", "break_sketch", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
+    ("CREATE", ["line", "rect", "circle", "arc", SKETCH_SHAPES, SKETCH_TOOLS, "dimension"]),
+    ("MODIFY", ["trim", "fillet_sketch", SKETCH_TRANSFORM, "construction", "fix_sketch"]),
     ("CONSTRAINTS", ["constraints"]),
     ("INSPECT", ["measure"]),
 ]
 
 # Menu bar, in the ribbon's order (None = separator). File, Edit, View and Help are built in menu_setup.
 MENUS: List[Tuple[str, list]] = [
-    ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", "make_lid", None, PRIMITIVES,       # a tuple is a submenu that opens to the right (saves vertical space)
+    ("Create", ["create_sketch", "extrude", "hole", "revolve", "sweep", "loft", "emboss", "make_lid", None, PRIMITIVES, BUILTIN_SCRIPTS,       # a tuple is a submenu that opens to the right (saves vertical space)
                 None, "pattern_linear", "pattern_circular", "mirror", "pattern_fill", None,
                 "offset_plane", "canvas"]),
     ("Modify", ["fillet", "chamfer", "shell", "surface_texture", "offset_face", None, "combine", "cut_thread", "split_body", "move", "joint", None,

@@ -722,27 +722,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
             self._sync_construction_button()
 
     def sync_sketch_tool_from_viewport(self, tool_name: str):
-        self.ribbon.btn_line.setChecked(tool_name == "LINE")
-        self.ribbon.btn_rect.setChecked(tool_name in RECT_TOOLS)
-        self.ribbon.btn_circle.setChecked(tool_name in ("CIRCLE", "SMART_CIRCLE", "ELLIPSE"))
-        self.ribbon.btn_polygon.setChecked(tool_name == "POLYGON")
-        self.ribbon.btn_arc.setChecked(tool_name in ("ARC", "CENTER_ARC"))
-        self.ribbon.btn_spline.setChecked(tool_name == "SPLINE")
-        self.ribbon.btn_control_spline.setChecked(tool_name == "CONTROL_SPLINE")
-        self.ribbon.btn_slot.setChecked(tool_name == "SLOT")
-        self.ribbon.btn_text.setChecked(tool_name == "TEXT")
-        self.ribbon.btn_trim_sk.setChecked(tool_name == "TRIM")
-        for name, tool in (("btn_point", "POINT"), ("btn_chamfer_sk", "CHAMFER"), ("btn_extend_sk", "EXTEND"), ("btn_break_sk", "BREAK")):
-            if hasattr(self.ribbon, name):
-                getattr(self.ribbon, name).setChecked(tool_name == tool)
-        self.ribbon.btn_mirror_sk.setChecked(tool_name == "MIRROR")
-        self.ribbon.btn_offset_sk.setChecked(tool_name == "OFFSET")
-        self.ribbon.btn_fillet_sk.setChecked(tool_name == "FILLET")
-        self.ribbon.btn_dim.setChecked(tool_name == "DIMENSION")
-        self.ribbon.btn_move.setChecked(tool_name == "MOVE")
-        self.ribbon.btn_rotate_sk.setChecked(tool_name == "ROTATE")
-        if hasattr(self.ribbon, "btn_scale_sk"):
-            self.ribbon.btn_scale_sk.setChecked(tool_name == "SCALE")
+        self.ribbon.set_checked_sketch_tool(tool_name)
         if tool_name != "NONE":
             self.status_label.setText(f"Sketch Tool: {tool_name}. Click on grid plane to place points.")
         else:

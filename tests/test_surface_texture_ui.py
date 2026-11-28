@@ -74,8 +74,8 @@ def test_the_old_commands_are_gone_from_the_ribbon_and_the_menus_and_the_new_one
     solid = [cid for _title, items in commands.SOLID_GROUPS for cid in flat(items)]
     menus = {title: list(flat(items)) for title, items in commands.MENUS}
     assert not OLD & set(solid) and not any(OLD & set(m) for m in menus.values())
-    assert solid.count("surface_texture") == 1
-    assert "surface_texture" in dict(commands.SOLID_GROUPS)["MODIFY"]
+    assert "surface_texture" in commands.SHELL_SURFACE[4]
+    assert "shell" in dict(commands.SOLID_GROUPS)["MODIFY"]
     assert menus["Modify"].count("surface_texture") == 1 and "surface_texture" not in menus["Create"]
 
 
