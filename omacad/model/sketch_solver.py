@@ -9,6 +9,9 @@ Horizontal/Vertical/Parallel/... like a line) and its radius. Rectangles are not
 arc's two lines are solved as the sharp corner it rounds (Sketch.refit_fillets puts the arc back after).
 A spline takes part only through the points that a dimension or constraint names (pt0, pt1, ...), so a
 spline without dimensions adds no degrees of freedom.
+An ellipse is its centre and the end of its major axis (the axis between them takes line relations, like a slot's)
+plus its minor radius, held on a helper circle round the centre so a width dimension can drive it. Its LENGTH
+dimension is the whole major axis (2a), its DIAMETER the whole minor axis (2b).
 """
 
 import math
@@ -17,10 +20,11 @@ from typing import Dict, Iterable, Optional, Tuple
 
 from python_solvespace import SolverSystem
 
-from omacad.model.sketch import (Sketch, SketchArc, SketchLine, SketchCircle, SketchSlot, SketchSpline, SketchPoint, SOLVER_DIM_TYPES,
+from omacad.model.sketch import (Sketch, SketchArc, SketchLine, SketchCircle, SketchSlot, SketchSpline, SketchPoint, SketchEllipse,
+                                 SOLVER_DIM_TYPES,
                                  EDGE_PTS, point_of, point_names, ref_segment)
 
-SUPPORTED = (SketchLine, SketchCircle, SketchSlot, SketchPoint)
+SUPPORTED = (SketchLine, SketchCircle, SketchSlot, SketchPoint, SketchEllipse)
 FIXED_GROUP, FREE_GROUP = 1, 2
 
 
@@ -115,6 +119,8 @@ def solve_sketch(sketch: Sketch, fixed_ids: Iterable[str] = (), pinned: Iterable
             _write_arc(ent, *values[eid])
         elif isinstance(ent, SketchSlot):
             ent.center1, ent.center2, ent.radius = values[eid]
+        elif isinstance(ent, SketchEllipse):
+            ent.center, ent.major_end, ent.minor = values[eid][0], values[eid][1], abs(values[eid][2])
         elif isinstance(ent, SketchPoint):
             ent.p = values[eid]
         else:
@@ -236,6 +242,8 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
             return centre if name == "center" else start if name == "p_start" else end
         if isinstance(ents[eid], SketchSlot):
             return v[0] if name == "center1" else v[1]
+        if isinstance(ents[eid], SketchEllipse):
+            return v[0] if name == "center" else v[1]
         return v                # a circle's centre or a point
 
     def line_vec(eid):
@@ -255,6 +263,11 @@ def _dims_hold(sketch, ents, values, corners=(), tol=1e-4) -> bool:
         elif isinstance(ents[a], SketchSlot) and d.dim_type in ("DIAMETER", "RADIUS", "LENGTH"):
             c1, c2, radius = values[a]
             got = math.dist(c1, c2) if d.dim_type == "LENGTH" else radius * (2.0 if d.dim_type == "DIAMETER" else 1.0)
+            if abs(got - d.value) > tol * max(1.0, d.value):
+                return False
+        elif isinstance(ents[a], SketchEllipse) and d.dim_type in ("DIAMETER", "RADIUS", "LENGTH"):
+            c, m, minor = values[a]
+            got = 2.0 * math.dist(c, m) if d.dim_type == "LENGTH" else minor * (2.0 if d.dim_type == "DIAMETER" else 1.0)
             if abs(got - d.value) > tol * max(1.0, d.value):
                 return False
         elif d.dim_type in ("DIAMETER", "RADIUS") and isinstance(ents[a], SketchCircle):
@@ -344,6 +357,14 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             slot_circles[ent.entity_id] = sys_.add_circle(workplane_normal(ent), a, r, wp)
             pts[(ent.entity_id, "center1")], pts[(ent.entity_id, "center2")] = a, b
             radii[ent.entity_id] = r
+        elif isinstance(ent, SketchEllipse):
+            c = sys_.add_point_2d(ent.center[0], ent.center[1], wp)
+            m = sys_.add_point_2d(ent.major_end[0], ent.major_end[1], wp)
+            geo[ent.entity_id] = sys_.add_line_2d(c, m, wp)          # the major axis: line relations apply to it
+            r = sys_.add_distance(float(ent.minor), wp)
+            slot_circles[ent.entity_id] = sys_.add_circle(workplane_normal(ent), c, r, wp)
+            pts[(ent.entity_id, "center")], pts[(ent.entity_id, "major_end")] = c, m
+            radii[ent.entity_id] = r
         elif isinstance(ent, SketchArc):
             centre = ent.get_circle_params()[0]
             start, end, swapped = _arc_ends(ent)
@@ -383,7 +404,7 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             sys_.dragged(handle, wp)
 
     def line(eid):
-        return geo[eid] if isinstance(ents.get(eid), (SketchLine, SketchSlot)) else None
+        return geo[eid] if isinstance(ents.get(eid), (SketchLine, SketchSlot, SketchEllipse)) else None
 
     def circle(eid):
         return geo[eid] if isinstance(ents.get(eid), SketchCircle) else None
@@ -393,7 +414,8 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
         SolveSpace's own point-on-line slides a point that already lies on the line 1/64 mm along it (the line
         too); this cross-product form has no such residue. The farther end keeps the helper from being 0 long."""
         ent = ents[line_id]
-        names = ("p1", "p2") if isinstance(ent, SketchLine) else ("center1", "center2")
+        names = (("p1", "p2") if isinstance(ent, SketchLine) else ("center", "major_end") if isinstance(ent, SketchEllipse)
+                 else ("center1", "center2"))
         ends = [point_of(ent, n) for n in names]
         far = names[0] if uv is None or math.dist(uv, ends[0]) >= math.dist(uv, ends[1]) else names[1]
         sys_.parallel(sys_.add_line_2d(pts[(line_id, far)], point, wp), geo[line_id], wp)
@@ -487,7 +509,7 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             sys_.perpendicular(geo[a], geo[b], wp)
         elif t == "EQUAL" and b and ((line(a) and line(b)) or (round_(a) and round_(b))):
             sys_.equal(geo[a], geo[b], wp)
-        elif t == "CONCENTRIC" and round_(a) and round_(b):
+        elif t == "CONCENTRIC" and b and all(round_(e) or isinstance(ents.get(e), SketchEllipse) for e in (a, b)):
             sys_.coincident(pts[(a, "center")], pts[(b, "center")], wp)
         elif t == "COINCIDENT" and b and len(c.pts) == 2:
             sys_.coincident(pts[(a, c.pts[0])], pts[(b, c.pts[1])], wp)
@@ -546,6 +568,11 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
                 sys_.distance(pts[(ent.entity_id, "center1")], pts[(ent.entity_id, "center2")], float(d.value), wp)
             else:
                 sys_.diameter(slot_circles[ent.entity_id], float(d.value) * (1.0 if d.dim_type == "DIAMETER" else 2.0))
+        elif isinstance(ent, SketchEllipse) and d.dim_type in ("LENGTH", "DIAMETER", "RADIUS"):
+            if d.dim_type == "LENGTH":
+                sys_.distance(pts[(ent.entity_id, "center")], pts[(ent.entity_id, "major_end")], float(d.value) / 2.0, wp)
+            else:
+                sys_.diameter(slot_circles[ent.entity_id], float(d.value) * (1.0 if d.dim_type == "DIAMETER" else 2.0))
         elif d.dim_type == "LENGTH" and isinstance(ent, SketchLine):
             sys_.distance(pts[(ent.entity_id, "p1")], pts[(ent.entity_id, "p2")],
                           float(d.value) + add.get(ent.entity_id, 0.0), wp)
@@ -569,6 +596,11 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             if math.hypot(p1[0] - p2[0], p1[1] - p2[1]) < 1e-3:
                 sketch.conflict_ids = {eid}
                 return None, "Constraints would collapse a line to a point"
+        elif isinstance(ent, SketchEllipse):
+            c, m = _xy(sys_, pts[(eid, "center")]), _xy(sys_, pts[(eid, "major_end")])
+            if math.dist(c, m) < 1e-3 or abs(float(sys_.params(radii[eid].params)[0])) < 1e-3:
+                sketch.conflict_ids = {eid}
+                return None, "Constraints would collapse an ellipse"
 
     values = {"#free": _free_entities(sys_, ents, fixed, pts, radii)}
     for eid, ent in ents.items():
@@ -582,6 +614,9 @@ def _attempt(sketch, ents, fixed, use_dims, pinned=(), corners=(), skip_dims=())
             values[eid] = _xy(sys_, pts[(eid, "p")])
         elif isinstance(ent, SketchSlot):
             values[eid] = (_xy(sys_, pts[(eid, "center1")]), _xy(sys_, pts[(eid, "center2")]),
+                           float(sys_.params(radii[eid].params)[0]))
+        elif isinstance(ent, SketchEllipse):
+            values[eid] = (_xy(sys_, pts[(eid, "center")]), _xy(sys_, pts[(eid, "major_end")]),
                            float(sys_.params(radii[eid].params)[0]))
         else:
             values[eid] = _xy(sys_, pts[(eid, "center")])

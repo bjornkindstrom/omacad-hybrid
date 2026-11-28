@@ -143,7 +143,10 @@ MORE = {
     "line": ("Click points; the line continues from the last point. Tab types length and angle (also parameter "
              "names). Esc ends the chain.", "polyline draw"),
     "ellipse": ("Click the centre, then the end of the long axis (that also sets its tilt), then move out to set how wide it "
-                "is and click. An ellipse is a closed profile you can extrude; it can be moved, turned, scaled and mirrored.",
+                "is and click. An ellipse is a closed profile you can extrude; it can be moved, turned, scaled and mirrored. "
+                "Dimension its length and width with the Dimension tool (click near an end for the length, near a side "
+                "for the width), and give its long axis Horizontal, Vertical or Parallel, or its centre Coincident or "
+                "Concentric.",
                 "oval"),
     "circle": ("Click the centre, then the size (Tab types the diameter). The arrow on the button: Smart Circle.",
                "round hole"),

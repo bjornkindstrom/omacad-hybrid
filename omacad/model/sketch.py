@@ -230,8 +230,14 @@ class Sketch(SketchEditingMixin):
                     ux = dx / cur_len
                     uy = dy / cur_len
                     ent.center2 = (ent.center1[0] + ux * target_dim.value, ent.center1[1] + uy * target_dim.value)
+            elif isinstance(ent, SketchEllipse) and ent.major > 1e-6:      # the whole major axis
+                k = target_dim.value / 2.0 / ent.major
+                ent.major_end = (ent.center[0] + (ent.major_end[0] - ent.center[0]) * k,
+                                 ent.center[1] + (ent.major_end[1] - ent.center[1]) * k)
         elif target_dim.dim_type == "DIAMETER":
-            if isinstance(ent, SketchCircle):
+            if isinstance(ent, SketchEllipse):
+                ent.minor = target_dim.value / 2.0
+            elif isinstance(ent, SketchCircle):
                 ent.radius = target_dim.value / 2.0
             elif isinstance(ent, SketchSlot):
                 ent.radius = target_dim.value / 2.0

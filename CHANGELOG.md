@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.248
+# Hybrid-experiment — 0.9.9.80.249
+
+## 0.9.9.80.249 - 2026-11-28
+
+### Added
+- **Ellipses take dimensions and relations**: the Dimension tool sets an ellipse's length (click near an end of the long axis) or width (click near a side), also from its right-click menu. Its long axis takes Horizontal, Vertical and Parallel like a line, and its centre takes Coincident, Concentric and distance dimensions. A fully dimensioned ellipse turns black like the rest of a defined sketch, and it follows when the sketch changes.
 
 ## 0.9.9.80.248 - 2026-11-28
 

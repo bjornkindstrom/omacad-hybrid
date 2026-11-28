@@ -14,6 +14,7 @@ from omacad.model.sketch import (
     SketchLine, SketchRect, SketchCircle, SketchCenterRect, SketchArc, SketchSlot,
     point_of, point_names, arm_vector, arm_angle_deg, nearest_ends_to_vertex, ref_id, ref_segment, EDGE_PTS
 )
+from omacad.model.sketch_entities import SketchEllipse, ellipse_major_axis, ellipse_minor_axis
 
 
 class DimensionOverlayMixin:
@@ -47,7 +48,24 @@ class DimensionOverlayMixin:
             dim_p2_uv = None
             badge_text = f"{dim.dim_id}: {dim.value:.1f} mm"
 
-            if dim.dim_type == "RECT_WIDTH":
+            if isinstance(ent, SketchEllipse) and dim.dim_type in ("LENGTH", "DIAMETER", "RADIUS"):
+                # the whole axis, drawn beside the ellipse like a slot's length (see dim_layout.offset_for_point)
+                long_axis = dim.dim_type == "LENGTH"
+                p1, p2 = ellipse_major_axis(ent) if long_axis else ellipse_minor_axis(ent)
+                dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+                length = math.hypot(dx, dy)
+                if length > 1e-4:
+                    nx, ny = -dy / length, dx / length
+                    off = dim.offset_distance + (ent.minor if long_axis else ent.major)
+                    p1_off = (p1[0] + nx * off, p1[1] + ny * off)
+                    p2_off = (p2[0] + nx * off, p2[1] + ny * off)
+                    lines_to_draw = [(p1, p1_off), (p2, p2_off), (p1_off, p2_off)]
+                    dim_p1_uv, dim_p2_uv = p1_off, p2_off
+                    badge_pos_uv = ((p1_off[0] + p2_off[0]) * 0.5, (p1_off[1] + p2_off[1]) * 0.5)
+                    if dim.dim_type == "RADIUS":
+                        badge_text = f"R {dim.value:.1f} mm ({dim.dim_id})"
+
+            elif dim.dim_type == "RECT_WIDTH":
                 if isinstance(ent, SketchRect):
                     x1 = min(ent.p1[0], ent.p2[0])
                     x2 = max(ent.p1[0], ent.p2[0])
@@ -572,6 +590,18 @@ class DimensionOverlayMixin:
             L = math.hypot(slot.center2[0] - slot.center1[0], slot.center2[1] - slot.center1[1])
             self._dim_create("LENGTH", slot.entity_id, L, label="Slot center-to-center length (mm):")
 
+    def _dim_ellipse_axis(self, ellipse, long_axis: bool):
+        """The whole major axis (LENGTH) or the whole minor axis (DIAMETER) of an ellipse."""
+        sk = self.doc.active_sketch
+        kinds = ("LENGTH",) if long_axis else ("DIAMETER", "RADIUS")
+        existing = next((d for d in sk.dimensions if d.target_entity_id == ellipse.entity_id and d.dim_type in kinds), None)
+        if existing:
+            self.prompt_edit_dimension(sk.sketch_id, existing.dim_id, existing.value)
+        elif long_axis:
+            self._dim_create("LENGTH", ellipse.entity_id, ellipse.major * 2.0, label="Ellipse length, major axis (mm):")
+        else:
+            self._dim_create("DIAMETER", ellipse.entity_id, ellipse.minor * 2.0, label="Ellipse width, minor axis (mm):")
+
     def _dim_slot_width(self, slot):
         sk = self.doc.active_sketch
         existing = next((d for d in sk.dimensions
@@ -823,6 +853,13 @@ class DimensionOverlayMixin:
                     self._dim_slot_width(slot)
                 else:
                     self._dim_slot_length(slot)
+            elif pick[0] == "ent" and isinstance(pick[1], SketchEllipse):
+                # nearer the ends of the major axis: its length; nearer the flat sides: the width
+                el = pick[1]
+                c, s = math.cos(el.angle), math.sin(el.angle)
+                along = abs((u - el.center[0]) * c + (v - el.center[1]) * s) / max(el.major, 1e-9)
+                across = abs(-(u - el.center[0]) * s + (v - el.center[1]) * c) / max(el.minor, 1e-9)
+                self._dim_ellipse_axis(el, along >= across)
             elif pick[0] == "ent" and not isinstance(pick[1], SketchLine):
                 self.status_message.emit("Dimension: this element type can't be dimensioned here yet.")
             elif pick[0] == "ref":

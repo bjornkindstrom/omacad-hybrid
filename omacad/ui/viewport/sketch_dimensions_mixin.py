@@ -5,7 +5,7 @@ import numpy as np
 from PySide6.QtCore import Qt, QRectF, QPointF
 from PySide6.QtGui import QCursor, QPainter, QPen, QBrush, QFont
 from PySide6.QtWidgets import QMenu
-from omacad.model.sketch import SketchArc, SketchCircle, SketchLine, SketchSlot, SketchText, point_of
+from omacad.model.sketch import SketchArc, SketchCircle, SketchLine, SketchSlot, SketchText, SketchEllipse, point_of
 from omacad.model.dim_layout import offset_for_point
 from omacad.model.sketch_solver import coincident_curve_spec, coincident_spec, midpoint_spec, symmetric_spec
 from omacad.ui import theme
@@ -396,6 +396,14 @@ class SketchDimensionsMixin:
             heading("Slot - set a dimension")
             add("slot_length", "📏 Center-to-center length…", "Type the distance between the two slot centres.")
             add("slot_width", "Ø Width (diameter)…", "Type the width (2 × radius) of the slot.")
+        elif isinstance(ent, SketchEllipse):
+            heading("Ellipse - set a dimension")
+            add("ellipse_length", "📏 Length (major axis)…", "Type the length of the ellipse along its long axis.")
+            add("ellipse_width", "↔ Width (minor axis)…", "Type the width of the ellipse across its short axis.")
+            add("centre", "◎ Distance from the centre to…", "Then click a point, a line or a face edge to measure from the centre.")
+            menu.addSeparator()
+            heading("Make it")
+            add("fix", "🔒 Fixed in place", "Locks the ellipse so it can't move or change.")
         elif isinstance(ent, SketchText):
             heading("Text")
             add("edit_text", "✏️ Edit Text…", "Change the words, the font, the height, the alignment or the path.")
@@ -447,6 +455,9 @@ class SketchDimensionsMixin:
                 return
             if key == "arc_radius":
                 self._dim_arc(ent)
+                return
+            if key in ("ellipse_length", "ellipse_width"):
+                self._dim_ellipse_axis(ent, key == "ellipse_length")
                 return
             if key == "slot_length":
                 self._dim_slot_length(ent)

@@ -1,3 +1,10 @@
+## Ellips i lösaren — 2026-11-28 (0.9.9.80.249)
+
+- `sketch_solver`: `SketchEllipse` i `SUPPORTED`. Byggs som en slot: punkterna `center` och `major_end`, axeln som `add_line_2d` (så `line()` ger Horizontal/Vertical/Parallel/Perpendicular, `on_line` använder center/major_end) och lillradien som `add_distance` på en hjälpcirkel runt centrum (`slot_circles`, `radii` → med i `_free_entities`). Mått: `LENGTH` = hela storaxeln (avstånd center–major_end = värde/2), `DIAMETER`/`RADIUS` = lillaxeln. Concentric godtar ellipsens centrum. Kollapskontroll om axel eller lillradie < 1e-3. `_dims_hold` och återskrivning (`center`, `major_end`, `minor`).
+- `Sketch.set_dimension_value`: LENGTH skalar storaxeln runt centrum, DIAMETER sätter `minor`. `sketch_entities.ellipse_major_axis/ellipse_minor_axis` (ordnade så måttlinjen förskjuts mot +lillaxel resp. +storaxel); `dim_layout.offset_for_point` och `draw_dimensions` ritar dem som slotens längd (förskjutning + minor resp. + major).
+- UI: Dimension-verktyget väljer axel efter normaliserat avstånd (längs/tvärs); högerklicksmeny "Ellipse - set a dimension" (längd, bredd, avstånd från centrum, Fix). `_dim_ellipse_axis`.
+- Test: `tests/test_sketch_ellipse_solver.py`.
+
 ## Make a lid färdigställd — 2026-11-28 (0.9.9.80.248, Björn)
 
 - Lock-sessionens ocommittade arbete (.239 Make a lid, .240 eget objekt + kant, .242 Fill Face Pattern-preview) committat. Saknad Studio-ikon: `assets/icons/studio/make_lid.svg` (lock lyft över låda, pil ned), `COMMAND_ICONS["make_lid"] = "make_lid"` i stället för `jar` som `test_every_command_step_and_constraint_has_its_own_studio_icon` underkände.

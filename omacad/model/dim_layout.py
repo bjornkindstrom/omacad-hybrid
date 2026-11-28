@@ -11,6 +11,7 @@ from omacad.model.sketch import (
     SketchArc, SketchCenterRect, SketchCircle, SketchLine, SketchRect, SketchSlot,
     arm_vector, point_of, ref_segment, EDGE_PTS,
 )
+from omacad.model.sketch_entities import SketchEllipse, ellipse_major_axis, ellipse_minor_axis
 
 PT_LINE_DEFAULT_OFFSET = 12.0   # the offset a point-to-line dimension is created with (draws the 8 mm / radius+6 shift)
 
@@ -82,6 +83,8 @@ def offset_for_point(sketch, dim, uv: Tuple[float, float]) -> Optional[float]:
             a, b, extra = ent.p1, ent.p2, 0.0
         elif isinstance(ent, SketchSlot):
             a, b, extra = ent.center1, ent.center2, ent.radius
+        elif isinstance(ent, SketchEllipse):
+            a, b, extra = ellipse_major_axis(ent) + (ent.minor,)
         else:
             return None
         L = math.hypot(b[0] - a[0], b[1] - a[1])
@@ -93,6 +96,12 @@ def offset_for_point(sketch, dim, uv: Tuple[float, float]) -> Optional[float]:
             (cx, cy), r = (ent.center if isinstance(ent, SketchCircle) else ent.center2), ent.radius
         elif isinstance(ent, SketchArc) and ent.get_circle_params():
             (cx, cy), r = ent.get_circle_params()[0], ent.get_circle_params()[1]
+        elif isinstance(ent, SketchEllipse):
+            a, b = ellipse_minor_axis(ent)
+            L = math.hypot(b[0] - a[0], b[1] - a[1])
+            if L <= 1e-4:
+                return None
+            return ((u - a[0]) * -(b[1] - a[1]) + (v - a[1]) * (b[0] - a[0])) / L - ent.major
         else:
             return None
         return math.hypot(u - cx, v - cy) - r

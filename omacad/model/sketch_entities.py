@@ -458,6 +458,16 @@ class SketchEllipse(SketchEntity):
                    data.get("is_construction", False))
 
 
+def ellipse_major_axis(ent) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    """The whole major axis, far end first: its dimension line runs this way, offset along the minor axis."""
+    return ent.point_at(math.pi), ent.point_at(0.0)
+
+
+def ellipse_minor_axis(ent) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    """The whole minor axis, ordered so its dimension line is offset towards the major axis's end."""
+    return ent.point_at(math.pi / 2.0), ent.point_at(1.5 * math.pi)
+
+
 SPLINE_SAMPLES = 16             # chords per span of a spline
 SPLINE_MAX_SAMPLES = 256
 SPLINE_CHORD_ERROR = 0.005      # mm a chord may lie from a span with explicit tangents
