@@ -14,7 +14,7 @@ from omacad.ui.numeric_slider import add_numeric_sliders
 TITLES = {
     "LINE": "Line", "RECT": "Rectangle", "ROUNDED_RECT": "Rounded Rectangle", "CENTER_RECT": "Center Rectangle",
     "CENTER_ROUNDED_RECT": "Center Rounded Rectangle", "CIRCLE": "Circle", "SMART_CIRCLE": "Smart Circle",
-    "POLYGON": "Polygon", "ARC": "3-Point Arc", "CENTER_ARC": "Center Point Arc", "POINT": "Point", "SLOT": "Slot", "TEXT": "Text", "OFFSET": "Offset", "MIRROR": "Mirror",
+    "POLYGON": "Polygon", "ARC": "3-Point Arc", "CENTER_ARC": "Center Point Arc", "POINT": "Point", "SLOT": "Slot", "ELLIPSE": "Ellipse", "TEXT": "Text", "OFFSET": "Offset", "MIRROR": "Mirror",
     "FILLET": "Fillet", "TRIM": "Trim", "CHAMFER": "Chamfer", "EXTEND": "Extend", "BREAK": "Break", "MOVE": "Move", "DIMENSION": "Dimension",
 }
 HINTS = {
@@ -30,6 +30,7 @@ HINTS = {
     "POINT": "Click where a point goes; on an end, centre or line it stays there.",
     "CENTER_ARC": "Click the centre, then the start, then move round to the end and click (it can pass 180°).",
     "SLOT": "Click the first centre, then the second, then how wide.",
+    "ELLIPSE": "Click the centre, then the end of the long axis (it sets the tilt), then how wide.",
     "TEXT": "Click where the text goes (two clicks for Text In Box).",
     "TRIM": "Click the piece of a line, circle or arc to remove.",
     "CHAMFER": "Click a corner where two lines meet, then type the distance along each line.",

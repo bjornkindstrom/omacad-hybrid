@@ -353,6 +353,16 @@ class SketchToolsMixin:
                 created = sketch.add_arc(p1, p2, self.sketch_second_uv, is_construction=is_const)
                 self.sketch_start_uv = None
                 self.sketch_second_uv = None
+        elif self.sketch_tool == "ELLIPSE":
+            if self.sketch_second_uv is None:
+                if math.hypot(p2[0] - p1[0], p2[1] - p1[1]) > 0.05:
+                    self.sketch_second_uv = p2              # the end of the long axis: size and tilt
+            else:
+                b = self._point_to_line_dist(p2, p1, self.sketch_second_uv)
+                if b > 0.05:
+                    created = sketch.add_ellipse(p1, self.sketch_second_uv, b, is_construction=is_const)
+                self.sketch_start_uv = None
+                self.sketch_second_uv = None
         elif self.sketch_tool == "SLOT":
             if self.sketch_second_uv is None:
                 self.sketch_second_uv = p2

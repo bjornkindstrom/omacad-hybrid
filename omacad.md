@@ -1,3 +1,9 @@
+## Ellips i skiss — 2026-11-28 (0.9.9.80.246)
+
+- `SketchEllipse` (`entity_type "ellipse"`: `center`, `major_end` = storaxelns ände (ger även lutningen), `minor`; `major`/`angle`/`point_at(t)`/`vertices()`; `to_lines` med `circle_segments()` kordor). `Sketch.add_ellipse` (löser profiler), `from_dict`, `point_of`/`point_names` (`center`), move/rotate/scale/`entity_key_points`, spegling i `sketch_editing`, snäpp (centrum + axeländar i både endpoints och inferensankare), centrumprick i `_draw_curve_centres`.
+- Verktyg `ELLIPSE` (kommando `ellipse`, i Circle-knappens meny, `CIRCLE_TOOLS`): klick 1 centrum, 2 storaxelns ände (`sketch_second_uv`), 3 bredden = avstånd till storaxelns linje (`_point_to_line_dist`). Förhandsvisning i render_mixin, mått "a × b" i overlay. Ikon `ellipse.svg` i alla fyra set.
+- Inte i lösaren (`SUPPORTED`): står still när annat löses; inga mått än. Test: `tests/test_sketch_ellipse.py`.
+
 ## Skissfillet: flera hörn utan Shift + innerhörn i korsningar — 2026-11-28 (0.9.9.80.245, Björn)
 
 - `SketchOperationMixin._fillet_toggle_corner` (klick, även utan Shift) lägger till/tar bort hörnet; första klicket öppnar `_fillet_apply_picked` = radierutan (dockad, blockerar inte vyn), `_fillet_session` = förhandsvisningsfunktionen som läser `fillet_picked` live, så klick medan rutan är öppen syns direkt. `prompt_dimension_value` sätter `self.value_prompt` (dialogen) så Enter/gröna bocken i vyn gör `accept()` och Esc `reject()` (events_mixin). Dragfönster lägger till i samma session.

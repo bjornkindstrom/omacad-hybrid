@@ -12,7 +12,7 @@ from omacad.model.sketch_tangent import snap_tangent_arc
 
 # drawing tools that show SolidWorks-style inference lines from existing points
 _INFER_TOOLS = {"LINE", "ARC", "CENTER_ARC", "CIRCLE", "POINT", "RECT", "CENTER_RECT", "ROUNDED_RECT", "CENTER_ROUNDED_RECT",
-                "SLOT", "POLYGON", "SPLINE", "CONTROL_SPLINE", "TEXT"}
+                "SLOT", "ELLIPSE", "POLYGON", "SPLINE", "CONTROL_SPLINE", "TEXT"}
 
 
 
@@ -628,7 +628,7 @@ class PointerMixin:
 
         if hovered or hovered_constraint_cid:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
-        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "CENTER_ARC", "POINT", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "CHAMFER", "TRIM", "EXTEND", "BREAK", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
+        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "ELLIPSE", "POLYGON", "ARC", "CENTER_ARC", "POINT", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "CHAMFER", "TRIM", "EXTEND", "BREAK", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
             self.setCursor(Qt.CursorShape.CrossCursor)
         elif not self.doc.active_sketch and not self.edge_pick_mode and not self.plane_pick_mode and self._find_joint_hit(x, y):
             self.setCursor(Qt.CursorShape.OpenHandCursor)

@@ -27,6 +27,7 @@ SKETCH_TOOLS = [
     *[(t, label.replace("\n", " "), "Create", "Rectangle") for t, (label, _i) in RECT_TOOLS.items()],
     _entry("CIRCLE", "circle", "Create"),
     _entry("SMART_CIRCLE", "smart_circle", "Create"),
+    _entry("ELLIPSE", "ellipse", "Create"),
     _entry("ARC", "arc", "Create"),
     _entry("CENTER_ARC", "center_arc", "Create"),
     _entry("POINT", "point", "Create"),

@@ -13,7 +13,7 @@ from omacad.ui.sketch_tools import RECT_TOOLS, rect_icon
 from omacad.ui import commands
 from omacad.ui import script_menus
 
-CIRCLE_TOOLS = ('CIRCLE', 'SMART_CIRCLE')
+CIRCLE_TOOLS = ('CIRCLE', 'SMART_CIRCLE', 'ELLIPSE')
 from omacad.ui import theme
 from omacad.ui.theme import style
 from omacad.model.document import Document
@@ -451,7 +451,7 @@ class Ribbon(QWidget):
                 elif item == "circle":
                     self.btn_circle = self._command_button("circle", checkable=True)
                     self.btn_circle.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
-                    self.btn_circle.setMenu(self._command_menu(self.btn_circle, ["circle", "smart_circle"]))
+                    self.btn_circle.setMenu(self._command_menu(self.btn_circle, ["circle", "smart_circle", "ellipse"]))
                     row.addWidget(self.btn_circle)
                 elif item == "construction":
                     # the arrow picks what to draw as a helper line straight away (Björn #97)

@@ -95,7 +95,7 @@ COMMAND_ICONS = {
     "scale_sketch": "scale", "screenshot": "screenshot", "copy_image": "copy_image", "turntable": "turntable",
     "box_row": "box_row", "star_brackets": "star_brackets", "import_svg": "import_svg",
     "scripts": "script", "new_script_ai": "script_ai", "open_scripts_folder": "scripts_folder", "cut_thread": "cut_thread",
-    "chamfer_sketch": "chamfer_sketch", "extend_sketch": "extend", "break_sketch": "break", "center_arc": "center_arc", "point": "sketch_point",
+    "chamfer_sketch": "chamfer_sketch", "extend_sketch": "extend", "break_sketch": "break", "center_arc": "center_arc", "point": "sketch_point", "ellipse": "ellipse",
 }
 
 STUDIO_ICONS = "studio"   # line icons in one colour (the text), blue while the tool is active

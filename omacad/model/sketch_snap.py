@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Tuple, Optional, List
 import numpy as np
 from omacad.model.sketch import Sketch, SketchLine, SketchRect, SketchCircle, SketchArc, SketchSpline, SketchPoint
+from omacad.model.sketch_entities import SketchEllipse
 
 
 Segment = Tuple[Tuple[float, float], Tuple[float, float]]
@@ -52,6 +53,8 @@ def inference_anchors(sketch, start_uv=None) -> List[Tuple[float, float]]:
             pts += [ent.points[0], ent.points[-1]]
         elif isinstance(ent, SketchPoint):
             pts.append(ent.p)
+        elif isinstance(ent, SketchEllipse):
+            pts += [ent.center] + ent.vertices()
     if start_uv is not None:
         pts = [p for p in pts if math.hypot(p[0] - start_uv[0], p[1] - start_uv[1]) > 1e-6]
     return pts
@@ -198,6 +201,9 @@ class SketchSnapper:
                     endpoints.extend((ent.points[0], ent.points[-1]))
                 elif isinstance(ent, SketchPoint):
                     endpoints.append(ent.p)
+                elif isinstance(ent, SketchEllipse):
+                    endpoints.append(ent.center)
+                    endpoints.extend(ent.vertices())          # the ends of both axes
 
             # Edges of the surrounding geometry (face boundary, other bodies' edges in this plane)
             ref = reference_segments

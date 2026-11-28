@@ -723,7 +723,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
     def sync_sketch_tool_from_viewport(self, tool_name: str):
         self.ribbon.btn_line.setChecked(tool_name == "LINE")
         self.ribbon.btn_rect.setChecked(tool_name in RECT_TOOLS)
-        self.ribbon.btn_circle.setChecked(tool_name in ("CIRCLE", "SMART_CIRCLE"))
+        self.ribbon.btn_circle.setChecked(tool_name in ("CIRCLE", "SMART_CIRCLE", "ELLIPSE"))
         self.ribbon.btn_polygon.setChecked(tool_name == "POLYGON")
         self.ribbon.btn_arc.setChecked(tool_name in ("ARC", "CENTER_ARC"))
         self.ribbon.btn_spline.setChecked(tool_name == "SPLINE")

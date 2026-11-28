@@ -187,6 +187,7 @@ class ContextMenuMixin:
                 ("CONTROL_SPLINE", "control_spline", "control_spline"),
                 ("POLYGON", "polygon", "polygon"),
                 ("SLOT", "slot", "slot"),
+                ("ELLIPSE", "ellipse", "ellipse"),
                 ("TEXT", "text", "text"),
                 ("OFFSET", "offset_sketch", "offset_sketch"),
                 ("MIRROR", "mirror_sketch", "mirror_sketch"),

@@ -1119,6 +1119,19 @@ class RenderGLMixin:
                         w1 = plane.uv_to_world(seg_p1[0], seg_p1[1])
                         w2 = plane.uv_to_world(seg_p2[0], seg_p2[1])
                         preview_lines.extend([w1[0], w1[1], w1[2], w2[0], w2[1], w2[2]])
+            elif self.sketch_tool == "ELLIPSE":
+                if self.sketch_second_uv is None:          # the long axis from the centre
+                    w1 = plane.uv_to_world(u1, v1)
+                    w2 = plane.uv_to_world(u2, v2)
+                    preview_lines.extend([w1[0], w1[1], w1[2], w2[0], w2[1], w2[2]])
+                else:
+                    from omacad.model.sketch_entities import SketchEllipse
+                    b = self._point_to_line_dist((u2, v2), self.sketch_start_uv, self.sketch_second_uv)
+                    for seg_p1, seg_p2 in SketchEllipse("temp", self.sketch_start_uv, self.sketch_second_uv,
+                                                        max(0.05, b)).to_lines(72):
+                        w1 = plane.uv_to_world(seg_p1[0], seg_p1[1])
+                        w2 = plane.uv_to_world(seg_p2[0], seg_p2[1])
+                        preview_lines.extend([w1[0], w1[1], w1[2], w2[0], w2[1], w2[2]])
             elif self.sketch_tool == "SLOT":
                 if self.sketch_second_uv is None:
                     w1 = plane.uv_to_world(u1, v1)

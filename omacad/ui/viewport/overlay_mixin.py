@@ -28,7 +28,7 @@ class OverlayMixin:
         plane = sketch.plane
         for ent in sketch.entities:
             centre = None
-            if isinstance(ent, SketchCircle):
+            if isinstance(ent, SketchCircle) or getattr(ent, "entity_type", "") == "ellipse":
                 centre = ent.center
             elif isinstance(ent, SketchArc):
                 params = ent.get_circle_params()
@@ -491,6 +491,13 @@ class OverlayMixin:
                         dim_text = "Pick Arc Point"
             elif self.sketch_tool in ("SPLINE", "CONTROL_SPLINE"):
                 dim_text = f"{len(getattr(self, '_spline_points', []))} points  ·  Enter or double-click to finish"
+            elif self.sketch_tool == "ELLIPSE":
+                if self.sketch_second_uv is None:
+                    dim_text = f"Long radius: {math.hypot(u2 - u1, v2 - v1):.1f} mm  (pick the end of the long axis)"
+                else:
+                    a_e = math.hypot(self.sketch_second_uv[0] - u1, self.sketch_second_uv[1] - v1)
+                    b_e = self._point_to_line_dist((u2, v2), self.sketch_start_uv, self.sketch_second_uv)
+                    dim_text = f"{2 * a_e:.1f} × {2 * b_e:.1f} mm"
             elif self.sketch_tool == "SLOT":
                 if self.sketch_second_uv is None:
                     length = math.hypot(u2 - u1, v2 - v1)
@@ -774,6 +781,13 @@ class OverlayMixin:
 
 
 
+
+    def _point_to_line_dist(self, pt: Tuple[float, float], p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
+        """Distance from pt to the endless line through p1 and p2 (an ellipse's minor radius from its long axis)."""
+        L = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+        if L < 1e-12:
+            return math.hypot(pt[0] - p1[0], pt[1] - p1[1])
+        return abs((p2[0] - p1[0]) * (p1[1] - pt[1]) - (p1[0] - pt[0]) * (p2[1] - p1[1])) / L
 
     def _point_to_segment_dist(self, pt: Tuple[float, float], p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
         px, py = pt

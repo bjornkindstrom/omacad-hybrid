@@ -18,7 +18,7 @@ from omacad.model.sketch_editing import SketchEditingMixin
 
 from omacad.model.sketch_entities import (
     _dist_point_segment, SketchPlane, SketchEntity, SketchLine, SketchRect,
-    SketchCenterRect, SketchCircle, SketchArc, SketchSlot, SketchSpline, SketchText, SketchPoint,
+    SketchCenterRect, SketchCircle, SketchArc, SketchSlot, SketchSpline, SketchText, SketchPoint, SketchEllipse,
     ref_id, ref_segment, point_of, point_names, arm_vector, arm_angle_deg, nearest_ends_to_vertex,
     rotate_point, scale_point, move_entity, rotate_entity, scale_entity, entity_key_points
 )
@@ -254,6 +254,13 @@ class Sketch(SketchEditingMixin):
 
         self.solve_profiles()
         return True
+
+    def add_ellipse(self, center: Tuple[float, float], major_end: Tuple[float, float], minor: float,
+                    is_construction: bool = False) -> SketchEllipse:
+        ellipse = SketchEllipse(self._new_entity_id("ellipse"), center, major_end, minor, is_construction=is_construction)
+        self.entities.append(ellipse)
+        self.solve_profiles()
+        return ellipse
 
     def add_point(self, p: Tuple[float, float], is_construction: bool = True) -> SketchPoint:
         """A point to measure from or hold relations on (no outline: never part of a profile)."""
@@ -501,6 +508,8 @@ class Sketch(SketchEditingMixin):
                 sketch.entities.append(SketchText.from_dict(ent_data))
             elif t == "point":
                 sketch.entities.append(SketchPoint.from_dict(ent_data))
+            elif t == "ellipse":
+                sketch.entities.append(SketchEllipse.from_dict(ent_data))
 
         for dim_data in data.get("dimensions", []):
             sketch.dimensions.append(SketchDimension.from_dict(dim_data))

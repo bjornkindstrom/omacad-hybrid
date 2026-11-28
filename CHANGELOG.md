@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.245
+# Hybrid-experiment — 0.9.9.80.246
+
+## 0.9.9.80.246 - 2026-11-28
+
+### Added
+- **Ellipse in sketches**: under the Circle button. Click the centre, then the end of the long axis (which also sets the tilt), then move out to set how wide it is. It is a closed profile you can extrude, it snaps at its centre and the ends of both axes, and it can be moved, turned, scaled, mirrored and saved. The constraint solver does not drive it yet: it stays where it was drawn.
 
 ## 0.9.9.80.245 - 2026-11-28
 

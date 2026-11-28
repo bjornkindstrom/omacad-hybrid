@@ -136,6 +136,9 @@ MORE = {
                 "you can switch on and off.", "cross section cut view"),
     "line": ("Click points; the line continues from the last point. Tab types length and angle (also parameter "
              "names). Esc ends the chain.", "polyline draw"),
+    "ellipse": ("Click the centre, then the end of the long axis (that also sets its tilt), then move out to set how wide it "
+                "is and click. An ellipse is a closed profile you can extrude; it can be moved, turned, scaled and mirrored.",
+                "oval"),
     "circle": ("Click the centre, then the size (Tab types the diameter). The arrow on the button: Smart Circle.",
                "round hole"),
     "text": ("Type the text, pick font and height, click where it goes, or on a circle, arc or line for Text On "

@@ -118,6 +118,8 @@ _ALL = [
     _c("circle", "Circle", "⭕", "A circle from its centre", "C", "sketch_tool_selected", "CIRCLE", ("sketch",)),
     _c("smart_circle", "Smart Circle", "⭕", "A circle that snaps to what is around it", "Shift+C",
        "sketch_tool_selected", "SMART_CIRCLE", ("sketch",)),
+    _c("ellipse", "Ellipse", "⬭", "An ellipse: click the centre, the end of the long axis, then how wide", "",
+       "sketch_tool_selected", "ELLIPSE", ("sketch",)),
     _c("arc", "3-Point Arc", "⌒", "An arc through three points", "A", "sketch_tool_selected", "ARC", ("sketch",)),
     _c("point", "Point", "•", "A point to measure from, snap to or hold a relation on (never part of a profile)", "",
        "sketch_tool_selected", "POINT", ("sketch",)),

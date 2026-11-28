@@ -410,6 +410,54 @@ class SketchPoint(SketchEntity):
         return cls(data["entity_id"], tuple(data["p"]), data.get("is_construction", True))
 
 
+class SketchEllipse(SketchEntity):
+    """An ellipse: its centre, the end of its major axis (which also gives the tilt) and its minor radius."""
+
+    def __init__(self, entity_id: str, center: Tuple[float, float], major_end: Tuple[float, float], minor: float,
+                 is_construction: bool = False):
+        super().__init__(entity_id=entity_id, entity_type="ellipse", is_construction=is_construction)
+        self.center = (float(center[0]), float(center[1]))
+        self.major_end = (float(major_end[0]), float(major_end[1]))
+        self.minor = abs(float(minor))
+
+    @property
+    def major(self) -> float:
+        return math.hypot(self.major_end[0] - self.center[0], self.major_end[1] - self.center[1])
+
+    @property
+    def angle(self) -> float:
+        """Tilt of the major axis, radians."""
+        return math.atan2(self.major_end[1] - self.center[1], self.major_end[0] - self.center[0])
+
+    def point_at(self, t: float) -> Tuple[float, float]:
+        a, b, phi = self.major, self.minor, self.angle
+        x, y = a * math.cos(t), b * math.sin(t)
+        c, s = math.cos(phi), math.sin(phi)
+        return (self.center[0] + x * c - y * s, self.center[1] + x * s + y * c)
+
+    def vertices(self) -> List[Tuple[float, float]]:
+        """Ends of the major and minor axes."""
+        return [self.point_at(k * math.pi / 2) for k in range(4)]
+
+    def get_polygon_points(self, segments: Optional[int] = None) -> List[Tuple[float, float]]:
+        # as many chords as a circle of the major radius gets; the flat sides need fewer, the ends get them all
+        n = segments or quality.circle_segments()
+        return [self.point_at(2.0 * math.pi * i / n) for i in range(n)]
+
+    def to_lines(self, segments: Optional[int] = None) -> List[Tuple[Tuple[float, float], Tuple[float, float]]]:
+        pts = self.get_polygon_points(segments)
+        return [(pts[i], pts[(i + 1) % len(pts)]) for i in range(len(pts))]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {"entity_id": self.entity_id, "entity_type": "ellipse", "center": list(self.center),
+                "major_end": list(self.major_end), "minor": self.minor, "is_construction": self.is_construction}
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SketchEllipse":
+        return cls(data["entity_id"], tuple(data["center"]), tuple(data["major_end"]), data["minor"],
+                   data.get("is_construction", False))
+
+
 SPLINE_SAMPLES = 16             # chords per span of a spline
 SPLINE_MAX_SAMPLES = 256
 SPLINE_CHORD_ERROR = 0.005      # mm a chord may lie from a span with explicit tangents
@@ -621,6 +669,8 @@ def point_of(ent, name: str):
         return getattr(ent, name)
     if isinstance(ent, SketchPoint) and name == "p":
         return ent.p
+    if isinstance(ent, SketchEllipse) and name in ("center", "major_end"):
+        return getattr(ent, name)
     if isinstance(ent, SketchArc):
         if name in ("p_start", "p_mid", "p_end"):
             return getattr(ent, name)
@@ -642,6 +692,8 @@ def point_names(ent):
         return ("center1", "center2")
     if isinstance(ent, SketchPoint):
         return ("p",)
+    if isinstance(ent, SketchEllipse):
+        return ("center",)
     if isinstance(ent, SketchArc) and not getattr(ent, "fillet_info", None):   # a fillet arc follows its lines
         return ("p_start", "p_end", "center") if ent.get_circle_params() is not None else ()
     return ()
@@ -808,6 +860,10 @@ def scale_entity(ent: "SketchEntity", scale: float, origin: Tuple[float, float] 
     elif isinstance(ent, SketchCircle):
         ent.center = scale_point(ent.center, s, origin)
         ent.radius *= abs(s)
+    elif isinstance(ent, SketchEllipse):
+        ent.center = scale_point(ent.center, s, origin)
+        ent.major_end = scale_point(ent.major_end, s, origin)
+        ent.minor *= abs(s)
     elif isinstance(ent, SketchArc):
         ent.p_start = scale_point(ent.p_start, s, origin)
         ent.p_mid = scale_point(ent.p_mid, s, origin)
@@ -834,6 +890,8 @@ def move_entity(ent: "SketchEntity", du: float, dv: float) -> None:
         ent.center, ent.corner = _shift(ent.center, du, dv), _shift(ent.corner, du, dv)
     elif isinstance(ent, SketchCircle):
         ent.center = _shift(ent.center, du, dv)
+    elif isinstance(ent, SketchEllipse):
+        ent.center, ent.major_end = _shift(ent.center, du, dv), _shift(ent.major_end, du, dv)
     elif isinstance(ent, SketchArc):
         ent.p_start, ent.p_mid, ent.p_end = (_shift(ent.p_start, du, dv), _shift(ent.p_mid, du, dv),
                                              _shift(ent.p_end, du, dv))
@@ -859,6 +917,9 @@ def rotate_entity(ent: "SketchEntity", angle_deg: float, origin: Tuple[float, fl
         ent.corner = rotate_point(ent.corner, angle_deg, origin)
     elif isinstance(ent, SketchCircle):
         ent.center = rotate_point(ent.center, angle_deg, origin)
+    elif isinstance(ent, SketchEllipse):
+        ent.center = rotate_point(ent.center, angle_deg, origin)
+        ent.major_end = rotate_point(ent.major_end, angle_deg, origin)
     elif isinstance(ent, SketchArc):
         ent.p_start = rotate_point(ent.p_start, angle_deg, origin)
         ent.p_mid = rotate_point(ent.p_mid, angle_deg, origin)
@@ -887,6 +948,8 @@ def entity_key_points(ent: "SketchEntity") -> List[Tuple[float, float]]:
         return list(ent.get_corners()) + [ent.center]
     if isinstance(ent, SketchCircle):
         return [ent.center]
+    if isinstance(ent, SketchEllipse):
+        return [ent.center] + ent.vertices()
     if isinstance(ent, SketchArc):
         return [ent.p_start, ent.p_end]
     if isinstance(ent, SketchSlot):
