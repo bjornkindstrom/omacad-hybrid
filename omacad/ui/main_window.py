@@ -728,7 +728,7 @@ class MainWindow(QMainWindow, ToolPromptsMixin, TextPromptsMixin, EmbossPromptMi
         self.ribbon.btn_slot.setChecked(tool_name == "SLOT")
         self.ribbon.btn_text.setChecked(tool_name == "TEXT")
         self.ribbon.btn_trim_sk.setChecked(tool_name == "TRIM")
-        for name, tool in (("btn_extend_sk", "EXTEND"), ("btn_break_sk", "BREAK")):
+        for name, tool in (("btn_chamfer_sk", "CHAMFER"), ("btn_extend_sk", "EXTEND"), ("btn_break_sk", "BREAK")):
             if hasattr(self.ribbon, name):
                 getattr(self.ribbon, name).setChecked(tool_name == tool)
         self.ribbon.btn_mirror_sk.setChecked(tool_name == "MIRROR")

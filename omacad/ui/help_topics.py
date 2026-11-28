@@ -73,6 +73,8 @@ MORE = {
                "ball globe sphere hollow"),
     "center_arc": ("Click the arc's centre, then its start (the radius), then move the mouse round to where it should end "
                    "and click: it follows the mouse, so it can go past 180°.", "arc centre center point radius sweep"),
+    "chamfer_sketch": ("Click a corner where two lines meet and type a distance: the corner is cut off straight, that far "
+                       "along each line, with a new line joined to both.", "chamfer bevel corner cut"),
     "extend_sketch": ("Click near the end of a line: it grows straight on to the first line, circle, arc or spline it "
                       "points at, stays on it, and its length dimension follows.", "extend lengthen longer reach"),
     "break_sketch": ("Click a line where it should be cut: it becomes two joined lines in line with each other (at a "

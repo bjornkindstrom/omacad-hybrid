@@ -142,6 +142,8 @@ _ALL = [
     # --- SKETCH: MODIFY ------------------------------------------------------------------------------------------
     _c("fillet_sketch", "Fillet", "╭", "Round the corner between two lines or a line and an arc", "F", "sketch_tool_selected", "FILLET",
        ("sketch",)),
+    _c("chamfer_sketch", "Chamfer", "◺", "Cut the corner of two lines off straight, the same distance along each", "",
+       "sketch_tool_selected", "CHAMFER", ("sketch",)),
     _c("trim", "Trim", "✂️", "Remove a curve up to the nearest crossings, or a dangling end", "T",
        "sketch_tool_selected", "TRIM", ("sketch",)),
     _c("extend_sketch", "Extend", "↦", "Lengthen a line from the end you click to the next curve it points at", "",
@@ -192,7 +194,7 @@ SOLID_GROUPS: List[Tuple[str, list]] = [
 SKETCH_GROUPS: List[Tuple[str, list]] = [
     ("CREATE", ["line", "rect", "circle", "arc", "spline", "control_spline", "polygon", "slot", "text", "import_svg", "offset_sketch", "mirror_sketch", "project",
                 "dimension"]),
-    ("MODIFY", ["fillet_sketch", "trim", "extend_sketch", "break_sketch", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
+    ("MODIFY", ["fillet_sketch", "chamfer_sketch", "trim", "extend_sketch", "break_sketch", "move_sketch", "rotate_sketch", "scale_sketch", "pattern_sketch", "construction", "fix_sketch"]),
     ("CONSTRAINTS", ["constraints"]),
     ("INSPECT", ["measure"]),
 ]

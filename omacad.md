@@ -1,3 +1,9 @@
+## Fas i skiss — 2026-11-28 (0.9.9.80.232, steg 5 del 3)
+
+- `sketch_extend.chamfer_plan/apply_chamfer` + `Document.chamfer_sketch_corner` (via `_sketch_edit`): linjernas hörnändar flyttas `distance` in, hörnets COINCIDENT mellan de två tas bort, ny linje (`add_line`, får LENGTH) med COINCIDENT till båda, LENGTH-måtten uppdateras. Bara linje–linje.
+- Verktyg `CHAMFER` (kommando `chamfer_sketch`): hovringen delas med Fillet (`fillet_hover_corner`, filtrerat till linje–linje), klick → `_chamfer_hovered_corner` → inline-värde (`prompt_dimension_value`, minns `_last_chamfer`). Ikon `chamfer_sketch.svg` i alla set, `btn_chamfer_sk`.
+- Test: `test_sketch_extend_break.py` (modell + vy).
+
 ## Centrumbåge — 2026-11-28 (0.9.9.80.231, steg 5 del 2)
 
 - Verktyg `CENTER_ARC` (kommando `center_arc`, i Arc-knappens meny via `_command_menu(btn_arc, ["arc", "center_arc"])`): klick 1 centrum (generiskt `sketch_start_uv`), klick 2 start (`sketch_second_uv`, nollställer `_center_arc_sweep`/`_center_arc_last`), musrörelsen ackumulerar svepet med `sketch_entities.sweep_step` (pointer_mixin efter snäpp), klick 3 skapar `add_arc(*center_arc_points(centrum, start, svep))` (begränsat till ±(2π − 1e-3)). Förhandsvisning i render_mixin, etikett R/vinkel i overlay_mixin. `btn_arc` markeras för ARC och CENTER_ARC. Ikon `center_arc.svg` i alla set.

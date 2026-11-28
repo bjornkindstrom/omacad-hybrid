@@ -1,3 +1,8 @@
+# Hybrid-experiment — 0.9.9.80.232
+
+### Added
+- **Sketch Chamfer** (sketch plan, step 5), in SKETCH › MODIFY next to Fillet and in the right-click menu: hover a corner where two lines meet, click and type the distance; the corner is cut off straight that far along each line, with a new line joined to both and the lines' length dimensions following. One undo step; the last distance is remembered.
+
 # Hybrid-experiment — 0.9.9.80.231
 
 ### Added

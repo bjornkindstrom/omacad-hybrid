@@ -80,6 +80,8 @@ class SketchOperationMixin:
             self._offset_status()
         if tool_name == "MIRROR":
             self._mirror_status()
+        if tool_name == "CHAMFER":
+            self.status_message.emit("Chamfer: click a corner where two lines meet, then type the distance.")
         if tool_name == "EXTEND":
             self.status_message.emit("Extend: click near the end of a line; it grows to the next curve it points at.")
         if tool_name == "BREAK":
@@ -205,6 +207,29 @@ class SketchOperationMixin:
         if (arr is None) != (self.fillet_preview is None) or arr is not None:
             self.fillet_preview = arr
             self.update()
+
+    CHAMFER_DEFAULT = 2.0
+
+    def _chamfer_hovered_corner(self) -> bool:
+        """Sketch Chamfer: the corner under the mouse is cut off at the distance typed (equal on both lines)."""
+        corner = self.fillet_hover_corner
+        sk = self.doc.active_sketch
+        if corner is None or sk is None:
+            self.status_message.emit("Chamfer: click a corner where two lines meet.")
+            return False
+        pt, la, lb = corner
+        res = self.prompt_dimension_value("Chamfer", "Distance along each line (mm):",
+                                          getattr(self, "_last_chamfer", self.CHAMFER_DEFAULT), lo=0.01, inline=True)
+        if res is None:
+            return False
+        dist = float(res[0])
+        ok = self.doc.chamfer_sketch_corner(sk.sketch_id, pt, la.entity_id, lb.entity_id, dist)
+        if ok:
+            self._last_chamfer = dist
+        self.fillet_hover_corner = None
+        self.status_message.emit(self.doc.last_message + (" Click another corner, or Esc to finish." if ok else ""))
+        self.update()
+        return ok
 
     def _extend_or_break_plan(self, x, y):
         uv = self.get_sketch_plane_uv(x, y)

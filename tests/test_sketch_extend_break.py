@@ -124,3 +124,24 @@ def test_sketch_chamfer_cuts_a_corner_of_two_lines():
     a, b = sk.get_entity(a.entity_id), sk.get_entity(b.entity_id)
     assert a.p2 == pytest.approx((17.0, 0.0), abs=1e-6) and b.p1 == pytest.approx((20.0, 3.0), abs=1e-6)
     assert not doc.chamfer_sketch_corner(sk.sketch_id, (0.0, 0.0), a.entity_id, b.entity_id, 3.0)
+
+
+def test_chamfer_tool_cuts_the_corner_under_the_mouse(monkeypatch):
+    from PySide6.QtWidgets import QApplication
+    QApplication.instance() or QApplication([])
+    from omacad.ui.viewport.viewport import Viewport3D
+    doc = Document()
+    vp = Viewport3D(doc)
+    vp.resize(600, 400)
+    sk = doc.start_sketch()
+    a = sk.add_line((0.0, 0.0), (20.0, 0.0))
+    b = sk.add_line((20.0, 0.0), (20.0, 10.0))
+    vp.align_to_plane(sk.plane)
+    vp.set_sketch_tool("CHAMFER")
+    monkeypatch.setattr(type(vp), "prompt_dimension_value", lambda self, *a_, **k: (4.0, None))
+    vp.fillet_hover_corner = ((20.0, 0.0), a, b)
+    assert vp._chamfer_hovered_corner()
+    sk = doc.active_sketch
+    assert sk.get_entity(a.entity_id).p2 == pytest.approx((16.0, 0.0), abs=1e-6)
+    assert len([e for e in sk.entities if e.entity_type == "line"]) == 3
+    vp.deleteLater()

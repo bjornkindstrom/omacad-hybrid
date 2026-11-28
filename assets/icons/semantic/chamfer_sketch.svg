@@ -1,0 +1,5 @@
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- a sketch corner cut off straight -->
+    <path d="M8 40V20L20 8H40" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M8 8H20M8 8V20" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.6"/>
+</svg>

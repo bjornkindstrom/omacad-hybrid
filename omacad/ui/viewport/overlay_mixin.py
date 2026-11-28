@@ -180,7 +180,7 @@ class OverlayMixin:
             painter.setBrush(Qt.BrushStyle.NoBrush)
 
         # Fillet hover corner marker and arrow
-        if self.doc.active_sketch and self.sketch_tool == "FILLET" and self.fillet_hover_corner:
+        if self.doc.active_sketch and self.sketch_tool in ("FILLET", "CHAMFER") and self.fillet_hover_corner:
             pt, la, lb = self.fillet_hover_corner
             scr = self.world_to_screen(self.doc.active_sketch.plane.uv_to_world(*pt))
             if scr:

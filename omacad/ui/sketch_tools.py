@@ -38,6 +38,7 @@ SKETCH_TOOLS = [
     _entry("MIRROR", "mirror_sketch", "Create"),
     _entry("DIMENSION", "dimension", "Create"),
     _entry("FILLET", "fillet_sketch", "Modify"),
+    _entry("CHAMFER", "chamfer_sketch", "Modify"),
     _entry("TRIM", "trim", "Modify"),
     _entry("EXTEND", "extend_sketch", "Modify"),
     _entry("BREAK", "break_sketch", "Modify"),

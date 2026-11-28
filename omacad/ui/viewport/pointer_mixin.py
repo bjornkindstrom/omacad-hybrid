@@ -236,6 +236,15 @@ class PointerMixin:
                 self._move_next()
             return
 
+        # Chamfer: click a corner of two lines, type the distance
+        if self.doc.active_sketch and self.sketch_tool == "CHAMFER":
+            if event.button() == Qt.MouseButton.RightButton:
+                self.set_sketch_tool("NONE")
+                return
+            if event.button() == Qt.MouseButton.LeftButton:
+                self._chamfer_hovered_corner()
+                return
+
         # Extend / Break: one click on a line
         if self.doc.active_sketch and self.sketch_tool in ("EXTEND", "BREAK"):
             if event.button() == Qt.MouseButton.RightButton:
@@ -630,7 +639,7 @@ class PointerMixin:
 
         if hovered or hovered_constraint_cid:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
-        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "CENTER_ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "TRIM", "EXTEND", "BREAK", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
+        elif self.sketch_tool in ("LINE", "RECT", "ROUNDED_RECT", "CENTER_RECT", "CENTER_ROUNDED_RECT", "CIRCLE", "SMART_CIRCLE", "POLYGON", "ARC", "CENTER_ARC", "SPLINE", "CONTROL_SPLINE", "SLOT", "FILLET", "CHAMFER", "TRIM", "EXTEND", "BREAK", "MIRROR", "OFFSET", "DIMENSION", "MOVE", "TEXT"):
             self.setCursor(Qt.CursorShape.CrossCursor)
         elif not self.doc.active_sketch and not self.edge_pick_mode and not self.plane_pick_mode and self._find_joint_hit(x, y):
             self.setCursor(Qt.CursorShape.OpenHandCursor)
@@ -649,10 +658,12 @@ class PointerMixin:
         if self.doc.active_sketch and self.sketch_tool == "MIRROR":
             self._mirror_hover(x, y)
 
-        if self.doc.active_sketch and self.sketch_tool == "FILLET":
+        if self.doc.active_sketch and self.sketch_tool in ("FILLET", "CHAMFER"):
             sk = self.doc.active_sketch
             best_c = None
             corners = sk.find_corners()
+            if self.sketch_tool == "CHAMFER":       # a chamfer cuts straight: corners of two lines only
+                corners = [c for c in corners if c[1].entity_type == "line" and c[2].entity_type == "line"]
             best_d = 16.0  # pixels
             for pt, la, lb, ea, eb in corners:
                 scr = self.world_to_screen(sk.plane.uv_to_world(*pt))
