@@ -2,6 +2,10 @@
 
 - `Sketch.connected_entities` (`omacad/model/sketch.py`) använde `entity_key_points` (gjord för snäpp vid dragning, inkluderar `center` på cirklar, ellipser, slots och center-rektanglar), så koncentriska cirklar runt samma centrum länkades ihop som en enda kedja i Offset/Move/dubbelklick. Nu används `_chain_endpoints` (bara ändpunkter på öppna kurvor: `SketchLine`, `SketchArc`, öppen `SketchSpline`) och `COINCIDENT`-villkor som nämner `"center"`/`"center1"`/`"center2"` hoppas över. Test: `tests/test_sketch_offset.py::test_concentric_circles_are_not_linked_as_one_chain`.
 
+## Falska tangentlinjer i Section View — 2026-11-28 (0.9.9.80.254)
+
+- `GizmoMixin._cut_into_section` (`gizmo_mixin.py`): när `section_trim` skär en cylinder eller gänga får den skurna remsan bara en mjuk granne (andra sidan är snittplanet i ~90°), så `tangent_edge_mask` på det skurna nätet trodde remsan var en plan vägg och ritade linjer längs kanten intill snittet. Nu klipps i stället den oskurna kroppens `tangent_lines()` (`body.render_mesh` eller `display_override[bid]`) mot det behållna halvrummet med `_clip_lines_halfspace` och sätts på `mesh._tangent`. Test: `tests/test_section_tangent_lines.py`.
+
 ## P3: etikettsökning i Rust + delad rotlista — 2026-11-28 (0.9.9.80.252)
 
 - Mätt oprofilerat på Jar-kropparna (`compute_planar_faces_and_edges` + `extract_render_mesh`, 63 918 + 41 690 trianglar): 4,0 s → 2,2 s. cProfile överdriver Pythonloopar flera gånger; mät med `time.perf_counter` per del.

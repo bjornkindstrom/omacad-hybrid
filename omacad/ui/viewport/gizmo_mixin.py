@@ -13,6 +13,30 @@ from omacad.model.kernel import CadKernel
 from omacad.ui.math3d import ray_from_screen
 
 
+def _clip_lines_halfspace(lines: np.ndarray, normal: np.ndarray, offset: float, tol: float = 1e-6) -> np.ndarray:
+    """Clips line-pair vertices `(M, 3)` to the half-space `normal @ x >= offset`."""
+    seg = np.asarray(lines, dtype=np.float32).reshape(-1, 2, 3)
+    if len(seg) == 0:
+        return np.zeros((0, 3), dtype=np.float32)
+    da = seg[:, 0] @ normal - offset
+    db = seg[:, 1] @ normal - offset
+    keep = (da >= -tol) | (db >= -tol)
+    seg = seg[keep].copy()
+    if len(seg) == 0:
+        return np.zeros((0, 3), dtype=np.float32)
+    da, db = da[keep], db[keep]
+    cut_a = da < -tol
+    if np.any(cut_a):
+        t = np.clip(da[cut_a] / (da[cut_a] - db[cut_a]), 0.0, 1.0)[:, None]
+        seg[cut_a, 0] = seg[cut_a, 0] + t * (seg[cut_a, 1] - seg[cut_a, 0])
+    cut_b = db < -tol
+    if np.any(cut_b):
+        t = np.clip(da[cut_b] / (da[cut_b] - db[cut_b]), 0.0, 1.0)[:, None]
+        seg[cut_b, 1] = seg[cut_b, 0] + t * (seg[cut_b, 1] - seg[cut_b, 0])
+    lengths = np.linalg.norm(seg[:, 1] - seg[:, 0], axis=1)
+    return seg[lengths > 1e-5].reshape(-1, 3).astype(np.float32)
+
+
 class GizmoMixin:
     """Mixin providing gizmos (extrude arrow, move gizmo) and section planes."""
     # ---- Section view -------------------------------------------------------------------
@@ -39,7 +63,20 @@ class GizmoMixin:
         """Puts the kept part of this solid and its cut face into the shown section, in place of the body's own."""
         sec = self.section
         flip, mat = sec["flip"], np.asarray(sec["mat"], dtype=float)
-        sec["meshes"][bid] = CadKernel.extract_render_mesh(self.section_trim(manifold))   # empty when all is cut away
+        mesh = CadKernel.extract_render_mesh(self.section_trim(manifold))   # empty when all is cut away
+        # Reuse the uncut body's tangent edges clipped to the kept half-space: slicing a cylinder/thread
+        # leaves boundary strips with only one smooth neighbour, which tangent_edge_mask mistakes for flat walls.
+        source_mesh = (getattr(self, "display_override", None) or {}).get(bid)
+        if source_mesh is None:
+            body = self.doc.bodies.get(bid) if getattr(self, "doc", None) is not None else None
+            if body is not None and body.manifold is manifold:
+                source_mesh = body.render_mesh
+        if source_mesh is not None and len(mesh.vertices) > 0:
+            n = sec["normal"]
+            p = sec["origin"] + n * sec["offset"]
+            keep = n if flip else -n
+            mesh._tangent = _clip_lines_halfspace(source_mesh.tangent_lines(), keep, float(keep @ p))
+        sec["meshes"][bid] = mesh
         inv = np.linalg.inv(np.vstack([mat, [0, 0, 0, 1]]))[:3]
         polys = manifold.transform(inv).slice(1e-4 if not flip else -1e-4).to_polygons()
         index = next((i for i, c in enumerate(sec["caps"]) if c["body_id"] == bid), len(sec["caps"]))

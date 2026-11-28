@@ -1,4 +1,9 @@
-# Hybrid-experiment — 0.9.9.80.253
+# Hybrid-experiment — 0.9.9.80.254
+
+## 0.9.9.80.254 - 2026-11-28
+
+### Fixed
+- **False tangent lines in Section View**: curved walls and threads (such as a jar and lid) no longer show stray vertical or stepped edge lines right next to the section cut plane; section view now clips the uncut body's tangent edges to the kept half-space instead of re-detecting them on the sliced mesh.
 
 ## 0.9.9.80.253 - 2026-11-28
 
